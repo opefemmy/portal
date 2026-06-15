@@ -6,3 +6,28 @@ services:
       php -r "file_exists('.env') || copy('.env.example', '.env');"
       composer install --optimize-autoloader --no-dev
     startCommand: php artisan serve --host=0.0.0.0 --port=10000
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://portal-xxxx.onrender.com
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: dpg-d8o6956gvqtc73fvo8b0-a
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: portal_9oln
+      - key: DB_USERNAME
+        value: portal_user
+      - key: DB_PASSWORD
+        value: dJqjXP3yDxHq86ElaA6gSI6IxBDXCsdE
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
