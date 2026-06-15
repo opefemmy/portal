@@ -1,0 +1,10 @@
+{
+  "name": "portal",
+  "description": "Laravel Application",
+  "repository": "https://github.com/opefemmy/portal",
+  "build": {
+    "config": {
+      "runtime": "php"
+    }
+  }
+}
