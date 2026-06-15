@@ -2,6 +2,7 @@ services:
   - type: web
     name: portal
     env: php
+    region: oregon
     buildCommand: |
       php -r "file_exists('.env') || copy('.env.example', '.env');"
       composer install --optimize-autoloader --no-dev
@@ -11,8 +12,6 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
-      - key: APP_URL
-        value: https://portal-xxxx.onrender.com
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
