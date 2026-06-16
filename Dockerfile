@@ -23,6 +23,11 @@ WORKDIR /var/www
 # Copy application files
 COPY . .
 
+# Create storage directories with proper permissions
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage && \
+    chmod -R 775 storage bootstrap/cache && \
+    chmod -R 775 public/storage
+
 # Create fresh .env for production
 RUN rm -f .env && \
     cp .env.example .env && \
@@ -41,6 +46,7 @@ RUN rm -f .env && \
     'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
     'SESSION_DRIVER' => 'file',\
     'SESSION_PATH' => '/',\
+    'SESSION_DOMAIN' => null,\
     'CACHE_STORE' => 'file',\
     'QUEUE_CONNECTION' => 'sync'\
 ];\
@@ -59,15 +65,13 @@ foreach(\$lines as \$line) {\
 file_put_contents('.env', \$output);\
 "
 
-# Create storage directories and set permissions
-RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache && \
-    chmod -R 777 storage bootstrap/cache
-
 # Install PHP dependencies - ignore platform requirements
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
-# THEN generate key
-RUN php artisan key:generate
+# Generate key and clear cache
+RUN php artisan key:generate --force && \
+    php artisan config:clear && \
+    php artisan cache:clear
 
 # Expose port
 EXPOSE 10000
