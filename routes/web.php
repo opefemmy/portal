@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\ExamTimetableController;
 use App\Http\Controllers\Admin\TranscriptController;
 use App\Http\Controllers\Admin\LibraryController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\HostelController as AdminHostelController;
+use App\Http\Controllers\Student\HostelController as StudentHostelController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\CourseRegistrationController;
 use App\Http\Controllers\Student\ResultController;
@@ -147,15 +149,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/transcripts/{student}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
 
     // Hostel Management
-    Route::resource('hostels', HostelController::class);
-    Route::get('/hostels/{hostel}/rooms/create', [HostelController::class, 'createRoom'])->name('hostels.rooms.create');
-    Route::post('/hostels/{hostel}/rooms', [HostelController::class, 'storeRoom'])->name('hostels.rooms.store');
-    Route::get('/hostels/allocations', [HostelController::class, 'allocations'])->name('hostels.allocations');
-    Route::get('/hostels/allocations/create', [HostelController::class, 'createAllocation'])->name('hostels.allocations.create');
-    Route::post('/hostels/allocations', [HostelController::class, 'storeAllocation'])->name('hostels.allocations.store');
-    Route::post('/hostels/allocations/{allocation}/checkout', [HostelController::class, 'checkOut'])->name('hostels.allocations.checkout');
-    Route::get('/hostels/rooms/{hostel}/rooms', [HostelController::class, 'getRooms']);
-    Route::get('/hostels/beds/{room}/beds', [HostelController::class, 'getAvailableBeds']);
+    Route::resource('hostels', AdminHostelController::class);
+    Route::get('/hostels/{hostel}/rooms/create', [AdminHostelController::class, 'createRoom'])->name('hostels.rooms.create');
+    Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])->name('hostels.rooms.store');
+    Route::get('/hostels/allocations', [AdminHostelController::class, 'allocations'])->name('hostels.allocations');
+    Route::get('/hostels/allocations/create', [AdminHostelController::class, 'createAllocation'])->name('hostels.allocations.create');
+    Route::post('/hostels/allocations', [AdminHostelController::class, 'storeAllocation'])->name('hostels.allocations.store');
+    Route::post('/hostels/allocations/{allocation}/checkout', [AdminHostelController::class, 'checkOut'])->name('hostels.allocations.checkout');
+    Route::get('/hostels/rooms/{hostel}/rooms', [AdminHostelController::class, 'getRooms']);
+    Route::get('/hostels/beds/{room}/beds', [AdminHostelController::class, 'getAvailableBeds']);
 
 // Library
     Route::get('/library/verify', function () {
@@ -215,10 +217,10 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
     Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
 
     // Hostel (NEW)
-    Route::get('/hostel', [HostelController::class, 'myHostel'])->name('hostel.my');
-    Route::get('/hostel/apply', [HostelController::class, 'availableHostels'])->name('hostel.apply');
-    Route::post('/hostel/apply', [HostelController::class, 'apply']);
-    Route::post('/hostel/request-change', [HostelController::class, 'requestChange'])->name('hostel.request-change');
+    Route::get('/hostel', [StudentHostelController::class, 'myHostel'])->name('hostel.my');
+    Route::get('/hostel/apply', [StudentHostelController::class, 'availableHostels'])->name('hostel.apply');
+    Route::post('/hostel/apply', [StudentHostelController::class, 'apply']);
+    Route::post('/hostel/request-change', [StudentHostelController::class, 'requestChange'])->name('hostel.request-change');
 });
 
 // Lecturer Routes
