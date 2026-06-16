@@ -271,6 +271,10 @@ Route::get('/setup', function () {
         // Run migrations
         \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true]);
 
+        // Create sessions table
+        \Illuminate\Support\Facades\Artisan::call('session:table');
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+
         // Run seeder
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
 

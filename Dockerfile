@@ -27,7 +27,7 @@ COPY . .
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage && \
     chmod -R 777 storage bootstrap/cache public/storage
 
-# Create fresh .env for production with COOKIE sessions
+# Create fresh .env for production
 RUN rm -f .env && \
     cp .env.example .env && \
     php -r "\
@@ -44,12 +44,13 @@ RUN rm -f .env && \
     'DB_DATABASE' => 'portal_e0lq',\
     'DB_USERNAME' => 'portal_user',\
     'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
-    'SESSION_DRIVER' => 'cookie',\
+    'SESSION_DRIVER' => 'database',\
+    'SESSION_TABLE' => 'sessions',\
     'SESSION_ENCRYPT' => 'false',\
     'SESSION_PATH' => '/',\
     'SESSION_DOMAIN' => '.onrender.com',\
     'SESSION_SAME_SITE' => 'lax',\
-    'CACHE_STORE' => 'array',\
+    'CACHE_STORE' => 'database',\
     'QUEUE_CONNECTION' => 'sync',\
     'LOG_CHANNEL' => 'stderr',\
     'LOG_LEVEL' => 'debug'\
