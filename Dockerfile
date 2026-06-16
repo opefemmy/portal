@@ -23,12 +23,16 @@ WORKDIR /var/www
 # Copy application files
 COPY . .
 
-# Create .env with production database settings
-RUN php -r "\
-\$env = file_exists('.env') ? include('.env') : [];\
-\$defaults = [\
+# Create fresh .env for production
+RUN rm -f .env && \
+    cp .env.example .env && \
+    php -r "\
+\$lines = file('.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);\
+\$output = '';\
+\$keys = [\
     'APP_ENV' => 'production',\
     'APP_DEBUG' => 'false',\
+    'APP_URL' => '',\
     'DB_CONNECTION' => 'pgsql',\
     'DB_HOST' => 'dpg-d8o6956gvqtc73fvo8b0-a',\
     'DB_PORT' => '5432',\
@@ -39,13 +43,23 @@ RUN php -r "\
     'CACHE_STORE' => 'file',\
     'QUEUE_CONNECTION' => 'sync'\
 ];\
-\$env = array_merge(\$defaults, \$env);\
-\$output = '';\
-foreach(\$env as \$key => \$value) {\
+foreach(\$keys as \$key => \$value) {\
     \$output .= \$key . '=' . \$value . PHP_EOL;\
+}\
+foreach(\$lines as \$line) {\
+    if (strpos(\$line, '=') !== false && !preg_match('/^#/', trim(\$line))) {\
+        \$parts = explode('=', \$line, 2);\
+        \$k = trim(\$parts[0]);\
+        if (!isset(\$keys[\$k])) {\
+            \$output .= \$line . PHP_EOL;\
+        }\
+    }\
 }\
 file_put_contents('.env', \$output);\
 "
+
+# Generate app key
+RUN php artisan key:generate
 
 # Install PHP dependencies
 RUN composer update --optimize-autoloader --no-dev
