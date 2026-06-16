@@ -44,13 +44,12 @@ RUN rm -f .env && \
     'DB_DATABASE' => 'portal_e0lq',\
     'DB_USERNAME' => 'portal_user',\
     'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
-    'SESSION_DRIVER' => 'database',\
-    'SESSION_TABLE' => 'sessions',\
+    'SESSION_DRIVER' => 'array',\
     'SESSION_ENCRYPT' => 'false',\
     'SESSION_PATH' => '/',\
     'SESSION_DOMAIN' => '.onrender.com',\
     'SESSION_SAME_SITE' => 'lax',\
-    'CACHE_STORE' => 'database',\
+    'CACHE_STORE' => 'array',\
     'QUEUE_CONNECTION' => 'sync',\
     'LOG_CHANNEL' => 'stderr',\
     'LOG_LEVEL' => 'debug'\
@@ -73,7 +72,7 @@ file_put_contents('.env', \$output);\
 # Install PHP dependencies
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
-# Generate key only - NOT cache:clear (tables don't exist yet)
+# Generate key only
 RUN php artisan key:generate --force
 
 # Expose port
