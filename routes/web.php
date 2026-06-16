@@ -336,27 +336,39 @@ Route::get('/setup', function () {
 
 // TEST LOGIN Route - Use this to test login before deployment
 Route::get('/test-login-creds', function () {
-    try {
-        $admin = \App\Models\User::where('email', 'admin@portal.edu')->first();
-        $student = \App\Models\User::where('email', 'student@test.com')->first();
+    // First check if DB config is loaded
+    $dbDriver = config('database.default');
+    $dbHost = config('database.connections.'.$dbDriver.'.host');
 
+    return response()->json([
+        'success' => true,
+        'message' => 'App is working!',
+        'php_version' => PHP_VERSION,
+        'db_driver' => $dbDriver,
+        'db_host' => $dbHost,
+        'app_env' => config('app.env'),
+        'app_debug' => config('app.debug'),
+        'login_credentials' => [
+            'admin' => 'admin@portal.edu / password',
+            'student' => 'student@test.com / password123'
+        ]
+    ]);
+});
+
+// Test database connection
+Route::get('/test-db', function () {
+    try {
+        \DB::connection()->getPdo();
         return response()->json([
             'success' => true,
             'message' => 'Database connected!',
-            'admin_exists' => !is_null($admin),
-            'student_exists' => !is_null($student),
-            'admin_user' => $admin ? ['email' => $admin->email, 'name' => $admin->name, 'role' => $admin->role->name ?? 'no role'] : null,
-            'student_user' => $student ? ['email' => $student->email, 'name' => $student->name, 'role' => $student->role->name ?? 'no role'] : null,
-            'login_test' => [
-                'admin' => 'Email: admin@portal.edu | Password: password',
-                'student' => 'Email: student@test.com | Password: password123'
-            ]
+            'driver' => \DB::connection()->getDriverName(),
+            'database' => \DB::connection()->getDatabaseName()
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
+            'error' => $e->getMessage()
         ]);
     }
 });
