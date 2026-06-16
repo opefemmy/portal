@@ -31,7 +31,7 @@ RUN rm -f .env && \
 \$output = '';\
 \$keys = [\
     'APP_ENV' => 'production',\
-    'APP_DEBUG' => 'false',\
+    'APP_DEBUG' => 'true',\
     'APP_URL' => '',\
     'DB_CONNECTION' => 'pgsql',\
     'DB_HOST' => 'dpg-d8o6956gvqtc73fvo8b0-a',\
@@ -40,6 +40,7 @@ RUN rm -f .env && \
     'DB_USERNAME' => 'portal_user',\
     'DB_PASSWORD' => 'dJqjXP3yDxHq86ElaA6gSI6IxBDXCsdE',\
     'SESSION_DRIVER' => 'file',\
+    'SESSION_PATH' => '/',\
     'CACHE_STORE' => 'file',\
     'QUEUE_CONNECTION' => 'sync'\
 ];\
@@ -57,6 +58,10 @@ foreach(\$lines as \$line) {\
 }\
 file_put_contents('.env', \$output);\
 "
+
+# Create storage directories and set permissions
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache
 
 # Install PHP dependencies - ignore platform requirements
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
