@@ -322,25 +322,64 @@ Route::post('/login-test', function (\Illuminate\Http\Request $request) {
 
 // Simple test login page - REMOVE AFTER TESTING
 Route::get('/test-login', function () {
-    return '<html><body>
-<form id="loginForm">
-    <input type="email" name="email" value="admin@portal.edu" required><br>
-    <input type="password" name="password" value="password" required><br>
-    <button type="submit">Login</button>
+    return '<html><head><title>Direct Login Test</title></head><body style="font-family:Arial;padding:20px;">
+<h2>🔑 Direct Login Test</h2>
+<form id="loginForm" style="max-width:300px;">
+    <input type="email" name="email" value="admin@portal.edu" required style="width:100%;padding:8px;margin-bottom:10px;"><br>
+    <input type="password" name="password" value="password" required style="width:100%;padding:8px;margin-bottom:10px;"><br>
+    <button type="submit" style="padding:10px 20px;background:#28a745;color:white;border:none;cursor:pointer;">Login</button>
 </form>
-<div id="result"></div>
+<h3>Result:</h3>
+<pre id="result" style="background:#f4f4f4;padding:15px;border-radius:5px;"></pre>
 <script>
 document.getElementById("loginForm").onsubmit = async function(e) {
     e.preventDefault();
     let formData = new FormData(this);
-    let response = await fetch("/login-test", {
+    let response = await fetch("/direct-login", {
         method: "POST",
         body: formData,
-        credentials: "same-origin"
+        headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "include"
     });
     let result = await response.json();
     document.getElementById("result").innerHTML = JSON.stringify(result, null, 2);
+    if(result.success) {
+        document.getElementById("result").innerHTML += "\n\n✅ <a href=\"" + result.redirect + "\">Click here to go to dashboard</a>";
+    }
 };
 </script>
 </body></html>';
+});
+
+// NEW DIRECT LOGIN - bypasses all session issues
+Route::post('/direct-login', function (\Illuminate\Http\Request $request) {
+    try {
+        $user = \App\Models\User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found']);
+        }
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json(['success' => false, 'message' => 'Invalid password']);
+        }
+
+        // Generate simple token
+        $token = base64_encode($user->id . ':' . time());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful!',
+            'user' => $user->email,
+            'name' => $user->name,
+            'role' => $user->role ? $user->role->slug : 'none',
+            'token' => $token,
+            'redirect' => '/admin/dashboard'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()]);
+    }
 });
