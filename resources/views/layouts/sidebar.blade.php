@@ -90,6 +90,11 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-book"></i> Library
     </a>
 </li>
+<li class="nav-item">
+    <a href="{{ route('admin.hostels.index') }}" class="nav-link {{ request()->is('admin/hostels*') ? 'active' : '' }}">
+        <i class="fas fa-bed"></i> Hostel
+    </a>
+</li>
 @elseif($role === 'student')
 <li class="nav-item">
     <a href="{{ route('student.dashboard') }}" class="nav-link {{ request()->is('student/dashboard*') ? 'active' : '' }}">
@@ -122,8 +127,13 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('student.timetable') }}" class="nav-link {{ request()->is('student/timetable*') ? 'active' : '' }}">
-        <i class="fas fa-calendar-alt"></i> Timetable
+    <a href="{{ route('student.hostel.my') }}" class="nav-link {{ request()->is('student/hostel*') ? 'active' : '' }}">
+        <i class="fas fa-bed"></i> Hostel
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('student.complaints') }}" class="nav-link {{ request()->is('student/complaints*') ? 'active' : '' }}">
+        <i class="fas fa-exclamation-circle"></i> Complaints
     </a>
 </li>
 @elseif($role === 'lecturer')

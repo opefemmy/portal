@@ -84,6 +84,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
     Route::get('/users/upload', [UserController::class, 'upload'])->name('users.upload');
     Route::post('/users/upload', [UserController::class, 'processUpload'])->name('users.upload.process');
+    Route::post('/users/{user}/passport', [UserController::class, 'uploadPassport'])->name('users.passport');
 
     // Institution Setup
     Route::resource('schools', SchoolController::class);
@@ -145,7 +146,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/transcripts/{student}', [TranscriptController::class, 'show'])->name('transcripts.show');
     Route::get('/transcripts/{student}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
 
-    // Library
+    // Hostel Management
+    Route::resource('hostels', HostelController::class);
+    Route::get('/hostels/{hostel}/rooms/create', [HostelController::class, 'createRoom'])->name('hostels.rooms.create');
+    Route::post('/hostels/{hostel}/rooms', [HostelController::class, 'storeRoom'])->name('hostels.rooms.store');
+    Route::get('/hostels/allocations', [HostelController::class, 'allocations'])->name('hostels.allocations');
+    Route::get('/hostels/allocations/create', [HostelController::class, 'createAllocation'])->name('hostels.allocations.create');
+    Route::post('/hostels/allocations', [HostelController::class, 'storeAllocation'])->name('hostels.allocations.store');
+    Route::post('/hostels/allocations/{allocation}/checkout', [HostelController::class, 'checkOut'])->name('hostels.allocations.checkout');
+    Route::get('/hostels/rooms/{hostel}/rooms', [HostelController::class, 'getRooms']);
+    Route::get('/hostels/beds/{room}/beds', [HostelController::class, 'getAvailableBeds']);
+
+// Library
     Route::get('/library/verify', function () {
         return view('admin.library.verify');
     })->name('library.verify');
@@ -193,10 +205,20 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
 
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable');
+
+    // Complaints
     Route::get('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'index'])->name('complaints');
     Route::post('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'store'])->name('complaints.store');
+
+    // Profile
     Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
+
+    // Hostel (NEW)
+    Route::get('/hostel', [HostelController::class, 'myHostel'])->name('hostel.my');
+    Route::get('/hostel/apply', [HostelController::class, 'availableHostels'])->name('hostel.apply');
+    Route::post('/hostel/apply', [HostelController::class, 'apply']);
+    Route::post('/hostel/request-change', [HostelController::class, 'requestChange'])->name('hostel.request-change');
 });
 
 // Lecturer Routes

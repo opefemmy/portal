@@ -90,7 +90,8 @@ class UserController extends Controller
         $roles = Role::all();
         $schools = \App\Models\School::all();
         $departments = \App\Models\Department::all();
-        return view('admin.users.upload', compact('roles', 'schools', 'departments'));
+        $programmes = \App\Models\Programme::all();
+        return view('admin.users.upload', compact('roles', 'schools', 'departments', 'programmes'));
     }
 
     public function processUpload(Request $request)
@@ -105,6 +106,9 @@ class UserController extends Controller
 
         $count = 0;
         $errors = [];
+        $roleId = $request->role_id;
+        $role = Role::find($roleId);
+        $isStudent = $role && $role->slug === 'student';
 
         if ($extension === 'csv') {
             $data = array_map('str_getcsv', file($file));
@@ -115,9 +119,11 @@ class UserController extends Controller
                 try {
                     $email = trim($row[0] ?? '');
                     $name = trim($row[1] ?? '');
-                    $roleId = $request->role_id;
-                    $schoolId = isset($row[2]) && !empty(trim($row[2])) ? trim($row[2]) : null;
-                    $departmentId = isset($row[3]) && !empty(trim($row[3])) ? trim($row[3]) : null;
+                    $schoolId = isset($row[2]) && !empty(trim($row[2])) ? (int)trim($row[2]) : null;
+                    $departmentId = isset($row[3]) && !empty(trim($row[3])) ? (int)trim($row[3]) : null;
+                    $programmeId = $isStudent && isset($row[4]) && !empty(trim($row[4])) ? (int)trim($row[4]) : null;
+                    $level = $isStudent && isset($row[5]) && !empty(trim($row[5])) ? (int)trim($row[5]) : null;
+                    $matricNumber = $isStudent && isset($row[6]) && !empty(trim($row[6])) ? trim($row[6]) : null;
 
                     if (empty($email) || empty($name)) {
                         $errors[] = "Row $index: Email or name is empty";
@@ -131,7 +137,7 @@ class UserController extends Controller
                         continue;
                     }
 
-                    User::create([
+                    $user = User::create([
                         'name' => $name,
                         'email' => $email,
                         'password' => Hash::make('password123'),
@@ -140,6 +146,21 @@ class UserController extends Controller
                         'department_id' => $departmentId,
                         'is_active' => true,
                     ]);
+
+                    // If student, create student profile
+                    if ($isStudent) {
+                        $session = \App\Models\Session::where('is_current', true)->first();
+                        \App\Models\Student::create([
+                            'user_id' => $user->id,
+                            'matric_number' => $matricNumber ?? 'ND/' . date('Y') . '/' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+                            'school_id' => $schoolId,
+                            'department_id' => $departmentId,
+                            'programme_id' => $programmeId,
+                            'session_id' => $session?->id,
+                            'level' => $level ?? 1,
+                            'status' => 'active',
+                        ]);
+                    }
                     $count++;
                 } catch (\Exception $e) {
                     $errors[] = "Row $index: " . $e->getMessage();
@@ -152,5 +173,21 @@ class UserController extends Controller
         }
 
         return back()->with('error', 'No users uploaded. ' . implode(', ', $errors));
+    }
+
+    public function uploadPassport(Request $request, User $user)
+    {
+        $request->validate([
+            'passport' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($request->hasFile('passport')) {
+            $file = $request->file('passport');
+            $filename = $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/passports'), $filename);
+            $user->update(['passport' => $filename]);
+        }
+
+        return back()->with('success', 'Passport uploaded successfully');
     }
 }
