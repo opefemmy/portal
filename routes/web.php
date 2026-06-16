@@ -261,3 +261,27 @@ Route::middleware('auth')->group(function () {
 
 // Redirect based on role
 Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->middleware('auth');
+
+// Setup Route (For Render Deployment - Remove after use)
+Route::get('/setup', function () {
+    try {
+        // Run migrations
+        \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true]);
+
+        // Run seeder
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Setup completed! Database seeded.',
+            'admin_email' => 'admin@portal.edu',
+            'admin_password' => 'password'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+            'line' => $e->getLine()
+        ]);
+    }
+});
