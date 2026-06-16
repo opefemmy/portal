@@ -58,8 +58,8 @@ foreach(\$lines as \$line) {\
 file_put_contents('.env', \$output);\
 "
 
-# Install PHP dependencies FIRST
-RUN composer update --optimize-autoloader --no-dev
+# Install PHP dependencies - ignore platform requirements
+RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
 # THEN generate key
 RUN php artisan key:generate
