@@ -291,3 +291,27 @@ Route::get('/setup', function () {
         ]);
     }
 });
+
+// Test route without CSRF - REMOVE AFTER TESTING
+Route::post('/login-test', function (\Illuminate\Http\Request $request) {
+    $credentials = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    if (\Illuminate\Support\Facades\Auth::attempt($credentials)) {
+        $request->session()->regenerate();
+        $user = \Illuminate\Support\Facades\Auth::user();
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful',
+            'user' => $user->email,
+            'role' => $user->role ? $user->role->slug : 'none'
+        ]);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'Invalid credentials'
+    ]);
+})->middleware('web');
