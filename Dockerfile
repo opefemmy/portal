@@ -20,59 +20,38 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy application files
+# Copy only essential files first for layer caching
+COPY composer.json composer.lock ./
+
+# Create fresh .env with PostgreSQL settings
+RUN echo "APP_ENV=production" > .env && \
+    echo "APP_DEBUG=true" >> .env && \
+    echo "APP_URL=https://portal.onrender.com" >> .env && \
+    echo "DB_CONNECTION=pgsql" >> .env && \
+    echo "DB_HOST=dpg-d8okllv7f7vs73eseqjg-a" >> .env && \
+    echo "DB_PORT=5432" >> .env && \
+    echo "DB_DATABASE=portal_e0lq" >> .env && \
+    echo "DB_USERNAME=portal_user" >> .env && \
+    echo "DB_PASSWORD=hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT" >> .env && \
+    echo "SESSION_DRIVER=array" >> .env && \
+    echo "SESSION_ENCRYPT=false" >> .env && \
+    echo "SESSION_PATH=/" >> .env && \
+    echo "CACHE_STORE=array" >> .env && \
+    echo "QUEUE_CONNECTION=sync" >> .env && \
+    echo "LOG_CHANNEL=stderr" >> .env && \
+    echo "LOG_LEVEL=debug" >> .env
+
+# Copy all files
 COPY . .
 
-# Create all storage directories
+# Create storage directories
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage && \
     chmod -R 777 storage bootstrap/cache public/storage
-
-# Create fresh .env for production
-RUN rm -f .env && \
-    cp .env.example .env && \
-    php -r "\
-\$lines = file('.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);\
-\$output = '';\
-\$keys = [\
-    'APP_ENV' => 'production',\
-    'APP_DEBUG' => 'true',\
-    'APP_URL' => 'https://portal.onrender.com',\
-    'APP_DOMAIN' => '.onrender.com',\
-    'DB_CONNECTION' => 'pgsql',\
-    'DB_HOST' => 'dpg-d8okllv7f7vs73eseqjg-a',\
-    'DB_PORT' => '5432',\
-    'DB_DATABASE' => 'portal_e0lq',\
-    'DB_USERNAME' => 'portal_user',\
-    'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
-    'SESSION_DRIVER' => 'array',\
-    'SESSION_ENCRYPT' => 'false',\
-    'SESSION_PATH' => '/',\
-    'SESSION_DOMAIN' => '.onrender.com',\
-    'SESSION_SAME_SITE' => 'lax',\
-    'CACHE_STORE' => 'array',\
-    'QUEUE_CONNECTION' => 'sync',\
-    'LOG_CHANNEL' => 'stderr',\
-    'LOG_LEVEL' => 'debug'\
-];\
-foreach(\$keys as \$key => \$value) {\
-    \$output .= \$key . '=' . \$value . PHP_EOL;\
-}\
-foreach(\$lines as \$line) {\
-    if (strpos(\$line, '=') !== false && !preg_match('/^#/', trim(\$line))) {\
-        \$parts = explode('=', \$line, 2);\
-        \$k = trim(\$parts[0]);\
-        if (!isset(\$keys[\$k])) {\
-            \$output .= \$line . PHP_EOL;\
-        }\
-    }\
-}\
-file_put_contents('.env', \$output);\
-"
 
 # Install PHP dependencies
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
-# Generate key only
+# Generate key
 RUN php artisan key:generate --force
 
 # Expose port
