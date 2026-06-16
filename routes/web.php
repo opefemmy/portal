@@ -215,6 +215,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
     // Profile
     Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('profile.passport');
 
     // Hostel (NEW)
     Route::get('/hostel', [StudentHostelController::class, 'myHostel'])->name('hostel.my');

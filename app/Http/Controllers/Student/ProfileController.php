@@ -25,7 +25,8 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $student = Student::where('user_id', auth()->id())->firstOrFail();
+        $user = auth()->user();
+        $student = $user->student;
 
         $validated = $request->validate([
             'matric_number' => 'nullable|string|max:50',
@@ -39,5 +40,28 @@ class ProfileController extends Controller
         $student->update($validated);
 
         return redirect()->route('student.dashboard')->with('success', 'Profile updated successfully');
+    }
+
+    public function uploadPassport(Request $request)
+    {
+        $request->validate([
+            'passport' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = auth()->user();
+
+        if ($request->hasFile('passport')) {
+            // Delete old passport if exists
+            if ($user->passport && file_exists(public_path('uploads/passports/' . $user->passport))) {
+                unlink(public_path('uploads/passports/' . $user->passport));
+            }
+
+            $file = $request->file('passport');
+            $filename = $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/passports'), $filename);
+            $user->update(['passport' => $filename]);
+        }
+
+        return back()->with('success', 'Passport uploaded successfully');
     }
 }

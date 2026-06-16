@@ -20,36 +20,32 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy only essential files first for layer caching
+# Copy composer files first
 COPY composer.json composer.lock ./
 
-# Create fresh .env with PostgreSQL settings
-RUN echo "APP_ENV=production" > .env && \
-    echo "APP_DEBUG=true" >> .env && \
-    echo "APP_URL=https://portal.onrender.com" >> .env && \
-    echo "DB_CONNECTION=pgsql" >> .env && \
-    echo "DB_HOST=dpg-d8okllv7f7vs73eseqjg-a" >> .env && \
-    echo "DB_PORT=5432" >> .env && \
-    echo "DB_DATABASE=portal_e0lq" >> .env && \
-    echo "DB_USERNAME=portal_user" >> .env && \
-    echo "DB_PASSWORD=hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT" >> .env && \
-    echo "SESSION_DRIVER=array" >> .env && \
-    echo "SESSION_ENCRYPT=false" >> .env && \
-    echo "SESSION_PATH=/" >> .env && \
-    echo "CACHE_STORE=array" >> .env && \
-    echo "QUEUE_CONNECTION=sync" >> .env && \
-    echo "LOG_CHANNEL=stderr" >> .env && \
-    echo "LOG_LEVEL=debug" >> .env
+# Install dependencies
+RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
-# Copy all files
+# Copy everything else
 COPY . .
 
 # Create storage directories
-RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage && \
-    chmod -R 777 storage bootstrap/cache public/storage
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage public/uploads/passports && \
+    chmod -R 777 storage bootstrap/cache public/storage public/uploads
 
-# Install PHP dependencies
-RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
+# Create .env LAST - this will override any existing .env
+RUN cp .env.example .env && \
+    sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=pgsql/' .env && \
+    sed -i 's/DB_HOST=127.0.0.1/DB_HOST=dpg-d8okllv7f7vs73eseqjg-a/' .env && \
+    sed -i 's/DB_PORT=3306/DB_PORT=5432/' .env && \
+    sed -i 's/DB_DATABASE=portal/DB_DATABASE=portal_e0lq/' .env && \
+    sed -i 's/DB_USERNAME=root/DB_USERNAME=portal_user/' .env && \
+    sed -i 's/DB_PASSWORD=/DB_PASSWORD=hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT/' .env && \
+    sed -i 's/SESSION_DRIVER=database/SESSION_DRIVER=array/' .env && \
+    sed -i 's/CACHE_STORE=database/CACHE_STORE=array/' .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_DEBUG=true" >> .env && \
+    echo "LOG_CHANNEL=stderr" >> .env
 
 # Generate key
 RUN php artisan key:generate --force
