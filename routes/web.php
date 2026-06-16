@@ -334,6 +334,33 @@ Route::get('/setup', function () {
     }
 });
 
+// TEST LOGIN Route - Use this to test login before deployment
+Route::get('/test-login-creds', function () {
+    try {
+        $admin = \App\Models\User::where('email', 'admin@portal.edu')->first();
+        $student = \App\Models\User::where('email', 'student@test.com')->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Database connected!',
+            'admin_exists' => !is_null($admin),
+            'student_exists' => !is_null($student),
+            'admin_user' => $admin ? ['email' => $admin->email, 'name' => $admin->name, 'role' => $admin->role->name ?? 'no role'] : null,
+            'student_user' => $student ? ['email' => $student->email, 'name' => $student->name, 'role' => $student->role->name ?? 'no role'] : null,
+            'login_test' => [
+                'admin' => 'Email: admin@portal.edu | Password: password',
+                'student' => 'Email: student@test.com | Password: password123'
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
+
 // Test route without CSRF - REMOVE AFTER TESTING
 Route::post('/login-test', function (\Illuminate\Http\Request $request) {
     $credentials = $request->validate([

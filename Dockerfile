@@ -33,7 +33,7 @@ COPY . .
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage public/uploads/passports && \
     chmod -R 777 storage bootstrap/cache public/storage public/uploads
 
-# Create .env LAST - this will override any existing .env
+# Create .env with DEBUG enabled for error reporting
 RUN cp .env.example .env && \
     sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=pgsql/' .env && \
     sed -i 's/DB_HOST=127.0.0.1/DB_HOST=dpg-d8okllv7f7vs73eseqjg-a/' .env && \
