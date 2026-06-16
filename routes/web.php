@@ -315,3 +315,28 @@ Route::post('/login-test', function (\Illuminate\Http\Request $request) {
         'message' => 'Invalid credentials'
     ]);
 })->middleware('web');
+
+// Simple test login page - REMOVE AFTER TESTING
+Route::get('/test-login', function () {
+    return '<html><body>
+<form id="loginForm">
+    <input type="email" name="email" value="admin@portal.edu" required><br>
+    <input type="password" name="password" value="password" required><br>
+    <button type="submit">Login</button>
+</form>
+<div id="result"></div>
+<script>
+document.getElementById("loginForm").onsubmit = async function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    let response = await fetch("/login-test", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+    });
+    let result = await response.json();
+    document.getElementById("result").innerHTML = JSON.stringify(result, null, 2);
+};
+</script>
+</body></html>';
+});
