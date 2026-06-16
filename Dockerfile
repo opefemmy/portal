@@ -3,16 +3,16 @@ FROM php:8.3-cli
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    libmysqlclient-dev \
+    libmariadb-dev-compat \
+    libmariadb-dev \
     unzip \
     git \
     libfreetype6-dev \
-    libjpeg62-turbo-dev \
+    libjpeg-dev \
     libpng-dev \
     libzip-dev \
-    libmbstring-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pdo_mysql mbstring zip
+    && docker-php-ext-install pdo pdo_pgsql pdo_mysql zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
