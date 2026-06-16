@@ -34,11 +34,11 @@ RUN rm -f .env && \
     'APP_DEBUG' => 'true',\
     'APP_URL' => '',\
     'DB_CONNECTION' => 'pgsql',\
-    'DB_HOST' => 'dpg-d8o6956gvqtc73fvo8b0-a',\
+    'DB_HOST' => 'dpg-d8okllv7f7vs73eseqjg-a',\
     'DB_PORT' => '5432',\
-    'DB_DATABASE' => 'portal_9oln',\
+    'DB_DATABASE' => 'portal_e0lq',\
     'DB_USERNAME' => 'portal_user',\
-    'DB_PASSWORD' => 'dJqjXP3yDxHq86ElaA6gSI6IxBDXCsdE',\
+    'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
     'SESSION_DRIVER' => 'file',\
     'SESSION_PATH' => '/',\
     'CACHE_STORE' => 'file',\
