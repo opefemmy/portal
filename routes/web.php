@@ -309,12 +309,8 @@ Route::get('/setup', function () {
         // Clear config cache
         \Illuminate\Support\Facades\Artisan::call('config:clear');
 
-        // Run migrations
+        // Run migrations (fresh with seed)
         \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true]);
-
-        // Create sessions table
-        \Illuminate\Support\Facades\Artisan::call('session:table');
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 
         // Run seeder
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
@@ -324,7 +320,7 @@ Route::get('/setup', function () {
 
         return response()->json([
             'success' => true,
-            'message' => 'Setup completed! Database seeded.',
+            'message' => 'Setup completed! Database seeded with all tables including hostels.',
             'admin_email' => 'admin@portal.edu',
             'admin_password' => 'password'
         ]);
