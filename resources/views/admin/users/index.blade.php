@@ -5,9 +5,14 @@
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4>Users</h4>
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Add User
-    </a>
+    <div>
+        <a href="{{ route('admin.users.upload') }}" class="btn btn-success">
+            <i class="fas fa-upload me-2"></i>Upload Users
+        </a>
+        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add User
+        </a>
+    </div>
 </div>
 
 <div class="card">

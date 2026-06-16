@@ -82,6 +82,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
     Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
+    Route::get('/users/upload', [UserController::class, 'upload'])->name('users.upload');
+    Route::post('/users/upload', [UserController::class, 'processUpload'])->name('users.upload.process');
 
     // Institution Setup
     Route::resource('schools', SchoolController::class);
@@ -144,13 +146,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/transcripts/{student}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
 
     // Library
-    Route::get('/library/books', [LibraryController::class, 'books'])->name('library.books');
-    Route::get('/library/books/create', [LibraryController::class, 'createBook'])->name('library.books.create');
-    Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('library.books.store');
-    Route::post('/library/books/upload', [LibraryController::class, 'uploadBooks'])->name('library.books.upload');
-    Route::get('/library/loans', [LibraryController::class, 'loans'])->name('library.loans');
-    Route::post('/library/loans/issue', [LibraryController::class, 'issueBook'])->name('library.loans.issue');
-    Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnBook'])->name('library.loans.return');
+    Route::get('/library/verify', function () {
+        return view('admin.library.verify');
+    })->name('library.verify');
+
+    Route::post('/library/verify', function (\Illuminate\Http\Request $request) {
+        $code = \App\Models\Setting::get('library_access_code');
+        if ($code && $request->code !== $code) {
+            return back()->with('error', 'Invalid access code');
+        }
+        session()->put('library_verified', true);
+        return redirect()->route('admin.library.books');
+    })->name('library.verify.post');
+
+    Route::middleware('library.access')->group(function () {
+        Route::get('/library/books', [LibraryController::class, 'books'])->name('library.books');
+        Route::get('/library/books/create', [LibraryController::class, 'createBook'])->name('library.books.create');
+        Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('library.books.store');
+        Route::post('/library/books/upload', [LibraryController::class, 'uploadBooks'])->name('library.books.upload');
+        Route::get('/library/loans', [LibraryController::class, 'loans'])->name('library.loans');
+        Route::post('/library/loans/issue', [LibraryController::class, 'issueBook'])->name('library.loans.issue');
+        Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnBook'])->name('library.loans.return');
+    });
 
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');

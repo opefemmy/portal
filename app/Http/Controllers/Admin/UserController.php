@@ -84,4 +84,73 @@ class UserController extends Controller
         $user->update(['password' => Hash::make('password')]);
         return back()->with('success', 'Password reset to default');
     }
+
+    public function upload()
+    {
+        $roles = Role::all();
+        $schools = \App\Models\School::all();
+        $departments = \App\Models\Department::all();
+        return view('admin.users.upload', compact('roles', 'schools', 'departments'));
+    }
+
+    public function processUpload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,xlsx,xls|max:5120',
+            'role_id' => 'required|exists:roles,id',
+        ]);
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+
+        $count = 0;
+        $errors = [];
+
+        if ($extension === 'csv') {
+            $data = array_map('str_getcsv', file($file));
+
+            foreach ($data as $index => $row) {
+                if ($index === 0 || empty($row[0])) continue; // Skip header
+
+                try {
+                    $email = trim($row[0] ?? '');
+                    $name = trim($row[1] ?? '');
+                    $roleId = $request->role_id;
+                    $schoolId = isset($row[2]) && !empty(trim($row[2])) ? trim($row[2]) : null;
+                    $departmentId = isset($row[3]) && !empty(trim($row[3])) ? trim($row[3]) : null;
+
+                    if (empty($email) || empty($name)) {
+                        $errors[] = "Row $index: Email or name is empty";
+                        continue;
+                    }
+
+                    // Check if user exists
+                    $exists = User::where('email', $email)->first();
+                    if ($exists) {
+                        $errors[] = "Row $index: User with email $email already exists";
+                        continue;
+                    }
+
+                    User::create([
+                        'name' => $name,
+                        'email' => $email,
+                        'password' => Hash::make('password123'),
+                        'role_id' => $roleId,
+                        'school_id' => $schoolId,
+                        'department_id' => $departmentId,
+                        'is_active' => true,
+                    ]);
+                    $count++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row $index: " . $e->getMessage();
+                }
+            }
+        }
+
+        if ($count > 0) {
+            return redirect()->route('admin.users.index')->with('success', "$count users uploaded successfully");
+        }
+
+        return back()->with('error', 'No users uploaded. ' . implode(', ', $errors));
+    }
 }
