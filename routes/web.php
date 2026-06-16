@@ -265,11 +265,17 @@ Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->m
 // Setup Route (For Render Deployment - Remove after use)
 Route::get('/setup', function () {
     try {
+        // Clear config cache
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+
         // Run migrations
         \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true]);
 
         // Run seeder
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+
+        // Clear cache again
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
 
         return response()->json([
             'success' => true,
