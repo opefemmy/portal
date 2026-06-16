@@ -58,11 +58,11 @@ foreach(\$lines as \$line) {\
 file_put_contents('.env', \$output);\
 "
 
-# Generate app key
-RUN php artisan key:generate
-
-# Install PHP dependencies
+# Install PHP dependencies FIRST
 RUN composer update --optimize-autoloader --no-dev
+
+# THEN generate key
+RUN php artisan key:generate
 
 # Expose port
 EXPOSE 10000
