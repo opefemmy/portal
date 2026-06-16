@@ -73,11 +73,8 @@ file_put_contents('.env', \$output);\
 # Install PHP dependencies
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
-# Generate key and clear all caches
-RUN php artisan key:generate --force && \
-    php artisan config:clear && \
-    php artisan cache:clear && \
-    php artisan view:clear
+# Generate key only - NOT cache:clear (tables don't exist yet)
+RUN php artisan key:generate --force
 
 # Expose port
 EXPOSE 10000
