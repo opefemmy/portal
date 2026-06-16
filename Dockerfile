@@ -23,11 +23,11 @@ WORKDIR /var/www
 # Copy application files
 COPY . .
 
-# Create all storage directories with proper permissions
+# Create all storage directories
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache public/storage && \
     chmod -R 777 storage bootstrap/cache public/storage
 
-# Create fresh .env for production with all necessary configs
+# Create fresh .env for production with COOKIE sessions
 RUN rm -f .env && \
     cp .env.example .env && \
     php -r "\
@@ -37,18 +37,19 @@ RUN rm -f .env && \
     'APP_ENV' => 'production',\
     'APP_DEBUG' => 'true',\
     'APP_URL' => 'https://portal.onrender.com',\
+    'APP_DOMAIN' => '.onrender.com',\
     'DB_CONNECTION' => 'pgsql',\
     'DB_HOST' => 'dpg-d8okllv7f7vs73eseqjg-a',\
     'DB_PORT' => '5432',\
     'DB_DATABASE' => 'portal_e0lq',\
     'DB_USERNAME' => 'portal_user',\
     'DB_PASSWORD' => 'hjDHRsxzQiXkGYESAAA6EKXUB3gR7HoT',\
-    'SESSION_DRIVER' => 'file',\
+    'SESSION_DRIVER' => 'cookie',\
+    'SESSION_ENCRYPT' => 'false',\
     'SESSION_PATH' => '/',\
     'SESSION_DOMAIN' => '.onrender.com',\
-    'SESSION_SECURE_COOKIE' => 'false',\
     'SESSION_SAME_SITE' => 'lax',\
-    'CACHE_STORE' => 'file',\
+    'CACHE_STORE' => 'array',\
     'QUEUE_CONNECTION' => 'sync',\
     'LOG_CHANNEL' => 'stderr',\
     'LOG_LEVEL' => 'debug'\
@@ -68,7 +69,7 @@ foreach(\$lines as \$line) {\
 file_put_contents('.env', \$output);\
 "
 
-# Install PHP dependencies - ignore platform requirements
+# Install PHP dependencies
 RUN composer update --optimize-autoloader --no-dev --ignore-platform-req=ext-gd
 
 # Generate key and clear all caches
