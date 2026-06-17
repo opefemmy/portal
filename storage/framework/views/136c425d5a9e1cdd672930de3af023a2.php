@@ -54,7 +54,7 @@
                     </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <tr>
-                        <td colspan="6" class="text-center py-4">No courses registered yet.</td>
+                        <td colspan="7" class="text-center py-4">No courses registered yet.</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>

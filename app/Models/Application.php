@@ -3,17 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
-class Applicant extends Model
+class Application extends Model
 {
     protected $fillable = [
         // Personal Information
-        'user_id', 'application_number', 'surname', 'first_name', 'middle_name',
-        'date_of_birth', 'place_of_birth', 'gender', 'marital_status',
-        'nationality', 'state_of_origin', 'lga', 'permanent_address',
-        'contact_address', 'email', 'phone', 'passport',
+        'surname', 'first_name', 'middle_name', 'date_of_birth',
+        'place_of_birth', 'gender', 'marital_status', 'nationality',
+        'state_of_origin', 'lga', 'permanent_address', 'contact_address',
+        'email', 'phone', 'passport',
 
         // Guardian Information
         'guardian_name', 'guardian_relationship', 'guardian_phone',
@@ -25,8 +23,7 @@ class Applicant extends Model
         'tertiary_institution', 'tertiary_qualification', 'tertiary_start', 'tertiary_end',
 
         // Programme Selection
-        'school_id', 'department_id', 'programme_id', 'session_id',
-        'mode_of_study', 'entry_level',
+        'school_id', 'department_id', 'programme_id', 'mode_of_study', 'entry_level',
 
         // JAMB Details
         'jamb_registration_number', 'jamb_year', 'jamb_score',
@@ -37,7 +34,7 @@ class Applicant extends Model
         'lga_id', 'jamb_result',
 
         // Status
-        'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'
+        'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'user_id'
     ];
 
     protected $casts = [
@@ -46,44 +43,29 @@ class Applicant extends Model
         'reviewed_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function school(): BelongsTo
+    public function school()
     {
         return $this->belongsTo(School::class);
     }
 
-    public function department(): BelongsTo
+    public function department()
     {
         return $this->belongsTo(Department::class);
     }
 
-    public function programme(): BelongsTo
+    public function programme()
     {
         return $this->belongsTo(Programme::class);
     }
 
-    public function session(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(Session::class);
+        return $this->belongsTo(User::class);
     }
 
-    public function reviewer(): BelongsTo
+    public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by');
-    }
-
-    public static function generateApplicationNumber()
-    {
-        return 'APP-' . strtoupper(Str::random(8));
-    }
-
-    public function getFullNameAttribute()
-    {
-        return "{$this->first_name} {$this->surname}";
     }
 
     public function scopePending($query)
@@ -104,5 +86,10 @@ class Applicant extends Model
     public function scopeAdmitted($query)
     {
         return $query->where('status', 'admitted');
+    }
+
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->surname}";
     }
 }

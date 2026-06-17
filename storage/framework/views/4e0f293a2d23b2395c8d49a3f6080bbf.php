@@ -10,8 +10,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <!-- DataTables CSS - Using Bootstrap 5 CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.9.0/dist/sweetalert2.min.css">
 
@@ -101,10 +103,6 @@
         .table-responsive {
             border-radius: 10px;
             overflow: hidden;
-        }
-
-        .dataTables_wrapper .form-control {
-            border-radius: 5px;
         }
 
         .dropdown-menu {
@@ -212,11 +210,11 @@
     <?php echo $__env->yieldContent('content'); ?>
     <?php endif; ?>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- Scripts - Using jQuery 3.x and DataTables 1.13.x -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.9.0/dist/sweetalert2.min.js"></script>
 
     <script>
@@ -225,19 +223,20 @@
             $('#sidebar').toggleClass('show');
         });
 
-        // DataTables initialization - only initialize tables with thead and data
-        $('.datatable').each(function() {
-            var table = $(this);
-            if (table.find('thead').length > 0 && table.find('tbody tr').length > 0) {
-                table.DataTable({
-                    processing: true,
-                    responsive: true,
-                    pageLength: 10,
-                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-                    dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rtip',
-                    destroy: true
-                });
-            }
+        // DataTables initialization
+        $(document).ready(function() {
+            $('.datatable').each(function() {
+                var table = $(this);
+                if (table.find('thead').length > 0 && table.find('tbody tr').length > 0) {
+                    table.DataTable({
+                        processing: false,
+                        responsive: true,
+                        pageLength: 10,
+                        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                        destroy: true
+                    });
+                }
+            });
         });
 
         // SweetAlert helpers

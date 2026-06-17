@@ -29,7 +29,7 @@
                     </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <tr>
-                        <td colspan="5" class="text-center py-4">No timetable available.</td>
+                        <td colspan="6" class="text-center py-4">No timetable available.</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>

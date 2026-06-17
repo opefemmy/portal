@@ -63,6 +63,9 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 // Applicant Routes
 Route::prefix('applicant')->name('applicant.')->group(function () {
+    // Get departments by school
+    Route::get('/departments/{schoolId}', [ApplicationController::class, 'getDepartments']);
+
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'showApplicantForm'])->name('register');
         Route::post('/register', [RegisterController::class, 'registerApplicant']);

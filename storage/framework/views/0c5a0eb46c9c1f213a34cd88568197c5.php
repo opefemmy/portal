@@ -6,6 +6,39 @@
     <p class="text-muted">Please complete your profile to access all features.</p>
 </div>
 
+<!-- Passport Upload -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Passport Photo</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <?php $user = auth()->user(); ?>
+                <?php if($user->passport): ?>
+                    <img src="<?php echo e(asset('uploads/passports/' . $user->passport)); ?>" alt="Passport" class="img-thumbnail" style="max-width: 150px;">
+                <?php else: ?>
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                        <i class="fas fa-user fa-3x text-muted"></i>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-9">
+                <form method="POST" action="<?php echo e(route('student.profile.passport')); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <div class="mb-3">
+                        <label for="passport" class="form-label">Upload Passport (JPEG, PNG, JPG - Max 2MB)</label>
+                        <input type="file" name="passport" class="form-control" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>Upload Passport
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <form method="POST" action="<?php echo e(route('student.profile.update')); ?>">
