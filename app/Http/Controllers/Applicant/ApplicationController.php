@@ -25,10 +25,10 @@ class ApplicationController extends Controller
     public function showApplicationForm()
     {
         $data = [
-            'schools' => School::where('is_active', true)->get(),
-            'departments' => Department::where('is_active', true)->get(),
+            'schools' => School::all(),
+            'departments' => Department::all(),
             'programmes' => Programme::all(),
-            'sessions' => Session::where('is_active', true)->get(),
+            'sessions' => Session::all(),
             'states' => State::orderBy('name')->get(),
         ];
         return view('applicant.apply', $data);
@@ -145,9 +145,7 @@ class ApplicationController extends Controller
 
     public function getDepartments($schoolId)
     {
-        $departments = Department::where('school_id', $schoolId)
-            ->where('is_active', true)
-            ->get();
+        $departments = Department::where('school_id', $schoolId)->get();
         return response()->json($departments);
     }
 
