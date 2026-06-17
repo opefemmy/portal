@@ -180,13 +180,28 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->is('admin/students*') ? 'active' : '' }}">
-        <i class="fas fa-users"></i> Students
+    <a href="{{ route('registrar.applications.index') }}" class="nav-link {{ request()->is('registrar/applications*') ? 'active' : '' }}">
+        <i class="fas fa-file-alt"></i> Applications
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applications.statistics') }}" class="nav-link {{ request()->is('registrar/applications/statistics*') ? 'active' : '' }}">
+        <i class="fas fa-chart-bar"></i> Statistics
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applications.admitted') }}" class="nav-link {{ request()->is('registrar/admitted*') ? 'active' : '' }}">
+        <i class="fas fa-user-graduate"></i> Admitted Students
     </a>
 </li>
 <li class="nav-item">
     <a href="{{ route('registrar.applicants') }}" class="nav-link {{ request()->is('registrar/applicants*') ? 'active' : '' }}">
-        <i class="fas fa-user-graduate"></i> Applicants
+        <i class="fas fa-user-graduate"></i> Old Applicants
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->is('admin/students*') ? 'active' : '' }}">
+        <i class="fas fa-users"></i> Students
     </a>
 </li>
 <li class="nav-item">

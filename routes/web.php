@@ -272,6 +272,16 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
 // Registrar Routes
 Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])->name('dashboard');
+
+    // Application Management
+    Route::get('/applications', [\App\Http\Controllers\Registrar\ApplicationController::class, 'index'])->name('applications.index');
+    Route::get('/applications/{applicant}', [\App\Http\Controllers\Registrar\ApplicationController::class, 'show'])->name('applications.show');
+    Route::put('/applications/{applicant}/status', [\App\Http\Controllers\Registrar\ApplicationController::class, 'updateStatus'])->name('applications.updateStatus');
+    Route::post('/applications/bulk', [\App\Http\Controllers\Registrar\ApplicationController::class, 'bulkAction'])->name('applications.bulk');
+    Route::get('/applications/export', [\App\Http\Controllers\Registrar\ApplicationController::class, 'export'])->name('applications.export');
+    Route::get('/admitted-students', [\App\Http\Controllers\Registrar\ApplicationController::class, 'admittedStudents'])->name('applications.admitted');
+    Route::get('/applications/statistics', [\App\Http\Controllers\Registrar\ApplicationController::class, 'statistics'])->name('applications.statistics');
+
     Route::get('/applicants', [\App\Http\Controllers\Registrar\ApplicantController::class, 'index'])->name('applicants');
     Route::get('/applicants/{applicant}', [\App\Http\Controllers\Registrar\ApplicantController::class, 'show'])->name('applicants.show');
     Route::put('/applicants/{applicant}/admit', [\App\Http\Controllers\Registrar\ApplicantController::class, 'admit'])->name('applicants.admit');
