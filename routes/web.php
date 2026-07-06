@@ -32,11 +32,13 @@ use App\Http\Controllers\Student\CourseRegistrationController;
 use App\Http\Controllers\Student\ResultController;
 use App\Http\Controllers\Student\PaymentController;
 use App\Http\Controllers\Student\TimetableController;
+use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Lecturer\DashboardController as LecturerDashboardController;
 use App\Http\Controllers\Lecturer\ResultController as LecturerResultController;
 use App\Http\Controllers\Lecturer\AttendanceController;
 use App\Http\Controllers\Applicant\ApplicationController;
 use App\Http\Controllers\Bursar\RegimeController;
+use App\Http\Controllers\Admin\SystemSettingController;
 
 // Public Routes
 Route::get('/', function () {
@@ -61,6 +63,11 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Public Application Form
+Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('public.apply');
+Route::post('/apply', [ApplicationController::class, 'submitApplication'])->name('public.apply.submit');
+Route::get('/apply/check-status', [ApplicationController::class, 'checkStatus'])->name('public.apply.status');
+
 // Applicant Routes
 Route::prefix('applicant')->name('applicant.')->group(function () {
     // Get departments by school
@@ -75,6 +82,7 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('apply');
         Route::post('/apply', [ApplicationController::class, 'submitApplication']);
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
+        Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
     });
 });
 
@@ -106,6 +114,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 
     // Grade Configuration
     Route::resource('grades', GradeController::class);
+
+    // System Settings
+    Route::get('/settings', [SystemSettingController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [SystemSettingController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/settings/gateway', [SystemSettingController::class, 'updateGateways'])->name('settings.gateway');
+    Route::post('/settings/toggle', [SystemSettingController::class, 'toggleSetting'])->name('settings.toggle');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
@@ -211,6 +225,11 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
 
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable');
 
+    // Student Attendance
+    Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance');
+    Route::post('/attendance/mark', [StudentAttendanceController::class, 'markAttendance'])->name('attendance.mark');
+    Route::get('/my-attendance', [StudentAttendanceController::class, 'myAttendance'])->name('my-attendance');
+
     // Complaints
     Route::get('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'index'])->name('complaints');
     Route::post('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'store'])->name('complaints.store');
@@ -233,8 +252,13 @@ Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer
     Route::get('/courses', [LecturerDashboardController::class, 'courses'])->name('courses');
     Route::get('/courses/{course}/students', [LecturerDashboardController::class, 'courseStudents'])->name('courses.students');
     Route::get('/courses/{course}/results', [LecturerResultController::class, 'enter'])->name('courses.results');
-    Route::post('/courses/{course}/results', [LecturerResultController::class, 'store']);
-    Route::post('/courses/{course}/results/bulk', [LecturerResultController::class, 'bulkUpload']);
+    Route::post('/courses/{course}/results', [LecturerResultController::class, 'store'])->name('courses.results.store');
+    Route::post('/courses/{course}/results/bulk', [LecturerResultController::class, 'bulkUpload'])->name('courses.bulk');
+    Route::get('/courses/{course}/template', [LecturerResultController::class, 'downloadTemplate'])->name('courses.template');
+
+    // Edit result before HOD approval
+    Route::get('/result/{result}/edit', [LecturerResultController::class, 'edit'])->name('result.edit');
+    Route::put('/result/{result}', [LecturerResultController::class, 'update'])->name('result.update');
 
     Route::get('/attendance/{course}', [AttendanceController::class, 'index'])->name('attendance');
     Route::post('/attendance/{course}', [AttendanceController::class, 'mark']);

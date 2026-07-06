@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -34,8 +35,8 @@ class AdmissionController extends Controller
 
         $applicant->update(['status' => $request->status]);
 
-        // If admitted, create student record
-        if ($request->status === 'admitted' && !$applicant->student) {
+        // If admitted, create student record (will be activated after payment)
+        if ($request->status === 'admitted' && !$applicant->student_created) {
             $this->createStudentFromApplicant($applicant);
         }
 
@@ -45,34 +46,48 @@ class AdmissionController extends Controller
     protected function createStudentFromApplicant(Applicant $applicant)
     {
         DB::transaction(function () use ($applicant) {
+            $role = Role::where('slug', 'student')->first();
+
+            // Create user account with application number as initial password
             $user = User::create([
                 'name' => $applicant->full_name,
                 'email' => $applicant->email,
-                'password' => Hash::make('student123'),
-                'role_id' => 9, // Student role
-                'is_active' => true,
+                'password' => Hash::make($applicant->application_number),
+                'role_id' => $role ? $role->id : 9,
+                'is_active' => false, // Will be activated after payment
             ]);
+
+            // Generate matric number
+            $matricNumber = $this->generateMatricNumber($applicant);
 
             Student::create([
                 'user_id' => $user->id,
-                'matric_number' => $this->generateMatricNumber($applicant),
+                'matric_number' => $matricNumber,
                 'school_id' => $applicant->school_id,
                 'department_id' => $applicant->department_id,
                 'programme_id' => $applicant->programme_id,
                 'session_id' => Setting::get('session_id'),
                 'level' => 1,
-                'status' => 'active',
+                'status' => 'pending', // Pending until payment
+                'state_id' => $applicant->state_id ?? null,
+                'lga_id' => $applicant->lga_id ?? null,
+                'nationality_id' => $applicant->nationality_id ?? null,
             ]);
 
-            $applicant->update(['student_created' => true]);
+            $applicant->update([
+                'student_created' => true,
+                'matric_number' => $matricNumber,
+            ]);
         });
     }
 
     protected function generateMatricNumber(Applicant $applicant)
     {
         $year = date('Y');
-        $count = Applicant::whereYear('created_at', $year)->count() + 1;
-        return $year . str_pad($count, 4, '0', STR_PAD_LEFT);
+        $department = $applicant->department;
+        $prefix = $department ? strtoupper(substr($department->name, 0, 3)) : 'ADM';
+        $count = Applicant::whereYear('created_at', $year)->where('id', '<=', $applicant->id)->count();
+        return $year . '/' . $prefix . '/' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     public function upload(Request $request)
@@ -87,24 +102,36 @@ class AdmissionController extends Controller
 
     public function settings()
     {
-        $data = [
-            'admission_letter_template' => Setting::get('admission_letter_template', ''),
-            'admission_number_prefix' => Setting::get('admission_number_prefix', 'ADM'),
-            'auto_create_student' => Setting::get('auto_create_student', true),
+        // Get system settings for admission
+        $settings = [
+            'admission_form_open' => SystemSetting::get('admission_form_open', 'false'),
+            'admission_form_penalty' => SystemSetting::get('admission_form_penalty', 0),
+            'admission_form_penalty_amount' => SystemSetting::get('admission_form_penalty_amount', 0),
         ];
-        return view('registrar.admission.settings', $data);
+
+        return view('registrar.admission.settings', $settings);
     }
 
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'admission_letter_template' => 'nullable|string',
-            'admission_number_prefix' => 'nullable|string|max:10',
-            'auto_create_student' => 'boolean',
+            'admission_form_open' => 'boolean',
+            'admission_form_penalty' => 'boolean',
+            'admission_form_penalty_amount' => 'nullable|numeric|min:0',
         ]);
 
+        // Update settings
+        SystemSetting::set('admission_form_open', $request->boolean('admission_form_open') ? 'true' : 'false');
+        SystemSetting::set('admission_form_penalty', $request->boolean('admission_form_penalty') ? 'true' : 'false');
+        if ($request->has('admission_form_penalty_amount')) {
+            SystemSetting::set('admission_form_penalty_amount', $request->admission_form_penalty_amount);
+        }
+
+        // Also save to regular settings
         foreach ($validated as $key => $value) {
-            Setting::set($key, $value);
+            if (!in_array($key, ['admission_form_open', 'admission_form_penalty', 'admission_form_penalty_amount'])) {
+                Setting::set($key, $value);
+            }
         }
 
         return redirect()->route('registrar.admission.settings')->with('success', 'Admission settings updated');
@@ -127,5 +154,21 @@ class AdmissionController extends Controller
             ->first();
 
         return view('registrar.admission.track', compact('applicant'));
+    }
+
+    /**
+     * Activate student after payment confirmation
+     */
+    public function activateStudent(Applicant $applicant)
+    {
+        $student = Student::where('matric_number', $applicant->matric_number)->first();
+        if (!$student) {
+            return back()->with('error', 'Student record not found.');
+        }
+
+        $student->update(['status' => 'active']);
+        $student->user->update(['is_active' => true]);
+
+        return back()->with('success', 'Student activated successfully!');
     }
 }

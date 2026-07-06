@@ -56,6 +56,11 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/settings*') ? 'active' : '' }}">
+        <i class="fas fa-cogs"></i> Settings
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('admin.reports') }}" class="nav-link {{ request()->is('admin/reports*') ? 'active' : '' }}">
         <i class="fas fa-chart-bar"></i> Reports
     </a>

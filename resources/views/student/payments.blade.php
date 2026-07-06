@@ -5,17 +5,31 @@
 @section('content')
 <div class="page-header">
     <h4>My Payments</h4>
+    @if(isset($error))
+    <p class="text-danger">{{ $error }}</p>
+    @endif
 </div>
+
+{{-- Payment Gateway Info --}}
+@if(isset($gateway) && $gateway)
+<div class="alert alert-info mb-4">
+    <i class="fas fa-credit-card me-2"></i>
+    Payments are processed via <strong>{{ ucfirst($gateway->provider) }}</strong>
+    @if($gateway->is_test_mode)
+    <span class="badge bg-warning">Test Mode</span>
+    @endif
+</div>
+@endif
 
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
-                <h5>Required Fees</h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Required Fees</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Fee Type</th>
@@ -28,10 +42,10 @@
                         <tbody>
                             @forelse($fees as $fee)
                             @php
-                            $paid = $payments->where('fee_id', $fee->id)->where('status', 'completed')->first();
+                            $paid = $payments->where('fee_id', $fee->id)->where('status', 'verified')->first();
                             @endphp
                             <tr>
-                                <td>{{ $fee->name }}</td>
+                                <td><strong>{{ $fee->name }}</strong></td>
                                 <td>₦{{ number_format($fee->amount, 2) }}</td>
                                 <td>{{ $fee->due_date?->format('d M Y') ?? 'N/A' }}</td>
                                 <td>
@@ -43,15 +57,19 @@
                                 </td>
                                 <td>
                                     @if(!$paid)
-                                    <a href="{{ route('student.payments.pay', $fee) }}" class="btn btn-sm btn-primary">Pay Now</a>
+                                    <a href="{{ route('student.payments.pay', $fee) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-credit-card me-1"></i>Pay Now
+                                    </a>
                                     @else
-                                    <a href="{{ route('student.payments.receipt', $paid) }}" class="btn btn-sm btn-outline-primary">Receipt</a>
+                                    <a href="{{ route('student.payments.receipt', $paid) }}" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-receipt me-1"></i>Receipt
+                                    </a>
                                     @endif
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center">No fees configured.</td>
+                                <td colspan="6" class="text-center">No fees configured for your session.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -63,8 +81,8 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <h5>Payment History</h5>
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Payment History</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -75,25 +93,43 @@
                         <th>Fee Type</th>
                         <th>Amount</th>
                         <th>Date</th>
+                        <th>Gateway</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($payments as $payment)
                     <tr>
-                        <td>{{ $payment->reference }}</td>
-                        <td>{{ $payment->fee->name }}</td>
+                        <td><small>{{ $payment->reference }}</small></td>
+                        <td>{{ $payment->fee->name ?? 'N/A' }}</td>
                         <td>₦{{ number_format($payment->amount, 2) }}</td>
-                        <td>{{ $payment->created_at->format('d M Y') }}</td>
+                        <td>{{ $payment->created_at->format('d M Y, h:i A') }}</td>
+                        <td>{{ ucfirst($payment->gateway) }}</td>
                         <td>
-                            <span class="badge bg-{{ $payment->status === 'completed' ? 'success' : 'warning' }}">
-                                {{ ucfirst($payment->status) }}
-                            </span>
+                            @if($payment->status === 'verified')
+                            <span class="badge bg-success">Verified</span>
+                            @elseif($payment->status === 'pending')
+                            <span class="badge bg-warning">Pending</span>
+                            @elseif($payment->status === 'failed')
+                            <span class="badge bg-danger">Failed</span>
+                            @else
+                            <span class="badge bg-secondary">{{ $payment->status }}</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($payment->status === 'verified')
+                            <a href="{{ route('student.payments.receipt', $payment) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-print"></i>
+                            </a>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">No payment history.</td>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-inbox me-2"></i>No payment history.
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
