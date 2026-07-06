@@ -53,7 +53,7 @@ return new class extends Migration
             $table->string('status'); // present, absent, late
             $table->string('location')->nullable();
             $table->text('notes')->nullable();
-            $table->foreignId('marked_by')->nullable()->constrained('users')->onDelete('set_null');
+            $table->foreignId('marked_by')->nullable()->constrained('users')->onDelete('SET NULL');
             $table->timestamps();
         });
 

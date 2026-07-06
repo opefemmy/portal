@@ -39,7 +39,7 @@ return new class extends Migration
             $table->foreignId('hostel_room_id')->constrained()->onDelete('cascade');
             $table->string('bed_number');
             $table->string('status')->default('available'); // available, occupied, maintenance
-            $table->foreignId('student_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('student_id')->nullable()->constrained()->onDelete('SET NULL');
             $table->timestamps();
         });
 
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->foreignId('hostel_id')->constrained()->onDelete('cascade');
             $table->foreignId('hostel_room_id')->constrained()->onDelete('cascade');
             $table->foreignId('student_id')->constrained()->onDelete('cascade');
-            $table->foreignId('bed_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('bed_id')->nullable()->constrained()->onDelete('SET NULL');
             $table->foreignId('session_id')->constrained()->onDelete('cascade');
             $table->date('check_in_date')->nullable();
             $table->date('check_out_date')->nullable();

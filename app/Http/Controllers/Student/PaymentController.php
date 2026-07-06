@@ -142,7 +142,7 @@ class PaymentController extends Controller
                 'Content-Type' => 'application/json',
             ])->post('https://api.paystack.co/transaction/initialize', $data);
 
-            $result = $json_decode($response->body());
+            $result = json_decode($response->body());
 
             if ($result->status) {
                 return redirect($result->data->authorization_url);
@@ -183,7 +183,7 @@ class PaymentController extends Controller
                 'Content-Type' => 'application/json',
             ])->post('https://api.flutterwave.com/v3/payments', $data);
 
-            $result = $json_decode($response->body());
+            $result = json_decode($response->body());
 
             if ($result->status === 'success') {
                 return redirect($result->data->link);
@@ -234,7 +234,7 @@ class PaymentController extends Controller
                 'Authorization' => 'Bearer ' . $secretKey,
             ])->get('https://api.paystack.co/transaction/verify/' . $payment->reference);
 
-            $result = $json_decode($response->body());
+            $result = json_decode($response->body());
 
             if ($result->status && $result->data->status === 'success') {
                 $payment->update([
@@ -272,7 +272,7 @@ class PaymentController extends Controller
                 'Authorization' => 'Bearer ' . $secretKey,
             ])->get('https://api.flutterwave.com/v3/transactions/verify_by_ref?tx_ref=' . $payment->reference);
 
-            $result = $json_decode($response->body());
+            $result = json_decode($response->body());
 
             if ($result->status === 'success' && $result->data->status === 'successful') {
                 $payment->update([

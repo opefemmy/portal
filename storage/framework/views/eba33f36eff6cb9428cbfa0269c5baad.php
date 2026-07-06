@@ -56,6 +56,11 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="<?php echo e(route('admin.settings.index')); ?>" class="nav-link <?php echo e(request()->is('admin/settings*') ? 'active' : ''); ?>">
+        <i class="fas fa-cogs"></i> Settings
+    </a>
+</li>
+<li class="nav-item">
     <a href="<?php echo e(route('admin.reports')); ?>" class="nav-link <?php echo e(request()->is('admin/reports*') ? 'active' : ''); ?>">
         <i class="fas fa-chart-bar"></i> Reports
     </a>

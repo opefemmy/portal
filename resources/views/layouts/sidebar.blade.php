@@ -47,7 +47,7 @@ $role = $user->role->slug ?? '';
 </li>
 <li class="nav-item">
     <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->is('admin/fees*') ? 'active' : '' }}">
-        <i class="fas fa-dollar-sign"></i> Fees
+        <span class="me-1">₦</span> Fees
     </a>
 </li>
 <li class="nav-item">
