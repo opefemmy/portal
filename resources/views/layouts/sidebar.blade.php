@@ -95,18 +95,25 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.applicants.index') ?? '#' }}" class="nav-link">
+                <a href="{{ route('registrar.applicants') }}" class="nav-link">
                     <i class="fas fa-edit me-2"></i>Edit Application
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.applicants.reset') ?? '#' }}" class="nav-link">
-                    <i class="fas fa-key me-2"></i>Reset Applicant Password
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ route('registrar.admission') }}" class="nav-link">
                     <i class="fas fa-check-circle me-2"></i>Approve Admission
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission') }}" class="nav-link">
+                    <i class="fas fa-user-plus me-2"></i>Admission List
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.settings.index') }}" class="nav-link">
+                    <i class="fas fa-cogs me-2"></i>Settings
+                </a>
+            </li>
                 </a>
             </li>
         </ul>
