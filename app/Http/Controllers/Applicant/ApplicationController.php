@@ -37,6 +37,20 @@ class ApplicationController extends Controller
             ]);
         }
 
+        // Check if application fee is required
+        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+
+        // Check if applicant has already paid
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+        if ($requireFee && $feeAmount > 0 && (!$applicant || $applicant->payment_status !== 'completed')) {
+            // Show payment required page
+            return view('applicant.apply-payment', [
+                'requireFee' => $requireFee,
+                'feeAmount' => $feeAmount,
+            ]);
+        }
+
         $data = [
             'schools' => School::all(),
             'departments' => Department::all(),
@@ -46,6 +60,75 @@ class ApplicationController extends Controller
             'nationalities' => \App\Models\Nationality::all(),
         ];
         return view('applicant.apply', $data);
+    }
+
+    /**
+     * Initiate application fee payment
+     */
+    public function initiateApplicationFee(Request $request)
+    {
+        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+
+        if (!$requireFee || $feeAmount <= 0) {
+            return back()->with('error', 'Application fee is not required.');
+        }
+
+        // Check if already paid
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+        if ($applicant && $applicant->payment_status === 'completed') {
+            return redirect()->route('applicant.apply')->with('success', 'Payment already completed.');
+        }
+
+        // Create payment reference
+        $paymentRef = 'APPFEE-' . strtoupper(Str::random(10));
+
+        // Store payment details temporarily (in session for now)
+        session()->put('application_fee_ref', $paymentRef);
+        session()->put('application_fee_amount', $feeAmount);
+
+        // In a real implementation, this would integrate with a payment gateway
+        // For now, we'll simulate payment by redirecting to a verification page
+        return redirect()->route('applicant.apply.payment.verify', ['ref' => $paymentRef]);
+    }
+
+    /**
+     * Simulate payment verification (in production, this would be callback from payment gateway)
+     */
+    public function verifyApplicationFee(Request $request)
+    {
+        $paymentRef = $request->get('ref');
+        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+
+        if (!$requireFee || $feeAmount <= 0) {
+            return redirect()->route('applicant.apply')->with('error', 'Payment not required.');
+        }
+
+        // Get or create applicant record
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // For demonstration purposes, we'll mark as completed
+        // In production, this would be triggered by payment gateway callback
+        $applicantData = [
+            'user_id' => auth()->id(),
+            'email' => auth()->user()->email,
+            'application_number' => Applicant::generateApplicationNumber(),
+            'payment_status' => 'completed',
+            'payment_ref' => $paymentRef,
+            'payment_transaction_id' => 'TXN-' . Str::random(12),
+            'payment_amount' => $feeAmount,
+            'payment_date' => now(),
+            'status' => 'pending',
+        ];
+
+        if (!$applicant) {
+            $applicant = Applicant::create($applicantData);
+        } else {
+            $applicant->update($applicantData);
+        }
+
+        return redirect()->route('applicant.apply')->with('success', 'Payment successful! You can now complete your application.');
     }
 
     public function submitApplication(Request $request)
@@ -131,7 +214,13 @@ class ApplicationController extends Controller
 
     public function viewApplication()
     {
-        $applicant = Applicant::where('user_id', auth()->id())->firstOrFail();
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // If no application exists, show a friendly message instead of 404
+        if (!$applicant) {
+            return view('applicant.application', compact('applicant'));
+        }
+
         return view('applicant.application', compact('applicant'));
     }
 

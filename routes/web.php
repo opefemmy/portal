@@ -54,8 +54,9 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
+    // Student self-registration is disabled - students must use credentials provided by the school
+    // Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+    // Route::post('/register', [RegisterController::class, 'register']);
 
     // Password Reset Routes
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPasswordForm'])->name('password.forgot');
@@ -97,6 +98,8 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/dashboard', [ApplicationController::class, 'dashboard'])->name('dashboard');
         Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('apply');
         Route::post('/apply', [ApplicationController::class, 'submitApplication']);
+        Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])->name('apply.fee');
+        Route::get('/apply/payment/verify', [ApplicationController::class, 'verifyApplicationFee'])->name('apply.payment.verify');
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
         Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
     });
@@ -241,6 +244,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/results/{result}', [\App\Http\Controllers\Admin\ResultController::class, 'show'])->name('results.show');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\Admin\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\Admin\ResultController::class, 'reject'])->name('results.reject');
+    Route::put('/results/{result}/compute', [\App\Http\Controllers\Admin\ResultController::class, 'compute'])->name('results.compute');
+    Route::post('/results/release', [\App\Http\Controllers\Admin\ResultController::class, 'release'])->name('results.release');
+    Route::post('/results/hide', [\App\Http\Controllers\Admin\ResultController::class, 'hide'])->name('results.hide');
+    Route::post('/results/lock', [\App\Http\Controllers\Admin\ResultController::class, 'lock'])->name('results.lock');
+    Route::post('/results/publish', [\App\Http\Controllers\Admin\ResultController::class, 'publish'])->name('results.publish');
+    Route::post('/results/withdraw', [\App\Http\Controllers\Admin\ResultController::class, 'withdraw'])->name('results.withdraw');
+    Route::post('/results/recompute', [\App\Http\Controllers\Admin\ResultController::class, 'recompute'])->name('results.recompute');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\Admin\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
 
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
@@ -258,6 +269,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/results', [ResultController::class, 'index'])->name('results');
     Route::get('/results/{semester}', [ResultController::class, 'show'])->name('results.show');
     Route::get('/results/print', [ResultController::class, 'printResult'])->name('results.print');
+    Route::get('/results/transcript', [ResultController::class, 'transcript'])->name('results.transcript');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{fee}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
@@ -277,9 +289,9 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::post('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'store'])->name('complaints.store');
 
     // Profile
-    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('profile.passport');
+    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('student.profile.edit');
+    Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('student.profile.update');
+    Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('student.profile.passport');
 
     // Hostel (NEW)
     Route::get('/hostel', [StudentHostelController::class, 'myHostel'])->name('hostel.my');
@@ -388,13 +400,15 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])->name('admission.track');
 
     // Admission Letters
-    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate');
+    Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
+    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate']);
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
     Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
 
     // Admission List by Department
     Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])->name('admission.byDepartment');
-    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList'])->name('admission.uploadByDepartment');
+    Route::get('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showUploadByDepartment'])->name('admission.uploadByDepartment');
+    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList']);
 });
 
 // Bursar Routes

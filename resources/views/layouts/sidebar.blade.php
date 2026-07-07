@@ -90,13 +90,8 @@ $role = $user->role->slug ?? '';
     <div class="collapse" id="admissionMenu">
         <ul class="nav flex-column ms-3">
             <li class="nav-item">
-                <a href="{{ route('admin.reports.students') }}" class="nav-link">
-                    <i class="fas fa-file-alt me-2"></i>Application Report
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('registrar.applications.statistics') }}" class="nav-link">
-                    <i class="fas fa-chart-bar me-2"></i>Application Statistics
+                <a href="{{ route('registrar.applications.index') }}" class="nav-link">
+                    <i class="fas fa-file-contract me-2"></i>Manage Applications
                 </a>
             </li>
             <li class="nav-item">
@@ -105,8 +100,13 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.applications.index') }}" class="nav-link">
-                    <i class="fas fa-file-contract me-2"></i>Manage Applications
+                <a href="{{ route('registrar.applications.statistics') }}" class="nav-link">
+                    <i class="fas fa-chart-bar me-2"></i>Application Statistics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.reports.students') }}" class="nav-link">
+                    <i class="fas fa-file-alt me-2"></i>Application Report
                 </a>
             </li>
             <li class="nav-item">
@@ -120,13 +120,23 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('registrar.admission.uploadByDepartment') }}" class="nav-link">
+                    <i class="fas fa-file-upload me-2"></i>Upload Admission List
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('registrar.applications.admitted') }}" class="nav-link">
                     <i class="fas fa-user-graduate me-2"></i>Admitted Students
                 </a>
             </li>
             <li class="nav-item">
                 <a href="{{ route('registrar.admission.generateLetters') }}" class="nav-link">
-                    <i class="fas fa-envelope me-2"></i>Generate Admission Letters
+                    <i class="fas fa-envelope me-2"></i>Generate Letters
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission.uploadTemplate') }}" class="nav-link">
+                    <i class="fas fa-file-signature me-2"></i>Upload Letter Template
                 </a>
             </li>
             <li class="nav-item">

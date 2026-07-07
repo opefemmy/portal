@@ -15,6 +15,8 @@ class SystemSetting extends Model
     // Keys for common settings
     const ADMISSION_FORM_OPEN = 'admission_form_open';
     const ADMISSION_FORM_PENALTY = 'admission_form_penalty';
+    const ADMISSION_REQUIRE_FEE = 'admission_require_application_fee';
+    const ADMISSION_FEE_AMOUNT = 'admission_application_fee_amount';
     const COURSE_REGISTRATION_OPEN = 'course_registration_open';
     const COURSE_REGISTRATION_PENALTY = 'course_registration_penalty';
     const PAYMENT_OPEN = 'payment_open';

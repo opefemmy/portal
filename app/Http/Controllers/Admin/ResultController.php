@@ -7,7 +7,11 @@ use App\Models\Result;
 use App\Models\StudentCourse;
 use App\Models\Course;
 use App\Models\Student;
+use App\Models\Session;
+use App\Models\Semester;
+use App\Services\ResultComputationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ResultController extends Controller
 {
@@ -32,7 +36,8 @@ class ResultController extends Controller
         }
 
         $results = $query->latest()->paginate(20);
-        return view('admin.results.index', compact('results'));
+        $sessions = Session::all();
+        return view('admin.results.index', compact('results', 'sessions'));
     }
 
     public function show(Result $result)
@@ -136,5 +141,138 @@ class ResultController extends Controller
         ]);
 
         return back()->with('success', 'Result rejected');
+    }
+
+    /**
+     * Release results to students
+     */
+    public function release(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id',
+            'semester' => 'required',
+        ]);
+
+        Result::whereHas('studentCourse', function ($q) use ($request) {
+            $q->where('session_id', $request->session_id)
+              ->where('semester', $request->semester);
+        })->update(['status' => 'released']);
+
+        return back()->with('success', 'Results released to students.');
+    }
+
+    /**
+     * Hide results from students
+     */
+    public function hide(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id',
+            'semester' => 'required',
+        ]);
+
+        Result::whereHas('studentCourse', function ($q) use ($request) {
+            $q->where('session_id', $request->session_id)
+              ->where('semester', $request->semester);
+        })->update(['status' => 'hidden']);
+
+        return back()->with('success', 'Results hidden from students.');
+    }
+
+    /**
+     * Lock results (prevent further edits)
+     */
+    public function lock(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id',
+            'semester' => 'required',
+        ]);
+
+        Result::whereHas('studentCourse', function ($q) use ($request) {
+            $q->where('session_id', $request->session_id)
+              ->where('semester', $request->semester);
+        })->update(['status' => 'locked']);
+
+        return back()->with('success', 'Results locked.');
+    }
+
+    /**
+     * Publish results
+     */
+    public function publish(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id',
+            'semester' => 'required',
+        ]);
+
+        Result::whereHas('studentCourse', function ($q) use ($request) {
+            $q->where('session_id', $request->session_id)
+              ->where('semester', $request->semester);
+        })->update(['status' => 'published']);
+
+        return back()->with('success', 'Results published.');
+    }
+
+    /**
+     * Withdraw results
+     */
+    public function withdraw(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id',
+            'semester' => 'required',
+        ]);
+
+        Result::whereHas('studentCourse', function ($q) use ($request) {
+            $q->where('session_id', $request->session_id)
+              ->where('semester', $request->semester);
+        })->update(['status' => 'withdrawn']);
+
+        return back()->with('success', 'Results withdrawn.');
+    }
+
+    /**
+     * Recompute all results for a student
+     */
+    public function recompute(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+        ]);
+
+        $student = Student::findOrFail($request->student_id);
+        $result = ResultComputationService::recomputeAllResults($student);
+
+        return back()->with('success', "Recomputed {$result['total']} results for {$result['student']}.");
+    }
+
+    /**
+     * Compute a single result
+     */
+    public function compute(Result $result)
+    {
+        $computed = ResultComputationService::computeResult($result);
+
+        return back()->with('success', 'Result computed successfully.');
+    }
+
+    /**
+     * Bulk approve results
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'results' => 'required|array',
+        ]);
+
+        Result::whereIn('id', $request->results)->update([
+            'status' => 'approved',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        return back()->with('success', 'Results approved in bulk.');
     }
 }

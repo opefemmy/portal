@@ -36,6 +36,10 @@ class Applicant extends Model
         'olevel_certificate', 'tertiary_certificate', 'birth_certificate',
         'lga_id', 'jamb_result',
 
+        // Payment
+        'payment_status', 'payment_ref', 'payment_transaction_id',
+        'payment_amount', 'payment_date', 'application_fee_id',
+
         // Status
         'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'
     ];

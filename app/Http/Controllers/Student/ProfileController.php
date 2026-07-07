@@ -43,7 +43,7 @@ class ProfileController extends Controller
             'guidance_address' => $request->guidance_address,
         ]);
 
-        return redirect()->route('student.dashboard')->with('success', 'Profile updated successfully');
+        return redirect()->route('student.dashboard')->with('success', 'Guidance details saved successfully!');
     }
 
     public function uploadPassport(Request $request)

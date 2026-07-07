@@ -8,9 +8,14 @@ use App\Models\School;
 use App\Models\Department;
 use App\Models\Programme;
 use App\Models\Session;
+use App\Models\Semester;
+use App\Models\Level;
 use App\Models\Grade;
+use App\Models\GradingScale;
+use App\Models\GradeClassification;
 use App\Models\Setting;
 use App\Models\Student;
+use App\Services\ResultComputationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -99,6 +104,38 @@ class DatabaseSeeder extends Seeder
         // Create Default Grades
         foreach (Grade::getDefaultGrades() as $grade) {
             Grade::firstOrCreate(['grade' => $grade['grade']], $grade);
+        }
+
+        // Create Grading Scales (Nigerian Higher Institution Standard)
+        foreach (ResultComputationService::getDefaultGradingScales() as $scale) {
+            GradingScale::firstOrCreate(['grade' => $scale['grade']], $scale);
+        }
+
+        // Create Grade Classifications
+        foreach (ResultComputationService::getDefaultClassifications() as $classification) {
+            GradeClassification::firstOrCreate(['slug' => $classification['slug']], $classification);
+        }
+
+        // Create Semesters
+        $semesters = [
+            ['name' => 'First Semester', 'code' => 'FIRST', 'sort_order' => 1],
+            ['name' => 'Second Semester', 'code' => 'SECOND', 'sort_order' => 2],
+            ['name' => 'Third Semester', 'code' => 'THIRD', 'sort_order' => 3],
+        ];
+        foreach ($semesters as $semester) {
+            Semester::firstOrCreate(['code' => $semester['code']], $semester);
+        }
+
+        // Create Levels
+        $levels = [
+            ['name' => 'ND 1 (100L)', 'code' => 'ND1', 'sort_order' => 1, 'programme_type' => 'ND'],
+            ['name' => 'ND 2 (200L)', 'code' => 'ND2', 'sort_order' => 2, 'programme_type' => 'ND'],
+            ['name' => 'HND 1 (300L)', 'code' => 'HND1', 'sort_order' => 3, 'programme_type' => 'HND'],
+            ['name' => 'HND 2 (400L)', 'code' => 'HND2', 'sort_order' => 4, 'programme_type' => 'HND'],
+            ['name' => 'HND 3 (500L)', 'code' => 'HND3', 'sort_order' => 5, 'programme_type' => 'HND'],
+        ];
+        foreach ($levels as $level) {
+            Level::firstOrCreate(['code' => $level['code']], $level);
         }
 
         // Create Super Admin User

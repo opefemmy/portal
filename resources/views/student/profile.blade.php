@@ -57,6 +57,14 @@
         <form method="POST" action="{{ route('student.profile.update') }}">
             @csrf
             @method('PUT')
+
+            @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            @endif
+
             <p class="text-muted mb-3">Please provide your parent/guardian or guidance contact information (optional).</p>
             <div class="row">
                 <div class="col-md-6">
