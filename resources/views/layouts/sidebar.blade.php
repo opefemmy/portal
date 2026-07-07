@@ -95,23 +95,38 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('registrar.applications.statistics') }}" class="nav-link">
+                    <i class="fas fa-chart-bar me-2"></i>Application Statistics
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('registrar.applicants') }}" class="nav-link">
-                    <i class="fas fa-edit me-2"></i>Edit Application
+                    <i class="fas fa-users me-2"></i>All Applicants
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admission') }}" class="nav-link">
-                    <i class="fas fa-check-circle me-2"></i>Approve Admission
+                <a href="{{ route('registrar.applications.index') }}" class="nav-link">
+                    <i class="fas fa-file-contract me-2"></i>Manage Applications
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admission') }}" class="nav-link">
+                <a href="{{ route('registrar.admission-list') }}" class="nav-link">
                     <i class="fas fa-user-plus me-2"></i>Admission List
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.settings.index') }}" class="nav-link">
-                    <i class="fas fa-cogs me-2"></i>Settings
+                <a href="{{ route('registrar.admitted-students') }}" class="nav-link">
+                    <i class="fas fa-user-graduate me-2"></i>Admitted Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission-list.settings') }}" class="nav-link">
+                    <i class="fas fa-cogs me-2"></i>Admission Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission-track') }}" class="nav-link">
+                    <i class="fas fa-search me-2"></i>Track Admission
                 </a>
             </li>
                 </a>
