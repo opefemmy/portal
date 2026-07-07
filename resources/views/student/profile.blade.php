@@ -99,6 +99,7 @@
     <div class="card-body">
         <form method="POST" action="{{ route('student.profile.update') }}">
             @csrf
+            @method('PUT')
 
             <div class="row">
                 <div class="col-md-6">
@@ -205,4 +206,79 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolSelect = document.getElementById('school_id');
+    const departmentSelect = document.getElementById('department_id');
+    const programmeSelect = document.getElementById('programme_id');
+
+    // Store initial department and programme values
+    const currentDepartmentId = {{ $student->department_id ?? 'null' }};
+    const currentProgrammeId = {{ $student->programme_id ?? 'null' }};
+
+    // When school changes, load departments
+    schoolSelect.addEventListener('change', function() {
+        const schoolId = this.value;
+        departmentSelect.innerHTML = '<option value="">Select Department</option>';
+        programmeSelect.innerHTML = '<option value="">Select Programme</option>';
+        departmentSelect.disabled = true;
+        programmeSelect.disabled = true;
+
+        if (schoolId) {
+            fetch(`/api/departments/${schoolId}`)
+                .then(response => response.json())
+                .then(data => {
+                    departmentSelect.disabled = false;
+                    data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        if (dept.id === currentDepartmentId) {
+                            option.selected = true;
+                            // Load programmes for current department
+                            loadProgrammes(dept.id);
+                        }
+                        departmentSelect.appendChild(option);
+                    });
+                });
+        }
+    });
+
+    // When department changes, load programmes
+    departmentSelect.addEventListener('change', function() {
+        const departmentId = this.value;
+        programmeSelect.innerHTML = '<option value="">Select Programme</option>';
+        programmeSelect.disabled = true;
+
+        if (departmentId) {
+            loadProgrammes(departmentId);
+        }
+    });
+
+    function loadProgrammes(departmentId) {
+        fetch(`/api/programmes/${departmentId}`)
+            .then(response => response.json())
+            .then(data => {
+                programmeSelect.disabled = false;
+                data.forEach(prog => {
+                    const option = document.createElement('option');
+                    option.value = prog.id;
+                    option.textContent = prog.name;
+                    if (prog.id === currentProgrammeId) {
+                        option.selected = true;
+                    }
+                    programmeSelect.appendChild(option);
+                });
+            });
+    }
+
+    // Trigger initial load if school is already selected
+    if (schoolSelect.value) {
+        schoolSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+@endpush
 @endsection

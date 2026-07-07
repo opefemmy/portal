@@ -172,6 +172,51 @@ class ERPRolesSeeder extends Seeder
                     'department.*',
                 ]
             ],
+            [
+                'name' => 'Dean',
+                'slug' => 'dean',
+                'description' => 'Dean of Faculty',
+                'permissions' => [
+                    'courses.view',
+                    'timetable.*',
+                    'results.approve',
+                    'department.view',
+                    'reports.students',
+                ]
+            ],
+            [
+                'name' => 'Business Committee',
+                'slug' => 'business_committee',
+                'description' => 'Business Committee Member - Financial Approval',
+                'permissions' => [
+                    'results.approve',
+                    'reports.financial',
+                    'fees.view',
+                    'payments.approve',
+                ]
+            ],
+            [
+                'name' => 'Academic Board',
+                'slug' => 'academic_board',
+                'description' => 'Academic Board Member - Final Result Approval',
+                'permissions' => [
+                    'results.approve.final',
+                    'reports.academic',
+                    'students.view',
+                    'courses.approve',
+                ]
+            ],
+            [
+                'name' => 'Librarian',
+                'slug' => 'librarian',
+                'description' => 'Library Administration',
+                'permissions' => [
+                    'library.*',
+                    'library.books.*',
+                    'library.loans.*',
+                    'library.reports.*',
+                ]
+            ],
         ];
 
         $allRoles = array_merge($hospitalRoles, $financeRoles, $executiveRoles);

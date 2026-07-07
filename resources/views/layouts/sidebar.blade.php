@@ -150,9 +150,52 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->is('admin/fees*') ? 'active' : '' }}">
-        <span class="me-1">₦</span> Fees
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#bursarMenu">
+        <i class="fas fa-dollar-sign"></i> Bursar <i class="fas fa-chevron-down float-end"></i>
     </a>
+    <div class="collapse" id="bursarMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->is('admin/fees*') ? 'active' : '' }}">
+                    <i class="fas fa-money-bill me-2"></i>Fees Configuration
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('bursar.payments') }}" class="nav-link">
+                    <i class="fas fa-receipt me-2"></i>View Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('bursar.regimes.index') }}" class="nav-link">
+                    <i class="fas fa-calculator me-2"></i>Regime Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('bursar.reports') }}" class="nav-link">
+                    <i class="fas fa-chart-bar me-2"></i>Financial Reports
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+<li class="nav-item">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#resultsMenu">
+        <i class="fas fa-clipboard-check"></i> Results <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse" id="resultsMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.results.index') }}" class="nav-link {{ request()->is('admin/results*') ? 'active' : '' }}">
+                    <i class="fas fa-list me-2"></i>All Results
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.results.upload') }}" class="nav-link">
+                    <i class="fas fa-upload me-2"></i>Upload Results
+                </a>
+            </li>
+        </ul>
+    </div>
 </li>
 <li class="nav-item">
     <a href="{{ route('admin.grades.index') }}" class="nav-link {{ request()->is('admin/grades*') ? 'active' : '' }}">
@@ -363,6 +406,30 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-chart-bar"></i> Reports
     </a>
 </li>
+{{-- BUSINESS COMMITTEE DASHBOARD --}}
+@elseif($role === 'business_committee')
+<li class="nav-item">
+    <a href="{{ route('business-committee.dashboard') }}" class="nav-link {{ request()->is('business-committee/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('business-committee.results') }}" class="nav-link {{ request()->is('business-committee/results*') ? 'active' : '' }}">
+        <i class="fas fa-check-circle"></i> Approve Results
+    </a>
+</li>
+{{-- ACADEMIC BOARD DASHBOARD --}}
+@elseif($role === 'academic_board')
+<li class="nav-item">
+    <a href="{{ route('academic-board.dashboard') }}" class="nav-link {{ request()->is('academic-board/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('academic-board.results') }}" class="nav-link {{ request()->is('academic-board/results*') ? 'active' : '' }}">
+        <i class="fas fa-gavel"></i> Final Approval
+    </a>
+</li>
 {{-- HOSPITAL MODULE --}}
 @elseif(in_array($role, ['cmd', 'doctor', 'nurse', 'hospital_receptionist', 'pharmacist', 'lab_scientist', 'store_keeper', 'super_admin']))
 <li class="nav-item">
@@ -436,6 +503,23 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('executive.reports.students') }}" class="nav-link {{ request()->is('executive/reports*') ? 'active' : '' }}">
         <i class="fas fa-chart-bar"></i> Reports
+    </a>
+</li>
+{{-- LIBRARIAN DASHBOARD --}}
+@elseif($role === 'librarian')
+<li class="nav-item">
+    <a href="{{ route('librarian.dashboard') }}" class="nav-link {{ request()->is('librarian/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.books') }}" class="nav-link {{ request()->is('librarian/books*') ? 'active' : '' }}">
+        <i class="fas fa-book"></i> Books
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.loans') }}" class="nav-link {{ request()->is('librarian/loans*') ? 'active' : '' }}">
+        <i class="fas fa-exchange-alt"></i> Loans
     </a>
 </li>
 {{-- AUDITOR DASHBOARD --}}

@@ -73,6 +73,17 @@ Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->nam
 Route::post('/apply', [ApplicationController::class, 'submitApplication'])->name('public.apply.submit');
 Route::get('/apply/check-status', [ApplicationController::class, 'checkStatus'])->name('public.apply.status');
 
+// API Routes for cascading dropdowns
+Route::get('/api/departments/{schoolId}', function ($schoolId) {
+    $departments = \App\Models\Department::where('school_id', $schoolId)->get();
+    return response()->json($departments);
+});
+
+Route::get('/api/programmes/{departmentId}', function ($departmentId) {
+    $programmes = \App\Models\Programme::where('department_id', $departmentId)->get();
+    return response()->json($programmes);
+});
+
 // Applicant Routes
 Route::prefix('applicant')->name('applicant.')->group(function () {
     // Get departments by school
@@ -221,6 +232,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
         Route::post('/library/loans/issue', [LibraryController::class, 'issueBook'])->name('library.loans.issue');
         Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnBook'])->name('library.loans.return');
     });
+
+    // Results Management
+    Route::get('/results', [\App\Http\Controllers\Admin\ResultController::class, 'index'])->name('results.index');
+    Route::get('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'upload'])->name('results.upload');
+    Route::post('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'store'])->name('results.store');
+    Route::get('/results/template', [\App\Http\Controllers\Admin\ResultController::class, 'downloadTemplate'])->name('results.template');
+    Route::get('/results/{result}', [\App\Http\Controllers\Admin\ResultController::class, 'show'])->name('results.show');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\Admin\ResultController::class, 'approve'])->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\Admin\ResultController::class, 'reject'])->name('results.reject');
 
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
@@ -377,6 +397,33 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar'])->g
 
     // Regime Payments
     Route::resource('regimes', RegimeController::class);
+});
+
+// Business Committee Routes
+Route::prefix('business-committee')->name('business-committee.')->middleware(['auth', 'role:business_committee'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\BusinessCommittee\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])->name('results');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'approve'])->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'reject'])->name('results.reject');
+});
+
+// Academic Board Routes
+Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'role:academic_board'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\AcademicBoard\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])->name('results');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'reject'])->name('results.reject');
+});
+
+// Librarian Routes
+Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librarian'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Librarian\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])->name('books');
+    Route::get('/books/create', [\App\Http\Controllers\Librarian\DashboardController::class, 'createBook'])->name('books.create');
+    Route::post('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'storeBook'])->name('books.store');
+    Route::get('/loans', [\App\Http\Controllers\Librarian\DashboardController::class, 'loans'])->name('loans');
+    Route::post('/loans/issue', [\App\Http\Controllers\Librarian\DashboardController::class, 'issueBook'])->name('loans.issue');
+    Route::post('/loans/{loan}/return', [\App\Http\Controllers\Librarian\DashboardController::class, 'returnBook'])->name('loans.return');
 });
 
 // Profile Routes (Shared)

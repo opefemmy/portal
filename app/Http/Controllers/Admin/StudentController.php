@@ -25,6 +25,12 @@ class StudentController extends Controller
         return view('admin.students.index', compact('students'));
     }
 
+    public function show(Student $student)
+    {
+        $student->load(['user', 'school', 'department', 'programme', 'session']);
+        return view('admin.students.show', compact('student'));
+    }
+
     public function create()
     {
         $data = [

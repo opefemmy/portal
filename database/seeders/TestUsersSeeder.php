@@ -19,7 +19,7 @@ class TestUsersSeeder extends Seeder
     {
         // Get existing roles
         $roles = [];
-        $roleSlugs = ['super_admin', 'admin', 'bursar', 'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'hospital_receptionist', 'rector', 'auditor', 'student', 'lecturer', 'hod'];
+        $roleSlugs = ['super_admin', 'admin', 'bursar', 'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'hospital_receptionist', 'rector', 'auditor', 'student', 'lecturer', 'hod', 'dean', 'business_committee', 'academic_board', 'librarian'];
 
         foreach ($roleSlugs as $slug) {
             $roles[$slug] = Role::where('slug', $slug)->first();
@@ -110,6 +110,38 @@ class TestUsersSeeder extends Seeder
                 'role' => 'hod',
                 'gender' => 'male',
                 'staff_id' => 'HOD001',
+            ],
+            [
+                'name' => 'Dean Test',
+                'email' => 'dean@portal.edu',
+                'password' => 'password123',
+                'role' => 'dean',
+                'gender' => 'male',
+                'staff_id' => 'DEAN001',
+            ],
+            [
+                'name' => 'Business Committee',
+                'email' => 'business@portal.edu',
+                'password' => 'password123',
+                'role' => 'business_committee',
+                'gender' => 'male',
+                'staff_id' => 'BC001',
+            ],
+            [
+                'name' => 'Academic Board',
+                'email' => 'academic@portal.edu',
+                'password' => 'password123',
+                'role' => 'academic_board',
+                'gender' => 'female',
+                'staff_id' => 'AB001',
+            ],
+            [
+                'name' => 'Librarian Test',
+                'email' => 'librarian@portal.edu',
+                'password' => 'password123',
+                'role' => 'librarian',
+                'gender' => 'female',
+                'staff_id' => 'LIB001',
             ],
             [
                 'name' => 'Test Student',
@@ -232,6 +264,10 @@ class TestUsersSeeder extends Seeder
         $this->command->info('Auditor: auditor@portal.edu / password123');
         $this->command->info('Lecturer: lecturer@portal.edu / password123');
         $this->command->info('HOD: hod@portal.edu / password123');
+        $this->command->info('Dean: dean@portal.edu / password123');
+        $this->command->info('Business Committee: business@portal.edu / password123');
+        $this->command->info('Academic Board: academic@portal.edu / password123');
+        $this->command->info('Librarian: librarian@portal.edu / password123');
         $this->command->info('Student: student@test.com / password123');
     }
 }
