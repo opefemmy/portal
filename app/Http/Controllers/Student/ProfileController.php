@@ -29,23 +29,14 @@ class ProfileController extends Controller
         $user = Auth::user();
         $student = $user->student;
 
-        $validated = $request->validate([
-            'matric_number' => 'nullable|string|max:50',
-            'school_id' => 'required|exists:schools,id',
-            'department_id' => 'required|exists:departments,id',
-            'programme_id' => 'required|exists:programmes,id',
-            'session_id' => 'required|exists:sessions,id',
-            'level' => 'required|integer|min:1|max:6',
-            // Guidance details
-            'guidance_name' => 'required|string|max:255',
-            'guidance_phone' => 'required|string|max:20',
+        // Validate only guidance details - academic details are read-only
+        $request->validate([
+            'guidance_name' => 'nullable|string|max:255',
+            'guidance_phone' => 'nullable|string|max:20',
             'guidance_address' => 'nullable|string',
         ]);
 
-        // Update student details
-        $student->update($validated);
-
-        // Update user guidance details
+        // Update only user guidance details - academic details are managed by institution
         $user->update([
             'guidance_name' => $request->guidance_name,
             'guidance_phone' => $request->guidance_phone,

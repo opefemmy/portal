@@ -51,44 +51,51 @@
 <!-- Guidance Details -->
 <div class="card mb-4 border-info">
     <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="fas fa-user-friends me-2"></i>Guidance Details (Required)</h5>
+        <h5 class="mb-0"><i class="fas fa-user-friends me-2"></i>Guidance Details</h5>
     </div>
     <div class="card-body">
-        <p class="text-muted mb-3">Please provide your parent/guardian or guidance contact information.</p>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="guidance_name" class="form-label">Guidance Name *</label>
-                    <input type="text" class="form-control @error('guidance_name') is-invalid @endif"
-                           id="guidance_name" name="guidance_name" value="{{ old('guidance_name', $user->guidance_name) }}" required>
-                    @error('guidance_name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @endif
+        <form method="POST" action="{{ route('student.profile.update') }}">
+            @csrf
+            @method('PUT')
+            <p class="text-muted mb-3">Please provide your parent/guardian or guidance contact information (optional).</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="guidance_name" class="form-label">Guidance Name</label>
+                        <input type="text" class="form-control @error('guidance_name') is-invalid @endif"
+                               id="guidance_name" name="guidance_name" value="{{ old('guidance_name', $user->guidance_name) }}">
+                        @error('guidance_name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="guidance_phone" class="form-label">Guidance Phone</label>
+                        <input type="text" class="form-control @error('guidance_phone') is-invalid @endif"
+                               id="guidance_phone" name="guidance_phone" value="{{ old('guidance_phone', $user->guidance_phone) }}">
+                        @error('guidance_phone')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="guidance_phone" class="form-label">Guidance Phone *</label>
-                    <input type="text" class="form-control @error('guidance_phone') is-invalid @endif"
-                           id="guidance_phone" name="guidance_phone" value="{{ old('guidance_phone', $user->guidance_phone) }}" required>
-                    @error('guidance_phone')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @endif
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label for="guidance_address" class="form-label">Guidance Address</label>
+                        <textarea class="form-control @error('guidance_address') is-invalid @endif"
+                                  id="guidance_address" name="guidance_address" rows="2">{{ old('guidance_address', $user->guidance_address) }}</textarea>
+                        @error('guidance_address')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label for="guidance_address" class="form-label">Guidance Address</label>
-                    <textarea class="form-control @error('guidance_address') is-invalid @endif"
-                              id="guidance_address" name="guidance_address" rows="2">{{ old('guidance_address', $user->guidance_address) }}</textarea>
-                    @error('guidance_address')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @endif
-                </div>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save me-2"></i>Save Guidance Details
+            </button>
+        </form>
     </div>
 </div>
 
@@ -97,113 +104,52 @@
         <h5 class="mb-0"><i class="fas fa-school me-2"></i>Academic Details</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('student.profile.update') }}">
-            @csrf
-            @method('PUT')
+        <p class="text-muted mb-3">Academic details are managed by the institution. Contact the registrar for changes.</p>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="matric_number" class="form-label">Matric Number</label>
-                        <input type="text" class="form-control @error('matric_number') is-invalid @endif"
-                               id="matric_number" name="matric_number" value="{{ old('matric_number', $student->matric_number) }}">
-                        @error('matric_number')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="school_id" class="form-label">School *</label>
-                        <select class="form-select @error('school_id') is-invalid @endif"
-                                id="school_id" name="school_id" required>
-                            <option value="">Select School</option>
-                            @foreach($schools as $school)
-                                <option value="{{ $school->id }}" {{ $student->school_id == $school->id ? 'selected' : '' }}>{{ $school->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('school_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Matric Number</label>
+                    <input type="text" class="form-control" value="{{ $student->matric_number }}" readonly>
                 </div>
             </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="department_id" class="form-label">Department *</label>
-                        <select class="form-select @error('department_id') is-invalid @endif"
-                                id="department_id" name="department_id" required>
-                            <option value="">Select Department</option>
-                            @foreach($departments as $dept)
-                                <option value="{{ $dept->id }}" {{ $student->department_id == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('department_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="programme_id" class="form-label">Programme *</label>
-                        <select class="form-select @error('programme_id') is-invalid @endif"
-                                id="programme_id" name="programme_id" required>
-                            <option value="">Select Programme</option>
-                            @foreach($programmes as $prog)
-                                <option value="{{ $prog->id }}" {{ $student->programme_id == $prog->id ? 'selected' : '' }}>{{ $prog->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('programme_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">School</label>
+                    <input type="text" class="form-control" value="{{ $student->school->name ?? 'N/A' }}" readonly>
                 </div>
             </div>
+        </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="session_id" class="form-label">Session *</label>
-                        <select class="form-select @error('session_id') is-invalid @endif"
-                                id="session_id" name="session_id" required>
-                            <option value="">Select Session</option>
-                            @foreach($sessions as $session)
-                                <option value="{{ $session->id }}" {{ $student->session_id == $session->id ? 'selected' : '' }}>{{ $session->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('session_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="level" class="form-label">Level *</label>
-                        <select class="form-select @error('level') is-invalid @endif"
-                                id="level" name="level" required>
-                            <option value="">Select Level</option>
-                            <option value="1" {{ $student->level == 1 ? 'selected' : '' }}>100L / ND1</option>
-                            <option value="2" {{ $student->level == 2 ? 'selected' : '' }}>200L / ND</option>
-                            <option value="3" {{ $student->level == 3 ? 'selected' : '' }}>300L / HND1</option>
-                            <option value="4" {{ $student->level == 4 ? 'selected' : '' }}>400L / HND2</option>
-                            <option value="5" {{ $student->level == 5 ? 'selected' : '' }}>500L</option>
-                            <option value="6" {{ $student->level == 6 ? 'selected' : '' }}>600L</option>
-                        </select>
-                        @error('level')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
-                    </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Department</label>
+                    <input type="text" class="form-control" value="{{ $student->department->name ?? 'N/A' }}" readonly>
                 </div>
             </div>
-
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save me-2"></i>Save All Details
-                </button>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Programme</label>
+                    <input type="text" class="form-control" value="{{ $student->programme->name ?? 'N/A' }}" readonly>
+                </div>
             </div>
-        </form>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Session</label>
+                    <input type="text" class="form-control" value="{{ $student->session->name ?? 'N/A' }}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Level</label>
+                    <input type="text" class="form-control" value="{{ $student->level_display }}" readonly>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

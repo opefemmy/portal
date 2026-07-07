@@ -115,8 +115,18 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('registrar.admission.byDepartment') }}" class="nav-link">
+                    <i class="fas fa-building-columns me-2"></i>Admission by Department
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('registrar.applications.admitted') }}" class="nav-link">
                     <i class="fas fa-user-graduate me-2"></i>Admitted Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission.generateLetters') }}" class="nav-link">
+                    <i class="fas fa-envelope me-2"></i>Generate Admission Letters
                 </a>
             </li>
             <li class="nav-item">
@@ -127,8 +137,6 @@ $role = $user->role->slug ?? '';
             <li class="nav-item">
                 <a href="{{ route('registrar.admission.track') }}" class="nav-link">
                     <i class="fas fa-search me-2"></i>Track Admission
-                </a>
-            </li>
                 </a>
             </li>
         </ul>

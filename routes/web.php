@@ -386,6 +386,15 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateSettings'])->name('admission.updateSettings');
     Route::get('/admission-list/print', [\App\Http\Controllers\Registrar\AdmissionController::class, 'print'])->name('admission.print');
     Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])->name('admission.track');
+
+    // Admission Letters
+    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate');
+    Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
+    Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
+
+    // Admission List by Department
+    Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])->name('admission.byDepartment');
+    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList'])->name('admission.uploadByDepartment');
 });
 
 // Bursar Routes

@@ -171,4 +171,136 @@ class AdmissionController extends Controller
 
         return back()->with('success', 'Student activated successfully!');
     }
+
+    /**
+     * Upload admission letter template
+     */
+    public function uploadLetterTemplate(Request $request)
+    {
+        $request->validate([
+            'template' => 'required|file|mimes:pdf,doc,docx|max:5120',
+        ]);
+
+        $file = $request->file('template');
+        $filename = 'admission_letter_template.' . $file->getClientOriginalExtension();
+        $file->move(public_path('templates'), $filename);
+
+        SystemSetting::set('admission_letter_template', $filename);
+
+        return back()->with('success', 'Admission letter template uploaded successfully');
+    }
+
+    /**
+     * Generate admission letters for admitted students
+     */
+    public function generateLetters(Request $request)
+    {
+        $departmentId = $request->department_id;
+
+        $query = Applicant::where('status', 'admitted')->with(['user', 'department', 'school', 'programme']);
+
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
+
+        $admitted = $query->get();
+
+        if ($admitted->isEmpty()) {
+            return back()->with('info', 'No admitted students found.');
+        }
+
+        return view('registrar.admission.letters', compact('admitted'));
+    }
+
+    /**
+     * Generate single admission letter
+     */
+    public function generateLetter(Applicant $applicant)
+    {
+        if ($applicant->status !== 'admitted') {
+            return back()->with('error', 'Applicant is not admitted.');
+        }
+
+        $student = Student::where('matric_number', $applicant->matric_number)->first();
+
+        return view('registrar.admission.letter', compact('applicant', 'student'));
+    }
+
+    /**
+     * Upload admission list by department (bulk)
+     */
+    public function uploadAdmissionList(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,xlsx,xls|max:2048',
+            'department_id' => 'required|exists:departments,id',
+        ]);
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+
+        $count = 0;
+        $errors = [];
+
+        if ($extension === 'csv') {
+            $data = array_map('str_getcsv', file($file));
+            array_shift($data); // Remove header
+
+            foreach ($data as $row) {
+                if (empty($row[0])) continue;
+
+                try {
+                    $applicationNumber = trim($row[0]);
+                    $status = trim($row[1] ?? 'admitted');
+
+                    $applicant = Applicant::where('application_number', $applicationNumber)->first();
+
+                    if (!$applicant) {
+                        $errors[] = "Application not found: $applicationNumber";
+                        continue;
+                    }
+
+                    if (strtolower($status) === 'admitted') {
+                        $applicant->update(['status' => 'admitted']);
+
+                        if (!$applicant->student_created) {
+                            $this->createStudentFromApplicant($applicant);
+                        }
+                        $count++;
+                    } else {
+                        $applicant->update(['status' => $status]);
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = "Error: " . $e->getMessage();
+                }
+            }
+        }
+
+        $message = "$count students admitted successfully";
+        if (!empty($errors)) {
+            $message .= ". Errors: " . implode('; ', array_slice($errors, 5));
+        }
+
+        return back()->with(empty($errors) ? 'success' : 'info', $message);
+    }
+
+    /**
+     * View admission list by department
+     */
+    public function listByDepartment(Request $request)
+    {
+        $departments = \App\Models\Department::all();
+        $departmentId = $request->department_id;
+
+        $query = Applicant::where('status', 'admitted')
+            ->with(['user', 'department', 'school', 'programme']);
+
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
+
+        $admitted = $query->latest()->get();
+
+        return view('registrar.admission.list-by-dept', compact('admitted', 'departments', 'departmentId'));
+    }
 }
