@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\GradeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\CourseAssignmentController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\CourseRegistrationController as AdminCourseRegController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\Admin\ExamTimetableController;
 use App\Http\Controllers\Admin\TranscriptController;
 use App\Http\Controllers\Admin\LibraryController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\GradingController;
 use App\Http\Controllers\Admin\HostelController as AdminHostelController;
 use App\Http\Controllers\Student\HostelController as StudentHostelController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -33,6 +35,9 @@ use App\Http\Controllers\Student\ResultController;
 use App\Http\Controllers\Student\PaymentController;
 use App\Http\Controllers\Student\TimetableController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
+use App\Http\Controllers\Student\LibraryController as StudentLibraryController;
+use App\Http\Controllers\Student\PasswordChangeController;
+use App\Http\Controllers\Student\SecurityController;
 use App\Http\Controllers\Lecturer\DashboardController as LecturerDashboardController;
 use App\Http\Controllers\Lecturer\ResultController as LecturerResultController;
 use App\Http\Controllers\Lecturer\AttendanceController;
@@ -86,7 +91,10 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     });
 });
 
-// Admin Routes
+// Admin Routes - redirect /admin to /admin/dashboard
+Route::redirect('/admin', '/admin/dashboard');
+
+// Admin Dashboard (requires auth and admin role)
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
@@ -116,6 +124,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // Grade Configuration
     Route::resource('grades', GradeController::class);
 
+    // Grade Classifications
+    Route::put('/grades/classification/{classification}', [GradingController::class, 'updateClassification'])->name('grades.classification.update');
+    Route::post('/grades/classification', [GradingController::class, 'storeClassification'])->name('grades.classification.store');
+    Route::delete('/grades/classification/{classification}', [GradingController::class, 'destroyClassification'])->name('grades.classification.destroy');
+
+    // Grading Scales
+    Route::put('/grades/scale/{scale}', [GradingController::class, 'updateScale'])->name('grades.scale.update');
+    Route::post('/grades/scale', [GradingController::class, 'storeScale'])->name('grades.scale.store');
+    Route::delete('/grades/scale/{scale}', [GradingController::class, 'destroyScale'])->name('grades.scale.destroy');
+
     // System Settings
     Route::get('/settings', [SystemSettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SystemSettingController::class, 'updateSettings'])->name('settings.update');
@@ -136,8 +154,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::resource('students', StudentController::class);
     Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
     Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
-    Route::post('/students/upload', [StudentController::class, 'upload'])->name('students.upload');
-    Route::get('/students/download-template', [StudentController::class, 'downloadTemplate'])->name('students.downloadTemplate');
+
+    // Student Import (NEW)
+    Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
+    Route::post('/students/import', [StudentImportController::class, 'import'])->name('students.import.store');
+    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])->name('students.import.template');
 
     // Course Assignments (OnCourses)
     Route::resource('course-assignments', CourseAssignmentController::class);
@@ -206,7 +227,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 });
 
 // Student Routes
-Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])->group(function () {
+Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 'student.onboarding'])->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
     Route::get('/courses', [CourseRegistrationController::class, 'index'])->name('courses');
     Route::get('/courses/register', [CourseRegistrationController::class, 'register'])->name('courses.register');
@@ -245,6 +266,20 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
     Route::get('/hostel/apply', [StudentHostelController::class, 'availableHostels'])->name('hostel.apply');
     Route::post('/hostel/apply', [StudentHostelController::class, 'apply']);
     Route::post('/hostel/request-change', [StudentHostelController::class, 'requestChange'])->name('hostel.request-change');
+
+    // Library
+    Route::get('/library', [StudentLibraryController::class, 'index'])->name('library');
+    Route::get('/library/search', [StudentLibraryController::class, 'search'])->name('library.search');
+    Route::post('/library/pay-fee', [StudentLibraryController::class, 'payLibraryFee'])->name('library.pay-fee');
+    Route::post('/library/borrow/{book}', [StudentLibraryController::class, 'borrowBook'])->name('library.borrow');
+
+    // Password Change (Required for new students)
+    Route::get('/password/change-required', [PasswordChangeController::class, 'showChangeForm'])->name('password.change.required');
+    Route::post('/password/change', [PasswordChangeController::class, 'changePassword'])->name('password.change');
+
+    // Security Question Setup
+    Route::get('/security/setup', [SecurityController::class, 'showSetupForm'])->name('security.setup');
+    Route::post('/security/setup', [SecurityController::class, 'setup'])->name('security.setup.store');
 
     // Student Medical Portal
     Route::get('/medical', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'index'])->name('medical.index');

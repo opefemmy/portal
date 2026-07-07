@@ -117,13 +117,14 @@
                 @csrf
 
                 <div class="mb-4">
-                    <label for="email" class="form-label">Email Address</label>
+                    <label for="email" class="form-label">Matric Number / Email</label>
                     <div class="input-group">
-                        <span class="input-icon"><i class="fas fa-envelope"></i></span>
-                        <input type="email" class="form-control @error('email') is-invalid @enderror"
+                        <span class="input-icon"><i class="fas fa-user-graduate"></i></span>
+                        <input type="text" class="form-control @error('email') is-invalid @enderror"
                                id="email" name="email" value="{{ old('email') }}"
-                               placeholder="Enter your email" required autofocus>
+                               placeholder="Enter matric number or email" required autofocus>
                     </div>
+                    <small class="text-muted">Students: Use your matriculation number (e.g., ND/2024/001)</small>
                     @error('email')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror

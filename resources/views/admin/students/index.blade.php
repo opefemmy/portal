@@ -6,25 +6,15 @@
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4>Manage Students</h4>
     <div class="d-flex gap-2">
-        <a href="{{ route('admin.students.downloadTemplate') }}" class="btn btn-outline-success">
+        <a href="{{ route('admin.students.import') }}" class="btn btn-outline-success">
+            <i class="fas fa-upload me-2"></i>Import CSV
+        </a>
+        <a href="{{ route('admin.students.import.template') }}" class="btn btn-outline-secondary">
             <i class="fas fa-download me-2"></i>Template
         </a>
         <a href="{{ route('admin.students.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>Add Student
         </a>
-    </div>
-</div>
-
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="POST" action="{{ route('admin.students.upload') }}" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
-            @csrf
-            <input type="file" name="file" class="form-control" style="width: 300px;" accept=".csv,.xlsx,.xls">
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-upload me-2"></i>Upload Students
-            </button>
-            <small class="text-muted">Upload CSV/Excel file with student data</small>
-        </form>
     </div>
 </div>
 

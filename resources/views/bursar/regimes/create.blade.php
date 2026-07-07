@@ -1,33 +1,65 @@
 @extends('layouts.app')
 
-@section('title', 'Create Regime')
+@section('title', 'Create Payment Regime')
 
 @section('content')
 <div class="page-header">
     <h4>Create Payment Regime</h4>
+    <p class="text-muted">Configure payment rules for indigene and non-indigene students</p>
 </div>
+
+@if($errors->any())
+<div class="alert alert-danger">
+    <ul class="mb-0">
+        @foreach($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
 
 <div class="card">
     <div class="card-body">
         <form method="POST" action="{{ route('bursar.regimes.store') }}">
             @csrf
 
+            {{-- Basic Info --}}
+            <h5 class="mb-3"><i class="fas fa-cog me-2"></i>Basic Information</h5>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Regime Name</label>
+                        <label for="name" class="form-label">Regime Name *</label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror"
                                id="name" name="name" value="{{ old('name') }}" required
-                               placeholder="e.g., Indigene - First Semester">
+                               placeholder="e.g., Indigene School Fee - First Installment">
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        @endif
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="student_type" class="form-label">Student Type</label>
-                        <select class="form-select @error('student_type') is-invalid @enderror"
+                        <label for="payment_type" class="form-label">Payment Type *</label>
+                        <select class="form-select @error('payment_type') is-invalid @endif"
+                                id="payment_type" name="payment_type" required>
+                            <option value="">Select Type</option>
+                            <option value="school_fee">School Fee</option>
+                            <option value="acceptance_fee">Acceptance Fee</option>
+                            <option value="accommodation">Accommodation</option>
+                            <option value="other">Other Fee</option>
+                        </select>
+                        @error('payment_type')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="student_type" class="form-label">Student Type *</label>
+                        <select class="form-select @error('student_type') is-invalid @endif"
                                 id="student_type" name="student_type" required>
                             <option value="">Select Type</option>
                             <option value="Indigene">Indigene</option>
@@ -35,61 +67,193 @@
                         </select>
                         @error('student_type')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="payment_config" class="form-label">Payment Configuration *</label>
+                        <select class="form-select @error('payment_config') is-invalid @endif"
+                                id="payment_config" name="payment_config" required>
+                            <option value="">Select Config</option>
+                            <option value="full">Full Payment (100%)</option>
+                            <option value="60_40">60% First, 40% Second</option>
+                            <option value="70_30">70% First, 30% Second</option>
+                            <option value="50_50">50% First, 50% Second</option>
+                        </select>
+                        <small class="text-muted">Defines how payment is split into installments</small>
+                        @error('payment_config')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
 
+            {{-- Portal Charges --}}
+            <h5 class="mb-3 mt-4"><i class="fas fa-credit-card me-2"></i>Portal Charges</h5>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="installment" class="form-label">Installment</label>
-                        <select class="form-select @error('installment') is-invalid @enderror"
+                        <label for="portal_charge" class="form-label">Portal Charge (₦)</label>
+                        <input type="number" class="form-control @error('portal_charge') is-invalid @endif"
+                               id="portal_charge" name="portal_charge" value="{{ old('portal_charge', 0) }}" min="0" step="0.01">
+                        @error('portal_charge')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="include_portal_charge" name="include_portal_charge" value="1" {{ old('include_portal_charge') ? 'checked' : '' }}>
+                            <label class="form-check-label" for="include_portal_charge">Include portal charge in payment</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Payment Amount --}}
+            <h5 class="mb-3 mt-4"><i class="fas fa-money-bill me-2"></i>Payment Amount</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="installment" class="form-label">Installment *</label>
+                        <select class="form-select @error('installment') is-invalid @endif"
                                 id="installment" name="installment" required>
-                            <option value="">Select Installment</option>
-                            <option value="First">First (60%)</option>
-                            <option value="Second">Second (40%)</option>
-                            <option value="Full">Full (100%)</option>
+                            <option value="">Select</option>
+                            <option value="Full">Full Payment</option>
+                            <option value="First">First Installment</option>
+                            <option value="Second">Second Installment</option>
                         </select>
                         @error('installment')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        @endif
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="percentage" class="form-label">Percentage (%)</label>
-                        <input type="number" class="form-control @error('percentage') is-invalid @enderror"
+                        <label for="percentage" class="form-label">Percentage (%) *</label>
+                        <input type="number" class="form-control @error('percentage') is-invalid @endif"
                                id="percentage" name="percentage" value="{{ old('percentage') }}" required min="1" max="100">
                         @error('percentage')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Fixed Amount (Optional)</label>
+                        <input type="number" class="form-control @error('amount') is-invalid @endif"
+                               id="amount" name="amount" value="{{ old('amount') }}" min="0" step="0.01"
+                               placeholder="Leave empty to calculate">
+                        <small class="text-muted">Leave empty to use percentage</small>
+                        @error('amount')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
 
+            {{-- Scope (Optional) --}}
+            <h5 class="mb-3 mt-4"><i class="fas fa-filter me-2"></i>Payment Scope (Optional)</h5>
+            <p class="text-muted">Leave all empty to apply to all students. Select specific values to limit scope.</p>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="amount" class="form-label">Fixed Amount (Optional)</label>
-                        <input type="number" class="form-control @error('amount') is-invalid @enderror"
-                               id="amount" name="amount" value="{{ old('amount') }}" min="0" step="0.01"
-                               placeholder="Leave empty to calculate from fee">
-                        <small class="text-muted">If set, this exact amount will be charged</small>
+                        <label for="school_id" class="form-label">School</label>
+                        <select class="form-select" id="school_id" name="school_id">
+                            <option value="">All Schools</option>
+                            @foreach($schools as $school)
+                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="department_id" class="form-label">Department</label>
+                        <select class="form-select" id="department_id" name="department_id">
+                            <option value="">All Departments</option>
+                            @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="programme_id" class="form-label">Programme</label>
+                        <select class="form-select" id="programme_id" name="programme_id">
+                            <option value="">All Programmes</option>
+                            @foreach($programmes as $prog)
+                            <option value="{{ $prog->id }}">{{ $prog->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="session_id" class="form-label">Session</label>
+                        <select class="form-select" id="session_id" name="session_id">
+                            <option value="">All Sessions</option>
+                            @foreach($sessions as $session)
+                            <option value="{{ $session->id }}">{{ $session->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="semester" class="form-label">Semester</label>
+                        <select class="form-select" id="semester" name="semester">
+                            <option value="">All Semesters</option>
+                            <option value="first">First Semester</option>
+                            <option value="second">Second Semester</option>
+                            <option value="both">Both Semesters</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="level" class="form-label">Level</label>
+                        <select class="form-select" id="level" name="level">
+                            <option value="">All Levels</option>
+                            <option value="1">100L / ND1</option>
+                            <option value="2">200L / ND2</option>
+                            <option value="3">300L / HND1</option>
+                            <option value="4">400L / HND2</option>
+                            <option value="5">500L</option>
+                            <option value="6">600L</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="level_operator" class="form-label">Level Match</label>
+                        <select class="form-select" id="level_operator" name="level_operator">
+                            <option value="exact">Exact Match</option>
+                            <option value="minimum">This Level & Above</option>
+                            <option value="maximum">This Level & Below</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3 form-check">
+            <div class="mb-3 form-check mt-4">
                 <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" checked>
-                <label class="form-check-label" for="is_active">Active</label>
+                <label class="form-check-label" for="is_active"><strong>Active</strong> - Enable this payment regime</label>
             </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-2"></i>Create Regime
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Create Payment Regime
                 </button>
-                <a href="{{ route('bursar.regimes.index') }}" class="btn btn-secondary">Cancel</a>
+                <a href="{{ route('bursar.regimes.index') }}" class="btn btn-secondary btn-lg">Cancel</a>
             </div>
         </form>
     </div>

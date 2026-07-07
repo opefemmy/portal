@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Grade;
+use App\Models\GradeClassification;
+use App\Models\GradingScale;
 use Illuminate\Http\Request;
 
 class GradeController extends Controller
@@ -11,7 +13,9 @@ class GradeController extends Controller
     public function index()
     {
         $grades = Grade::orderBy('min_score', 'desc')->get();
-        return view('admin.grades.index', compact('grades'));
+        $classifications = GradeClassification::orderBy('sort_order')->get();
+        $gradingScales = GradingScale::orderBy('sort_order')->get();
+        return view('admin.grades.index', compact('grades', 'classifications', 'gradingScales'));
     }
 
     public function create()

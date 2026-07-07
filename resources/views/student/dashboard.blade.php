@@ -7,6 +7,7 @@ $scrollingMessage = \App\Models\Setting::get('scrolling_message');
 $loginNotification = session('login_notification');
 $showPopup = session('show_popup');
 $popupMessage = session('popup_message');
+$user = auth()->user();
 @endphp
 
 @section('content')
@@ -37,16 +38,48 @@ $popupMessage = session('popup_message');
 @endif
 
 {{-- Login Notification --}}
-@if($loginNotification)
+@if(session('success') && str_contains(session('success'), 'Welcome'))
 <div class="alert alert-success alert-dismissible fade show" role="alert">
-    {{ $loginNotification }}
+    <i class="fas fa-hand-sparkles me-2"></i>{{ session('success') }}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 @endif
 
-<div class="page-header">
-    <h4 class="mb-0">Student Dashboard</h4>
-    <p class="text-muted mb-0">Welcome, {{ auth()->user()->name }}@if($student)<span class="mx-2">|</span>{{ $student->matric_number ?? 'N/A' }}@endif</p>
+{{-- Welcome Banner with Passport --}}
+<div class="card mb-4" style="background: linear-gradient(135deg, #1a237e, #6a1b9a); border: none; border-radius: 15px;">
+    <div class="card-body" style="color: white;">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                @if($user->passport)
+                    <img src="{{ asset('uploads/passports/' . $user->passport) }}" alt="Passport"
+                         class="rounded-circle border border-4 border-white shadow-lg"
+                         style="width: 120px; height: 120px; object-fit: cover;">
+                @else
+                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-lg"
+                         style="width: 120px; height: 120px; margin: 0 auto;">
+                        <i class="fas fa-user fa-3x text-primary"></i>
+                    </div>
+                @endif
+            </div>
+            <div class="col-md-10">
+                <h1 class="mb-2 fw-bold" style="color: white;">
+                    <i class="fas fa-hand-sparkles me-2"></i>Welcome, {{ $user->name }}!
+                </h1>
+                <h4 class="mb-3" style="color: white;">
+                    @if($student)
+                        <span class="badge bg-warning text-dark fs-6">{{ $student->matric_number }}</span>
+                        <span class="mx-2">|</span>
+                        <span>{{ $student->department->name ?? 'N/A' }}</span>
+                        <span class="mx-2">|</span>
+                        <span>Level {{ $student->level }}00</span>
+                        <span class="mx-2">|</span>
+                        <span>{{ $student->session->name ?? '' }}</span>
+                    @endif
+                </h4>
+                <p class="mb-0 fs-5" style="color: white;">You are free to explore yourself. Access all your academic information below.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if(!$student)

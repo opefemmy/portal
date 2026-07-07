@@ -26,9 +26,91 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.schools.index') }}" class="nav-link {{ request()->is('admin/schools*') ? 'active' : '' }}">
-        <i class="fas fa-school"></i> Institution Setup
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#institutionMenu">
+        <i class="fas fa-school"></i> Institution Setup <i class="fas fa-chevron-down float-end"></i>
     </a>
+    <div class="collapse" id="institutionMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.schools.index') }}" class="nav-link {{ request()->is('admin/schools*') ? 'active' : '' }}">
+                    <i class="fas fa-building me-2"></i>Schools
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.departments.index') }}" class="nav-link {{ request()->is('admin/departments*') ? 'active' : '' }}">
+                    <i class="fas fa-building-columns me-2"></i>Departments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.programmes.index') }}" class="nav-link {{ request()->is('admin/programmes*') ? 'active' : '' }}">
+                    <i class="fas fa-graduation-cap me-2"></i>Programmes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.sessions.index') }}" class="nav-link {{ request()->is('admin/sessions*') ? 'active' : '' }}">
+                    <i class="fas fa-calendar me-2"></i>Sessions
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+<li class="nav-item">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#studentMenu">
+        <i class="fas fa-user-graduate"></i> Manage Students <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse" id="studentMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.students.import') }}" class="nav-link {{ request()->is('admin/students/import*') ? 'active' : '' }}">
+                    <i class="fas fa-upload me-2"></i>Upload Student Data
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.students.index') }}" class="nav-link {{ request()->is('admin/students') && !request()->is('admin/students/import*') ? 'active' : '' }}">
+                    <i class="fas fa-list me-2"></i>View All Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.students.create') }}" class="nav-link {{ request()->is('admin/students/create*') ? 'active' : '' }}">
+                    <i class="fas fa-plus me-2"></i>Add New Student
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.students.import') }}" class="nav-link {{ request()->is('admin/students/import*') ? 'active' : '' }}">
+                    <i class="fas fa-key me-2"></i>Reset Student Password
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+<li class="nav-item">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bsTarget="#admissionMenu">
+        <i class="fas fa-user-plus"></i> Manage Admission <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse" id="admissionMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.reports.students') }}" class="nav-link">
+                    <i class="fas fa-file-alt me-2"></i>Application Report
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.applicants.index') ?? '#' }}" class="nav-link">
+                    <i class="fas fa-edit me-2"></i>Edit Application
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.applicants.reset') ?? '#' }}" class="nav-link">
+                    <i class="fas fa-key me-2"></i>Reset Applicant Password
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('registrar.admission') }}" class="nav-link">
+                    <i class="fas fa-check-circle me-2"></i>Approve Admission
+                </a>
+            </li>
+        </ul>
+    </div>
 </li>
 <li class="nav-item">
     <a href="{{ route('admin.sessions.index') }}" class="nav-link {{ request()->is('admin/sessions*') ? 'active' : '' }}">
@@ -96,9 +178,23 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.hostels.index') }}" class="nav-link {{ request()->is('admin/hostels*') ? 'active' : '' }}">
-        <i class="fas fa-bed"></i> Hostel
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#hostelMenu">
+        <i class="fas fa-bed"></i> Hostel <i class="fas fa-chevron-down float-end"></i>
     </a>
+    <div class="collapse" id="hostelMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.hostels.index') }}" class="nav-link {{ request()->is('admin/hostels') && !request()->is('admin/hostels/allocations*') ? 'active' : '' }}">
+                    <i class="fas fa-building me-2"></i>Manage Hostels
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.hostels.allocations') }}" class="nav-link {{ request()->is('admin/hostels/allocations*') ? 'active' : '' }}">
+                    <i class="fas fa-users me-2"></i>Allocations
+                </a>
+            </li>
+        </ul>
+    </div>
 </li>
 @elseif($role === 'student')
 <li class="nav-item">
@@ -134,6 +230,11 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('student.hostel.my') }}" class="nav-link {{ request()->is('student/hostel*') ? 'active' : '' }}">
         <i class="fas fa-bed"></i> Hostel
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('student.library') }}" class="nav-link {{ request()->is('student/library*') ? 'active' : '' }}">
+        <i class="fas fa-book"></i> Library
     </a>
 </li>
 <li class="nav-item">

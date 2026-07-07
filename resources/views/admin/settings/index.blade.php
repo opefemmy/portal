@@ -2,6 +2,10 @@
 
 @section('title', 'System Settings')
 
+@php
+use App\Models\SystemSetting;
+@endphp
+
 @section('content')
 <div class="page-header">
     <h4>System Settings</h4>
@@ -115,6 +119,65 @@
         </div>
     </div>
 
+    {{-- Late Fee Payment Settings --}}
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Late Payment Settings</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {{-- School Fee Late Payment --}}
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-school me-2"></i>School Fee</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="late_school_fee_enabled" name="late_school_fee_enabled"
+                                    {{ SystemSetting::get('late_school_fee_enabled', 'false') === 'true' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="late_school_fee_enabled">Enable Late Payment</label>
+                            </div>
+                            <input type="number" name="late_school_fee_amount" class="form-control"
+                                placeholder="Late Fee Amount" value="{{ SystemSetting::get('late_school_fee_amount', 0) }}">
+                            <small class="text-muted">Amount to pay for late school fee</small>
+                        </div>
+                    </div>
+                </div>
+                {{-- Course Registration Late Payment --}}
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-book me-2"></i>Course Reg Fee</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="late_course_reg_enabled" name="late_course_reg_enabled"
+                                    {{ SystemSetting::get('late_course_reg_enabled', 'false') === 'true' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="late_course_reg_enabled">Enable Late Payment</label>
+                            </div>
+                            <input type="number" name="late_course_reg_amount" class="form-control"
+                                placeholder="Late Fee Amount" value="{{ SystemSetting::get('late_course_reg_amount', 0) }}">
+                            <small class="text-muted">Amount to pay for late course registration</small>
+                        </div>
+                    </div>
+                </div>
+                {{-- Other Fees Late Payment --}}
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-money-bill-wave me-2"></i>Other Fees</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="late_other_fee_enabled" name="late_other_fee_enabled"
+                                    {{ SystemSetting::get('late_other_fee_enabled', 'false') === 'true' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="late_other_fee_enabled">Enable Late Payment</label>
+                            </div>
+                            <input type="number" name="late_other_fee_amount" class="form-control"
+                                placeholder="Late Fee Amount" value="{{ SystemSetting::get('late_other_fee_amount', 0) }}">
+                            <small class="text-muted">Amount to pay for late other fees</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Result Upload Settings --}}
     <div class="card mb-4">
         <div class="card-header bg-info text-white">
@@ -129,6 +192,51 @@
                     <label class="form-check-label" for="result_upload_open">Allow Lecturers to Upload Results</label>
                 </div>
                 <small class="text-muted">Enable to allow lecturers to enter and upload results</small>
+            </div>
+        </div>
+    </div>
+
+    {{-- Library Settings --}}
+    <div class="card mb-4 border-purple" style="border-color: #6f42c1;">
+        <div class="card-header bg-purple text-white" style="background: #6f42c1;">
+            <h5 class="mb-0"><i class="fas fa-book-reader me-2"></i>Library Settings</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-money-bill me-2"></i>Library Fee</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="library_fee_required" name="library_fee_required"
+                                    {{ SystemSetting::get('library_fee_required', 'false') === 'true' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="library_fee_required">Require Library Fee</label>
+                            </div>
+                            <input type="number" name="library_fee_amount" class="form-control"
+                                placeholder="Fee Amount" value="{{ SystemSetting::get('library_fee_amount', 0) }}">
+                            <small class="text-muted">Amount students must pay to access library</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-clock me-2"></i>Late Return Penalty</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Late Fee Per Day</label>
+                                <input type="number" name="library_late_fee_per_day" class="form-control"
+                                    placeholder="Late Fee Per Day" value="{{ SystemSetting::get('library_late_fee_per_day', 100) }}">
+                                <small class="text-muted">Penalty for late book return (per day)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Max Borrow Days</label>
+                                <input type="number" name="library_max_borrow_days" class="form-control"
+                                    placeholder="Max Borrow Days" value="{{ SystemSetting::get('library_max_borrow_days', 14) }}">
+                                <small class="text-muted">Default maximum days to borrow a book</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -17,10 +18,31 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $loginInput = $request->input('email');
+
+        // Check if input is matric number or email
+        $isMatricNumber = !filter_var($loginInput, FILTER_VALIDATE_EMAIL);
+
+        if ($isMatricNumber) {
+            // Try to find user by matric number
+            $user = User::where('matric_number', $loginInput)->first();
+
+            if (!$user) {
+                throw ValidationException::withMessages([
+                    'email' => 'Matriculation number not found.',
+                ]);
+            }
+
+            $credentials = [
+                'email' => $user->email,
+                'password' => $request->input('password'),
+            ];
+        } else {
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ]);
+        }
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
@@ -38,7 +60,7 @@ class LoginController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => 'The provided credentials do not match our records.',
+            'email' => $isMatricNumber ? 'Invalid password for this matriculation number.' : 'The provided credentials do not match our records.',
         ]);
     }
 
@@ -50,9 +72,41 @@ class LoginController extends Controller
             $roleSlug = $user->role->slug;
         }
 
+        // Check if student needs to complete onboarding
+        if ($roleSlug === 'student') {
+            // Check if must change password
+            if ($user->must_change_password) {
+                return redirect()->route('student.password.change.required')
+                    ->with('info', 'You must change your password before continuing.');
+            }
+
+            // Check if security question is not set
+            if (!$user->security_question) {
+                return redirect()->route('student.security.setup')
+                    ->with('info', 'Please set a security question for password recovery.');
+            }
+
+            // Check if biodata (guidance details) is not complete
+            if (!$user->guidance_name || !$user->guidance_phone) {
+                return redirect()->route('student.profile.edit')
+                    ->with('info', 'Please complete your profile with guidance details and passport.');
+            }
+
+            // Add login notification for students
+            try {
+                $loginNotification = Setting::get('login_notification');
+                if ($loginNotification) {
+                    session()->flash('login_notification', $loginNotification);
+                }
+            } catch (\Exception $e) {
+                // Ignore settings errors
+            }
+
+            return redirect('/student/dashboard')->with('success', 'Welcome ' . $user->name . ', you are free to explore yourself.');
+        }
+
         $redirectTo = match ($roleSlug) {
             'super_admin', 'admin' => '/admin/dashboard',
-            'student' => '/student/dashboard',
             'lecturer' => '/lecturer/dashboard',
             'hod' => '/hod/dashboard',
             'dean' => '/dean/dashboard',
@@ -61,27 +115,6 @@ class LoginController extends Controller
             'applicant' => '/applicant/dashboard',
             default => '/dashboard',
         };
-
-        // Add login notification for students
-        if ($roleSlug === 'student') {
-            try {
-                $loginNotification = Setting::get('login_notification');
-                if ($loginNotification) {
-                    session()->flash('login_notification', $loginNotification);
-                }
-
-                $showPopup = Setting::get('show_post_login_popup');
-                if ($showPopup) {
-                    $postLoginMessage = Setting::get('post_login_message');
-                    if ($postLoginMessage) {
-                        session()->flash('show_popup', true);
-                        session()->flash('popup_message', $postLoginMessage);
-                    }
-                }
-            } catch (\Exception $e) {
-                // Ignore settings errors
-            }
-        }
 
         return redirect($redirectTo)->with('success', 'Welcome back, ' . $user->name);
     }

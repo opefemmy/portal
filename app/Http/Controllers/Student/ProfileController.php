@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Programme;
 use App\Models\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
@@ -25,7 +26,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $student = $user->student;
 
         $validated = $request->validate([
@@ -35,9 +36,21 @@ class ProfileController extends Controller
             'programme_id' => 'required|exists:programmes,id',
             'session_id' => 'required|exists:sessions,id',
             'level' => 'required|integer|min:1|max:6',
+            // Guidance details
+            'guidance_name' => 'required|string|max:255',
+            'guidance_phone' => 'required|string|max:20',
+            'guidance_address' => 'nullable|string',
         ]);
 
+        // Update student details
         $student->update($validated);
+
+        // Update user guidance details
+        $user->update([
+            'guidance_name' => $request->guidance_name,
+            'guidance_phone' => $request->guidance_phone,
+            'guidance_address' => $request->guidance_address,
+        ]);
 
         return redirect()->route('student.dashboard')->with('success', 'Profile updated successfully');
     }
@@ -48,7 +61,7 @@ class ProfileController extends Controller
             'passport' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user = auth()->user();
+        $user = Auth::user();
 
         if ($request->hasFile('passport')) {
             // Delete old passport if exists

@@ -27,6 +27,10 @@ class SystemSettingController extends Controller
             'payment_open',
             'payment_penalty',
             'result_upload_open',
+            // Late payment settings for specific fees
+            'late_school_fee_enabled',
+            'late_course_reg_enabled',
+            'late_other_fee_enabled',
         ];
 
         foreach ($settingsKeys as $key) {
@@ -40,6 +44,35 @@ class SystemSettingController extends Controller
                 $amount = $request->input($penaltyKey . '_amount', 0);
                 SystemSetting::set($penaltyKey . '_amount', $amount);
             }
+        }
+
+        // Handle late fee amounts
+        $lateFeeKeys = [
+            'late_school_fee_amount',
+            'late_course_reg_amount',
+            'late_other_fee_amount',
+        ];
+
+        foreach ($lateFeeKeys as $key) {
+            if ($request->has($key)) {
+                $amount = $request->input($key, 0);
+                SystemSetting::set($key, $amount);
+            }
+        }
+
+        // Library fee settings
+        $libraryKeys = [
+            'library_fee_required',
+            'library_fee_amount',
+            'library_late_fee_per_day',
+            'library_max_borrow_days',
+        ];
+
+        foreach ($libraryKeys as $key) {
+            $value = $key === 'library_fee_amount' || $key === 'library_late_fee_per_day' || $key === 'library_max_borrow_days'
+                ? $request->input($key, 0)
+                : $request->input($key, 'false');
+            SystemSetting::set($key, $value);
         }
 
         return redirect()->route('admin.settings.index')

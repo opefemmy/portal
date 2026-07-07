@@ -86,7 +86,7 @@
                         @forelse($applicationsByStatus as $app)
                         <tr>
                             <td>
-                                <span class="badge bg-{{ $app->status == 'admitted' ? 'success' : ($app->status == 'pending' ? 'warning' : ($app->status == 'rejected' ? 'danger' : 'info') }}">
+                                <span class="badge bg-{{ $app->status == 'admitted' ? 'success' : ($app->status == 'pending' ? 'warning' : ($app->status == 'rejected' ? 'danger' : 'info')) }}">
                                     {{ ucfirst($app->status) }}
                                 </span>
                             </td>

@@ -19,7 +19,12 @@
       "Bash(timeout 3)",
       "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; Start-Process powershell -ArgumentList \"-Command\", \"php -S 127.0.0.1:8000 -t public\" -WindowStyle Hidden; Start-Sleep 3; Invoke-WebRequest -Uri \"http://127.0.0.1:8000\" -UseBasicParsing -TimeoutSec 5)",
       "PowerShell(Get-NetTCPConnection *)",
-      "Bash(findstr \"Pending\")"
+      "Bash(findstr \"Pending\")",
+      "Bash(git pull *)",
+      "PowerShell(php artisan migrate)",
+      "PowerShell(php artisan db:seed --class=TestUsersSeeder)",
+      "Read(//c/Users/HP/OneDrive/Documents/**)",
+      "Bash(dir \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\SAMPLE.xlsx\")"
     ]
   }
 }
