@@ -110,22 +110,22 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admission-list') }}" class="nav-link">
+                <a href="{{ route('registrar.admission') }}" class="nav-link">
                     <i class="fas fa-user-plus me-2"></i>Admission List
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admitted-students') }}" class="nav-link">
+                <a href="{{ route('registrar.applications.admitted') }}" class="nav-link">
                     <i class="fas fa-user-graduate me-2"></i>Admitted Students
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admission-list.settings') }}" class="nav-link">
+                <a href="{{ route('registrar.admission.settings') }}" class="nav-link">
                     <i class="fas fa-cogs me-2"></i>Admission Settings
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('registrar.admission-track') }}" class="nav-link">
+                <a href="{{ route('registrar.admission.track') }}" class="nav-link">
                     <i class="fas fa-search me-2"></i>Track Admission
                 </a>
             </li>
