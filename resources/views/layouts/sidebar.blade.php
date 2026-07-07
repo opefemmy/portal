@@ -141,6 +141,11 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-exclamation-circle"></i> Complaints
     </a>
 </li>
+<li class="nav-item">
+    <a href="{{ route('student.medical.index') }}" class="nav-link {{ request()->is('student/medical*') ? 'active' : '' }}">
+        <i class="fas fa-hospital"></i> Medical Portal
+    </a>
+</li>
 @elseif($role === 'lecturer')
 <li class="nav-item">
     <a href="{{ route('lecturer.dashboard') }}" class="nav-link {{ request()->is('lecturer/dashboard*') ? 'active' : '' }}">
@@ -235,6 +240,98 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-chart-bar"></i> Reports
     </a>
 </li>
+{{-- HOSPITAL MODULE --}}
+@elseif(in_array($role, ['cmd', 'doctor', 'nurse', 'hospital_receptionist', 'pharmacist', 'lab_scientist', 'store_keeper', 'super_admin']))
+<li class="nav-item">
+    <a href="{{ route('hospital.dashboard') }}" class="nav-link {{ request()->is('hospital*') ? 'active' : '' }}">
+        <i class="fas fa-hospital"></i> Hospital
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('hospital.patients.index') }}" class="nav-link {{ request()->is('hospital/patients*') ? 'active' : '' }}">
+        <i class="fas fa-users"></i> Patients
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('hospital.appointments.index') }}" class="nav-link {{ request()->is('hospital/appointments*') ? 'active' : '' }}">
+        <i class="fas fa-calendar-check"></i> Appointments
+    </a>
+</li>
+@if(in_array($role, ['pharmacist', 'cmd', 'super_admin']))
+<li class="nav-item">
+    <a href="{{ route('hospital.pharmacy.drugs') }}" class="nav-link {{ request()->is('hospital/pharmacy*') ? 'active' : '' }}">
+        <i class="fas fa-pills"></i> Pharmacy
+    </a>
+</li>
+@endif
+@if(in_array($role, ['lab_scientist', 'cmd', 'super_admin']))
+<li class="nav-item">
+    <a href="{{ route('hospital.lab.index') }}" class="nav-link {{ request()->is('hospital/lab*') ? 'active' : '' }}">
+        <i class="fas fa-flask"></i> Laboratory
+    </a>
+</li>
+@endif
+{{-- FINANCE MODULE --}}
+@elseif(in_array($role, ['accountant', 'cashier', 'cmd', 'super_admin']))
+<li class="nav-item">
+    <a href="{{ route('finance.dashboard') }}" class="nav-link {{ request()->is('finance*') ? 'active' : '' }}">
+        <i class="fas fa-chart-line"></i> Finance
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.invoices.index') }}" class="nav-link {{ request()->is('finance/invoices*') ? 'active' : '' }}">
+        <i class="fas fa-file-invoice"></i> Invoices
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.receipts.index') }}" class="nav-link {{ request()->is('finance/receipts*') ? 'active' : '' }}">
+        <i class="fas fa-receipt"></i> Receipts
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.transactions.index') }}" class="nav-link {{ request()->is('finance/transactions*') ? 'active' : '' }}">
+        <i class="fas fa-exchange-alt"></i> Transactions
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.budgets.index') }}" class="nav-link {{ request()->is('finance/budgets*') ? 'active' : '' }}">
+        <i class="fas fa-budget"></i> Budgets
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.payroll.index') }}" class="nav-link {{ request()->is('finance/payroll*') ? 'active' : '' }}">
+        <i class="fas fa-money-bill-wave"></i> Payroll
+    </a>
+</li>
+{{-- RECTOR / EXECUTIVE DASHBOARD --}}
+@elseif(in_array($role, ['rector', 'super_admin']))
+<li class="nav-item">
+    <a href="{{ route('executive.dashboard') }}" class="nav-link {{ request()->is('executive*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Executive Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('executive.reports.students') }}" class="nav-link {{ request()->is('executive/reports*') ? 'active' : '' }}">
+        <i class="fas fa-chart-bar"></i> Reports
+    </a>
+</li>
+{{-- AUDITOR DASHBOARD --}}
+@elseif($role === 'auditor')
+<li class="nav-item">
+    <a href="{{ route('auditor.dashboard') }}" class="nav-link {{ request()->is('auditor/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('auditor.audit-logs') }}" class="nav-link {{ request()->is('auditor/audit-logs*') ? 'active' : '' }}">
+        <i class="fas fa-history"></i> Audit Logs
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('auditor.deleted') }}" class="nav-link {{ request()->is('auditor/deleted*') ? 'active' : '' }}">
+        <i class="fas fa-trash-restore"></i> Deleted Records
+    </a>
+</li>
 @elseif($role === 'applicant')
 <li class="nav-item">
     <a href="{{ route('applicant.dashboard') }}" class="nav-link {{ request()->is('applicant/dashboard*') ? 'active' : '' }}">
@@ -253,6 +350,11 @@ $role = $user->role->slug ?? '';
 </li>
 @endif
 
+<li class="nav-item">
+    <a href="{{ route('notifications.index') }}" class="nav-link {{ request()->is('notifications*') ? 'active' : '' }}">
+        <i class="fas fa-bell"></i> Notifications
+    </a>
+</li>
 <li class="nav-item">
     <a href="{{ route('profile.show') }}" class="nav-link {{ request()->is('profile*') ? 'active' : '' }}">
         <i class="fas fa-user"></i> Profile

@@ -92,6 +92,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 
     // User Management
     Route::resource('users', UserController::class);
+    Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
     Route::post('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
     Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
@@ -244,6 +245,19 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student'])
     Route::get('/hostel/apply', [StudentHostelController::class, 'availableHostels'])->name('hostel.apply');
     Route::post('/hostel/apply', [StudentHostelController::class, 'apply']);
     Route::post('/hostel/request-change', [StudentHostelController::class, 'requestChange'])->name('hostel.request-change');
+
+    // Student Medical Portal
+    Route::get('/medical', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'index'])->name('medical.index');
+    Route::get('/medical/appointments', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'myAppointments'])->name('medical.appointments');
+    Route::get('/medical/book', function () {
+        $doctors = \App\Models\Hospital\HospitalStaff::where('staff_type', 'doctor')->where('is_active', true)->get();
+        return view('student.medical.book-appointment', compact('doctors'));
+    })->name('medical.book');
+    Route::post('/medical/appointment', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'bookAppointment'])->name('medical.appointment.store');
+    Route::get('/medical/history', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'myMedicalHistory'])->name('medical.history');
+    Route::get('/medical/prescriptions', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'myPrescriptions'])->name('medical.prescriptions');
+    Route::get('/medical/lab-results', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'myLabResults'])->name('medical.lab-results');
+    Route::get('/medical/admissions', [\App\Http\Controllers\Hospital\PatientPortalController::class, 'myAdmissions'])->name('medical.admissions');
 });
 
 // Lecturer Routes
@@ -433,6 +447,32 @@ Route::post('/login-test', function (\Illuminate\Http\Request $request) {
         'message' => 'Invalid credentials'
     ]);
 })->middleware('web');
+
+// ===========================================
+// HOSPITAL MODULE ROUTES
+// ===========================================
+require __DIR__.'/hospital.php';
+
+// ===========================================
+// FINANCE MODULE ROUTES
+// ===========================================
+require __DIR__.'/finance.php';
+
+// ===========================================
+// NOTIFICATION ROUTES
+// ===========================================
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+});
+
+// ===========================================
+// EXECUTIVE DASHBOARD ROUTES
+// ===========================================
+require __DIR__.'/executive.php';
 
 // Simple test login page - REMOVE AFTER TESTING
 Route::get('/test-login', function () {

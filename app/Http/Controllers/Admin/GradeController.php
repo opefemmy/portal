@@ -27,6 +27,8 @@ class GradeController extends Controller
             'grade' => 'required|string|max:5',
             'grade_point' => 'required|numeric|min:0|max:5',
             'remark' => 'required|string|max:255',
+            'classification' => 'nullable|string',
+            'gpa_weight' => 'nullable|integer|min:0|max:5',
         ]);
 
         Grade::create($validated);
@@ -46,6 +48,8 @@ class GradeController extends Controller
             'grade' => 'required|string|max:5',
             'grade_point' => 'required|numeric|min:0|max:5',
             'remark' => 'required|string|max:255',
+            'classification' => 'nullable|string',
+            'gpa_weight' => 'nullable|integer|min:0|max:5',
         ]);
 
         $grade->update($validated);

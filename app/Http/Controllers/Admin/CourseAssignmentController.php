@@ -14,7 +14,9 @@ class CourseAssignmentController extends Controller
     public function index()
     {
         $assignments = CourseAssignment::with(['course', 'lecturer', 'session'])->latest()->get();
-        return view('admin.course-assignments.index', compact('assignments'));
+        $courses = Course::with(['department', 'school'])->get();
+        $sessions = \App\Models\Session::all();
+        return view('admin.course-assignments.index', compact('assignments', 'courses', 'sessions'));
     }
 
     public function create()

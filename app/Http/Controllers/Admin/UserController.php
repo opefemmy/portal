@@ -190,4 +190,33 @@ class UserController extends Controller
 
         return back()->with('success', 'Passport uploaded successfully');
     }
+
+    /**
+     * Search users by name, email, staff_id, or matric_number
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('search', '');
+        $role = $request->get('role', '');
+
+        $users = User::query()
+            ->when($query, function($q) use ($query) {
+                $q->where(function($q2) use ($query) {
+                    $q2->where('name', 'like', "%{$query}%")
+                       ->orWhere('email', 'like', "%{$query}%")
+                       ->orWhere('staff_id', 'like', "%{$query}%")
+                       ->orWhere('matric_number', 'like', "%{$query}%");
+                });
+            })
+            ->when($role, function($q) use ($role) {
+                $q->whereHas('role', function($q2) use ($role) {
+                    $q2->where('slug', $role);
+                });
+            })
+            ->where('is_active', true)
+            ->limit(10)
+            ->get(['id', 'name', 'email', 'staff_id', 'matric_number']);
+
+        return response()->json($users);
+    }
 }

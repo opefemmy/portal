@@ -138,11 +138,11 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="due_date" class="form-label">Due Date</label>
-                        <input type="date" class="form-control @error('due_date') is-invalid @endreif"
+                        <input type="date" class="form-control @error('due_date') is-invalid @enderror"
                                id="due_date" name="due_date" value="{{ old('due_date') }}">
                         @error('due_date')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>

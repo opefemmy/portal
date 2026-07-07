@@ -30,4 +30,24 @@ class SystemSetting extends Model
     {
         return static::get($key . '_penalty', 0);
     }
+
+    /**
+     * Set a setting value (static method)
+     */
+    public static function set($key, $value)
+    {
+        return static::updateOrCreate(
+            ['key' => $key],
+            ['value' => $value]
+        );
+    }
+
+    /**
+     * Get a setting value (static method)
+     */
+    public static function get($key, $default = null)
+    {
+        $setting = static::where('key', $key)->first();
+        return $setting ? $setting->value : $default;
+    }
 }

@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            Role::create($role);
+            Role::firstOrCreate(['slug' => $role['slug']], $role);
         }
 
         // Create Programmes
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($programmes as $programme) {
-            Programme::create($programme);
+            Programme::firstOrCreate(['code' => $programme['code']], $programme);
         }
 
         // Create Current Session
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($schools as $school) {
-            School::create($school);
+            School::firstOrCreate(['code' => $school['code']], $school);
         }
 
         // Create Departments
@@ -93,12 +93,12 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($departments as $dept) {
-            Department::create($dept);
+            Department::firstOrCreate(['code' => $dept['code']], $dept);
         }
 
         // Create Default Grades
         foreach (Grade::getDefaultGrades() as $grade) {
-            Grade::create($grade);
+            Grade::firstOrCreate(['grade' => $grade['grade']], $grade);
         }
 
         // Create Super Admin User
@@ -172,6 +172,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             StatesAndLGAsSeeder::class,
             NationalitiesSeeder::class,
+            ERPRolesSeeder::class,
         ]);
     }
 }
