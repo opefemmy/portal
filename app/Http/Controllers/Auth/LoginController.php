@@ -80,17 +80,8 @@ class LoginController extends Controller
                     ->with('info', 'You must change your password before continuing.');
             }
 
-            // Check if security question is not set
-            if (!$user->security_question) {
-                return redirect()->route('student.security.setup')
-                    ->with('info', 'Please set a security question for password recovery.');
-            }
-
-            // Check if biodata (guidance details) is not complete
-            if (!$user->guidance_name || !$user->guidance_phone) {
-                return redirect()->route('student.profile')
-                    ->with('info', 'Please complete your profile with guidance details and passport.');
-            }
+            // Profile, biodata, and security question are OPTIONAL
+            // Students can complete them later from their profile settings
 
             // Add login notification for students
             try {
