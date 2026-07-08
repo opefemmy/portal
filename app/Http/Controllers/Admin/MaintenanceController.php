@@ -89,8 +89,12 @@ class MaintenanceController extends Controller
      */
     public function runMigrations()
     {
-        // Create backup first
-        $this->updater->createDatabaseBackup();
+        // Try to create backup first (may fail if table doesn't exist)
+        try {
+            $this->updater->createDatabaseBackup();
+        } catch (\Exception $e) {
+            // Ignore backup errors
+        }
 
         $results = $this->updater->runMigrations();
 
@@ -113,8 +117,12 @@ class MaintenanceController extends Controller
      */
     public function runRepairs()
     {
-        // Create backup first
-        $this->updater->createDatabaseBackup();
+        // Try to create backup first (may fail if table doesn't exist)
+        try {
+            $this->updater->createDatabaseBackup();
+        } catch (\Exception $e) {
+            // Ignore backup errors
+        }
 
         $results = $this->updater->runAllRepairs();
 

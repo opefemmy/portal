@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class SystemBackup extends Model
 {
@@ -30,6 +31,14 @@ class SystemBackup extends Model
     const STATUS_COMPLETED = 'completed';
     const STATUS_FAILED = 'failed';
 
+    /**
+     * Check if the table exists
+     */
+    public static function tableExists(): bool
+    {
+        return Schema::hasTable('system_backups');
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
@@ -42,6 +51,10 @@ class SystemBackup extends Model
 
     public static function createBackup(string $type, string $name): self
     {
+        if (!self::tableExists()) {
+            throw new \RuntimeException('system_backups table does not exist. Please run migrations.');
+        }
+
         return self::create([
             'name' => $name,
             'type' => $type,

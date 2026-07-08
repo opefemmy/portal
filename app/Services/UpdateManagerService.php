@@ -62,10 +62,16 @@ class UpdateManagerService
             }
         }
 
-        // Register new version if migrations ran
+        // Register new version if migrations ran (only if tables exist)
         if (!empty($results['migrated'])) {
-            $version = 'v' . date('Y.m.d') . '.' . count($results['migrated']);
-            $this->maintenance->registerVersion($version, 'System Update');
+            try {
+                if (SystemVersion::tableExists()) {
+                    $version = 'v' . date('Y.m.d') . '.' . count($results['migrated']);
+                    $this->maintenance->registerVersion($version, 'System Update');
+                }
+            } catch (\Exception $e) {
+                // Ignore version registration errors
+            }
         }
 
         return $results;
@@ -367,11 +373,15 @@ class UpdateManagerService
     /**
      * Create database backup
      */
-    public function createDatabaseBackup(): SystemBackup
+    public function createDatabaseBackup(): ?SystemBackup
     {
-        $backup = SystemBackup::createBackup(SystemBackup::TYPE_DATABASE, 'db_backup_' . date('Y_m_d_His'));
-
         try {
+            if (!SystemBackup::tableExists()) {
+                return null;
+            }
+
+            $backup = SystemBackup::createBackup(SystemBackup::TYPE_DATABASE, 'db_backup_' . date('Y_m_d_His'));
+
             $backup->markInProgress();
 
             $filename = storage_path('backups/' . $backup->name . '.sql');
@@ -398,21 +408,25 @@ class UpdateManagerService
                 // Fallback: just mark as completed without file
                 $backup->markCompleted(null, '0 MB');
             }
-        } catch (\Exception $e) {
-            $backup->markFailed($e->getMessage());
-        }
 
-        return $backup;
+            return $backup;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
      * Create files backup
      */
-    public function createFilesBackup(): SystemBackup
+    public function createFilesBackup(): ?SystemBackup
     {
-        $backup = SystemBackup::createBackup(SystemBackup::TYPE_FILES, 'files_backup_' . date('Y_m_d_His'));
-
         try {
+            if (!SystemBackup::tableExists()) {
+                return null;
+            }
+
+            $backup = SystemBackup::createBackup(SystemBackup::TYPE_FILES, 'files_backup_' . date('Y_m_d_His'));
+
             $backup->markInProgress();
 
             $filename = storage_path('backups/' . $backup->name . '.zip');
@@ -435,11 +449,11 @@ class UpdateManagerService
             } else {
                 $backup->markCompleted(null, '0 MB');
             }
-        } catch (\Exception $e) {
-            $backup->markFailed($e->getMessage());
-        }
 
-        return $backup;
+            return $backup;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     protected function addFolderToZip(string $folder, string $zipFolder, ZipArchive $zip): void
@@ -461,7 +475,14 @@ class UpdateManagerService
      */
     public function getBackups(): array
     {
-        return SystemBackup::orderByDesc('created_at')->get()->toArray();
+        try {
+            if (!SystemBackup::tableExists()) {
+                return [];
+            }
+            return SystemBackup::orderByDesc('created_at')->get()->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**

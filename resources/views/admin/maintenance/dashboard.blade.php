@@ -31,15 +31,15 @@
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col-4">
-                        <h3 class="text-success">{{ count(array_filter($health, fn($h) => $h['status'] === 'healthy')) }}</h3>
+                        <h3 class="text-success">{{ is_array($health) ? count(array_filter($health, fn($h) => $h['status'] === 'healthy')) : 0 }}</h3>
                         <small class="text-muted">Healthy</small>
                     </div>
                     <div class="col-4">
-                        <h3 class="text-warning">{{ count(array_filter($health, fn($h) => $h['status'] === 'warning')) }}</h3>
+                        <h3 class="text-warning">{{ is_array($health) ? count(array_filter($health, fn($h) => $h['status'] === 'warning')) : 0 }}</h3>
                         <small class="text-muted">Warning</small>
                     </div>
                     <div class="col-4">
-                        <h3 class="text-danger">{{ count(array_filter($health, fn($h) => $h['status'] === 'critical')) }}</h3>
+                        <h3 class="text-danger">{{ is_array($health) ? count(array_filter($health, fn($h) => $h['status'] === 'critical')) : 0 }}</h3>
                         <small class="text-muted">Critical</small>
                     </div>
                 </div>
