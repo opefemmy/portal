@@ -101,11 +101,11 @@ class MaintenanceController extends Controller
         $message = 'Migrations completed: ' . count($results['migrated']) . ' migrated';
 
         if (!empty($results['errors'])) {
-            $message .= ' (Errors: ' . count($results['errors']) . ')';
+            $message .= ' - ' . collect($results['errors'])->pluck('error')->implode(', ');
         }
 
         if (!empty($results['errors'])) {
-            return back()->with('error', $message)->with('migration_errors', $results['errors']);
+            return back()->with('error', $message);
         }
 
         return back()->with('success', $message);
