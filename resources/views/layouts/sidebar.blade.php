@@ -16,7 +16,7 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bsTarget="#maintenanceMenu">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#maintenanceMenu">
         <i class="fas fa-tools"></i> System Maintenance <i class="fas fa-chevron-down float-end"></i>
     </a>
     <div class="collapse" id="maintenanceMenu">
@@ -158,7 +158,7 @@ $role = $user->role->slug ?? '';
     </div>
 </li>
 <li class="nav-item">
-    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bsTarget="#admissionMenu">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#admissionMenu">
         <i class="fas fa-user-plus"></i> Manage Admission <i class="fas fa-chevron-down float-end"></i>
     </a>
     <div class="collapse" id="admissionMenu">
