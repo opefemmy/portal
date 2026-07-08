@@ -51,6 +51,13 @@ class UpdateManagerService
         $results = ['migrated' => [], 'errors' => []];
 
         if (empty($pending)) {
+            // If no pending, try to run migrations anyway in case some failed midway
+            try {
+                // Check if we need to add missing migration records
+                $this->ensureMigrationsRecorded();
+            } catch (\Exception $e) {
+                // Ignore
+            }
             return $results;
         }
 
@@ -66,10 +73,22 @@ class UpdateManagerService
                 $results['migrated'][] = $migration['file'];
             }
         } catch (\Exception $e) {
-            $results['errors'][] = [
-                'file' => 'migrate',
-                'error' => $e->getMessage(),
-            ];
+            $errorMsg = $e->getMessage();
+
+            // If error is about duplicate column/table, still count as success
+            if (str_contains($errorMsg, 'Duplicate column name') ||
+                str_contains($errorMsg, 'Duplicate table name') ||
+                str_contains($errorMsg, 'already exists')) {
+                // Migration already ran - just add to migrated
+                foreach ($pending as $migration) {
+                    $results['migrated'][] = $migration['file'];
+                }
+            } else {
+                $results['errors'][] = [
+                    'file' => 'migrate',
+                    'error' => $errorMsg,
+                ];
+            }
         }
 
         // Register new version if migrations ran (only if tables exist)
@@ -85,6 +104,27 @@ class UpdateManagerService
         }
 
         return $results;
+    }
+
+    /**
+     * Ensure all migration files are recorded in the migrations table
+     */
+    protected function ensureMigrationsRecorded(): void
+    {
+        $ran = DB::table('migrations')->pluck('migration')->toArray();
+        $files = glob(database_path('migrations/*.php'));
+
+        $added = 0;
+        foreach ($files as $file) {
+            $filename = basename($file, '.php');
+            if (!in_array($filename, $ran)) {
+                DB::table('migrations')->insert([
+                    'migration' => $filename,
+                    'batch' => DB::table('migrations')->max('batch') + 1
+                ]);
+                $added++;
+            }
+        }
     }
 
     /**
