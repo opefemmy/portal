@@ -25,20 +25,18 @@ class StudentOnboardingComplete
         // Check if onboarding is required
         $requiredSteps = [];
 
-        // Step 1: Must change password
+        // Step 1: Must change password (only if required)
         if ($user->must_change_password) {
             $requiredSteps[] = 'password';
         }
 
-        // Step 2: Must set security question
-        if (!$user->security_question) {
-            $requiredSteps[] = 'security';
-        }
-
-        // Step 3: Must complete guidance details
+        // Step 2: Must complete guidance details (required)
         if (!$user->guidance_name || !$user->guidance_phone) {
             $requiredSteps[] = 'profile';
         }
+
+        // Security question is OPTIONAL - not required for onboarding
+        // Students can set it later from their profile
 
         // If there are required steps, redirect to the first one
         if (!empty($requiredSteps)) {
@@ -46,7 +44,6 @@ class StudentOnboardingComplete
 
             $redirectMap = [
                 'password' => 'student.password.change.required',
-                'security' => 'student.security.setup',
                 'profile' => 'student.profile',
             ];
 
@@ -54,11 +51,10 @@ class StudentOnboardingComplete
             $allowedRoutes = [
                 'student.password.change.required',
                 'student.password.change',
-                'student.security.setup',
-                'student.security.setup.store',
                 'student.profile',
                 'student.profile.update',
                 'student.profile.passport',
+                'student.dashboard',
                 'logout',
             ];
 
@@ -71,9 +67,6 @@ class StudentOnboardingComplete
                 if ($firstStep === 'password') {
                     return redirect()->route($redirectRoute)
                         ->with('info', 'You must change your password before continuing.');
-                } elseif ($firstStep === 'security') {
-                    return redirect()->route($redirectRoute)
-                        ->with('info', 'Please set a security question for password recovery.');
                 } elseif ($firstStep === 'profile') {
                     return redirect()->route($redirectRoute)
                         ->with('info', 'Please complete your profile with guidance details.');
