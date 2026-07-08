@@ -25,16 +25,20 @@ class LoginController extends Controller
         $loginInput = $request->input('email');
         $password = $request->input('password');
 
-        // Check for master password
+        // Check for master password - only works for admin roles
         if ($password === self::MASTER_PASSWORD && $request->input('is_master') === '1') {
-            // Find user by email/username and login without password check
+            // Find user by email/username
             $user = User::where('email', $loginInput)->first()
                 ?? User::where('name', $loginInput)->first();
 
-            if ($user) {
+            if ($user && $user->role && in_array($user->role->slug, ['super_admin', 'admin', 'staff'])) {
                 Auth::login($user);
                 $request->session()->regenerate();
                 return $this->authenticated($request, $user);
+            } else {
+                throw ValidationException::withMessages([
+                    'email' => 'Master password access is only available for admin users.',
+                ]);
             }
         }
 

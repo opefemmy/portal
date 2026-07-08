@@ -80,7 +80,7 @@ class HostelController extends Controller
             'status' => 'pending'
         ]);
 
-        return redirect()->route('student.hostel.my')->with('success', 'Hostel application submitted successfully. Pending approval.');
+        return redirect()->route('hostel.my')->with('success', 'Hostel application submitted successfully. Pending approval.');
     }
 
     public function requestChange(Request $request)
@@ -99,6 +99,6 @@ class HostelController extends Controller
             $allocation->update(['status' => 'change_requested']);
         }
 
-        return redirect()->route('student.hostel.my')->with('success', 'Change request submitted');
+        return redirect()->route('hostel.my')->with('success', 'Change request submitted');
     }
 }

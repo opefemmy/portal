@@ -18,15 +18,28 @@
                         <label for="doctor_id" class="form-label">Select Doctor</label>
                         <select class="form-select @error('doctor_id') is-invalid @enderror"
                                 id="doctor_id" name="doctor_id" required>
-                            <option value="">Select Doctor</option>
-                            @foreach($doctors as $doctor)
-                                <option value="{{ $doctor->id }}">
-                                    Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
-                                    @if($doctor->specialization)
-                                        ({{ $doctor->specialization }})
-                                    @endif
-                                </option>
-                            @endforeach
+                            <option value="">Select a Doctor</option>
+                            @php
+                                // Group doctors by specialization
+                                $grouped = $doctors->groupBy('specialization');
+                            @endphp
+                            @forelse($grouped as $specialization => $specializationDoctors)
+                                <optgroup label="{{ $specialization ?? 'General' }}">
+                                    @foreach($specializationDoctors as $doctor)
+                                        <option value="{{ $doctor->id }}">
+                                            Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
+                                            @if($doctor->specialization)
+                                                - {{ $doctor->specialization }}
+                                            @endif
+                                            @if($doctor->is_available)
+                                                (Available)
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @empty
+                                <option value="">No doctors available</option>
+                            @endforelse
                         </select>
                         @error('doctor_id')
                             <div class="invalid-feedback">{{ $message }}</div>

@@ -76,4 +76,9 @@ class Course extends Model
     {
         return $this->hasMany(StudentCourse::class);
     }
+
+    public function classification()
+    {
+        return $this->hasOne(CourseClassification::class);
+    }
 }

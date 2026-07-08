@@ -46,6 +46,12 @@
                             <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Edit this user">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            <form method="POST" action="{{ route('admin.users.reset_password', $user) }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" title="Reset password to default" onclick="return confirm('Reset password to default (password)?')">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                            </form>
                             <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline">
                                 @csrf
                                 @method('DELETE')

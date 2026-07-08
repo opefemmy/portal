@@ -95,4 +95,31 @@ class User extends Authenticatable
     {
         return $this->email;
     }
+
+    /**
+     * Determine if user is an indigene (from Ekiti state)
+     */
+    public function getCategoryAttribute(): string
+    {
+        // Ekiti state is considered indigene, all other states are non-indigene
+        $ekitiKeywords = ['ekiti', 'ekiti state'];
+
+        $state = strtolower($this->state ?? '');
+
+        foreach ($ekitiKeywords as $keyword) {
+            if (str_contains($state, $keyword)) {
+                return 'indigene';
+            }
+        }
+
+        return 'non_indigene';
+    }
+
+    /**
+     * Check if user is an indigene
+     */
+    public function isIndigene(): bool
+    {
+        return $this->category === 'indigene';
+    }
 }

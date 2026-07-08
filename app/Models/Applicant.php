@@ -109,4 +109,31 @@ class Applicant extends Model
     {
         return $query->where('status', 'admitted');
     }
+
+    /**
+     * Determine if applicant is an indigene (from Ekiti state)
+     */
+    public function getCategoryAttribute(): string
+    {
+        // Ekiti state is considered indigene, all other states are non-indigene
+        $ekitiKeywords = ['ekiti', 'ekiti state'];
+
+        $state = strtolower($this->state_of_origin ?? '');
+
+        foreach ($ekitiKeywords as $keyword) {
+            if (str_contains($state, $keyword)) {
+                return 'indigene';
+            }
+        }
+
+        return 'non_indigene';
+    }
+
+    /**
+     * Check if applicant is an indigene
+     */
+    public function isIndigene(): bool
+    {
+        return $this->category === 'indigene';
+    }
 }
