@@ -28,7 +28,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="category" class="form-label">Category *</label>
-                        <select class="form-select @error('category') is-invalid @endif" id="category" name="category" required>
+                        <select class="form-select @error('category') is-invalid @enderror" id="category" name="category" required>
                             <option value="">Select Category</option>
                             <option value="complaint">Complaint</option>
                             <option value="suggestion">Suggestion</option>
@@ -36,27 +36,27 @@
                         </select>
                         @error('category')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="subject" class="form-label">Subject *</label>
-                        <input type="text" class="form-control @error('subject') is-invalid @endif"
+                        <input type="text" class="form-control @error('subject') is-invalid @enderror"
                                id="subject" name="subject" required>
                         @error('subject')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
             <div class="mb-3">
                 <label for="message" class="form-label">Message *</label>
-                <textarea class="form-control @error('message') is-invalid @endif"
+                <textarea class="form-control @error('message') is-invalid @enderror"
                           id="message" name="message" rows="5" required></textarea>
                 @error('message')
                     <div class="invalid-feedback">{{ $message }}</div>
-                @endif
+                @enderror
             </div>
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-paper-plane me-2"></i>Submit

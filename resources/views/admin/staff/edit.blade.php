@@ -60,7 +60,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="role_id" class="form-label">Role</label>
-                        <select class="form-select @error('role_id') is-invalid @endre"
+                        <select class="form-select @error('role_id') is-invalid @enderror"
                                 id="role_id" name="role_id" required>
                             <option value="">Select Role</option>
                             @foreach($roles as $role)
