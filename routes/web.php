@@ -255,6 +255,32 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+
+    // System Maintenance Routes
+    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\MaintenanceController::class, 'dashboard'])->name('dashboard');
+        Route::get('/health', [\App\Http\Controllers\Admin\MaintenanceController::class, 'healthCheck'])->name('health');
+        Route::post('/health/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])->name('health.run');
+        Route::post('/health/repair', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])->name('health.repair');
+        Route::get('/updates', [\App\Http\Controllers\Admin\MaintenanceController::class, 'updateManager'])->name('updates');
+        Route::post('/migrations/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runMigrations'])->name('migrations.run');
+        Route::post('/seeders/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runSeeders'])->name('seeders.run');
+        Route::post('/repairs/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runRepairs'])->name('repairs.run');
+        Route::get('/migrations', [\App\Http\Controllers\Admin\MaintenanceController::class, 'migrations'])->name('migrations');
+        Route::get('/database', [\App\Http\Controllers\Admin\MaintenanceController::class, 'databaseRepair'])->name('database');
+        Route::get('/modules', [\App\Http\Controllers\Admin\MaintenanceController::class, 'moduleScanner'])->name('modules');
+        Route::get('/permissions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'permissionScanner'])->name('permissions');
+        Route::get('/storage', [\App\Http\Controllers\Admin\MaintenanceController::class, 'storageScanner'])->name('storage');
+        Route::get('/cache', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cacheManager'])->name('cache');
+        Route::post('/cache/clear', [\App\Http\Controllers\Admin\MaintenanceController::class, 'clearCaches'])->name('cache.clear');
+        Route::post('/optimize', [\App\Http\Controllers\Admin\MaintenanceController::class, 'optimizeSystem'])->name('optimize');
+        Route::get('/backups', [\App\Http\Controllers\Admin\MaintenanceController::class, 'backupManager'])->name('backups');
+        Route::post('/backup/create', [\App\Http\Controllers\Admin\MaintenanceController::class, 'createBackup'])->name('backup.create');
+        Route::get('/logs', [\App\Http\Controllers\Admin\MaintenanceController::class, 'logViewer'])->name('logs');
+        Route::get('/versions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'versionManager'])->name('versions');
+        Route::post('/version/register', [\App\Http\Controllers\Admin\MaintenanceController::class, 'registerVersion'])->name('version.register');
+        Route::get('/report', [\App\Http\Controllers\Admin\MaintenanceController::class, 'systemReport'])->name('report');
+    });
 });
 
 // Student Routes

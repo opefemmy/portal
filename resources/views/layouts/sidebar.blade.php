@@ -16,6 +16,80 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bsTarget="#maintenanceMenu">
+        <i class="fas fa-tools"></i> System Maintenance <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse" id="maintenanceMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.dashboard') }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.health') }}" class="nav-link">
+                    <i class="fas fa-heartbeat me-2"></i>Health Check
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.updates') }}" class="nav-link">
+                    <i class="fas fa-sync me-2"></i>Update Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.migrations') }}" class="nav-link">
+                    <i class="fas fa-database me-2"></i>Migration Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.database') }}" class="nav-link">
+                    <i class="fas fa-server me-2"></i>Database Repair
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.modules') }}" class="nav-link">
+                    <i class="fas fa-cubes me-2"></i>Module Scanner
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.permissions') }}" class="nav-link">
+                    <i class="fas fa-shield-alt me-2"></i>Permissions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.storage') }}" class="nav-link">
+                    <i class="fas fa-folder me-2"></i>Storage Scanner
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.cache') }}" class="nav-link">
+                    <i class="fas fa-broom me-2"></i>Cache Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.backups') }}" class="nav-link">
+                    <i class="fas fa-database me-2"></i>Backup Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.logs') }}" class="nav-link">
+                    <i class="fas fa-file-alt me-2"></i>Log Viewer
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.versions') }}" class="nav-link">
+                    <i class="fas fa-tags me-2"></i>Version Manager
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.maintenance.report') }}" class="nav-link">
+                    <i class="fas fa-chart-line me-2"></i>System Report
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+<li class="nav-item">
     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
         <i class="fas fa-users"></i> Users
     </a>
