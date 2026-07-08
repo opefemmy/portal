@@ -47,7 +47,7 @@ class StudentOnboardingComplete
             $redirectMap = [
                 'password' => 'student.password.change.required',
                 'security' => 'student.security.setup',
-                'profile' => 'student.profile.edit',
+                'profile' => 'student.profile',
             ];
 
             // Allow access to the required step pages
@@ -56,7 +56,7 @@ class StudentOnboardingComplete
                 'student.password.change',
                 'student.security.setup',
                 'student.security.setup.store',
-                'student.profile.edit',
+                'student.profile',
                 'student.profile.update',
                 'student.profile.passport',
                 'logout',

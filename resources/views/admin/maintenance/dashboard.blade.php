@@ -63,9 +63,18 @@
                 <p class="text-muted">Migrations Pending</p>
             </div>
             <div class="card-footer">
+                @if(count($pendingMigrations) > 0)
+                <form method="POST" action="{{ route('admin.maintenance.migrations.run') }}" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-success w-100" onclick="return confirm('Run pending migrations now? A backup will be created first.')">
+                        <i class="fas fa-play me-1"></i>Run Migrations
+                    </button>
+                </form>
+                @else
                 <a href="{{ route('admin.maintenance.updates') }}" class="btn btn-sm btn-outline-warning w-100">
                     View Updates
                 </a>
+                @endif
             </div>
         </div>
     </div>

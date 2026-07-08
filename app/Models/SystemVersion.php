@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class SystemVersion extends Model
 {
@@ -24,6 +25,14 @@ class SystemVersion extends Model
         'is_current' => 'boolean',
     ];
 
+    /**
+     * Check if the table exists
+     */
+    public static function tableExists(): bool
+    {
+        return Schema::hasTable('system_versions');
+    }
+
     public function scopeCurrent($query)
     {
         return $query->where('is_current', true);
@@ -36,11 +45,23 @@ class SystemVersion extends Model
 
     public static function getCurrentVersion(): ?self
     {
-        return static::current()->first();
+        if (!static::tableExists()) {
+            return null;
+        }
+
+        try {
+            return static::current()->first();
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     public static function registerVersion(string $version, string $releaseName = null): self
     {
+        if (!static::tableExists()) {
+            throw new \RuntimeException('system_versions table does not exist. Please run migrations.');
+        }
+
         // Mark all versions as not current
         static::query()->update(['is_current' => false]);
 

@@ -18,7 +18,11 @@ class SystemMaintenanceService
      */
     public function getCurrentVersion(): ?SystemVersion
     {
-        return SystemVersion::getCurrentVersion();
+        try {
+            return SystemVersion::getCurrentVersion();
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
@@ -26,7 +30,14 @@ class SystemMaintenanceService
      */
     public function getVersions(): array
     {
-        return SystemVersion::orderByDesc('created_at')->get()->toArray();
+        try {
+            if (!SystemVersion::tableExists()) {
+                return [];
+            }
+            return SystemVersion::orderByDesc('created_at')->get()->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
