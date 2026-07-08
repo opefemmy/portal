@@ -61,6 +61,13 @@
             <div class="card-body text-center">
                 <h2 class="text-warning">{{ count($pendingMigrations) }}</h2>
                 <p class="text-muted">Migrations Pending</p>
+                @if(count($pendingMigrations) > 0)
+                <small class="text-danger">
+                    @foreach($pendingMigrations as $m)
+                    <br>{{ $m['file'] }}
+                    @endforeach
+                </small>
+                @endif
             </div>
             <div class="card-footer">
                 @if(count($pendingMigrations) > 0)
