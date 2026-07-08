@@ -95,9 +95,63 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.staff.index') }}" class="nav-link {{ request()->is('admin/staff*') ? 'active' : '' }}">
-        <i class="fas fa-user-tie"></i> Staff
+    <a href="#" class="nav-link {{ request()->is('admin/staff*') ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#staffMenu">
+        <i class="fas fa-user-tie"></i> Staff <i class="fas fa-chevron-down float-end"></i>
     </a>
+    <div class="collapse" id="staffMenu">
+        <ul class="nav flex-column ms-3">
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index') }}" class="nav-link {{ request()->is('admin/staff') && !request('role_slug') ? 'active' : '' }}">
+                    <i class="fas fa-users me-2"></i>All Staff
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'admin']) }}" class="nav-link {{ request('role_slug') == 'admin' ? 'active' : '' }}">
+                    <i class="fas fa-user-shield me-2"></i>Administrators
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'lecturer']) }}" class="nav-link {{ request('role_slug') == 'lecturer' ? 'active' : '' }}">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>Lecturers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'hod']) }}" class="nav-link {{ request('role_slug') == 'hod' ? 'active' : '' }}">
+                    <i class="fas fa-user-tie me-2"></i>HODs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'dean']) }}" class="nav-link {{ request('role_slug') == 'dean' ? 'active' : '' }}">
+                    <i class="fas fa-user-graduate me-2"></i>Deans
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'registrar']) }}" class="nav-link {{ request('role_slug') == 'registrar' ? 'active' : '' }}">
+                    <i class="fas fa-file-signature me-2"></i>Registrars
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'bursar']) }}" class="nav-link {{ request('role_slug') == 'bursar' ? 'active' : '' }}">
+                    <i class="fas fa-money-bill-wave me-2"></i>Bursars
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'librarian']) }}" class="nav-link {{ request('role_slug') == 'librarian' ? 'active' : '' }}">
+                    <i class="fas fa-book-reader me-2"></i>Librarians
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'ict_admin']) }}" class="nav-link {{ request('role_slug') == 'ict_admin' ? 'active' : '' }}">
+                    <i class="fas fa-laptop-code me-2"></i>ICT Admin
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.create') }}" class="nav-link {{ request()->is('admin/staff/create*') ? 'active' : '' }}">
+                    <i class="fas fa-user-plus me-2"></i>Add New Staff
+                </a>
+            </li>
+        </ul>
+    </div>
 </li>
 <li class="nav-item">
     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#institutionMenu">
