@@ -106,7 +106,69 @@ $user = auth()->user();
             </div>
         </div>
     </div>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Total Fees</h6>
+                <h2>{{ $fees->count() }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-3">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Unpaid Fees</h6>
+                <h2>{{ $unpaidFees->count() }}</h2>
+            </div>
+        </div>
+    </div>
 </div>
+
+{{-- Fees Section --}}
+@if($unpaidFees->count() > 0)
+<div class="card mt-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Fees to Pay</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Fee Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($unpaidFees as $fee)
+                    <tr>
+                        <td><strong>{{ $fee->name }}</strong></td>
+                        <td>{{ $fee->description }}</td>
+                        <td><span class="text-success">₦{{ number_format($fee->amount, 2) }}</span></td>
+                        <td>
+                            <a href="{{ route('student.payments.pay', $fee) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-credit-card me-1"></i>Pay
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@elseif($fees->count() > 0)
+<div class="card mt-4 border-success">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Fees Status</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-0"><i class="fas fa-check me-2"></i>All fees have been paid for this session!</p>
+    </div>
+</div>
+@endif
 
 <div class="card mt-4">
     <div class="card-header">
