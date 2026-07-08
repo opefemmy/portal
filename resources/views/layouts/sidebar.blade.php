@@ -360,7 +360,7 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('student.profile.edit') }}" class="nav-link {{ request()->is('student/profile*') ? 'active' : '' }}">
+    <a href="{{ route('student.profile') }}" class="nav-link {{ request()->is('student/profile*') ? 'active' : '' }}">
         <i class="fas fa-user-cog"></i> My Profile
     </a>
 </li>

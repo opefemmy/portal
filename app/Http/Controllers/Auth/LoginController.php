@@ -88,7 +88,7 @@ class LoginController extends Controller
 
             // Check if biodata (guidance details) is not complete
             if (!$user->guidance_name || !$user->guidance_phone) {
-                return redirect()->route('student.profile.edit')
+                return redirect()->route('student.profile')
                     ->with('info', 'Please complete your profile with guidance details and passport.');
             }
 

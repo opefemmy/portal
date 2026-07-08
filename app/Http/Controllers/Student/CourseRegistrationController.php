@@ -32,7 +32,7 @@ class CourseRegistrationController extends Controller
         }
 
         if (!$student->school_id || !$student->department_id || !$student->programme_id) {
-            return redirect()->route('student.profile.edit')
+            return redirect()->route('student.profile')
                 ->with('error', 'Please complete your profile to select department and programme.');
         }
 

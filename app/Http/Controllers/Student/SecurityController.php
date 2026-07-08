@@ -32,7 +32,7 @@ class SecurityController extends Controller
         ]);
 
         // Redirect to profile to complete biodata
-        return redirect()->route('student.profile.edit')
+        return redirect()->route('student.profile')
             ->with('success', 'Security question set successfully. Please complete your profile.')
             ->with('info', 'Please fill in your guidance details and upload your passport.');
     }

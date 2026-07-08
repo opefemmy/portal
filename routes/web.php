@@ -315,7 +315,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::post('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'store'])->name('complaints.store');
 
     // Profile
-    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile');
     Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('profile.passport');
 

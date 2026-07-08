@@ -23,7 +23,7 @@ $user = auth()->user();
 @if(isset($profileIncomplete) && $profileIncomplete && $student)
 <div class="alert alert-warning alert-dismissible fade show" role="alert">
     <i class="fas fa-exclamation-triangle me-2"></i>Your profile is incomplete.
-    <a href="{{ route('student.profile.edit') }}">Click here to complete it.</a>
+    <a href="{{ route('student.profile') }}">Click here to complete it.</a>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 @endif
