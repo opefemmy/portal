@@ -442,6 +442,7 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar'])->g
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])->name('payments.verify');
+    Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::get('/reports', [\App\Http\Controllers\Bursar\ReportController::class, 'index'])->name('reports');
 
     // Regime Payments

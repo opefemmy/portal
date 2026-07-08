@@ -27,9 +27,9 @@
                 <i class="fas fa-money-bill-wave fa-3x text-success mb-3"></i>
                 <h5>Revenue Reports</h5>
                 <p class="text-muted">View revenue by session, semester</p>
-                <button class="btn btn-success" onclick="alert('Coming soon!')">
+                <a href="{{ route('bursar.reports') }}" class="btn btn-success">
                     <i class="fas fa-chart-line me-2"></i>View Revenue
-                </button>
+                </a>
             </div>
         </div>
     </div>
@@ -37,51 +37,61 @@
     <div class="col-md-4 mb-3">
         <div class="card h-100">
             <div class="card-body text-center">
-                <i class="fas fa-users fa-3x text-info mb-3"></i>
-                <h5>Student Payment Status</h5>
-                <p class="text-muted">View students who have paid</p>
-                <button class="btn btn-info" onclick="alert('Coming soon!')">
-                    <i class="fas fa-list me-2"></i>View Status
-                </button>
+                <i class="fas fa-users fa-3x text-danger mb-3"></i>
+                <h5>Debtors List</h5>
+                <p class="text-muted">Students with unpaid fees</p>
+                <a href="#debtors" class="btn btn-danger">
+                    <i class="fas fa-list me-2"></i>View Debtors
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Quick Stats</h5>
-            </div>
-            <div class="card-body">
-                <table class="table">
-                    <tr>
-                        <td>Total Payments Today:</td>
-                        <td><strong>₦0.00</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Total Payments This Month:</td>
-                        <td><strong>₦0.00</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Pending Payments:</td>
-                        <td><strong>0</strong></td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+{{-- Debtors List --}}
+<div class="card mt-4" id="debtors">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Debtors List - Students with Unpaid Fees</h5>
     </div>
-
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Recent Payments</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">No recent payments found.</p>
-            </div>
+    <div class="card-body">
+        @if(count($debtors) > 0)
+        <div class="alert alert-info">
+            <strong>Total Outstanding:</strong> ₦{{ number_format($totalDebt, 2) }} |
+            <strong>Total Debtors:</strong> {{ count($debtors) }} students
         </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Matric Number</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Unpaid Fees</th>
+                        <th>Amount Owed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($debtors as $debtor)
+                    <tr>
+                        <td>{{ $debtor['student']->matric_number }}</td>
+                        <td>{{ $debtor['student']->user->name }}</td>
+                        <td>{{ $debtor['student']->department->name ?? 'N/A' }}</td>
+                        <td>
+                            @foreach($debtor['unpaid_fees'] as $fee)
+                            <span class="badge bg-warning text-dark">{{ $fee->name }}</span>
+                            @endforeach
+                        </td>
+                        <td><strong class="text-danger">₦{{ number_format($debtor['total_unpaid'], 2) }}</strong></td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <p class="text-center text-success">
+            <i class="fas fa-check-circle me-2"></i>No debtors found! All students have paid their fees.
+        </p>
+        @endif
     </div>
 </div>
 @endsection
