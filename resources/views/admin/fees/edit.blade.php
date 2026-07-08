@@ -108,6 +108,7 @@
                             <option value="both" {{ old('category', $fee->category) == 'both' ? 'selected' : '' }}>All Students (Indigene & Non-Indigene)</option>
                             <option value="indigene" {{ old('category', $fee->category) == 'indigene' ? 'selected' : '' }}>Indigene Only</option>
                             <option value="non_indigene" {{ old('category', $fee->category) == 'non_indigene' ? 'selected' : '' }}>Non-Indigene Only</option>
+                            <option value="portal_charge" {{ old('category', $fee->category) == 'portal_charge' ? 'selected' : '' }}>Portal Charges (All Students)</option>
                         </select>
                         @error('category')
                             <div class="invalid-feedback">{{ $message }}</div>

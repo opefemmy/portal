@@ -155,6 +155,7 @@
                             <option value="both">All Students (Indigene & Non-Indigene)</option>
                             <option value="indigene">Indigene Only</option>
                             <option value="non_indigene">Non-Indigene Only</option>
+                            <option value="portal_charge">Portal Charges (All Students)</option>
                         </select>
                         @error('category')
                             <div class="invalid-feedback">{{ $message }}</div>
