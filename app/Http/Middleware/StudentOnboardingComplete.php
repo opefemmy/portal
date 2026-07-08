@@ -30,13 +30,9 @@ class StudentOnboardingComplete
             $requiredSteps[] = 'password';
         }
 
-        // Step 2: Must complete guidance details (required)
-        if (!$user->guidance_name || !$user->guidance_phone) {
-            $requiredSteps[] = 'profile';
-        }
-
-        // Security question is OPTIONAL - not required for onboarding
-        // Students can set it later from their profile
+        // Profile (biodata/guidance) is OPTIONAL - students can complete it later
+        // Security question is OPTIONAL - students can set it later from their profile
+        // Students have full access to the portal after password change
 
         // If there are required steps, redirect to the first one
         if (!empty($requiredSteps)) {
@@ -44,32 +40,23 @@ class StudentOnboardingComplete
 
             $redirectMap = [
                 'password' => 'student.password.change.required',
-                'profile' => 'student.profile',
             ];
 
-            // Allow access to the required step pages
+            // Allow access to all student routes
             $allowedRoutes = [
                 'student.password.change.required',
                 'student.password.change',
-                'student.profile',
-                'student.profile.update',
-                'student.profile.passport',
                 'student.dashboard',
                 'logout',
             ];
 
             // Check if current route is allowed
             if (!in_array($currentRoute, $allowedRoutes)) {
-                // Redirect to first incomplete step
+                // Redirect to password change if required
                 $firstStep = $requiredSteps[0];
-                $redirectRoute = $redirectMap[$firstStep] ?? 'student.dashboard';
-
                 if ($firstStep === 'password') {
-                    return redirect()->route($redirectRoute)
+                    return redirect()->route('student.password.change.required')
                         ->with('info', 'You must change your password before continuing.');
-                } elseif ($firstStep === 'profile') {
-                    return redirect()->route($redirectRoute)
-                        ->with('info', 'Please complete your profile with guidance details.');
                 }
             }
         }
