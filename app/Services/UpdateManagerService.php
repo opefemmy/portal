@@ -51,13 +51,8 @@ class UpdateManagerService
         $results = ['migrated' => [], 'errors' => []];
 
         if (empty($pending)) {
-            // If no pending, try to run migrations anyway in case some failed midway
-            try {
-                // Check if we need to add missing migration records
-                $this->ensureMigrationsRecorded();
-            } catch (\Exception $e) {
-                // Ignore
-            }
+            // No pending migrations - ensure all files are recorded
+            $this->ensureMigrationsRecorded();
             return $results;
         }
 
@@ -65,12 +60,21 @@ class UpdateManagerService
             // Run all pending migrations at once
             Artisan::call('migrate', ['--force' => true]);
 
-            // Get output to see what was migrated
+            // Get output
             $output = Artisan::output();
 
-            // Mark all pending as migrated
+            // Add all pending to migrated and record in DB
+            $batch = DB::table('migrations')->max('batch') + 1;
             foreach ($pending as $migration) {
                 $results['migrated'][] = $migration['file'];
+
+                // Record each migration if not already recorded
+                if (!DB::table('migrations')->where('migration', $migration['file'])->exists()) {
+                    DB::table('migrations')->insert([
+                        'migration' => $migration['file'],
+                        'batch' => $batch
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             $errorMsg = $e->getMessage();
@@ -79,9 +83,16 @@ class UpdateManagerService
             if (str_contains($errorMsg, 'Duplicate column name') ||
                 str_contains($errorMsg, 'Duplicate table name') ||
                 str_contains($errorMsg, 'already exists')) {
-                // Migration already ran - just add to migrated
+                // Migration already ran - add to migrated and record
+                $batch = DB::table('migrations')->max('batch') + 1;
                 foreach ($pending as $migration) {
                     $results['migrated'][] = $migration['file'];
+                    if (!DB::table('migrations')->where('migration', $migration['file'])->exists()) {
+                        DB::table('migrations')->insert([
+                            'migration' => $migration['file'],
+                            'batch' => $batch
+                        ]);
+                    }
                 }
             } else {
                 $results['errors'][] = [
@@ -114,15 +125,14 @@ class UpdateManagerService
         $ran = DB::table('migrations')->pluck('migration')->toArray();
         $files = glob(database_path('migrations/*.php'));
 
-        $added = 0;
+        $batch = DB::table('migrations')->max('batch') + 1;
         foreach ($files as $file) {
             $filename = basename($file, '.php');
             if (!in_array($filename, $ran)) {
                 DB::table('migrations')->insert([
                     'migration' => $filename,
-                    'batch' => DB::table('migrations')->max('batch') + 1
+                    'batch' => $batch
                 ]);
-                $added++;
             }
         }
     }
