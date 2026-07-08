@@ -315,9 +315,9 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::post('/complaints', [\App\Http\Controllers\Student\ComplaintController::class, 'store'])->name('complaints.store');
 
     // Profile
-    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('student.profile.edit');
-    Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('student.profile.update');
-    Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('student.profile.passport');
+    Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('profile.passport');
 
     // Hostel (NEW)
     Route::get('/hostel', [StudentHostelController::class, 'myHostel'])->name('hostel.my');
