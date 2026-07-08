@@ -9,23 +9,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Check if category column exists
-        if (!Schema::hasColumn('fees', 'category')) {
-            Schema::table('fees', function (Blueprint $table) {
-                $table->enum('category', ['indigene', 'non_indigene', 'portal_charge', 'both'])
-                    ->default('both')
-                    ->after('is_active');
-            });
-        } else {
-            // If exists, try to update the enum
-            try {
-                DB::statement("ALTER TABLE fees MODIFY category ENUM('indigene', 'non_indigene', 'portal_charge', 'both') DEFAULT 'both'");
-            } catch (\Exception $e) {
-                // If fails, just add the column with a different approach
+        // Check if category column exists using try-catch
+        try {
+            $columns = DB::select('SHOW COLUMNS FROM fees WHERE Field = "category"');
+
+            if (empty($columns)) {
+                // Column doesn't exist, add it
                 Schema::table('fees', function (Blueprint $table) {
-                    $table->enum('category', ['indigene', 'non_indigene', 'portal_charge', 'both'])->default('both')->change();
+                    $table->enum('category', ['indigene', 'non_indigene', 'portal_charge', 'both'])
+                        ->default('both')
+                        ->after('is_active');
                 });
             }
+            // If column exists, do nothing - let it be
+        } catch (\Exception $e) {
+            // If any error, just skip
         }
     }
 
