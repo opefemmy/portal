@@ -85,6 +85,65 @@
         .stat-card.danger { border-left-color: var(--danger); }
         .stat-card.info { border-left-color: var(--info); }
 
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card {
+            background-color: #2d2d2d;
+            border-color: #404040;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card-header {
+            background-color: #363636;
+            border-color: #404040;
+        }
+
+        body.dark-mode .table {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table thead th {
+            background-color: #363636;
+            border-color: #404040;
+        }
+
+        body.dark-mode .table td {
+            border-color: #404040;
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #363636;
+            border-color: #404040;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .dropdown-menu {
+            background-color: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .dropdown-item {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .page-header {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .text-muted {
+            color: #a0a0a0 !important;
+        }
+
         .stat-card .icon {
             font-size: 2.5rem;
             opacity: 0.3;
@@ -169,6 +228,11 @@
                     </button>
 
                     <div class="d-flex align-items-center gap-3">
+                        <!-- Dark Mode Toggle -->
+                        <button class="btn btn-outline-dark btn-sm" id="themeToggle" title="Toggle Dark/Light Mode">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+
                         <!-- Direct Logout Button -->
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
                             @csrf
@@ -293,6 +357,32 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // Check saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
         });
     </script>
     @yield('scripts')

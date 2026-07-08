@@ -208,6 +208,11 @@ $role = $user->role->slug ?? '';
                     <i class="fas fa-key me-2"></i>Reset Student Password
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.complaints.index') }}" class="nav-link {{ request()->is('admin/complaints*') ? 'active' : '' }}">
+                    <i class="fas fa-exclamation-circle me-2"></i>Student Complaints
+                </a>
+            </li>
         </ul>
     </div>
 </li>

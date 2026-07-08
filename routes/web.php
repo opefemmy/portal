@@ -172,6 +172,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // Student Import (NEW)
     Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
     Route::post('/students/import', [StudentImportController::class, 'import'])->name('students.import.store');
+
+    // Complaints Management
+    Route::resource('complaints', \App\Http\Controllers\Admin\ComplaintController::class);
     Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])->name('students.import.template');
 
     // Course Assignments (OnCourses)
