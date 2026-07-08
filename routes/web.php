@@ -302,7 +302,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{fee}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
-    Route::post('/payments/{fee}/initiate', [PaymentController::class, 'initiatePayment']);
+    Route::post('/payments/{fee}/initiate', [PaymentController::class, 'initiatePayment'])->name('payments.initiate');
     Route::get('/payments/verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
 

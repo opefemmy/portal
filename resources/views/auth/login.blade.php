@@ -38,6 +38,21 @@
         margin: 5px 0 0;
     }
 
+    .role-badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+    .role-badges span {
+        font-size: 10px;
+        padding: 2px 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+    }
+
     .login-body {
         padding: 40px;
     }
@@ -109,7 +124,15 @@
         <div class="login-header">
             <i class="fas fa-university institution-logo"></i>
             <h3>EKSCOTECH Portal</h3>
-            <p>Sign in to continue</p>
+            <p>Staff, Student & Admin Login</p>
+            <div class="role-badges">
+                <span>Admin</span>
+                <span>Lecturer</span>
+                <span>Student</span>
+                <span>Bursar</span>
+                <span>Librarian</span>
+                <span>Hospital</span>
+            </div>
         </div>
 
         <div class="login-body">
