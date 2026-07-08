@@ -98,7 +98,17 @@ class MaintenanceController extends Controller
 
         $results = $this->updater->runMigrations();
 
-        return back()->with('success', 'Migrations completed: ' . count($results['migrated']) . ' migrated');
+        $message = 'Migrations completed: ' . count($results['migrated']) . ' migrated';
+
+        if (!empty($results['errors'])) {
+            $message .= ' (Errors: ' . count($results['errors']) . ')';
+        }
+
+        if (!empty($results['errors'])) {
+            return back()->with('error', $message)->with('migration_errors', $results['errors']);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**

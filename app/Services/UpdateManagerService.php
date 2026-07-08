@@ -50,16 +50,26 @@ class UpdateManagerService
         $pending = $this->getPendingMigrations();
         $results = ['migrated' => [], 'errors' => []];
 
-        foreach ($pending as $migration) {
-            try {
-                Artisan::call('migrate', ['--force' => true]);
+        if (empty($pending)) {
+            return $results;
+        }
+
+        try {
+            // Run all pending migrations at once
+            Artisan::call('migrate', ['--force' => true]);
+
+            // Get output to see what was migrated
+            $output = Artisan::output();
+
+            // Mark all pending as migrated
+            foreach ($pending as $migration) {
                 $results['migrated'][] = $migration['file'];
-            } catch (\Exception $e) {
-                $results['errors'][] = [
-                    'file' => $migration['file'],
-                    'error' => $e->getMessage(),
-                ];
             }
+        } catch (\Exception $e) {
+            $results['errors'][] = [
+                'file' => 'migrate',
+                'error' => $e->getMessage(),
+            ];
         }
 
         // Register new version if migrations ran (only if tables exist)
