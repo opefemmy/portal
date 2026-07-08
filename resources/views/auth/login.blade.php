@@ -159,8 +159,6 @@
 
             <div class="register-link">
                 <p class="mb-2">Don't have an account?</p>
-                <a href="{{ route('register') }}">Create Student Account</a>
-                <span class="mx-2">|</span>
                 <a href="{{ route('applicant.register') }}">Apply Now</a>
             </div>
         </div>
