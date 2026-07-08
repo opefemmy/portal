@@ -63,7 +63,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">No users found.</td>
+                        <td colspan="5" class="text-center py-4">No users found.</td>
                     </tr>
                     @endforelse
                 </tbody>

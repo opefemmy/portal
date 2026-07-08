@@ -69,7 +69,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center">No fees configured for your session.</td>
+                                <td colspan="5" class="text-center">No fees configured for your session.</td>
                             </tr>
                             @endforelse
                         </tbody>

@@ -31,7 +31,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">No timetable available.</td>
+                        <td colspan="5" class="text-center py-4">No timetable available.</td>
                     </tr>
                     @endforelse
                 </tbody>

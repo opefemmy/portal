@@ -423,45 +423,53 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-user-cog"></i> My Profile
     </a>
 </li>
-<li class="nav-item">
-    <a href="{{ route('student.courses') }}" class="nav-link {{ request()->is('student/courses*') ? 'active' : '' }}">
-        <i class="fas fa-book"></i> My Courses
+<li class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fas fa-graduation-cap"></i> Academic <span class="caret"></span>
     </a>
-</li>
-<li class="nav-item">
-    <a href="{{ route('student.results') }}" class="nav-link {{ request()->is('student/results*') ? 'active' : '' }}">
-        <i class="fas fa-chart-line"></i> Results
-    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ route('student.courses') }}"><i class="fas fa-book me-2"></i>My Courses</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.results') }}"><i class="fas fa-chart-line me-2"></i>Results</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.timetable') }}"><i class="fas fa-calendar-alt me-2"></i>Timetable</a></li>
+    </ul>
 </li>
 <li class="nav-item">
     <a href="{{ route('student.payments') }}" class="nav-link {{ request()->is('student/payments*') ? 'active' : '' }}">
         <i class="fas fa-dollar-sign"></i> Payments
     </a>
 </li>
-<li class="nav-item">
-    <a href="{{ route('student.timetable') }}" class="nav-link {{ request()->is('student/timetable*') ? 'active' : '' }}">
-        <i class="fas fa-calendar-alt"></i> Timetable
+<li class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fas fa-bed"></i> Hostel & Accommodation <span class="caret"></span>
     </a>
-</li>
-<li class="nav-item">
-    <a href="{{ route('student.hostel.my') }}" class="nav-link {{ request()->is('student/hostel*') ? 'active' : '' }}">
-        <i class="fas fa-bed"></i> Hostel
-    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ route('student.hostel.my') }}"><i class="fas fa-home me-2"></i>My Hostel</a></li>
+        <li><a class="dropdown-item" href="{{ route('hostel.apply') }}"><i class="fas fa-plus me-2"></i>Apply for Hostel</a></li>
+    </ul>
 </li>
 <li class="nav-item">
     <a href="{{ route('student.library') }}" class="nav-link {{ request()->is('student/library*') ? 'active' : '' }}">
-        <i class="fas fa-book"></i> Library
+        <i class="fas fa-book-open"></i> Library
     </a>
 </li>
 <li class="nav-item">
     <a href="{{ route('student.complaints') }}" class="nav-link {{ request()->is('student/complaints*') ? 'active' : '' }}">
-        <i class="fas fa-exclamation-circle"></i> Complaints
+        <i class="fas fa-exclamation-circle"></i> Complaints & Support
     </a>
 </li>
-<li class="nav-item">
-    <a href="{{ route('student.medical.index') }}" class="nav-link {{ request()->is('student/medical*') ? 'active' : '' }}">
-        <i class="fas fa-hospital"></i> Medical Portal
+<li class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fas fa-hospital"></i> Medical Center <span class="caret"></span>
     </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ route('student.medical.index') }}"><i class="fas fa-home me-2"></i>Medical Portal</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.book') }}"><i class="fas fa-calendar-plus me-2"></i>Book Appointment</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.appointments') }}"><i class="fas fa-calendar me-2"></i>My Appointments</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.history') }}"><i class="fas fa-file-medical me-2"></i>Medical History</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.prescriptions') }}"><i class="fas fa-prescription me-2"></i>Prescriptions</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.lab-results') }}"><i class="fas fa-vial me-2"></i>Lab Results</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.medical.admissions') }}"><i class="fas fa-procedures me-2"></i>Admissions</a></li>
+    </ul>
 </li>
 @elseif($role === 'lecturer')
 <li class="nav-item">

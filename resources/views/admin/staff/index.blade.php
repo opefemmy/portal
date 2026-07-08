@@ -129,7 +129,7 @@
                     </div>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">No staff members found.</td>
+                        <td colspan="5" class="text-center py-4">No staff members found.</td>
                     </tr>
                     @endforelse
                 </tbody>
