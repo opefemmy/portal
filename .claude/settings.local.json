@@ -24,7 +24,8 @@
       "PowerShell(php artisan migrate)",
       "PowerShell(php artisan db:seed --class=TestUsersSeeder)",
       "Read(//c/Users/HP/OneDrive/Documents/**)",
-      "Bash(dir \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\SAMPLE.xlsx\")"
+      "Bash(dir \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\SAMPLE.xlsx\")",
+      "Bash(findstr /i \"fees category\")"
     ]
   }
 }
