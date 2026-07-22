@@ -7,7 +7,7 @@
     <h4>Application Form</h4>
 </div>
 
-<form method="POST" action="{{ route('public.apply.submit') }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('applicant.apply') }}" enctype="multipart/form-data">
     @csrf
 
     {{-- Personal Information --}}
@@ -123,7 +123,7 @@
                 <div class="col-md-4 mb-3">
                     <label class="form-label">LGA *</label>
                     <select name="lga_id" id="lga_id" class="form-select" required>
-                        <option value="">Select LGA</option>
+                        <option value="">Select State First</option>
                     </select>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -180,12 +180,37 @@
         </div>
     </div>
 
-    {{-- O-Level Results --}}
+    {{-- O-Level Results (First Sitting) --}}
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">O-Level Results (First Sitting)</h5>
         </div>
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Examination Type *</label>
+                    <select name="olevel1_exam_type" class="form-select" required>
+                        <option value="">Select Exam Type</option>
+                        <option value="WAEC">WAEC</option>
+                        <option value="NECO">NECO</option>
+                        <option value="NABTEB">NABTEB</option>
+                        <option value="GCE">GCE (A'Level)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Examination Number</label>
+                    <input type="text" name="olevel1_exam_number" class="form-control" placeholder="Exam Number">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Exam Year *</label>
+                    <select name="olevel1_exam_year" class="form-select" required>
+                        <option value="">Select Year</option>
+                        @for($year = date('Y'); $year >= date('Y') - 20; $year--)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-md-6 mb-2">
                     <input type="text" name="olevel1_subject1" class="form-control" placeholder="Subject 1">
@@ -272,8 +297,171 @@
                         <option value="F9">F9</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <input type="number" name="olevel1_exam_year" class="form-control" placeholder="Exam Year" min="2000" max="2030">
+            </div>
+        </div>
+    </div>
+
+    {{-- O-Level Results (Second Sitting) --}}
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">O-Level Results (Second Sitting) - Optional</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Examination Type</label>
+                    <select name="olevel2_exam_type" class="form-select">
+                        <option value="">Select Exam Type</option>
+                        <option value="WAEC">WAEC</option>
+                        <option value="NECO">NECO</option>
+                        <option value="NABTEB">NABTEB</option>
+                        <option value="GCE">GCE (A'Level)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Examination Number</label>
+                    <input type="text" name="olevel2_exam_number" class="form-control" placeholder="Exam Number">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Exam Year</label>
+                    <select name="olevel2_exam_year" class="form-select">
+                        <option value="">Select Year</option>
+                        @for($year = date('Y'); $year >= date('Y') - 20; $year--)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <input type="text" name="olevel2_subject1" class="form-control" placeholder="Subject 1">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <select name="olevel2_grade1" class="form-select">
+                        <option value="">Grade</option>
+                        <option value="A1">A1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="C4">C4</option>
+                        <option value="C5">C5</option>
+                        <option value="C6">C6</option>
+                        <option value="D7">D7</option>
+                        <option value="E8">E8</option>
+                        <option value="F9">F9</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <input type="text" name="olevel2_subject2" class="form-control" placeholder="Subject 2">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <select name="olevel2_grade2" class="form-select">
+                        <option value="">Grade</option>
+                        <option value="A1">A1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="C4">C4</option>
+                        <option value="C5">C5</option>
+                        <option value="C6">C6</option>
+                        <option value="D7">D7</option>
+                        <option value="E8">E8</option>
+                        <option value="F9">F9</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <input type="text" name="olevel2_subject3" class="form-control" placeholder="Subject 3">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <select name="olevel2_grade3" class="form-select">
+                        <option value="">Grade</option>
+                        <option value="A1">A1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="C4">C4</option>
+                        <option value="C5">C5</option>
+                        <option value="C6">C6</option>
+                        <option value="D7">D7</option>
+                        <option value="E8">E8</option>
+                        <option value="F9">F9</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <input type="text" name="olevel2_subject4" class="form-control" placeholder="Subject 4">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <select name="olevel2_grade4" class="form-select">
+                        <option value="">Grade</option>
+                        <option value="A1">A1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="C4">C4</option>
+                        <option value="C5">C5</option>
+                        <option value="C6">C6</option>
+                        <option value="D7">D7</option>
+                        <option value="E8">E8</option>
+                        <option value="F9">F9</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <input type="text" name="olevel2_subject5" class="form-control" placeholder="Subject 5">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <select name="olevel2_grade5" class="form-select">
+                        <option value="">Grade</option>
+                        <option value="A1">A1</option>
+                        <option value="B2">B2</option>
+                        <option value="B3">B3</option>
+                        <option value="C4">C4</option>
+                        <option value="C5">C5</option>
+                        <option value="C6">C6</option>
+                        <option value="D7">D7</option>
+                        <option value="E8">E8</option>
+                        <option value="F9">F9</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Guardian Information --}}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Guardian / Parent Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Guardian Name *</label>
+                    <input type="text" name="guardian_name" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Relationship *</label>
+                    <select name="guardian_relationship" class="form-select" required>
+                        <option value="">Select Relationship</option>
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Guardian">Guardian</option>
+                        <option value="Uncle">Uncle</option>
+                        <option value="Aunt">Aunt</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Guardian Phone *</label>
+                    <input type="tel" name="guardian_phone" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Guardian Email</label>
+                    <input type="email" name="guardian_email" class="form-control">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" name="guardian_occupation" class="form-control">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Guardian Address</label>
+                    <textarea name="guardian_address" class="form-control" rows="1"></textarea>
                 </div>
             </div>
         </div>
@@ -335,6 +523,9 @@
                     option.textContent = lga.name;
                     lgaSelect.appendChild(option);
                 });
+            })
+            .catch(error => {
+                lgaSelect.innerHTML = '<option value="">Error loading LGA</option>';
             });
     });
 
@@ -354,6 +545,9 @@
                     option.textContent = dept.name;
                     deptSelect.appendChild(option);
                 });
+            })
+            .catch(error => {
+                deptSelect.innerHTML = '<option value="">Error loading departments</option>';
             });
     });
 </script>

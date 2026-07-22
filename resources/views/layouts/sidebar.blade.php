@@ -238,7 +238,7 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.reports.students') }}" class="nav-link">
+                <a href="{{ route('reports.students') }}" class="nav-link">
                     <i class="fas fa-file-alt me-2"></i>Application Report
                 </a>
             </li>
@@ -314,6 +314,11 @@ $role = $user->role->slug ?? '';
             <li class="nav-item">
                 <a href="{{ route('bursar.payments') }}" class="nav-link">
                     <i class="fas fa-receipt me-2"></i>View Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('bursar.payments.upload') }}" class="nav-link">
+                    <i class="fas fa-file-upload me-2"></i>Upload External Payments
                 </a>
             </li>
             <li class="nav-item">
@@ -553,6 +558,11 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('bursar.payments') }}" class="nav-link {{ request()->is('bursar/payments*') ? 'active' : '' }}">
         <i class="fas fa-dollar-sign"></i> Payments
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('bursar.payments.upload') }}" class="nav-link {{ request()->is('bursar/payments/upload*') ? 'active' : '' }}">
+        <i class="fas fa-file-upload"></i> Upload External
     </a>
 </li>
 <li class="nav-item">

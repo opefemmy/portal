@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Auth\Notifications\VerifyEmail;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
 
@@ -16,7 +18,7 @@ class User extends Authenticatable
         'date_of_birth', 'phone', 'address', 'state', 'lga',
         'next_of_kin', 'next_of_kin_phone', 'matric_number', 'staff_id',
         'school_id', 'department_id', 'programme_id', 'level',
-        'two_factor_secret', 'is_active'
+        'two_factor_secret', 'is_active', 'must_change_password'
     ];
 
     protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
@@ -121,5 +123,60 @@ class User extends Authenticatable
     public function isIndigene(): bool
     {
         return $this->category === 'indigene';
+    }
+
+    /**
+     * Send the email verification notification.
+     * Customized for the institution portal.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmail);
+    }
+
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role && $this->role->slug === $role;
+    }
+
+    /**
+     * Check if user has any of the given roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->role && in_array($this->role->slug, $roles);
+    }
+
+    /**
+     * Get the user's full name with title
+     */
+    public function getFullNameAttribute(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * Get avatar URL
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->passport) {
+            return asset('storage/passports/' . $this->passport);
+        }
+
+        // Generate avatar based on initials
+        $initials = strtoupper(substr($this->name, 0, 2));
+        return "https://ui-avatars.com/api/?name={$initials}&background=1a237e&color=fff";
+    }
+
+    /**
+     * Check if password needs to be changed
+     */
+    public function getMustChangePasswordAttribute(): bool
+    {
+        return $this->attributes['must_change_password'] ?? false;
     }
 }

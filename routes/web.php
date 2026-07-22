@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
@@ -69,9 +70,16 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Email Verification Routes
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
+    Route::get('/email/check', [EmailVerificationController::class, 'check'])->name('verification.check');
+});
+
 // Public Application Form
 Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('public.apply');
-Route::post('/apply', [ApplicationController::class, 'submitApplication'])->name('public.apply.submit');
 Route::get('/apply/check-status', [ApplicationController::class, 'checkStatus'])->name('public.apply.status');
 
 // API Routes for cascading dropdowns
@@ -100,7 +108,10 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::post('/apply', [ApplicationController::class, 'submitApplication']);
         Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])->name('apply.fee');
         Route::get('/apply/payment/verify', [ApplicationController::class, 'verifyApplicationFee'])->name('apply.payment.verify');
+        Route::post('/apply/payment/verify-external', [ApplicationController::class, 'verifyExternalPayment'])->name('payment.verify-external');
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
+        Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
+        Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');
         Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
     });
 });
@@ -403,8 +414,8 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
     Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])->name('results.approve');
 });
 
-// Registrar Routes
-Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar'])->group(function () {
+// Registrar Routes - accessible by both registrar and admin/super_admin
+Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])->name('dashboard');
 
     // Application Management
@@ -441,12 +452,16 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
 });
 
 // Bursar Routes
-Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar'])->group(function () {
+Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::get('/reports', [\App\Http\Controllers\Bursar\ReportController::class, 'index'])->name('reports');
+
+    // External Payment Upload
+    Route::get('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'showUploadForm'])->name('payments.upload');
+    Route::post('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'uploadPayments'])->name('payments.upload.store');
 
     // Regime Payments
     Route::resource('regimes', RegimeController::class);

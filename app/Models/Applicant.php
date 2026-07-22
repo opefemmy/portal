@@ -14,6 +14,8 @@ class Applicant extends Model
         'date_of_birth', 'place_of_birth', 'gender', 'marital_status',
         'nationality', 'state_of_origin', 'lga', 'permanent_address',
         'contact_address', 'email', 'phone', 'passport',
+        'religion', 'blood_group', 'genotype', 'disability', 'disability_details',
+        'address', 'state_id', 'nationality_id',
 
         // Guardian Information
         'guardian_name', 'guardian_relationship', 'guardian_phone',
@@ -32,6 +34,19 @@ class Applicant extends Model
         'jamb_registration_number', 'jamb_year', 'jamb_score',
         'jamb_subject1', 'jamb_subject2', 'jamb_subject3', 'jamb_subject4',
 
+        // O-Level Results
+        'olevel1_subject1', 'olevel1_grade1', 'olevel1_subject2', 'olevel1_grade2',
+        'olevel1_subject3', 'olevel1_grade3', 'olevel1_subject4', 'olevel1_grade4',
+        'olevel1_subject5', 'olevel1_grade5', 'olevel1_exam_year',
+        'olevel1_exam_type', 'olevel1_exam_number',
+        'olevel2_subject1', 'olevel2_grade1', 'olevel2_subject2', 'olevel2_grade2',
+        'olevel2_subject3', 'olevel2_grade3', 'olevel2_subject4', 'olevel2_grade4',
+        'olevel2_subject5', 'olevel2_grade5', 'olevel2_exam_year',
+        'olevel2_exam_type', 'olevel2_exam_number',
+
+        // Extra Curricular
+        'extra_curricular',
+
         // Documents
         'olevel_certificate', 'tertiary_certificate', 'birth_certificate',
         'lga_id', 'jamb_result',
@@ -41,7 +56,7 @@ class Applicant extends Model
         'payment_amount', 'payment_date', 'application_fee_id',
 
         // Status
-        'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'
+        'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'matric_number'
     ];
 
     protected $casts = [
@@ -73,6 +88,21 @@ class Applicant extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(Session::class);
+    }
+
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    public function lga(): BelongsTo
+    {
+        return $this->belongsTo(LocalGovernment::class, 'lga_id');
+    }
+
+    public function nationality(): BelongsTo
+    {
+        return $this->belongsTo(Nationality::class);
     }
 
     public function reviewer(): BelongsTo

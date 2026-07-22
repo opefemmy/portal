@@ -178,6 +178,8 @@ class ApplicationController extends Controller
             'olevel1_subject5' => 'nullable|string|max:100',
             'olevel1_grade5' => 'nullable|string|max:5',
             'olevel1_exam_year' => 'nullable|integer|min:2000|max:2030',
+            'olevel1_exam_type' => 'nullable|string|max:50',
+            'olevel1_exam_number' => 'nullable|string|max:50',
 
             'olevel2_subject1' => 'nullable|string|max:100',
             'olevel2_grade1' => 'nullable|string|max:5',
@@ -190,6 +192,16 @@ class ApplicationController extends Controller
             'olevel2_subject5' => 'nullable|string|max:100',
             'olevel2_grade5' => 'nullable|string|max:5',
             'olevel2_exam_year' => 'nullable|integer|min:2000|max:2030',
+            'olevel2_exam_type' => 'nullable|string|max:50',
+            'olevel2_exam_number' => 'nullable|string|max:50',
+
+            // Guardian Information
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_relationship' => 'nullable|string|max:50',
+            'guardian_phone' => 'nullable|string|max:20',
+            'guardian_email' => 'nullable|email',
+            'guardian_occupation' => 'nullable|string|max:100',
+            'guardian_address' => 'nullable|string|max:500',
 
             // Extra Curricular
             'extra_curricular' => 'nullable|string|max:1000',
@@ -257,6 +269,183 @@ class ApplicationController extends Controller
     {
         $lgas = LocalGovernment::where('state_id', $stateId)->get();
         return response()->json($lgas);
+    }
+
+    /**
+     * Edit application form
+     */
+    public function editApplication()
+    {
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        if (!$applicant) {
+            return redirect()->route('applicant.apply')->with('error', 'No application found.');
+        }
+
+        // Only allow editing if status is pending or draft
+        if (!in_array($applicant->status, ['pending', 'draft'])) {
+            return back()->with('error', 'You cannot edit your application at this stage.');
+        }
+
+        $data = [
+            'applicant' => $applicant,
+            'schools' => School::all(),
+            'departments' => Department::all(),
+            'programmes' => Programme::all(),
+            'sessions' => Session::orderBy('name', 'desc')->get(),
+            'states' => State::orderBy('name')->get(),
+            'nationalities' => \App\Models\Nationality::all(),
+        ];
+        return view('applicant.apply-edit', $data);
+    }
+
+    /**
+     * Update application
+     */
+    public function updateApplication(Request $request)
+    {
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        if (!$applicant) {
+            return redirect()->route('applicant.apply')->with('error', 'No application found.');
+        }
+
+        // Only allow editing if status is pending or draft
+        if (!in_array($applicant->status, ['pending', 'draft'])) {
+            return back()->with('error', 'You cannot edit your application at this stage.');
+        }
+
+        $validated = $request->validate([
+            // Personal Information
+            'surname' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'phone' => 'required|string|max:20',
+            'gender' => 'required|in:Male,Female,Other',
+            'date_of_birth' => 'nullable|date',
+            'place_of_birth' => 'nullable|string|max:255',
+            'religion' => 'nullable|string|max:100',
+            'blood_group' => 'nullable|string|max:5',
+            'genotype' => 'nullable|string|max:5',
+            'disability' => 'nullable|in:none,physical,visual,hearing,other',
+            'disability_details' => 'nullable|string|max:500',
+
+            // Address
+            'address' => 'required|string|max:500',
+            'state_id' => 'required|exists:states,id',
+            'lga_id' => 'required|exists:local_governments,id',
+            'nationality_id' => 'required|exists:nationalities,id',
+
+            // Programme Selection
+            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id' => 'required|exists:programmes,id',
+            'session_id' => 'required|exists:sessions,id',
+
+            // O-Level Results
+            'olevel1_subject1' => 'nullable|string|max:100',
+            'olevel1_grade1' => 'nullable|string|max:5',
+            'olevel1_subject2' => 'nullable|string|max:100',
+            'olevel1_grade2' => 'nullable|string|max:5',
+            'olevel1_subject3' => 'nullable|string|max:100',
+            'olevel1_grade3' => 'nullable|string|max:5',
+            'olevel1_subject4' => 'nullable|string|max:100',
+            'olevel1_grade4' => 'nullable|string|max:5',
+            'olevel1_subject5' => 'nullable|string|max:100',
+            'olevel1_grade5' => 'nullable|string|max:5',
+            'olevel1_exam_year' => 'nullable|integer|min:2000|max:2030',
+            'olevel1_exam_type' => 'nullable|string|max:50',
+            'olevel1_exam_number' => 'nullable|string|max:50',
+
+            'olevel2_subject1' => 'nullable|string|max:100',
+            'olevel2_grade1' => 'nullable|string|max:5',
+            'olevel2_subject2' => 'nullable|string|max:100',
+            'olevel2_grade2' => 'nullable|string|max:5',
+            'olevel2_subject3' => 'nullable|string|max:100',
+            'olevel2_grade3' => 'nullable|string|max:5',
+            'olevel2_subject4' => 'nullable|string|max:100',
+            'olevel2_grade4' => 'nullable|string|max:5',
+            'olevel2_subject5' => 'nullable|string|max:100',
+            'olevel2_grade5' => 'nullable|string|max:5',
+            'olevel2_exam_year' => 'nullable|integer|min:2000|max:2030',
+            'olevel2_exam_type' => 'nullable|string|max:50',
+            'olevel2_exam_number' => 'nullable|string|max:50',
+
+            // Guardian Information
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_relationship' => 'nullable|string|max:50',
+            'guardian_phone' => 'nullable|string|max:20',
+            'guardian_email' => 'nullable|email',
+            'guardian_occupation' => 'nullable|string|max:100',
+            'guardian_address' => 'nullable|string|max:500',
+
+            // Extra Curricular
+            'extra_curricular' => 'nullable|string|max:1000',
+        ]);
+
+        // Handle file uploads
+        if ($request->hasFile('passport')) {
+            $validated['passport'] = $this->uploadFile($request->file('passport'), 'passports');
+        }
+
+        $applicant->update($validated);
+
+        return redirect()->route('applicant.application')
+            ->with('success', 'Application updated successfully!');
+    }
+
+    /**
+     * Verify external payment
+     */
+    public function verifyExternalPayment(Request $request)
+    {
+        $request->validate([
+            'payment_ref' => 'required|string',
+            'amount' => 'required|numeric|min:1',
+            'payment_date' => 'required|date',
+        ]);
+
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // Check if payment reference already used
+        $existingApplicant = Applicant::where('payment_ref', $request->payment_ref)
+            ->where('id', '!=', $applicant ? $applicant->id : 0)
+            ->first();
+
+        if ($existingApplicant) {
+            return back()->with('error', 'This payment reference has already been used.');
+        }
+
+        // Get the required fee amount
+        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+
+        if ($requireFee && $feeAmount > 0) {
+            if ($request->amount < $feeAmount) {
+                return back()->with('error', 'Amount is less than the required application fee of ₦' . number_format($feeAmount));
+            }
+        }
+
+        $applicantData = [
+            'user_id' => auth()->id(),
+            'email' => auth()->user()->email,
+            'application_number' => $applicant ? $applicant->application_number : Applicant::generateApplicationNumber(),
+            'payment_status' => 'completed',
+            'payment_ref' => $request->payment_ref,
+            'payment_transaction_id' => 'EXT-' . Str::random(12),
+            'payment_amount' => $request->amount,
+            'payment_date' => $request->payment_date,
+            'status' => $applicant ? $applicant->status : 'pending',
+        ];
+
+        if (!$applicant) {
+            Applicant::create($applicantData);
+        } else {
+            $applicant->update($applicantData);
+        }
+
+        return redirect()->route('applicant.application')
+            ->with('success', 'Payment verified successfully! You can now submit your application.');
     }
 
     private function uploadFile($file, $folder)
