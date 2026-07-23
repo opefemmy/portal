@@ -317,17 +317,17 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('bursar.payments') }}" class="nav-link">
+                <a href="{{ url('/bursar/payments') }}" class="nav-link">
                     <i class="fas fa-receipt me-2"></i>View Payments
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('bursar.payments.upload') }}" class="nav-link">
+                <a href="{{ url('/bursar/payments/upload') }}" class="nav-link">
                     <i class="fas fa-file-upload me-2"></i>Upload External Payments
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('bursar.payments.sync.index') }}" class="nav-link">
+                <a href="{{ url('/bursar/payments/sync') }}" class="nav-link">
                     <i class="fas fa-sync-alt me-2"></i>Payment Synchronization
                 </a>
             </li>
@@ -566,27 +566,27 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('bursar.payments') }}" class="nav-link {{ request()->is('bursar/payments*') ? 'active' : '' }}">
+    <a href="{{ url('/bursar/payments') }}" class="nav-link {{ request()->is('bursar/payments*') ? 'active' : '' }}">
         <i class="fas fa-dollar-sign"></i> Payments
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('bursar.payments.upload') }}" class="nav-link {{ request()->is('bursar/payments/upload*') ? 'active' : '' }}">
+    <a href="{{ url('/bursar/payments/upload') }}" class="nav-link {{ request()->is('bursar/payments/upload*') ? 'active' : '' }}">
         <i class="fas fa-file-upload"></i> Upload External
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('bursar.payments.sync.index') }}" class="nav-link {{ request()->is('bursar/payments/sync*') ? 'active' : '' }}">
+    <a href="{{ url('/bursar/payments/sync') }}" class="nav-link {{ request()->is('bursar/payments/sync*') ? 'active' : '' }}">
         <i class="fas fa-sync-alt"></i> Payment Sync
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('bursar.regimes.index') }}" class="nav-link {{ request()->is('bursar/regimes*') ? 'active' : '' }}">
+    <a href="{{ url('/bursar/regimes') }}" class="nav-link {{ request()->is('bursar/regimes*') ? 'active' : '' }}">
         <i class="fas fa-calculator"></i> Regime Payments
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('bursar.reports') }}" class="nav-link {{ request()->is('bursar/reports*') ? 'active' : '' }}">
+    <a href="{{ url('/bursar/reports') }}" class="nav-link {{ request()->is('bursar/reports*') ? 'active' : '' }}">
         <i class="fas fa-chart-bar"></i> Reports
     </a>
 </li>
