@@ -17,6 +17,7 @@ use App\Models\Role;
 use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -59,7 +60,9 @@ class ApplicationController extends Controller
             'sessions' => Session::orderBy('name', 'desc')->get(),
             'states' => State::orderBy('name')->get(),
             'nationalities' => \App\Models\Nationality::all(),
-            'centres' => AdmissionCentre::active()->orderBy('name')->get(),
+            'centres' => \DB::getSchemaBuilder()->hasTable('admission_centres')
+                ? \App\Models\AdmissionCentre::active()->orderBy('name')->get()
+                : collect([]),
         ];
         return view('applicant.apply', $data);
     }
