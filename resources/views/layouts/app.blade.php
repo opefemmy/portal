@@ -386,7 +386,6 @@
 </head>
 <body>
     @php
-        use App\Models\SystemSetting;
         $institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
         $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
         $institutionLogo = SystemSetting::get('institution_logo');
