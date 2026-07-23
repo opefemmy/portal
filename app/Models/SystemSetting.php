@@ -95,4 +95,20 @@ class SystemSetting extends Model
     {
         return static::get(static::INSTITUTION_ICON, null);
     }
+
+    /**
+     * Check if admission form requires payment
+     */
+    public static function requiresAdmissionFee()
+    {
+        return static::get(static::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+    }
+
+    /**
+     * Get admission fee amount
+     */
+    public static function getAdmissionFeeAmount()
+    {
+        return (float) static::get(static::ADMISSION_FEE_AMOUNT, 0);
+    }
 }
