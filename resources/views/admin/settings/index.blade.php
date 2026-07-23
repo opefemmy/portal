@@ -4,11 +4,95 @@
 
 @php
 use App\Models\SystemSetting;
+$institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
+$institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+$institutionAddress = SystemSetting::get('institution_address', '');
+$institutionPhone = SystemSetting::get('institution_phone', '');
+$institutionEmail = SystemSetting::get('institution_email', '');
+$institutionWebsite = SystemSetting::get('institution_website', '');
+$institutionTagline = SystemSetting::get('institution_tagline', '');
+$institutionLogo = SystemSetting::get('institution_logo');
+$institutionIcon = SystemSetting::get('institution_icon');
 @endphp
 
 @section('content')
 <div class="page-header">
     <h4>System Settings</h4>
+</div>
+
+{{-- Branding Settings --}}
+<div class="card mb-4 border-success" style="border-left: 4px solid var(--primary);">
+    <div class="card-header" style="background: var(--primary); color: white;">
+        <h5 class="mb-0"><i class="fas fa-university me-2"></i>Institution Branding</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data">
+            @csrf
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Institution Name</label>
+                        <input type="text" name="institution_name" class="form-control" value="{{ $institutionName }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Short Name / Acronym</label>
+                        <input type="text" name="institution_short_name" class="form-control" value="{{ $institutionShortName }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tagline</label>
+                        <input type="text" name="institution_tagline" class="form-control" value="{{ $institutionTagline }}" placeholder="e.g., Excellence in Technical Education">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <input type="text" name="institution_address" class="form-control" value="{{ $institutionAddress }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="institution_phone" class="form-control" value="{{ $institutionPhone }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="institution_email" class="form-control" value="{{ $institutionEmail }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Website</label>
+                        <input type="url" name="institution_website" class="form-control" value="{{ $institutionWebsite }}" placeholder="https://">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Logo (Recommended: 200x60px)</label>
+                        <input type="file" name="institution_logo" class="form-control" accept="image/*">
+                        @if($institutionLogo)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;">
+                                <span class="badge bg-success ms-2">Current Logo</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Favicon / Icon (Recommended: 32x32px)</label>
+                        <input type="file" name="institution_icon" class="form-control" accept="image/*">
+                        @if($institutionIcon)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;">
+                                <span class="badge bg-success ms-2">Current Icon</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save me-2"></i>Save Branding
+            </button>
+        </form>
+    </div>
 </div>
 
 <form method="POST" action="{{ route('admin.settings.update') }}">

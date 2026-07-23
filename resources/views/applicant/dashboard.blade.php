@@ -110,22 +110,19 @@
     <div class="col-md-4 mb-3">
         <div class="card h-100">
             <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment / Requery</h5>
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment / Validate</h5>
             </div>
             <div class="card-body text-center">
                 <i class="fas fa-credit-card fa-3x text-warning mb-3"></i>
-                <p class="text-muted">Make payment or check payment status</p>
+                <p class="text-muted">Validate payment or check payment status</p>
                 @if($applicant->payment_status === 'completed')
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle me-2"></i>Payment Completed
                     <br><small>Ref: {{ $applicant->payment_ref ?? 'N/A' }}</small>
                 </div>
-                <button class="btn btn-outline-primary" onclick="requeryPayment()">
-                    <i class="fas fa-sync me-2"></i>Requery Payment
-                </button>
                 @else
-                <a href="{{ route('applicant.apply') }}" class="btn btn-warning">
-                    <i class="fas fa-credit-card me-2"></i>Make Payment
+                <a href="{{ route('applicant.validate-payment') }}" class="btn btn-warning">
+                    <i class="fas fa-check-circle me-2"></i>Validate Payment
                 </a>
                 @endif
             </div>

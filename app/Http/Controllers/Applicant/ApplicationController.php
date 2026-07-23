@@ -14,6 +14,7 @@ use App\Models\SystemSetting;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -58,6 +59,7 @@ class ApplicationController extends Controller
             'sessions' => Session::orderBy('name', 'desc')->get(),
             'states' => State::orderBy('name')->get(),
             'nationalities' => \App\Models\Nationality::all(),
+            'centres' => AdmissionCentre::active()->orderBy('name')->get(),
         ];
         return view('applicant.apply', $data);
     }
@@ -165,6 +167,7 @@ class ApplicationController extends Controller
             'department_id' => 'required|exists:departments,id',
             'programme_id' => 'required|exists:programmes,id',
             'session_id' => 'required|exists:sessions,id',
+            'centre_id' => 'required|exists:admission_centres,id',
 
             // O-Level Results
             'olevel1_subject1' => 'nullable|string|max:100',
@@ -341,6 +344,7 @@ class ApplicationController extends Controller
             'department_id' => 'required|exists:departments,id',
             'programme_id' => 'required|exists:programmes,id',
             'session_id' => 'required|exists:sessions,id',
+            'centre_id' => 'required|exists:admission_centres,id',
 
             // O-Level Results
             'olevel1_subject1' => 'nullable|string|max:100',

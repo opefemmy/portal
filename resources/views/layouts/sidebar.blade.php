@@ -179,6 +179,11 @@ $role = $user->role->slug ?? '';
                     <i class="fas fa-calendar me-2"></i>Sessions
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.admission-centres.index') }}" class="nav-link {{ request()->is('admin/admission-centres*') ? 'active' : '' }}">
+                    <i class="fas fa-building me-2"></i>Admission Centres
+                </a>
+            </li>
         </ul>
     </div>
 </li>
@@ -319,6 +324,11 @@ $role = $user->role->slug ?? '';
             <li class="nav-item">
                 <a href="{{ route('bursar.payments.upload') }}" class="nav-link">
                     <i class="fas fa-file-upload me-2"></i>Upload External Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('bursar.payments.sync.index') }}" class="nav-link">
+                    <i class="fas fa-sync-alt me-2"></i>Payment Synchronization
                 </a>
             </li>
             <li class="nav-item">
@@ -563,6 +573,11 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('bursar.payments.upload') }}" class="nav-link {{ request()->is('bursar/payments/upload*') ? 'active' : '' }}">
         <i class="fas fa-file-upload"></i> Upload External
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('bursar.payments.sync.index') }}" class="nav-link {{ request()->is('bursar/payments/sync*') ? 'active' : '' }}">
+        <i class="fas fa-sync-alt"></i> Payment Sync
     </a>
 </li>
 <li class="nav-item">

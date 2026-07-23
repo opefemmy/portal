@@ -182,6 +182,16 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Preferred Centre for Lectures *</label>
+                    <select name="centre_id" class="form-select" required>
+                        <option value="">Select Centre</option>
+                        @foreach($centres as $centre)
+                        <option value="{{ $centre->id }}" {{ old('centre_id', $applicant->centre_id ?? '') == $centre->id ? 'selected' : '' }}>{{ $centre->name }} ({{ $centre->code }})</option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Select where you would like to attend lectures</small>
+                </div>
             </div>
         </div>
     </div>

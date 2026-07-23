@@ -51,6 +51,10 @@ Route::get('/', function () {
     return redirect('/login');
 })->name('home');
 
+// Public Payment Validation (Before Login)
+Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('public.validate-payment');
+Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('public.payment.validate');
+
 // Auth Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -98,6 +102,10 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     // Get departments by school
     Route::get('/departments/{schoolId}', [ApplicationController::class, 'getDepartments']);
 
+    // Payment Validation (External Payment System)
+    Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('validate-payment');
+    Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('payment.validate');
+
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'showApplicantForm'])->name('register');
         Route::post('/register', [RegisterController::class, 'registerApplicant']);
@@ -138,6 +146,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::resource('departments', DepartmentController::class);
     Route::resource('programmes', ProgrammeController::class);
     Route::resource('sessions', SessionController::class);
+    Route::resource('admission-centres', \App\Http\Controllers\Admin\AdmissionCentreController::class);
+    Route::post('/admission-centres/{centre}/toggle', [\App\Http\Controllers\Admin\AdmissionCentreController::class, 'toggleStatus'])->name('admission-centres.toggle');
     Route::post('/sessions/{session}/set-current', [SessionController::class, 'setCurrent'])->name('sessions.set_current');
 
     // Course Management
@@ -164,6 +174,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::put('/settings', [SystemSettingController::class, 'updateSettings'])->name('settings.update');
     Route::post('/settings/gateway', [SystemSettingController::class, 'updateGateways'])->name('settings.gateway');
     Route::post('/settings/toggle', [SystemSettingController::class, 'toggleSetting'])->name('settings.toggle');
+    Route::post('/settings/branding', [SystemSettingController::class, 'updateBranding'])->name('settings.branding');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
@@ -432,6 +443,10 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/applicants/{applicant}/admit', [\App\Http\Controllers\Registrar\ApplicantController::class, 'admit'])->name('applicants.admit');
     Route::put('/applicants/{applicant}/reject', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reject'])->name('applicants.reject');
     Route::get('/admission-list', [\App\Http\Controllers\Registrar\AdmissionController::class, 'index'])->name('admission');
+    Route::get('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'show'])->name('admission.show');
+    Route::get('/admission-list/{applicant}/edit', [\App\Http\Controllers\Registrar\AdmissionController::class, 'edit'])->name('admission.edit');
+    Route::put('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'update'])->name('admission.update');
+    Route::delete('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'destroy'])->name('admission.destroy');
     Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])->name('admission.updateStatus');
     Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])->name('admission.upload');
     Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])->name('admission.settings');
@@ -462,6 +477,17 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,super
     // External Payment Upload
     Route::get('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'showUploadForm'])->name('payments.upload');
     Route::post('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'uploadPayments'])->name('payments.upload.store');
+
+    // Payment Synchronization (New)
+    Route::prefix('payments/sync')->name('payments.sync.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'index'])->name('index');
+        Route::get('/upload', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'showUploadForm'])->name('upload');
+        Route::post('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'preview'])->name('preview');
+        Route::get('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'previewResults'])->name('preview.results');
+        Route::post('/import', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'import'])->name('import');
+        Route::get('/template', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'downloadTemplate'])->name('template');
+        Route::get('/logs', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'logs'])->name('logs');
+    });
 
     // Regime Payments
     Route::resource('regimes', RegimeController::class);

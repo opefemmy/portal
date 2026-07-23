@@ -27,7 +27,7 @@ class Applicant extends Model
         'tertiary_institution', 'tertiary_qualification', 'tertiary_start', 'tertiary_end',
 
         // Programme Selection
-        'school_id', 'department_id', 'programme_id', 'session_id',
+        'school_id', 'department_id', 'programme_id', 'session_id', 'centre_id',
         'mode_of_study', 'entry_level',
 
         // JAMB Details
@@ -88,6 +88,11 @@ class Applicant extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(Session::class);
+    }
+
+    public function centre(): BelongsTo
+    {
+        return $this->belongsTo(AdmissionCentre::class);
     }
 
     public function state(): BelongsTo

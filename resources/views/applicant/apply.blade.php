@@ -176,6 +176,19 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Preferred Centre for Lectures *</label>
+                    <select name="centre_id" class="form-select" required>
+                        <option value="">Select Centre</option>
+                        @php
+                        $centres = \App\Models\AdmissionCentre::active()->orderBy('name')->get();
+                        @endphp
+                        @foreach($centres as $centre)
+                        <option value="{{ $centre->id }}">{{ $centre->name }} ({{ $centre->code }})</option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">Select where you would like to attend lectures</small>
+                </div>
             </div>
         </div>
     </div>

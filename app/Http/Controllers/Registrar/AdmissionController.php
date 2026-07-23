@@ -17,14 +17,91 @@ class AdmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Applicant::with(['user', 'department', 'school']);
+        $query = Applicant::with(['user', 'department', 'programme', 'school']);
 
+        // Search filter
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('application_number', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('surname', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter
         if ($request->status) {
             $query->where('status', $request->status);
         }
 
-        $applicants = $query->latest()->get();
+        // Department filter
+        if ($request->department_id) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        $applicants = $query->latest()->paginate(20);
         return view('registrar.admission.index', compact('applicants'));
+    }
+
+    /**
+     * Show applicant details
+     */
+    public function show(Applicant $applicant)
+    {
+        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'state', 'lga', 'nationality']);
+        return view('registrar.admission.show', compact('applicant'));
+    }
+
+    /**
+     * Edit applicant
+     */
+    public function edit(Applicant $applicant)
+    {
+        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'centre', 'state', 'lga', 'nationality']);
+        $data = [
+            'applicant' => $applicant,
+            'schools' => \App\Models\School::all(),
+            'departments' => \App\Models\Department::all(),
+            'programmes' => \App\Models\Programme::all(),
+            'sessions' => \App\Models\Session::orderBy('name', 'desc')->get(),
+            'states' => \App\Models\State::orderBy('name')->get(),
+            'nationalities' => \App\Models\Nationality::all(),
+            'centres' => \App\Models\AdmissionCentre::orderBy('name')->get(),
+        ];
+        return view('registrar.admission.edit', $data);
+    }
+
+    /**
+     * Update applicant
+     */
+    public function update(Request $request, Applicant $applicant)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'email' => 'required|email|unique:applicants,email,' . $applicant->id,
+            'phone' => 'required|string|max:20',
+            'gender' => 'required|in:Male,Female,Other',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id' => 'required|exists:programmes,id',
+            'session_id' => 'required|exists:sessions,id',
+            'centre_id' => 'required|exists:admission_centres,id',
+        ]);
+
+        $applicant->update($validated);
+
+        return redirect()->route('registrar.admission')->with('success', 'Applicant updated successfully');
+    }
+
+    /**
+     * Delete applicant
+     */
+    public function destroy(Applicant $applicant)
+    {
+        $applicant->delete();
+        return redirect()->route('registrar.admission')->with('success', 'Applicant deleted successfully');
     }
 
     public function updateStatus(Request $request, Applicant $applicant)

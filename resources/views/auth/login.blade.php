@@ -2,6 +2,14 @@
 
 @section('title', 'Login')
 
+@php
+use App\Models\SystemSetting;
+$institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
+$institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+$institutionLogo = SystemSetting::get('institution_logo');
+$institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student & Admin Login');
+@endphp
+
 @section('content')
 <style>
     .login-page {
@@ -9,7 +17,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #1a237e 0%, #0d1442 50%, #6a1b9a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--accent-wine) 100%);
     }
 
     .login-card {
@@ -22,7 +30,7 @@
     }
 
     .login-header {
-        background: linear-gradient(135deg, #1a237e, #6a1b9a);
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         padding: 30px;
         text-align: center;
     }
@@ -65,12 +73,12 @@
     }
 
     .form-control:focus {
-        border-color: #1a237e;
-        box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(36, 125, 87, 0.1);
     }
 
     .btn-login {
-        background: linear-gradient(135deg, #1a237e, #6a1b9a);
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         border: none;
         border-radius: 8px;
         padding: 12px;
@@ -82,7 +90,7 @@
 
     .btn-login:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(26, 35, 126, 0.4);
+        box-shadow: 0 5px 20px rgba(36, 125, 87, 0.4);
     }
 
     .input-icon {
@@ -103,7 +111,7 @@
     }
 
     .register-link a {
-        color: #1a237e;
+        color: var(--primary);
         text-decoration: none;
         font-weight: 500;
     }
@@ -122,9 +130,13 @@
 <div class="login-page">
     <div class="login-card">
         <div class="login-header">
-            <i class="fas fa-university institution-logo"></i>
-            <h3>EKSCOTECH Portal</h3>
-            <p>Staff, Student & Admin Login</p>
+            @if($institutionLogo)
+                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">
+            @else
+                <i class="fas fa-university institution-logo"></i>
+            @endif
+            <h3>{{ $institutionShortName }} Portal</h3>
+            <p>{{ $institutionTagline }}</p>
             <div class="role-badges">
                 <span>Admin</span>
                 <span>Lecturer</span>
@@ -183,6 +195,12 @@
             <div class="register-link">
                 <p class="mb-2">Don't have an account?</p>
                 <a href="{{ route('applicant.register') }}">Apply Now</a>
+            </div>
+
+            <div class="mt-3 text-center">
+                <a href="{{ route('public.validate-payment') }}" class="text-muted">
+                    <i class="fas fa-check-circle me-1"></i> Already made payment? Validate here
+                </a>
             </div>
         </div>
     </div>

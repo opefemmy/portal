@@ -131,4 +131,45 @@ class SystemSettingController extends Controller
             'value' => $value
         ]);
     }
+
+    /**
+     * Update branding settings
+     */
+    public function updateBranding(Request $request)
+    {
+        $brandingKeys = [
+            'institution_name',
+            'institution_short_name',
+            'institution_address',
+            'institution_phone',
+            'institution_email',
+            'institution_website',
+            'institution_tagline',
+        ];
+
+        foreach ($brandingKeys as $key) {
+            if ($request->has($key)) {
+                SystemSetting::set($key, $request->input($key));
+            }
+        }
+
+        // Handle logo upload
+        if ($request->hasFile('institution_logo')) {
+            $logo = $request->file('institution_logo');
+            $logoName = 'logo.' . $logo->getClientOriginalExtension();
+            $logo->storeAs('public/branding', $logoName);
+            SystemSetting::set('institution_logo', 'branding/' . $logoName);
+        }
+
+        // Handle icon upload
+        if ($request->hasFile('institution_icon')) {
+            $icon = $request->file('institution_icon');
+            $iconName = 'icon.' . $icon->getClientOriginalExtension();
+            $icon->storeAs('public/branding', $iconName);
+            SystemSetting::set('institution_icon', 'branding/' . $iconName);
+        }
+
+        return redirect()->route('admin.settings.index')
+            ->with('success', 'Branding settings updated successfully!');
+    }
 }
