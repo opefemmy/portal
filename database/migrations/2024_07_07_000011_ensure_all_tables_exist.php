@@ -13,7 +13,7 @@ return new class extends Migration
             Schema::create('system_settings', function ($table) {
                 $table->id();
                 $table->string('key')->unique();
-                $table->string('value');
+                $table->string('value')->nullable();
                 $table->string('description')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->timestamps();

@@ -196,11 +196,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Create Settings
-        Setting::set('institution_name', 'Institution Management Portal');
-        Setting::set('institution_address', 'University Road, City, State');
-        Setting::set('institution_email', 'info@portal.edu');
-        Setting::set('institution_phone', '+2348000000000');
-        Setting::set('institution_website', 'www.portal.edu');
+        Setting::set('institution_name', 'Ekiti State College of Technology');
+        Setting::set('institution_short_name', 'EKSCOTECH');
+        Setting::set('institution_address', 'Iyin Ekiti, Ekiti State');
+        Setting::set('institution_email', 'info@ekscotech.edu.ng');
+        Setting::set('institution_phone', '08012345678');
+        Setting::set('institution_website', 'www.ekscotech.edu.ng');
+        Setting::set('institution_tagline', 'Excellence in Technical Education');
         Setting::set('session_id', $session->id);
         Setting::set('max_course_units', 24);
         Setting::set('min_course_units', 12);
