@@ -8,6 +8,8 @@ $institutionName = SystemSetting::get('institution_name', 'Ekiti State College o
 $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
 $institutionLogo = SystemSetting::get('institution_logo');
 $institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student & Admin Login');
+$logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
+$logoExists = $institutionLogo && file_exists($logoPath);
 @endphp
 
 @section('content')
@@ -130,7 +132,7 @@ $institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student 
 <div class="login-page">
     <div class="login-card">
         <div class="login-header">
-            @if($institutionLogo)
+            @if($institutionLogo && $logoExists)
                 <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">
             @else
                 <i class="fas fa-university institution-logo"></i>

@@ -389,6 +389,8 @@
         $institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
         $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
         $institutionLogo = SystemSetting::get('institution_logo');
+        $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
+        $logoExists = $institutionLogo && file_exists($logoPath);
     @endphp
     @auth
     <div class="container-fluid">
@@ -396,7 +398,7 @@
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar p-0" id="sidebar">
                 <div class="text-center py-4">
-                    @if($institutionLogo)
+                    @if($institutionLogo && $logoExists)
                         <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" class="mb-2" style="max-height: 50px;">
                     @else
                         <h4 class="text-white mb-0">
