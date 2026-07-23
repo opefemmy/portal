@@ -121,7 +121,7 @@
                     <br><small>Ref: {{ $applicant->payment_ref ?? 'N/A' }}</small>
                 </div>
                 @else
-                <a href="{{ route('applicant.validate-payment') }}" class="btn btn-warning">
+                <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-warning">
                     <i class="fas fa-check-circle me-2"></i>Validate Payment
                 </a>
                 @endif
