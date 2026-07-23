@@ -51,7 +51,7 @@ class SystemSetting extends Model
     {
         return static::updateOrCreate(
             ['key' => $key],
-            ['value' => $value]
+            ['value' => $value ?? '']
         );
     }
 
