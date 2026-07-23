@@ -104,6 +104,26 @@ class AdmissionController extends Controller
         return redirect()->route('registrar.admission')->with('success', 'Applicant deleted successfully');
     }
 
+    /**
+     * Reset applicant password
+     */
+    public function resetPassword(Request $request, Applicant $applicant)
+    {
+        $request->validate([
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        if ($applicant->user) {
+            $applicant->user->update([
+                'password' => Hash::make($request->new_password),
+                'must_change_password' => true,
+            ]);
+            return back()->with('success', 'Password reset successfully');
+        }
+
+        return back()->with('error', 'User account not found');
+    }
+
     public function updateStatus(Request $request, Applicant $applicant)
     {
         $request->validate([

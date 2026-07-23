@@ -164,17 +164,54 @@
 
                 <hr>
 
-                <h6>Update Status</h6>
-                <form method="POST" action="{{ route('registrar.admission.updateStatus', $applicant) }}" class="d-flex gap-2">
-                    @csrf @method('PUT')
-                    <select name="status" class="form-select">
-                        <option value="pending" {{ $applicant->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="reviewed" {{ $applicant->status == 'reviewed' ? 'selected' : '' }}>Reviewed</option>
-                        <option value="admitted" {{ $applicant->status == 'admitted' ? 'selected' : '' }}>Admit</option>
-                        <option value="rejected" {{ $applicant->status == 'rejected' ? 'selected' : '' }}>Reject</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary">Update</button>
-                </form>
+                <h6>Actions</h6>
+                <div class="d-flex gap-2 mb-3">
+                    <!-- Update Status -->
+                    <form method="POST" action="{{ url('/admission-list/' . $applicant->id . '/status') }}" class="d-flex gap-2">
+                        @csrf @method('PUT')
+                        <select name="status" class="form-select">
+                            <option value="pending" {{ $applicant->status == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="reviewed" {{ $applicant->status == 'reviewed' ? 'selected' : '' }}>Reviewed</option>
+                            <option value="admitted" {{ $applicant->status == 'admitted' ? 'selected' : '' }}>Admit</option>
+                            <option value="rejected" {{ $applicant->status == 'rejected' ? 'selected' : '' }}>Reject</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </form>
+
+                    <!-- Reset Password -->
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                        <i class="fas fa-key me-1"></i> Reset Password
+                    </button>
+                </div>
+
+                <!-- Reset Password Modal -->
+                <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Reset Applicant Password</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{{ url('/admission-list/' . $applicant->id . '/reset-password') }}">
+                                @csrf
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" name="new_password" class="form-control" required minlength="8">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm Password</label>
+                                        <input type="password" name="new_password_confirmation" class="form-control" required minlength="8">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-warning">Reset Password</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

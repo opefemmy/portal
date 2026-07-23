@@ -188,7 +188,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 
     // Student Management
     Route::resource('students', StudentController::class);
-    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
+    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('admin.students.reset_password');
     Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
 
     // Student Import (NEW)
@@ -447,6 +447,7 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::get('/admission-list/{applicant}/edit', [\App\Http\Controllers\Registrar\AdmissionController::class, 'edit'])->name('admission.edit');
     Route::put('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'update'])->name('admission.update');
     Route::delete('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'destroy'])->name('admission.destroy');
+    Route::post('/admission-list/{applicant}/reset-password', [\App\Http\Controllers\Registrar\AdmissionController::class, 'resetPassword'])->name('admission.resetPassword');
     Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])->name('admission.updateStatus');
     Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])->name('admission.upload');
     Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])->name('admission.settings');
