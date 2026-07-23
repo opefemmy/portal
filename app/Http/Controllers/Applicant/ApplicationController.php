@@ -18,6 +18,7 @@ use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -54,15 +55,13 @@ class ApplicationController extends Controller
         }
 
         $data = [
-            'schools' => School::all(),
-            'departments' => Department::all(),
-            'programmes' => Programme::all(),
-            'sessions' => Session::orderBy('name', 'desc')->get(),
-            'states' => State::orderBy('name')->get(),
-            'nationalities' => \App\Models\Nationality::all(),
-            'centres' => \DB::getSchemaBuilder()->hasTable('admission_centres')
-                ? \App\Models\AdmissionCentre::active()->orderBy('name')->get()
-                : collect([]),
+            'schools' => \Schema::hasTable('schools') ? School::all() : collect([]),
+            'departments' => \Schema::hasTable('departments') ? Department::all() : collect([]),
+            'programmes' => \Schema::hasTable('programmes') ? Programme::all() : collect([]),
+            'sessions' => \Schema::hasTable('sessions') ? Session::orderBy('name', 'desc')->get() : collect([]),
+            'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
+            'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
+            'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),
         ];
         return view('applicant.apply', $data);
     }
@@ -295,12 +294,13 @@ class ApplicationController extends Controller
 
         $data = [
             'applicant' => $applicant,
-            'schools' => School::all(),
-            'departments' => Department::all(),
-            'programmes' => Programme::all(),
-            'sessions' => Session::orderBy('name', 'desc')->get(),
-            'states' => State::orderBy('name')->get(),
-            'nationalities' => \App\Models\Nationality::all(),
+            'schools' => \Schema::hasTable('schools') ? School::all() : collect([]),
+            'departments' => \Schema::hasTable('departments') ? Department::all() : collect([]),
+            'programmes' => \Schema::hasTable('programmes') ? Programme::all() : collect([]),
+            'sessions' => \Schema::hasTable('sessions') ? Session::orderBy('name', 'desc')->get() : collect([]),
+            'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
+            'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
+            'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),
         ];
         return view('applicant.apply-edit', $data);
     }

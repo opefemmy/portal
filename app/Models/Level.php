@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Level extends Model
 {
@@ -20,11 +21,17 @@ class Level extends Model
 
     public function scopeActive($query)
     {
+        if (!Schema::hasTable('levels')) {
+            return $query->whereRaw('1=0');
+        }
         return $query->where('is_active', true);
     }
 
     public function scopeOfType($query, $type)
     {
+        if (!Schema::hasTable('levels')) {
+            return $query->whereRaw('1=0');
+        }
         return $query->where('programme_type', $type);
     }
 }
