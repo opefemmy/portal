@@ -180,7 +180,7 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.admission-centres.index') }}" class="nav-link {{ request()->is('admin/admission-centres*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/admission-centres') }}" class="nav-link {{ request()->is('admin/admission-centres*') ? 'active' : '' }}">
                     <i class="fas fa-building me-2"></i>Admission Centres
                 </a>
             </li>
