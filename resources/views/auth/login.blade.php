@@ -196,12 +196,6 @@ $institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student 
                 <p class="mb-2">Don't have an account?</p>
                 <a href="{{ route('applicant.register') }}">Apply Now</a>
             </div>
-
-            <div class="mt-3 text-center">
-                <a href="{{ url('/validate-payment') }}" class="text-muted">
-                    <i class="fas fa-check-circle me-1"></i> Already made payment? Validate here
-                </a>
-            </div>
         </div>
     </div>
 </div>
