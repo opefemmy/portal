@@ -29,7 +29,14 @@
       "Bash(composer require *)",
       "Bash(cd C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal *)",
       "Bash(composer dump-autoload *)",
-      "WebFetch(domain:eportal.personel.ink)"
+      "WebFetch(domain:eportal.personel.ink)",
+      "Bash(where php *)",
+      "Bash(composer config *)",
+      "Bash(composer update *)",
+      "Bash(where mysqldump *)",
+      "Bash(git checkout *)",
+      "Bash(rm -rf storage/framework/views/*.php)",
+      "Bash(rm -rf bootstrap/cache/*.php)"
     ]
   }
 }

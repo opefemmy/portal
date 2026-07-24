@@ -48,13 +48,7 @@ use App\Http\Controllers\Admin\SystemSettingController;
 
 // Public Routes
 Route::get('/', function () {
-    // Check if database is available, otherwise show simple landing
-    try {
-        \DB::connection()->getPdo();
-        return redirect('/login');
-    } catch (\Exception $e) {
-        return view('welcome');
-    }
+    return redirect('/login');
 })->name('home');
 
 // Public Payment Validation (Before Login)
@@ -62,15 +56,11 @@ Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidati
 Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('public.payment.validate');
 
 // Auth Routes
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
 Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        try {
-            \DB::connection()->getPdo();
-            return view('auth.login');
-        } catch (\Exception $e) {
-            return view('welcome');
-        }
-    })->name('login');
     Route::post('/login', [LoginController::class, 'login']);
     // Student self-registration is disabled - students must use credentials provided by the school
     // Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
