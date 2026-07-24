@@ -40,7 +40,7 @@ class NationalitiesSeeder extends Seeder
         ];
 
         foreach ($nationalities as $nationality) {
-            Nationality::create($nationality);
+            Nationality::firstOrCreate(['code' => $nationality['code']], $nationality);
         }
     }
 }
