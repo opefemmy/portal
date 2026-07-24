@@ -16,10 +16,10 @@
             <div class="card-body text-center">
                 <i class="fas fa-money-bill-wave fa-4x text-warning mb-4"></i>
 
-                <h5 class="mb-3">Application Form Fee</h5>
+                <h5 class="mb-3">{{ $paymentType->name ?? 'Application Form Fee' }}</h5>
 
                 <div class="alert alert-info">
-                    <h2 class="mb-0">₦{{ number_format($feeAmount, 2) }}</h2>
+                    <h2 class="mb-0">₦{{ number_format($paymentType->amount ?? 5000, 2) }}</h2>
                 </div>
 
                 <p class="text-muted">
@@ -28,10 +28,12 @@
 
                 <hr>
 
-                <form method="POST" action="{{ route('applicant.apply.fee') }}">
+                <form method="POST" action="{{ route('applicant.apply.payment.process') }}">
                     @csrf
+                    <input type="hidden" name="payment_type" value="{{ $paymentType->code ?? 'APP_FORM' }}">
+                    <input type="hidden" name="amount" value="{{ $paymentType->amount ?? 5000 }}">
                     <button type="submit" class="btn btn-warning btn-lg w-100">
-                        <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                        <i class="fas fa-credit-card me-2"></i>Pay Now
                     </button>
                 </form>
 

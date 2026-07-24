@@ -19,6 +19,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 1,
+                'purpose' => 'application',
             ],
             [
                 'name' => 'Acceptance Fee',
@@ -29,6 +30,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 2,
+                'purpose' => 'acceptance',
             ],
             [
                 'name' => 'School Fees',
@@ -39,6 +41,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 3,
+                'purpose' => 'school_fee',
             ],
             [
                 'name' => 'Hostel Fee',
@@ -49,6 +52,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 4,
+                'purpose' => 'hostel',
             ],
             [
                 'name' => 'Convocation Fee',
@@ -59,6 +63,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 5,
+                'purpose' => 'other',
             ],
             [
                 'name' => 'Indexing Fee',
@@ -69,6 +74,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 6,
+                'purpose' => 'registration',
             ],
             [
                 'name' => 'Registration Fee',
@@ -79,6 +85,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 7,
+                'purpose' => 'registration',
             ],
             [
                 'name' => 'Result Verification Fee',
@@ -89,6 +96,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 8,
+                'purpose' => 'other',
             ],
             [
                 'name' => 'Certificate Fee',
@@ -99,6 +107,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 9,
+                'purpose' => 'other',
             ],
             [
                 'name' => 'Library Fee',
@@ -109,6 +118,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 10,
+                'purpose' => 'library',
             ],
         ];
 

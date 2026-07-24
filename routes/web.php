@@ -117,9 +117,16 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/dashboard', [ApplicationController::class, 'dashboard'])->name('dashboard');
         Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('apply');
         Route::post('/apply', [ApplicationController::class, 'submitApplication']);
+
+        // Payment routes - application fee
         Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])->name('apply.fee');
         Route::get('/apply/payment/verify', [ApplicationController::class, 'verifyApplicationFee'])->name('apply.payment.verify');
         Route::post('/apply/payment/verify-external', [ApplicationController::class, 'verifyExternalPayment'])->name('payment.verify-external');
+
+        // Apply payment - for application fee payment
+        Route::get('/apply/payment', [ApplicationController::class, 'showApplyPayment'])->name('apply.payment');
+        Route::post('/apply/payment', [ApplicationController::class, 'processApplyPayment'])->name('apply.payment.process');
+
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
         Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
         Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');

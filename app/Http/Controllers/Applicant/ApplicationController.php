@@ -97,6 +97,60 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Show apply payment page - for making application fee payment
+     */
+    public function showApplyPayment(Request $request)
+    {
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // Get application fee payment type
+        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
+
+        if (!$paymentType) {
+            return back()->with('error', 'Application fee payment type not found.');
+        }
+
+        // Check if already paid
+        if ($applicant && $applicant->payment_status === 'completed') {
+            return redirect()->route('applicant.dashboard')->with('info', 'You have already paid the application fee.');
+        }
+
+        return view('applicant.apply-payment', compact('applicant', 'paymentType'));
+    }
+
+    /**
+     * Process application fee payment
+     */
+    public function processApplyPayment(Request $request)
+    {
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // Check if already paid
+        if ($applicant && $applicant->payment_status === 'completed') {
+            return redirect()->route('applicant.dashboard')->with('info', 'You have already paid the application fee.');
+        }
+
+        // Validate request
+        $request->validate([
+            'payment_type' => 'required',
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        // In production, integrate with payment gateway here
+        // For now, store pending payment for manual verification
+        if ($applicant) {
+            $applicant->update([
+                'payment_status' => 'pending',
+                'payment_ref' => 'APP-' . strtoupper(Str::random(10)),
+                'payment_amount' => $request->amount,
+                'payment_date' => now(),
+            ]);
+        }
+
+        return redirect()->route('applicant.dashboard')->with('success', 'Payment initiated. Please upload your payment proof for validation.');
+    }
+
+    /**
      * Simulate payment verification (in production, this would be callback from payment gateway)
      */
     public function verifyApplicationFee(Request $request)
