@@ -14,7 +14,11 @@ class RoleMiddleware
             return redirect('/login');
         }
 
-        $userRole = $request->user()->role->slug ?? null;
+        try {
+            $userRole = $request->user()->role->slug ?? null;
+        } catch (\Exception $e) {
+            $userRole = null;
+        }
 
         if (!in_array($userRole, $roles)) {
             abort(403, 'Unauthorized access');
