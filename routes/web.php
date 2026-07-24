@@ -202,7 +202,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 
     // Student Management
     Route::resource('students', StudentController::class);
-    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('admin.students.reset_password');
+    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
     Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
 
     // Student Import (NEW)
