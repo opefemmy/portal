@@ -1,6 +1,14 @@
 @php
+    use Illuminate\Support\Facades\Schema;
     use App\Models\SystemSetting;
-    $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+    $institutionShortName = 'EKSCOTECH';
+    if (Schema::hasTable('system_settings')) {
+        try {
+            $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+        } catch (\Exception $e) {
+            $institutionShortName = 'EKSCOTECH';
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="en">
