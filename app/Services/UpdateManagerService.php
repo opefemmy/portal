@@ -165,7 +165,7 @@ class UpdateManagerService
             'student_courses', 'results', 'grades', 'grading_scales',
             'grade_classifications', 'fees', 'payments', 'announcements',
             'notifications', 'settings', 'system_settings', 'states',
-            'local_governments', 'nationalities',
+            'local_governments', 'nationalities', 'payment_types',
         ];
 
         $repaired = [];
