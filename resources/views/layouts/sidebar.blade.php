@@ -316,13 +316,11 @@ $role = $user->role->slug ?? '';
                     <i class="fas fa-money-bill me-2"></i>Fees Configuration
                 </a>
             </li>
-            {{-- Payment Types disabled - controller missing
             <li class="nav-item">
-                <a href="{{ route('admin.payment-types.index') }}" class="nav-link {{ request()->is('admin/payment-types*') ? 'active' : '' }}">
-                    <i class="fas fa-tags me-2"></i>Payment Types
+                <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->is('admin/fees*') ? 'active' : '' }}">
+                    <i class="fas fa-tags me-2"></i>Payment / Fees
                 </a>
             </li>
-            --}}
             <li class="nav-item">
                 <a href="{{ url('/bursar/payments') }}" class="nav-link">
                     <i class="fas fa-receipt me-2"></i>View Payments
