@@ -105,6 +105,9 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     // Get departments by school
     Route::get('/departments/{schoolId}', [ApplicationController::class, 'getDepartments']);
 
+    // Get LGAs by state
+    Route::get('/lgas/{stateId}', [ApplicationController::class, 'getLGAs']);
+
     // Payment Validation (External Payment System)
     Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('validate-payment');
     Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('payment.validate');
