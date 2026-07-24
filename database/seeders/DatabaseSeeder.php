@@ -164,13 +164,15 @@ class DatabaseSeeder extends Seeder
 
         // Create a test student user
         $studentRole = Role::where('slug', 'student')->first();
-        $testStudentUser = User::create([
-            'name' => 'Test Student',
-            'email' => 'student@test.com',
-            'password' => Hash::make('password123'),
-            'role_id' => $studentRole->id,
-            'is_active' => true,
-        ]);
+        $testStudentUser = User::firstOrCreate(
+            ['email' => 'student@test.com'],
+            [
+                'name' => 'Test Student',
+                'password' => Hash::make('password123'),
+                'role_id' => $studentRole->id,
+                'is_active' => true,
+            ]
+        );
 
         // Get first school, department, programme for test student
         $firstSchool = School::first();
@@ -191,13 +193,15 @@ class DatabaseSeeder extends Seeder
 
         // Create a test applicant user
         $applicantRole = Role::where('slug', 'applicant')->first();
-        User::create([
-            'name' => 'Test Applicant',
-            'email' => 'applicant@test.com',
-            'password' => Hash::make('password123'),
-            'role_id' => $applicantRole->id,
-            'is_active' => true,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'applicant@test.com'],
+            [
+                'name' => 'Test Applicant',
+                'password' => Hash::make('password123'),
+                'role_id' => $applicantRole->id,
+                'is_active' => true,
+            ]
+        );
 
         // Create Settings
         Setting::set('institution_name', 'Ekiti State College of Technology');
