@@ -318,7 +318,12 @@ $role = $user->role->slug ?? '';
             </li>
             <li class="nav-item">
                 <a href="{{ route('admin.fees.index') }}" class="nav-link {{ request()->is('admin/fees*') ? 'active' : '' }}">
-                    <i class="fas fa-tags me-2"></i>Payment / Fees
+                    <i class="fas fa-money-bill me-2"></i>Fees
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.payment-types.index') }}" class="nav-link {{ request()->is('admin/payment-types*') ? 'active' : '' }}">
+                    <i class="fas fa-tags me-2"></i>Payment Types
                 </a>
             </li>
             <li class="nav-item">

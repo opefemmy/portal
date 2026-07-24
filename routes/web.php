@@ -166,9 +166,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // Fee Management
     Route::resource('fees', FeeController::class);
 
-    // Payment Types Management (temporarily disabled - controller missing)
-    // Route::resource('payment-types', PaymentTypeController::class);
-    // Route::post('/payment-types/{paymentType}/toggle', [PaymentTypeController::class, 'toggle'])->name('payment-types.toggle');
+    // Payment Types Management
+    Route::resource('payment-types', PaymentTypeController::class);
+    Route::post('/payment-types/{paymentType}/toggle', [PaymentTypeController::class, 'toggle'])->name('payment-types.toggle');
 
     // Grade Configuration
     Route::resource('grades', GradeController::class);
