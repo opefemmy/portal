@@ -353,6 +353,10 @@ class UpdateManagerService
     {
         $repairs = [];
 
+        if (!Schema::hasTable('semesters')) {
+            return $repairs;
+        }
+
         $semesters = [
             ['name' => 'First Semester', 'code' => 'FIRST', 'sort_order' => 1],
             ['name' => 'Second Semester', 'code' => 'SECOND', 'sort_order' => 2],
@@ -360,13 +364,17 @@ class UpdateManagerService
         ];
 
         foreach ($semesters as $semester) {
-            if (!DB::table('semesters')->where('code', $semester['code'])->exists()) {
-                DB::table('semesters')->insert(array_merge($semester, [
-                    'is_active' => $semester['sort_order'] <= 2,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]));
-                $repairs[] = "Created semester: {$semester['name']}";
+            try {
+                if (!DB::table('semesters')->where('code', $semester['code'])->exists()) {
+                    DB::table('semesters')->insert(array_merge($semester, [
+                        'is_active' => $semester['sort_order'] <= 2,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $repairs[] = "Created semester: {$semester['name']}";
+                }
+            } catch (\Exception $e) {
+                // Skip if table doesn't exist
             }
         }
 
@@ -379,6 +387,10 @@ class UpdateManagerService
     public function repairLevels(): array
     {
         $repairs = [];
+
+        if (!Schema::hasTable('levels')) {
+            return $repairs;
+        }
 
         $levels = [
             ['name' => 'ND 1 (100L)', 'code' => 'ND1', 'sort_order' => 1, 'programme_type' => 'ND'],
