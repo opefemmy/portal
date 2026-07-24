@@ -327,20 +327,28 @@ class UpdateManagerService
     {
         $repairs = [];
 
-        if (!DB::table('sessions')->where('is_current', true)->exists()) {
-            DB::table('sessions')->update(['is_current' => false]);
-            DB::table('sessions')->updateOrInsert(
-                ['name' => date('Y') . '/' . (date('Y') + 1)],
-                [
-                    'is_active' => true,
-                    'is_current' => true,
-                    'start_date' => date('Y') . '-10-01',
-                    'end_date' => (date('Y') + 1) . '-09-30',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-            $repairs[] = 'Created current session';
+        if (!Schema::hasTable('sessions')) {
+            return $repairs;
+        }
+
+        try {
+            if (!DB::table('sessions')->where('is_current', true)->exists()) {
+                DB::table('sessions')->update(['is_current' => false]);
+                DB::table('sessions')->updateOrInsert(
+                    ['name' => date('Y') . '/' . (date('Y') + 1)],
+                    [
+                        'is_active' => true,
+                        'is_current' => true,
+                        'start_date' => date('Y') . '-10-01',
+                        'end_date' => (date('Y') + 1) . '-09-30',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+                $repairs[] = 'Created current session';
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
         }
 
         return $repairs;
@@ -363,19 +371,23 @@ class UpdateManagerService
             ['name' => 'Third Semester', 'code' => 'THIRD', 'sort_order' => 3],
         ];
 
-        foreach ($semesters as $semester) {
-            try {
-                if (!DB::table('semesters')->where('code', $semester['code'])->exists()) {
-                    DB::table('semesters')->insert(array_merge($semester, [
-                        'is_active' => $semester['sort_order'] <= 2,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]));
-                    $repairs[] = "Created semester: {$semester['name']}";
+        try {
+            foreach ($semesters as $semester) {
+                try {
+                    if (!DB::table('semesters')->where('code', $semester['code'])->exists()) {
+                        DB::table('semesters')->insert(array_merge($semester, [
+                            'is_active' => $semester['sort_order'] <= 2,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]));
+                        $repairs[] = "Created semester: {$semester['name']}";
+                    }
+                } catch (\Exception $e) {
+                    // Skip if table doesn't exist or other error
                 }
-            } catch (\Exception $e) {
-                // Skip if table doesn't exist
             }
+        } catch (\Exception $e) {
+            // Table doesn't exist or other critical error
         }
 
         return $repairs;
@@ -399,15 +411,23 @@ class UpdateManagerService
             ['name' => 'HND 2 (400L)', 'code' => 'HND2', 'sort_order' => 4, 'programme_type' => 'HND'],
         ];
 
-        foreach ($levels as $level) {
-            if (!DB::table('levels')->where('code', $level['code'])->exists()) {
-                DB::table('levels')->insert(array_merge($level, [
-                    'is_active' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]));
-                $repairs[] = "Created level: {$level['name']}";
+        try {
+            foreach ($levels as $level) {
+                try {
+                    if (!DB::table('levels')->where('code', $level['code'])->exists()) {
+                        DB::table('levels')->insert(array_merge($level, [
+                            'is_active' => true,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]));
+                        $repairs[] = "Created level: {$level['name']}";
+                    }
+                } catch (\Exception $e) {
+                    // Skip on error
+                }
             }
+        } catch (\Exception $e) {
+            // Table doesn't exist
         }
 
         return $repairs;
