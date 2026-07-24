@@ -138,25 +138,29 @@ class DatabaseSeeder extends Seeder
             Level::firstOrCreate(['code' => $level['code']], $level);
         }
 
-        // Create Super Admin User
+        // Create Super Admin User (use firstOrCreate to avoid duplicates)
         $superAdminRole = Role::where('slug', 'super_admin')->first();
         $adminRole = Role::where('slug', 'admin')->first();
 
-        $superAdmin = User::create([
-            'name' => 'Super Administrator',
-            'email' => 'admin@portal.edu',
-            'password' => Hash::make('password'),
-            'role_id' => $superAdminRole->id,
-            'is_active' => true,
-        ]);
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'admin@portal.edu'],
+            [
+                'name' => 'Super Administrator',
+                'password' => Hash::make('password'),
+                'role_id' => $superAdminRole->id,
+                'is_active' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@admin.edu',
-            'password' => Hash::make('admin123'),
-            'role_id' => $adminRole->id,
-            'is_active' => true,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@admin.edu'],
+            [
+                'name' => 'System Admin',
+                'password' => Hash::make('admin123'),
+                'role_id' => $adminRole->id,
+                'is_active' => true,
+            ]
+        );
 
         // Create a test student user
         $studentRole = Role::where('slug', 'student')->first();
