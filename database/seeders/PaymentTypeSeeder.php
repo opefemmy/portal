@@ -123,7 +123,7 @@ class PaymentTypeSeeder extends Seeder
         ];
 
         foreach ($paymentTypes as $type) {
-            PaymentType::firstOrCreate(['code' => $type['code']], $type);
+            PaymentType::updateOrCreate(['code' => $type['code']], $type);
         }
 
         $this->command->info('Created ' . count($paymentTypes) . ' payment types.');
