@@ -56,22 +56,26 @@ class DatabaseSeeder extends Seeder
         }
 
         // Create Current Session
-        $session = Session::create([
-            'name' => '2025/2026',
-            'is_active' => true,
-            'is_current' => true,
-            'start_date' => '2025-10-01',
-            'end_date' => '2026-09-30',
-        ]);
+        $session = Session::firstOrCreate(
+            ['name' => '2025/2026'],
+            [
+                'is_active' => true,
+                'is_current' => true,
+                'start_date' => '2025-10-01',
+                'end_date' => '2026-09-30',
+            ]
+        );
 
         // Create another session
-        Session::create([
-            'name' => '2024/2025',
-            'is_active' => false,
-            'is_current' => false,
-            'start_date' => '2024-10-01',
-            'end_date' => '2025-09-30',
-        ]);
+        Session::firstOrCreate(
+            ['name' => '2024/2025'],
+            [
+                'is_active' => false,
+                'is_current' => false,
+                'start_date' => '2024-10-01',
+                'end_date' => '2025-09-30',
+            ]
+        );
 
         // Create Schools
         $schools = [

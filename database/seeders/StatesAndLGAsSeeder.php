@@ -51,7 +51,7 @@ class StatesAndLGAsSeeder extends Seeder
         ];
 
         foreach ($states as $state) {
-            State::create($state);
+            State::firstOrCreate(['code' => $state['code']], $state);
         }
 
         // Sample LGAs - in production, you would import from Excel
@@ -83,7 +83,7 @@ class StatesAndLGAsSeeder extends Seeder
         ];
 
         foreach ($lgas as $lga) {
-            LocalGovernment::create($lga);
+            LocalGovernment::firstOrCreate(['name' => $lga['name'], 'state_id' => $lga['state_id']], $lga);
         }
     }
 }
