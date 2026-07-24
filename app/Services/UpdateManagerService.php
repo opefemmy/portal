@@ -174,6 +174,26 @@ class UpdateManagerService
         foreach ($requiredTables as $table) {
             if (!Schema::hasTable($table)) {
                 $errors[] = "Missing table: {$table}";
+                // Try to create payment_types table if missing
+                if ($table === 'payment_types' && !Schema::hasTable('payment_types')) {
+                    try {
+                        Schema::create('payment_types', function ($t) {
+                            $t->id();
+                            $t->string('name');
+                            $t->string('code')->unique();
+                            $t->text('description')->nullable();
+                            $t->decimal('amount', 12, 2)->default(0);
+                            $t->boolean('is_active')->default(true);
+                            $t->boolean('requires_payment')->default(true);
+                            $t->string('payment_channel')->nullable();
+                            $t->integer('priority')->default(0);
+                            $t->timestamps();
+                        });
+                        $repaired[] = "Created table: payment_types";
+                    } catch (\Exception $e) {
+                        $errors[] = "Failed to create payment_types: " . $e->getMessage();
+                    }
+                }
             } else {
                 $repaired[] = "Table exists: {$table}";
             }
