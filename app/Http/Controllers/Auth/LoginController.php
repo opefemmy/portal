@@ -104,9 +104,11 @@ class LoginController extends Controller
 
             // Add login notification for students
             try {
-                $loginNotification = Setting::get('login_notification');
-                if ($loginNotification) {
-                    session()->flash('login_notification', $loginNotification);
+                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    $loginNotification = Setting::get('login_notification');
+                    if ($loginNotification) {
+                        session()->flash('login_notification', $loginNotification);
+                    }
                 }
             } catch (\Exception $e) {
                 // Ignore settings errors
