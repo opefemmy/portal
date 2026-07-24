@@ -11,12 +11,12 @@ class ApplicantController extends Controller
     public function index()
     {
         $applicants = Applicant::with('user', 'department', 'programme')->latest()->get();
-        return view('registrar.applicants', compact('applicants'));
+        return view('registrar.applications.index', compact('applicants'));
     }
 
     public function show(Applicant $applicant)
     {
-        return view('registrar.applicants-show', compact('applicant'));
+        return view('registrar.applications.show', compact('applicant'));
     }
 
     public function admit(Applicant $applicant, Request $request)
