@@ -199,22 +199,25 @@ class TestUsersSeeder extends Seeder
             }
 
             // Create student profile if student role
-            if ($role === 'student' && !Student::where('user_id', $user->id)->first()) {
+            if ($role === 'student') {
                 $school = School::first();
                 $department = Department::first();
                 $programme = Programme::first();
                 $session = Session::where('is_current', true)->first();
+                $matricNumber = $userData['matric_number'] ?? 'ND/2024/' . str_pad($user->id, 3, '0', STR_PAD_LEFT);
 
-                Student::create([
-                    'user_id' => $user->id,
-                    'matric_number' => $userData['matric_number'] ?? 'ND/2024/' . str_pad($user->id, 3, '0', STR_PAD_LEFT),
-                    'school_id' => $school ? $school->id : null,
-                    'department_id' => $department ? $department->id : null,
-                    'programme_id' => $programme ? $programme->id : null,
-                    'session_id' => $session ? $session->id : null,
-                    'level' => 1,
-                    'status' => 'active',
-                ]);
+                Student::firstOrCreate(
+                    ['matric_number' => $matricNumber],
+                    [
+                        'user_id' => $user->id,
+                        'school_id' => $school ? $school->id : null,
+                        'department_id' => $department ? $department->id : null,
+                        'programme_id' => $programme ? $programme->id : null,
+                        'session_id' => $session ? $session->id : null,
+                        'level' => 1,
+                        'status' => 'active',
+                    ]
+                );
 
                 $this->command->info("Created student profile for " . $userData['email']);
             }

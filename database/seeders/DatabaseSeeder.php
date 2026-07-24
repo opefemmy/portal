@@ -180,16 +180,18 @@ class DatabaseSeeder extends Seeder
         $firstProg = Programme::first();
 
         // Create student profile for test student
-        Student::create([
-            'user_id' => $testStudentUser->id,
-            'matric_number' => 'ND/2024/001',
-            'school_id' => $firstSchool?->id,
-            'department_id' => $firstDept?->id,
-            'programme_id' => $firstProg?->id,
-            'session_id' => $session->id,
-            'level' => 1,
-            'status' => 'active',
-        ]);
+        Student::firstOrCreate(
+            ['matric_number' => 'ND/2024/001'],
+            [
+                'user_id' => $testStudentUser->id,
+                'school_id' => $firstSchool?->id,
+                'department_id' => $firstDept?->id,
+                'programme_id' => $firstProg?->id,
+                'session_id' => $session->id,
+                'level' => 1,
+                'status' => 'active',
+            ]
+        );
 
         // Create a test applicant user
         $applicantRole = Role::where('slug', 'applicant')->first();
