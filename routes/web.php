@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\ProgrammeController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\FeeController;
+use App\Http\Controllers\Admin\PaymentTypeController;
 use App\Http\Controllers\Admin\GradeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\StaffController;
