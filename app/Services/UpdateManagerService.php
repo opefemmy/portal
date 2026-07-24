@@ -370,7 +370,7 @@ class UpdateManagerService
                         'is_active' => $semester['sort_order'] <= 2,
                         'created_at' => now(),
                         'updated_at' => now(),
-                    ]);
+                    ]));
                     $repairs[] = "Created semester: {$semester['name']}";
                 }
             } catch (\Exception $e) {
