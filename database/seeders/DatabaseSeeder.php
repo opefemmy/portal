@@ -212,6 +212,7 @@ class DatabaseSeeder extends Seeder
             StatesAndLGAsSeeder::class,
             NationalitiesSeeder::class,
             ERPRolesSeeder::class,
+            PaymentTypeSeeder::class,
         ]);
     }
 }

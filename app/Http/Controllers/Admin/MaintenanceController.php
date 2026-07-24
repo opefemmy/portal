@@ -64,6 +64,7 @@ class MaintenanceController extends Controller
             'semesters' => $this->updater->repairSemesters(),
             'levels' => $this->updater->repairLevels(),
             'settings' => $this->updater->repairSettings(),
+            'payment_types' => $this->updater->repairPaymentTypes(),
             default => [],
         };
 

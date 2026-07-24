@@ -26,7 +26,9 @@
       "Read(//c/Users/HP/OneDrive/Documents/**)",
       "Bash(dir \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\SAMPLE.xlsx\")",
       "Bash(findstr /i \"fees category\")",
-      "Bash(composer require *)"
+      "Bash(composer require *)",
+      "Bash(cd C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal *)",
+      "Bash(composer dump-autoload *)"
     ]
   }
 }
