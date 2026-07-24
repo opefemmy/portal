@@ -3,13 +3,27 @@
 @section('title', 'Login')
 
 @php
+use Illuminate\Support\Facades\Schema;
 use App\Models\SystemSetting;
-$institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
-$institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
-$institutionLogo = SystemSetting::get('institution_logo');
-$institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student & Admin Login');
-$logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
-$logoExists = $institutionLogo && file_exists($logoPath);
+
+$institutionName = 'Ekiti State College of Technology';
+$institutionShortName = 'EKSCOTECH';
+$institutionLogo = null;
+$institutionTagline = 'Staff, Student & Admin Login';
+$logoExists = false;
+
+if (Schema::hasTable('system_settings')) {
+    try {
+        $institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
+        $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+        $institutionLogo = SystemSetting::get('institution_logo');
+        $institutionTagline = SystemSetting::get('institution_tagline', 'Staff, Student & Admin Login');
+        $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
+        $logoExists = $institutionLogo && file_exists($logoPath);
+    } catch (\Exception $e) {
+        // Use defaults
+    }
+}
 @endphp
 
 @section('content')

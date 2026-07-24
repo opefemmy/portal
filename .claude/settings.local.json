@@ -28,7 +28,8 @@
       "Bash(findstr /i \"fees category\")",
       "Bash(composer require *)",
       "Bash(cd C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal *)",
-      "Bash(composer dump-autoload *)"
+      "Bash(composer dump-autoload *)",
+      "WebFetch(domain:eportal.personel.ink)"
     ]
   }
 }
