@@ -17,7 +17,7 @@
     <div class="col-md-2">
         <div class="card stat-card">
             <div class="card-body text-center">
-                <h3 class="mb-0">{{ $stats['total'] ?? $applications->total() }}</h3>
+                <h3 class="mb-0">{{ $applications->total() ?? 0 }}</h3>
                 <small class="text-muted">Total</small>
             </div>
         </div>
