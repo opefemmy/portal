@@ -317,6 +317,11 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.payment-types.index') }}" class="nav-link {{ request()->is('admin/payment-types*') ? 'active' : '' }}">
+                    <i class="fas fa-tags me-2"></i>Payment Types
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ url('/bursar/payments') }}" class="nav-link">
                     <i class="fas fa-receipt me-2"></i>View Payments
                 </a>
