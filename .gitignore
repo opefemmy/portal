@@ -22,3 +22,4 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+vendor/composer/platform_check.php
