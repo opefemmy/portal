@@ -221,4 +221,118 @@ class SystemSettingController extends Controller
         return redirect()->route('admin.settings.index')
             ->with('success', 'Branding settings updated successfully!');
     }
+
+    /**
+     * Download institution logo
+     */
+    public function downloadLogo()
+    {
+        $logo = SystemSetting::get('institution_logo');
+
+        if (!$logo) {
+            return back()->with('error', 'No logo uploaded yet.');
+        }
+
+        $path = storage_path('app/public/' . $logo);
+
+        if (!file_exists($path)) {
+            return back()->with('error', 'Logo file not found.');
+        }
+
+        return response()->download($path);
+    }
+
+    /**
+     * Download institution icon/favicon
+     */
+    public function downloadIcon()
+    {
+        $icon = SystemSetting::get('institution_icon');
+
+        if (!$icon) {
+            return back()->with('error', 'No icon uploaded yet.');
+        }
+
+        $path = storage_path('app/public/' . $icon);
+
+        if (!file_exists($path)) {
+            return back()->with('error', 'Icon file not found.');
+        }
+
+        return response()->download($path);
+    }
+
+    /**
+     * Download house icon
+     */
+    public function downloadHouseIcon()
+    {
+        $houseIcon = SystemSetting::get('house_icon');
+
+        if (!$houseIcon) {
+            return back()->with('error', 'No house icon uploaded yet.');
+        }
+
+        $path = storage_path('app/public/' . $houseIcon);
+
+        if (!file_exists($path)) {
+            return back()->with('error', 'House icon file not found.');
+        }
+
+        return response()->download($path);
+    }
+
+    /**
+     * Delete institution logo
+     */
+    public function deleteLogo()
+    {
+        $logo = SystemSetting::get('institution_logo');
+
+        if ($logo) {
+            $path = storage_path('app/public/' . $logo);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+            SystemSetting::set('institution_logo', null);
+        }
+
+        return back()->with('success', 'Logo deleted successfully.');
+    }
+
+    /**
+     * Delete institution icon
+     */
+    public function deleteIcon()
+    {
+        $icon = SystemSetting::get('institution_icon');
+
+        if ($icon) {
+            $path = storage_path('app/public/' . $icon);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+            SystemSetting::set('institution_icon', null);
+        }
+
+        return back()->with('success', 'Icon deleted successfully.');
+    }
+
+    /**
+     * Delete house icon
+     */
+    public function deleteHouseIcon()
+    {
+        $houseIcon = SystemSetting::get('house_icon');
+
+        if ($houseIcon) {
+            $path = storage_path('app/public/' . $houseIcon);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+            SystemSetting::set('house_icon', null);
+        }
+
+        return back()->with('success', 'House icon deleted successfully.');
+    }
 }

@@ -20,6 +20,24 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', $institutionShortName . ' Portal')</title>
 
+    <!-- Favicon / Institution Icon -->
+    @php
+    $institutionIcon = null;
+    try {
+        $institutionIcon = Cache::remember('institution_icon', 60, fn() => \App\Models\SystemSetting::get('institution_icon'));
+        $iconPath = $institutionIcon ? storage_path('app/public/' . $institutionIcon) : null;
+        $iconExists = $institutionIcon && file_exists($iconPath);
+    } catch (\Exception $e) {
+        $iconExists = false;
+    }
+    @endphp
+    @if($institutionIcon && $iconExists)
+        <link rel="icon" type="image/png" href="{{ asset('storage/' . $institutionIcon) }}">
+        <link rel="apple-touch-icon" href="{{ asset('storage/' . $institutionIcon) }}">
+    @else
+        <link rel="icon" type="image/png" href="{{ asset('favicon.ico') }}">
+    @endif
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -102,9 +120,20 @@
         }
 
         .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: var(--sidebar-hover);
-            color: var(--sidebar-link);
-            border-left: 3px solid var(--hover-color);
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+            border-left: 4px solid #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .sidebar .nav-link.active i {
+            color: #ffffff !important;
+        }
+
+        .sidebar .nav-link.active .badge {
+            background: #ffffff !important;
+            color: var(--primary) !important;
         }
 
         .sidebar .nav-link i {

@@ -68,9 +68,19 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
                         <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
                         @if($institutionLogo)
-                            <div class="mt-2">
-                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;">
-                                <span class="badge bg-success ms-2">Current Logo</span>
+                            <div class="mt-2 d-flex align-items-center">
+                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
+                                <span class="badge bg-success me-2">Current</span>
+                                <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ route('admin.settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>
@@ -80,9 +90,19 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         <label class="form-label">Favicon / Icon (Recommended: 32x32px, PNG/JPG/ICO)</label>
                         <input type="file" name="institution_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/ico,image/svg+xml,image/webp">
                         @if($institutionIcon)
-                            <div class="mt-2">
-                                <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;">
-                                <span class="badge bg-success ms-2">Current Icon</span>
+                            <div class="mt-2 d-flex align-items-center">
+                                <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;" class="me-2">
+                                <span class="badge bg-success me-2">Current</span>
+                                <a href="{{ route('admin.settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ route('admin.settings.delete.icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>
@@ -97,9 +117,19 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         $houseIcon = \App\Models\SystemSetting::get('house_icon');
                         @endphp
                         @if($houseIcon)
-                            <div class="mt-2">
-                                <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;">
-                                <span class="badge bg-success ms-2">Current</span>
+                            <div class="mt-2 d-flex align-items-center">
+                                <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;" class="me-2">
+                                <span class="badge bg-success me-2">Current</span>
+                                <a href="{{ route('admin.settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ route('admin.settings.delete.house-icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>
@@ -109,9 +139,19 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
                         <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
                         @if($institutionLogo)
-                            <div class="mt-2">
-                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;">
-                                <span class="badge bg-success ms-2">Current Logo</span>
+                            <div class="mt-2 d-flex align-items-center">
+                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
+                                <span class="badge bg-success me-2">Current</span>
+                                <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ route('admin.settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>

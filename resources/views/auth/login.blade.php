@@ -35,12 +35,10 @@ if (Schema::hasTable('system_settings')) {
         display: flex;
         align-items: center;
         justify-content: center;
-        /* Background image - save 8K PNG to: public/uploads/backgrounds/login-bg.png */
-        background: linear-gradient(135deg, rgba(36, 125, 87, 0.95) 0%, rgba(30, 106, 74, 0.95) 50%, rgba(130, 16, 60, 0.95) 100%),
-                    url('{{ asset('uploads/backgrounds/login-bg.png') }}');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
+        background-image: url("{{ asset('uploads/backgrounds/login-bg.png') }}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
     }
 
     .login-card {

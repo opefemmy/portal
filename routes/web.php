@@ -268,6 +268,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/settings/toggle', [SystemSettingController::class, 'toggleSetting'])->name('settings.toggle');
     Route::post('/settings/branding', [SystemSettingController::class, 'updateBranding'])->name('settings.branding');
 
+    // Download branding files
+    Route::get('/settings/download/logo', [SystemSettingController::class, 'downloadLogo'])->name('settings.download.logo');
+    Route::get('/settings/download/icon', [SystemSettingController::class, 'downloadIcon'])->name('settings.download.icon');
+    Route::get('/settings/download/house-icon', [SystemSettingController::class, 'downloadHouseIcon'])->name('settings.download.house-icon');
+
+    // Delete branding files
+    Route::delete('/settings/delete/logo', [SystemSettingController::class, 'deleteLogo'])->name('settings.delete.logo');
+    Route::delete('/settings/delete/icon', [SystemSettingController::class, 'deleteIcon'])->name('settings.delete.icon');
+    Route::delete('/settings/delete/house-icon', [SystemSettingController::class, 'deleteHouseIcon'])->name('settings.delete.house-icon');
+
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
     Route::get('/reports/students', [ReportController::class, 'students'])->name('reports.students');
