@@ -3,10 +3,34 @@
 @section('title', 'Patient Registration')
 
 @section('content')
+<style>
+    .portal-page {
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        min-height: 100vh;
+        padding: 50px 0;
+    }
+    .portal-card-custom {
+        background: white !important;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .portal-card-custom h4 {
+        font-weight: 700 !important;
+        font-size: 1.3rem !important;
+    }
+    .portal-card-custom label {
+        font-weight: 600 !important;
+    }
+    .portal-card-custom .btn {
+        font-weight: 600 !important;
+    }
+</style>
+<div class="portal-page">
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-lg">
+            <div class="card border-0 shadow-lg portal-card-custom">
                 <div class="card-header bg-danger text-white py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-user-plus me-2"></i>Patient Registration
@@ -148,5 +172,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

@@ -3,10 +3,30 @@
 @section('title', 'Registration Successful')
 
 @section('content')
+<style>
+    .portal-page {
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        min-height: 100vh;
+        padding: 50px 0;
+    }
+    .portal-card-custom {
+        background: white !important;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .portal-card-custom h4, .portal-card-custom h5 {
+        font-weight: 700 !important;
+    }
+    .portal-card-custom label {
+        font-weight: 600 !important;
+    }
+</style>
+<div class="portal-page">
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card border-0 shadow-lg">
+            <div class="card border-0 shadow-lg portal-card-custom">
                 <div class="card-header bg-success text-white py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-check-circle me-2"></i>Registration Successful!
@@ -51,9 +71,24 @@
                             <i class="fas fa-home me-2"></i>Back to Home
                         </a>
                     </div>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <h6 class="mb-3">After registration, you can:</h6>
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('patient-portal.login') }}" class="btn btn-success">
+                                <i class="fas fa-credit-card me-2"></i>Make Payment
+                            </a>
+                            <a href="{{ route('patient-portal.login') }}" class="btn btn-info">
+                                <i class="fas fa-calendar-plus me-2"></i>Book Appointment
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

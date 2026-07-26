@@ -3,10 +3,24 @@
 @section('title', 'Payment Receipt')
 
 @section('content')
+<style>
+    .portal-page {
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    .portal-card-custom {
+        background: white !important;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+</style>
+<div class="portal-page">
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card border-0 shadow">
+            <div class="card border-0 shadow portal-card-custom">
                 <div class="card-header bg-success text-white py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-receipt me-2"></i>Payment Receipt
@@ -92,5 +106,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

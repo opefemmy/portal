@@ -3,6 +3,20 @@
 @section('title', 'Patient Dashboard')
 
 @section('content')
+<style>
+    .portal-page {
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    .portal-card-custom {
+        background: white !important;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+</style>
+<div class="portal-page">
 <div class="container py-4">
     <!-- Header -->
     <div class="row mb-4">
@@ -426,5 +440,6 @@ $(document).ready(function() {
     });
 });
 </script>
+</div>
 @endpush
 @endsection

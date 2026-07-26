@@ -142,9 +142,19 @@ if (Schema::hasTable('system_settings')) {
     }
 
     .institution-logo {
-        font-size: 3rem;
+        font-size: 2rem;
         color: white;
         margin-bottom: 10px;
+    }
+
+    .login-header h3 {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+    }
+
+    .login-header p {
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
     }
 
     /* Quick Action Buttons */

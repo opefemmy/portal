@@ -2,11 +2,11 @@
 
 @section('title', 'EKSCOTECH Hospital Patient Portal')
 
-@push('styles')
+@section('content')
 <style>
     .portal-page {
-        background: url('{{ asset('uploads/backgrounds/login-bg.png') }}') no-repeat center center fixed;
-        background-size: cover;
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
         min-height: 100vh;
         padding-bottom: 50px;
     }
@@ -16,27 +16,48 @@
     }
     .portal-header h1 {
         color: #247D57 !important;
-        text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+        text-shadow: 2px 2px 4px rgba(255,255,255,0.8) !important;
         font-weight: 800 !important;
+        font-size: 2rem !important;
     }
     .portal-header p {
-        color: #333 !important;
-        font-weight: 500;
+        color: #1a1a1a !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
     }
     .portal-card {
         transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .portal-card h4 {
+        font-size: 1.3rem !important;
+        font-weight: 700 !important;
+    }
+    .portal-card p {
+        font-size: 1rem !important;
+        font-weight: 500 !important;
     }
     .portal-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important;
     }
     .portal-icon {
-        width: 100px !important;
-        height: 100px !important;
+        width: 80px !important;
+        height: 80px !important;
+    }
+    .portal-icon i {
+        font-size: 2rem !important;
+    }
+    .portal-card .btn {
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        padding: 10px 20px !important;
     }
     .feature-icon {
-        width: 60px !important;
-        height: 60px !important;
+        width: 50px !important;
+        height: 50px !important;
+    }
+    .feature-icon i {
+        font-size: 1.5rem !important;
     }
     .portal-features .col-md-6 {
         background: white;
@@ -47,14 +68,14 @@
     .portal-features h5 {
         color: #247D57 !important;
         font-weight: 700 !important;
+        font-size: 1.2rem !important;
     }
     .portal-features p {
-        color: #666 !important;
+        color: #333 !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
     }
 </style>
-@endpush
-
-@section('content')
 <div class="portal-page">
 <!-- Header Banner -->
 <div class="portal-header text-center">

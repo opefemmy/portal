@@ -312,7 +312,11 @@ class ExternalPatientController extends Controller
             'access_code' => 'required|string',
         ]);
 
-        $patient = ExternalPatient::where('patient_number', $request->patient_number)
+        // Allow login by patient_number OR phone number
+        $patient = ExternalPatient::where(function($query) use ($request) {
+                $query->where('patient_number', $request->patient_number)
+                      ->orWhere('phone', 'like', '%' . $request->patient_number);
+            })
             ->where('access_code', $request->access_code)
             ->where('is_active', true)
             ->first();

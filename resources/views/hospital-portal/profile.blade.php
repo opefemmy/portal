@@ -3,10 +3,24 @@
 @section('title', 'My Profile')
 
 @section('content')
+<style>
+    .portal-page {
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    .portal-card-custom {
+        background: white !important;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+</style>
+<div class="portal-page">
 <div class="container py-4">
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm portal-card-custom">
                 <div class="card-header bg-dark text-white py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-user-cog me-2"></i>Edit Profile
@@ -132,5 +146,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

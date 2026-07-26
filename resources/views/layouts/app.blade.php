@@ -102,7 +102,17 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
             background-color: #f5f6fa;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700 !important;
+        }
+
+        .display-1, .display-2, .display-3, .display-4 {
+            font-weight: 800 !important;
         }
 
         .sidebar {
