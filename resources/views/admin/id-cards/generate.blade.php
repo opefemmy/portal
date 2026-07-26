@@ -18,7 +18,7 @@
         <div class="card" id="id-card">
             <div class="card-body p-0">
                 <!-- ID Card Design -->
-                <div class="id-card" style="background: linear-gradient(135deg, #1a237e, #6a1b9a); padding: 30px; color: white; border-radius: 10px;">
+                <div class="id-card" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 30px; color: white; border-radius: 10px;">
                     <div class="text-center mb-3">
                         <i class="fas fa-university fa-3x"></i>
                         <h4 class="mt-2">Institution Management Portal</h4>

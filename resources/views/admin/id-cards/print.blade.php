@@ -6,6 +6,7 @@
     <title>Student ID Cards</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root { --primary: #247D57; --primary-dark: #1E6A4A; }
         body { font-family: Arial, sans-serif; }
         .id-card {
             width: 3.375in;
@@ -19,7 +20,7 @@
             page-break-inside: avoid;
         }
         .id-card-header {
-            background: linear-gradient(135deg, #1a237e, #6a1b9a);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             padding: 8px;
             margin: -10px -10px 10px -10px;
@@ -32,7 +33,7 @@
             width: 60px;
             height: 70px;
             background: #eee;
-            border: 2px solid #1a237e;
+            border: 2px solid var(--primary);
             margin: 0 auto 10px;
             display: flex;
             align-items: center;
@@ -41,7 +42,7 @@
         }
         .id-info { font-size: 9pt; }
         .id-info .name { font-weight: bold; font-size: 10pt; }
-        .id-info .matric { color: #1a237e; font-weight: bold; }
+        .id-info .matric { color: var(--primary); font-weight: bold; }
         .id-footer {
             margin-top: 8px;
             padding-top: 5px;

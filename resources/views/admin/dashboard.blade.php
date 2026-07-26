@@ -215,8 +215,8 @@
                         <tbody>
                             @forelse($recentPayments as $payment)
                             <tr>
-                                <td>{{ $payment->student->user->name }}</td>
-                                <td>{{ $payment->fee->name }}</td>
+                                <td>{{ $payment->student->user->name ?? 'N/A' }}</td>
+                                <td>{{ $payment->fee->name ?? 'N/A' }}</td>
                                 <td>₦{{ number_format($payment->amount, 2) }}</td>
                                 <td>
                                     <span class="badge badge-status bg-{{ $payment->status === 'completed' ? 'success' : ($payment->status === 'failed' ? 'danger' : 'warning') }}">

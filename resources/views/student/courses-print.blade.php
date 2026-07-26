@@ -6,18 +6,22 @@
     <title>Course Registration Form - {{ auth()->user()->name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary: #247D57;
+            --primary-dark: #1E6A4A;
+        }
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
         }
         .invoice-header {
             text-align: center;
-            border-bottom: 2px solid #1a237e;
+            border-bottom: 2px solid var(--primary);
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
         .invoice-header h1 {
-            color: #1a237e;
+            color: var(--primary);
             font-size: 24pt;
             margin-bottom: 5px;
         }

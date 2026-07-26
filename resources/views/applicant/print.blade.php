@@ -49,15 +49,15 @@
         }
         .invoice-header {
             text-align: center;
-            border-bottom: 3px solid #1a237e;
+            border-bottom: 3px solid var(--primary);
             padding-bottom: 20px;
             margin-bottom: 25px;
-            background: linear-gradient(to bottom, rgba(26, 35, 126, 0.05), transparent);
+            background: linear-gradient(to bottom, rgba(36, 125, 87, 0.05), transparent);
             padding: 20px;
             border-radius: 10px;
         }
         .invoice-header h1 {
-            color: #1a237e;
+            color: var(--primary);
             font-size: 22pt;
             margin-bottom: 5px;
             font-weight: bold;
@@ -68,7 +68,7 @@
             margin: 0 auto 10px;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid #1a237e;
+            border: 2px solid var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -94,11 +94,11 @@
             border: 1px solid #dee2e6;
         }
         .table th {
-            background: linear-gradient(to bottom, #1a237e, #283593);
+            background: linear-gradient(to bottom, var(--primary), #283593);
             color: white;
             font-weight: bold;
             padding: 8px;
-            border: 1px solid #1a237e;
+            border: 1px solid var(--primary);
         }
         .table td {
             border: 1px solid #dee2e6;
@@ -106,7 +106,7 @@
         .photo-frame {
             width: 140px;
             height: 160px;
-            border: 3px solid #1a237e;
+            border: 3px solid var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -125,7 +125,7 @@
         }
         .signature-section table td {
             padding: 25px 15px;
-            border-top: 2px solid #1a237e;
+            border-top: 2px solid var(--primary);
         }
         .badge-status {
             padding: 8px 20px;
@@ -150,7 +150,7 @@
                 border-bottom-color: #000;
             }
             .table th {
-                background: #1a237e !important;
+                background: var(--primary) !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -180,7 +180,7 @@
             <p>Phone: {{ \App\Models\Setting::get('institution_phone', '+2348000000000') }} | Email: {{ \App\Models\Setting::get('institution_email', 'info@portal.edu') }}</p>
         </div>
 
-        <h3 class="text-center mb-4" style="color: #1a237e;">
+        <h3 class="text-center mb-4" style="color: var(--primary);">
             <strong>ADMISSION APPLICATION FORM</strong>
         </h3>
 

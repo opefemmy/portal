@@ -46,7 +46,7 @@ $user = auth()->user();
 @endif
 
 {{-- Welcome Banner with Passport --}}
-<div class="card mb-4" style="background: linear-gradient(135deg, #1a237e, #6a1b9a); border: none; border-radius: 15px;">
+<div class="card mb-4" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; border-radius: 15px;">
     <div class="card-body" style="color: white;">
         <div class="row align-items-center">
             <div class="col-md-2 text-center">
@@ -191,6 +191,21 @@ $user = auth()->user();
                     <i class="fas fa-dollar-sign me-2"></i>My Payments
                 </a>
             </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.medical.index') }}" class="btn btn-outline-danger w-100">
+                    <i class="fas fa-hospital me-2"></i>Medical/Health
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.complaints') }}" class="btn btn-outline-info w-100">
+                    <i class="fas fa-exclamation-circle me-2"></i>Complaints
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{{ route('student.timetable') }}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-calendar me-2"></i>Timetable
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -200,7 +215,7 @@ $user = auth()->user();
 <div class="modal fade" id="postLoginPopup" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #1a237e, #6a1b9a); color: white;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;">
                 <h5 class="modal-title"><i class="fas fa-bell me-2"></i>Important Information</h5>
             </div>
             <div class="modal-body">

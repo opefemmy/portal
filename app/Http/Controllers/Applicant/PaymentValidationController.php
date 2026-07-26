@@ -34,7 +34,15 @@ class PaymentValidationController extends Controller
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
         $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
 
-        return view('applicant.validate-payment', compact('requireFee', 'feeAmount'));
+        // Get payment type amount if available
+        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
+        if ($paymentType && $paymentType->amount > 0) {
+            $feeAmount = $paymentType->amount;
+        }
+
+        $paymentPortalUrl = SystemSetting::getPaymentPortalUrl();
+
+        return view('applicant.validate-payment', compact('requireFee', 'feeAmount', 'paymentPortalUrl'));
     }
 
     /**
@@ -44,11 +52,9 @@ class PaymentValidationController extends Controller
     {
         $request->validate([
             'transaction_id' => 'required|string|min:5|max:100',
-            'email' => 'nullable|email',
         ]);
 
         $transactionId = strtoupper(trim($request->transaction_id));
-        $email = $request->email;
 
         // Check if transaction ID exists
         $payment = ExternalPayment::where('transaction_id', $transactionId)->first();
@@ -83,6 +89,12 @@ class PaymentValidationController extends Controller
         // Check amount (if required fee is configured)
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
         $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+
+        // Get payment type amount if available (overrides system setting)
+        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
+        if ($paymentType && $paymentType->amount > 0) {
+            $feeAmount = $paymentType->amount;
+        }
 
         if ($requireFee && $feeAmount > 0) {
             if ($payment->amount < $feeAmount) {

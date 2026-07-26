@@ -45,6 +45,8 @@ class DatabaseSeeder extends Seeder
         $programmes = [
             ['name' => 'National Diploma', 'code' => 'ND', 'type' => 'ND'],
             ['name' => 'Higher National Diploma', 'code' => 'HND', 'type' => 'HND'],
+            ['name' => 'Diploma', 'code' => 'DIP', 'type' => 'Diploma'],
+            ['name' => 'Pre-ND', 'code' => 'PRE-ND', 'type' => 'Pre-ND'],
             ['name' => 'Bachelor Degree', 'code' => 'DEG', 'type' => 'Degree'],
             ['name' => 'Post Graduate Diploma', 'code' => 'PGD', 'type' => 'PGD'],
             ['name' => 'Masters', 'code' => 'MAST', 'type' => 'Masters'],
@@ -77,32 +79,262 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Create Schools
-        $schools = [
-            ['name' => 'School of Computing', 'code' => 'SOC', 'description' => 'Computing and Information Technology'],
-            ['name' => 'School of Engineering', 'code' => 'SOE', 'description' => 'Engineering and Technology'],
-            ['name' => 'School of Management', 'code' => 'SOM', 'description' => 'Business and Management Studies'],
-            ['name' => 'School of Applied Sciences', 'code' => 'SAS', 'description' => 'Applied Sciences'],
+        // ===========================================
+        // SCHOOLS - Based on Updated Programs Document
+        // ===========================================
+        $schoolsData = [
+            ['name' => 'School of Clinical Technology', 'code' => 'SOCT', 'description' => 'Clinical and Medical Technology Programs'],
+            ['name' => 'School of Allied Health Sciences', 'code' => 'SOAHS', 'description' => 'Allied Health and Public Health Programs'],
+            ['name' => 'School of Finance, Business and Management Studies', 'code' => 'SOFBMS', 'description' => 'Finance, Business and Management Programs'],
+            ['name' => 'School of Pure and Applied Sciences', 'code' => 'SPAS', 'description' => 'Pure and Applied Sciences Programs'],
+            ['name' => 'School of Engineering', 'code' => 'SOENG', 'description' => 'Engineering Programs'],
         ];
 
-        foreach ($schools as $school) {
-            School::firstOrCreate(['code' => $school['code']], $school);
+        $schoolIds = [];
+        foreach ($schoolsData as $school) {
+            $schoolModel = School::firstOrCreate(['code' => $school['code']], $school);
+            $schoolIds[$school['code']] = $schoolModel->id;
         }
 
-        // Create Departments
-        $departments = [
-            ['name' => 'Computer Science', 'code' => 'CS', 'school_id' => 1],
-            ['name' => 'Information Systems', 'code' => 'IS', 'school_id' => 1],
-            ['name' => 'Software Engineering', 'code' => 'SE', 'school_id' => 1],
-            ['name' => 'Electrical Engineering', 'code' => 'EE', 'school_id' => 2],
-            ['name' => 'Mechanical Engineering', 'code' => 'ME', 'school_id' => 2],
-            ['name' => 'Business Administration', 'code' => 'BA', 'school_id' => 3],
-            ['name' => 'Accountancy', 'code' => 'AC', 'school_id' => 3],
-            ['name' => 'Science Laboratory Technology', 'code' => 'SLT', 'school_id' => 4],
+        // ===========================================
+        // DEPARTMENTS AND PROGRAMMES
+        // ===========================================
+
+        // School of Clinical Technology
+        $departmentsData = [
+            // COMMUNITY HEALTH STUDIES (CHS)
+            [
+                'name' => 'Community Health Studies',
+                'code' => 'CHS',
+                'school_id' => $schoolIds['SOCT'],
+                'programmes' => [
+                    ['name' => 'Community Health', 'code' => 'COMMHEALTH', 'type' => 'ND/HND'],
+                    ['name' => 'Family Health', 'code' => 'FAMILYHEALTH', 'type' => 'ND'],
+                    ['name' => 'Health Education and Promotion', 'code' => 'HEALTHEDU', 'type' => 'ND'],
+                ]
+            ],
+            // MEDICAL EMERGENCY STUDIES (MES)
+            [
+                'name' => 'Medical Emergency Studies',
+                'code' => 'MES',
+                'school_id' => $schoolIds['SOCT'],
+                'programmes' => [
+                    ['name' => 'Paramedicine Science', 'code' => 'PARAMEDIC', 'type' => 'ND/HND'],
+                    ['name' => 'Orthopedic Plaster Cast', 'code' => 'ORTHOPLAST', 'type' => 'ND'],
+                ]
+            ],
+            // DENTAL HEALTH STUDIES (DHS)
+            [
+                'name' => 'Dental Health Studies',
+                'code' => 'DHS',
+                'school_id' => $schoolIds['SOCT'],
+                'programmes' => [
+                    ['name' => 'Dental Therapy', 'code' => 'DENTHERAPY', 'type' => 'ND/HND'],
+                    ['name' => 'Dental Surgery Technology', 'code' => 'DENTSURG', 'type' => 'ND/HND'],
+                ]
+            ],
+            // MEDICAL DIAGNOSTIC STUDIES (MDS)
+            [
+                'name' => 'Medical Diagnostic Studies',
+                'code' => 'MDS',
+                'school_id' => $schoolIds['SOCT'],
+                'programmes' => [
+                    ['name' => 'Medical Laboratory Technology', 'code' => 'MEDLAB', 'type' => 'ND'],
+                    ['name' => 'Medical Imaging Technology', 'code' => 'MEDIMAGING', 'type' => 'ND'],
+                ]
+            ],
+            // MEDICAL THERAPY AND INTERVENTION SCIENCES
+            [
+                'name' => 'Medical Therapy and Intervention Sciences',
+                'code' => 'MTIS',
+                'school_id' => $schoolIds['SOCT'],
+                'programmes' => [
+                    ['name' => 'Pharmacy', 'code' => 'PHARMACY', 'type' => 'Diploma'],
+                    ['name' => 'Dispensing Opticianry', 'code' => 'DISPOPT', 'type' => 'ND'],
+                ]
+            ],
         ];
 
-        foreach ($departments as $dept) {
-            Department::firstOrCreate(['code' => $dept['code']], $dept);
+        foreach ($departmentsData as $dept) {
+            $deptModel = Department::firstOrCreate(
+                ['code' => $dept['code']],
+                ['name' => $dept['name'], 'school_id' => $dept['school_id']]
+            );
+
+            // Create programmes for this department
+            foreach ($dept['programmes'] as $prog) {
+                // Determine programme type
+                $progType = match(true) {
+                    str_contains($prog['type'], 'ND/HND') => 'ND',
+                    str_contains($prog['type'], 'ND') => 'ND',
+                    str_contains($prog['type'], 'HND') => 'HND',
+                    str_contains($prog['type'], 'DIP') => 'Diploma',
+                    str_contains($prog['type'], 'PRE') => 'Pre-ND',
+                    default => 'ND',
+                };
+
+                Programme::firstOrCreate(
+                    ['code' => $prog['code']],
+                    [
+                        'name' => $prog['name'],
+                        'type' => $progType,
+                        'department_id' => $deptModel->id,
+                    ]
+                );
+            }
+        }
+
+        // School of Allied Health Sciences
+        $alliedHealthDepartments = [
+            [
+                'name' => 'Public Health Studies',
+                'code' => 'PHS',
+                'school_id' => $schoolIds['SOAHS'],
+                'programmes' => [
+                    ['name' => 'Environmental Health Technology', 'code' => 'ENVHEALTH', 'type' => 'ND/HND'],
+                    ['name' => 'Public Health Technology', 'code' => 'PUBHEALTH', 'type' => 'ND'],
+                ]
+            ],
+            [
+                'name' => 'Care Studies',
+                'code' => 'CAREST',
+                'school_id' => $schoolIds['SOAHS'],
+                'programmes' => [
+                    ['name' => 'Nutrition and Dietetics', 'code' => 'NUTRITION', 'type' => 'ND'],
+                    ['name' => 'Social Work', 'code' => 'SOCIALWORK', 'type' => 'ND'],
+                ]
+            ],
+            [
+                'name' => 'Health Information Management',
+                'code' => 'HIM',
+                'school_id' => $schoolIds['SOAHS'],
+                'programmes' => [
+                    ['name' => 'Health Information Management', 'code' => 'HEALTHINFO', 'type' => 'ND/HND'],
+                ]
+            ],
+            [
+                'name' => 'Medical Store Management',
+                'code' => 'MSM',
+                'school_id' => $schoolIds['SOAHS'],
+                'programmes' => [
+                    ['name' => 'Medical Store Management', 'code' => 'MEDSTORE', 'type' => 'ND'],
+                ]
+            ],
+            [
+                'name' => 'Applied Sciences',
+                'code' => 'APPLSCI',
+                'school_id' => $schoolIds['SOAHS'],
+                'programmes' => [
+                    ['name' => 'Remedial Studies', 'code' => 'REMEDIAL', 'type' => 'PRE-ND'],
+                ]
+            ],
+        ];
+
+        foreach ($alliedHealthDepartments as $dept) {
+            $deptModel = Department::firstOrCreate(
+                ['code' => $dept['code']],
+                ['name' => $dept['name'], 'school_id' => $dept['school_id']]
+            );
+
+            foreach ($dept['programmes'] as $prog) {
+                $progType = match(true) {
+                    str_contains($prog['type'], 'ND/HND') => 'ND',
+                    str_contains($prog['type'], 'ND') => 'ND',
+                    str_contains($prog['type'], 'HND') => 'HND',
+                    str_contains($prog['type'], 'DIP') => 'Diploma',
+                    str_contains($prog['type'], 'PRE') => 'Pre-ND',
+                    default => 'ND',
+                };
+
+                Programme::firstOrCreate(
+                    ['code' => $prog['code']],
+                    ['name' => $prog['name'], 'type' => $progType, 'department_id' => $deptModel->id]
+                );
+            }
+        }
+
+        // School of Finance, Business and Management Studies
+        $businessDepartments = [
+            [
+                'name' => 'Business Administration and Management',
+                'code' => 'BAM',
+                'school_id' => $schoolIds['SOFBMS'],
+                'programmes' => [
+                    ['name' => 'Accountancy', 'code' => 'ACCOUNTANCY', 'type' => 'ND'],
+                ]
+            ],
+        ];
+
+        foreach ($businessDepartments as $dept) {
+            $deptModel = Department::firstOrCreate(
+                ['code' => $dept['code']],
+                ['name' => $dept['name'], 'school_id' => $dept['school_id']]
+            );
+
+            foreach ($dept['programmes'] as $prog) {
+                Programme::firstOrCreate(
+                    ['code' => $prog['code']],
+                    ['name' => $prog['name'], 'type' => 'ND', 'department_id' => $deptModel->id]
+                );
+            }
+        }
+
+        // School of Pure and Applied Sciences
+        $scienceDepartments = [
+            [
+                'name' => 'Computer Studies',
+                'code' => 'COMPST',
+                'school_id' => $schoolIds['SPAS'],
+                'programmes' => [
+                    ['name' => 'Computer Science', 'code' => 'COMPUTERSCI', 'type' => 'ND'],
+                    ['name' => 'Cyber Security and Data Protection', 'code' => 'CYBERSEC', 'type' => 'HND'],
+                    ['name' => 'Artificial Intelligence', 'code' => 'AI', 'type' => 'HND'],
+                    ['name' => 'Software and Web Development', 'code' => 'SOFTWARE', 'type' => 'HND'],
+                ]
+            ],
+        ];
+
+        foreach ($scienceDepartments as $dept) {
+            $deptModel = Department::firstOrCreate(
+                ['code' => $dept['code']],
+                ['name' => $dept['name'], 'school_id' => $dept['school_id']]
+            );
+
+            foreach ($dept['programmes'] as $prog) {
+                $progType = str_contains($prog['type'], 'HND') ? 'HND' : 'ND';
+                Programme::firstOrCreate(
+                    ['code' => $prog['code']],
+                    ['name' => $prog['name'], 'type' => $progType, 'department_id' => $deptModel->id]
+                );
+            }
+        }
+
+        // School of Engineering
+        $engineeringDepartments = [
+            [
+                'name' => 'Engineering Studies',
+                'code' => 'ENGST',
+                'school_id' => $schoolIds['SOENG'],
+                'programmes' => [
+                    ['name' => 'Electrical/Electronics Engineering', 'code' => 'EEE', 'type' => 'ND'],
+                    ['name' => 'Biomedical Engineering', 'code' => 'BIOMED', 'type' => 'ND'],
+                    ['name' => 'Computer Engineering', 'code' => 'COMPENG', 'type' => 'ND'],
+                ]
+            ],
+        ];
+
+        foreach ($engineeringDepartments as $dept) {
+            $deptModel = Department::firstOrCreate(
+                ['code' => $dept['code']],
+                ['name' => $dept['name'], 'school_id' => $dept['school_id']]
+            );
+
+            foreach ($dept['programmes'] as $prog) {
+                Programme::firstOrCreate(
+                    ['code' => $prog['code']],
+                    ['name' => $prog['name'], 'type' => 'ND', 'department_id' => $deptModel->id]
+                );
+            }
         }
 
         // Create Default Grades
@@ -137,12 +369,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'HND 1 (300L)', 'code' => 'HND1', 'sort_order' => 3, 'programme_type' => 'HND'],
             ['name' => 'HND 2 (400L)', 'code' => 'HND2', 'sort_order' => 4, 'programme_type' => 'HND'],
             ['name' => 'HND 3 (500L)', 'code' => 'HND3', 'sort_order' => 5, 'programme_type' => 'HND'],
+            ['name' => 'Pre-ND', 'code' => 'PRE', 'sort_order' => 0, 'programme_type' => 'PRE-ND'],
         ];
         foreach ($levels as $level) {
             Level::firstOrCreate(['code' => $level['code']], $level);
         }
 
-        // Create Super Admin User (use firstOrCreate to avoid duplicates)
+        // Create Super Admin User
         $superAdminRole = Role::where('slug', 'super_admin')->first();
         $adminRole = Role::where('slug', 'admin')->first();
 

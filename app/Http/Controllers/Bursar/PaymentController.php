@@ -65,7 +65,8 @@ class PaymentController extends Controller
      */
     public function showUploadForm()
     {
-        $fees = Fee::where('is_active', true)->orderBy('name')->get();
+        // Get all fees to show all payment types
+        $fees = Fee::orderBy('name')->get();
         return view('bursar.payments-upload', compact('fees'));
     }
 

@@ -16,6 +16,8 @@ class ExternalPayment extends Model
         'payment_status',
         'payment_channel',
         'description',
+        'payment_type_id',
+        'fee_id',
         'applicant_id',
         'is_used',
         'imported_by',
@@ -34,6 +36,16 @@ class ExternalPayment extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Applicant::class);
+    }
+
+    public function paymentType(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\PaymentType::class, 'payment_type_id');
+    }
+
+    public function fee(): BelongsTo
+    {
+        return $this->belongsTo(Fee::class, 'fee_id');
     }
 
     public function importer(): BelongsTo

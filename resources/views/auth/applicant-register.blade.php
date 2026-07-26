@@ -9,7 +9,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #1a237e 0%, #0d1442 50%, #6a1b9a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--accent-wine) 100%);
     }
     .register-card {
         background: white;
@@ -19,15 +19,16 @@
         width: 100%;
     }
     .register-header {
-        background: linear-gradient(135deg, #1a237e, #6a1b9a);
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         padding: 30px;
         text-align: center;
         border-radius: 15px 15px 0 0;
     }
     .register-body { padding: 40px; }
     .form-control { border-radius: 8px; padding: 12px; border: 2px solid #e9ecef; }
-    .form-control:focus { border-color: #1a237e; box-shadow: 0 0 0 3px rgba(26,35,126,0.1); }
-    .btn-register { background: linear-gradient(135deg, #1a237e, #6a1b9a); border: none; border-radius: 8px; padding: 12px; font-weight: 600; color: white; width: 100%; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(36,125,87,0.1); }
+    .btn-register { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; border-radius: 8px; padding: 12px; font-weight: 600; color: white; width: 100%; }
+    .btn-register:hover { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); }
 </style>
 
 <div class="register-page">

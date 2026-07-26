@@ -49,8 +49,10 @@ class PaymentSyncController extends Controller
     {
         $request->validate([
             'file' => 'required|file|mimes:csv,xlsx|max:5120', // 5MB max
+            'fee_id' => 'required|exists:fees,id',
         ]);
 
+        $fee = \App\Models\Fee::findOrFail($request->fee_id);
         $file = $request->file('file');
         $extension = $file->getClientOriginalExtension();
 
@@ -130,6 +132,8 @@ class PaymentSyncController extends Controller
             'errors' => $errors,
             'headers' => $headers,
             'filename' => $file->getClientOriginalName(),
+            'fee_id' => $request->payment_type_id,
+            'fee_name' => $fee->name,
         ]);
 
         return redirect()->route('bursar.payments.sync.preview');
@@ -169,6 +173,7 @@ class PaymentSyncController extends Controller
         $skipDuplicates = $request->boolean('skip_duplicates', true);
         $rows = $preview['rows'];
         $fileName = $preview['filename'];
+        $feeId = $preview['fee_id'] ?? null;
 
         $imported = 0;
         $skipped = 0;
@@ -194,6 +199,7 @@ class PaymentSyncController extends Controller
                     'payment_date' => $paymentDate,
                     'payment_status' => strtolower($row['payment_status']),
                     'payment_channel' => $row['payment_channel'],
+                    'fee_id' => $feeId,
                     'imported_by' => Auth::id(),
                 ]);
 

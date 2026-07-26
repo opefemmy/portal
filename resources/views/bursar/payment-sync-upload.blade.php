@@ -27,7 +27,30 @@
                     @csrf
 
                     <div class="mb-4">
-                        <label for="file" class="form-label">Select Excel or CSV File</label>
+                        <label for="payment_type_id" class="form-label">Select Fee *</label>
+                        <select class="form-select @error('payment_type_id') is-invalid @enderror"
+                                id="payment_type_id" name="payment_type_id" required>
+                            <option value="">Select Fee</option>
+                            @php $fees = \App\Models\Fee::where('is_active', true)->orderBy('name')->get(); @endphp
+                            @foreach($fees as $fee)
+                                <option value="{{ $fee->id }}">
+                                    {{ $fee->name }} - ₦{{ number_format($fee->amount, 2) }}
+                                    @if($fee->session)
+                                        ({{ $fee->session->name }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('payment_type_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">
+                            Select the fee type you're uploading payments for
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Select Excel or CSV File *</label>
                         <input type="file"
                                class="form-control @error('file') is-invalid @enderror"
                                id="file"

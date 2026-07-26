@@ -9,7 +9,9 @@ class ERPRolesSeeder extends Seeder
 {
     public function run(): void
     {
-        // Hospital Roles
+        // ===========================================
+        // HOSPITAL STAFF ROLES
+        // ===========================================
         $hospitalRoles = [
             [
                 'name' => 'Chief Medical Director',
@@ -25,6 +27,20 @@ class ERPRolesSeeder extends Seeder
                     'hospital.lab.*',
                     'hospital.pharmacy.*',
                     'hospital.store.*',
+                ]
+            ],
+            [
+                'name' => 'Hospital Administrator',
+                'slug' => 'hospital_admin',
+                'description' => 'Hospital Administrator - Day-to-day Management',
+                'permissions' => [
+                    'hospital.*',
+                    'hospital.staff.manage',
+                    'hospital.patients.*',
+                    'hospital.appointments.*',
+                    'hospital.reports.*',
+                    'hospital.billing.*',
+                    'hospital.settings.*',
                 ]
             ],
             [
@@ -93,14 +109,126 @@ class ERPRolesSeeder extends Seeder
                     'hospital.purchases.*',
                 ]
             ],
+            [
+                'name' => 'Medical Records Officer',
+                'slug' => 'medical_records_officer',
+                'description' => 'Medical Records Management',
+                'permissions' => [
+                    'hospital.records.*',
+                    'hospital.patients.view',
+                    'hospital.reports.*',
+                    'hospital.documents.*',
+                ]
+            ],
+            [
+                'name' => 'Hospital Accountant',
+                'slug' => 'hospital_accountant',
+                'description' => 'Hospital Finance Management',
+                'permissions' => [
+                    'hospital.billing.*',
+                    'hospital.invoices.*',
+                    'hospital.payments.*',
+                    'hospital.reports.financial',
+                ]
+            ],
         ];
 
-        // Finance Roles
-        $financeRoles = [
+        // ===========================================
+        // BURSARY STAFF ROLES
+        // ===========================================
+        $bursaryRoles = [
+            [
+                'name' => 'Bursar',
+                'slug' => 'bursar',
+                'description' => 'Head of Bursary Department',
+                'permissions' => [
+                    'finance.*',
+                    'bursary.*',
+                    'fees.*',
+                    'payments.*',
+                    'finance.ledgers.*',
+                    'finance.reports.*',
+                    'finance.budgets.*',
+                    'finance.payroll.*',
+                    'finance.audit.*',
+                ]
+            ],
+            [
+                'name' => 'Bursary Officer',
+                'slug' => 'bursary_officer',
+                'description' => 'Bursary Operations Staff',
+                'permissions' => [
+                    'bursary.*',
+                    'fees.*',
+                    'payments.*',
+                    'payments.process',
+                    'payments.verify',
+                    'finance.receipts.*',
+                    'finance.invoices.*',
+                ]
+            ],
+            [
+                'name' => 'Fees Officer',
+                'slug' => 'fees_officer',
+                'description' => 'Fees Management Staff',
+                'permissions' => [
+                    'fees.*',
+                    'fees.create',
+                    'fees.edit',
+                    'fees.view',
+                    'fees.reports.*',
+                ]
+            ],
+            [
+                'name' => 'Payment Officer',
+                'slug' => 'payment_officer',
+                'description' => 'Payment Processing Staff',
+                'permissions' => [
+                    'payments.*',
+                    'payments.process',
+                    'payments.verify',
+                    'payments.upload',
+                    'payments.sync.*',
+                    'finance.receipts.*',
+                ]
+            ],
+        ];
+
+        // ===========================================
+        // AUDIT STAFF ROLES
+        // ===========================================
+        $auditRoles = [
+            [
+                'name' => 'Internal Auditor',
+                'slug' => 'internal_auditor',
+                'description' => 'Internal Audit - Financial Review',
+                'permissions' => [
+                    'audit.*',
+                    'audit.logs.view',
+                    'audit.reports.*',
+                    'finance.view',
+                    'finance.reports.view',
+                    'deleted.records.view',
+                ]
+            ],
+            [
+                'name' => 'External Auditor',
+                'slug' => 'external_auditor',
+                'description' => 'External Audit - Independent Review',
+                'permissions' => [
+                    'audit.*',
+                    'audit.logs.view',
+                    'audit.reports.*',
+                    'audit.full_access',
+                    'finance.view',
+                    'finance.reports.view',
+                    'deleted.records.view',
+                ]
+            ],
             [
                 'name' => 'Auditor',
                 'slug' => 'auditor',
-                'description' => 'Financial Auditor - Read Only',
+                'description' => 'Financial Auditor',
                 'permissions' => [
                     'finance.view',
                     'finance.reports.view',
@@ -109,6 +237,53 @@ class ERPRolesSeeder extends Seeder
                     'deleted.records.view',
                 ]
             ],
+        ];
+
+        // ===========================================
+        // LIBRARY STAFF ROLES
+        // ===========================================
+        $libraryRoles = [
+            [
+                'name' => 'Librarian',
+                'slug' => 'librarian',
+                'description' => 'Head Librarian - Library Administration',
+                'permissions' => [
+                    'library.*',
+                    'library.books.*',
+                    'library.loans.*',
+                    'library.reports.*',
+                    'library.settings.*',
+                    'library.users.*',
+                ]
+            ],
+            [
+                'name' => 'Library Officer',
+                'slug' => 'library_officer',
+                'description' => 'Library Operations Staff',
+                'permissions' => [
+                    'library.*',
+                    'library.books.*',
+                    'library.loans.*',
+                    'library.members.*',
+                ]
+            ],
+            [
+                'name' => 'Library Assistant',
+                'slug' => 'library_assistant',
+                'description' => 'Library Support Staff',
+                'permissions' => [
+                    'library.books.view',
+                    'library.loans.*',
+                    'library.members.register',
+                    'library.search.*',
+                ]
+            ],
+        ];
+
+        // ===========================================
+        // FINANCE ROLES (Existing)
+        // ===========================================
+        $financeRoles = [
             [
                 'name' => 'ICT Administrator',
                 'slug' => 'ict_admin',
@@ -144,7 +319,9 @@ class ERPRolesSeeder extends Seeder
             ],
         ];
 
-        // Executive Roles
+        // ===========================================
+        // EXECUTIVE ROLES (Existing)
+        // ===========================================
         $executiveRoles = [
             [
                 'name' => 'Rector',
@@ -206,20 +383,17 @@ class ERPRolesSeeder extends Seeder
                     'courses.approve',
                 ]
             ],
-            [
-                'name' => 'Librarian',
-                'slug' => 'librarian',
-                'description' => 'Library Administration',
-                'permissions' => [
-                    'library.*',
-                    'library.books.*',
-                    'library.loans.*',
-                    'library.reports.*',
-                ]
-            ],
         ];
 
-        $allRoles = array_merge($hospitalRoles, $financeRoles, $executiveRoles);
+        // Merge all roles
+        $allRoles = array_merge(
+            $hospitalRoles,
+            $bursaryRoles,
+            $auditRoles,
+            $libraryRoles,
+            $financeRoles,
+            $executiveRoles
+        );
 
         foreach ($allRoles as $role) {
             // Check if role already exists

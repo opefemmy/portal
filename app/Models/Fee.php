@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Fee extends Model
 {
-    protected $fillable = ['name', 'payment_type', 'amount', 'school_id', 'department_id', 'programme_id', 'level', 'session_id', 'due_date', 'is_active', 'category'];
+    protected $fillable = ['name', 'payment_type', 'amount', 'portal_charge_percentage', 'is_editable_amount', 'school_id', 'department_id', 'programme_id', 'level', 'session_id', 'due_date', 'is_active', 'category'];
 
     protected $casts = [
         'due_date' => 'date',
         'is_active' => 'boolean',
         'amount' => 'decimal:2',
+        'portal_charge_percentage' => 'decimal:2',
+        'is_editable_amount' => 'boolean',
     ];
 
     public function school(): BelongsTo

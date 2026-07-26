@@ -13,8 +13,8 @@ class HospitalAppointment extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'patient_id', 'doctor_id', 'scheduled_by', 'appointment_date', 'appointment_time',
-        'status', 'complaint', 'notes', 'checked_in_at', 'completed_at'
+        'patient_id', 'staff_id', 'appointment_number', 'appointment_date',
+        'status', 'symptoms', 'notes'
     ];
 
     protected $casts = [
@@ -28,9 +28,17 @@ class HospitalAppointment extends Model
         return $this->belongsTo(HospitalPatient::class, 'patient_id');
     }
 
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(HospitalStaff::class, 'staff_id');
+    }
+
+    /**
+     * @deprecated Use staff() instead
+     */
     public function doctor(): BelongsTo
     {
-        return $this->belongsTo(HospitalStaff::class, 'doctor_id');
+        return $this->belongsTo(HospitalStaff::class, 'staff_id');
     }
 
     public function scheduledByUser(): BelongsTo

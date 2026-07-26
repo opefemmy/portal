@@ -13,9 +13,8 @@ class HospitalStaff extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'staff_number', 'first_name', 'last_name', 'staff_type', 'specialization',
-        'license_number', 'license_expiry', 'phone', 'email', 'address', 'gender',
-        'is_available', 'is_active'
+        'user_id', 'staff_number', 'first_name', 'last_name', 'staff_type',
+        'phone', 'email', 'is_active', 'is_available'
     ];
 
     protected $casts = [
@@ -31,27 +30,22 @@ class HospitalStaff extends Model
 
     public function appointments(): HasMany
     {
-        return $this->hasMany(HospitalAppointment::class, 'doctor_id');
+        return $this->hasMany(HospitalAppointment::class, 'staff_id');
     }
 
     public function medicalRecords(): HasMany
     {
-        return $this->hasMany(HospitalMedicalRecord::class, 'doctor_id');
+        return $this->hasMany(HospitalMedicalRecord::class, 'staff_id');
     }
 
     public function prescriptions(): HasMany
     {
-        return $this->hasMany(HospitalPrescription::class, 'doctor_id');
+        return $this->hasMany(HospitalPrescription::class, 'staff_id');
     }
 
     public function labRequests(): HasMany
     {
-        return $this->hasMany(HospitalLabRequest::class, 'doctor_id');
-    }
-
-    public function admissions(): HasMany
-    {
-        return $this->hasMany(HospitalAdmission::class, 'doctor_id');
+        return $this->hasMany(HospitalLabRequest::class, 'staff_id');
     }
 
     public function vitalSigns(): HasMany

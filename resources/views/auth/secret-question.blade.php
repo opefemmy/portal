@@ -9,7 +9,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #1a237e 0%, #0d1442 50%, #6a1b9a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--accent-wine) 100%);
     }
 
     .login-card {
@@ -22,7 +22,7 @@
     }
 
     .login-header {
-        background: linear-gradient(135deg, #1a237e, #6a1b9a);
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         padding: 30px;
         text-align: center;
     }
@@ -70,13 +70,13 @@
                     @enderror
                 </div>
 
-                <button type="submit" class="btn btn-login" style="background: linear-gradient(135deg, #1a237e, #6a1b9a); border: none; border-radius: 8px; padding: 12px; font-weight: 600; color: white; width: 100%;">
+                <button type="submit" class="btn btn-login">
                     <i class="fas fa-check me-2"></i>Verify Answer
                 </button>
             </form>
 
             <div class="text-center mt-4">
-                <a href="{{ route('password.forgot') }}" style="color: #1a237e; text-decoration: none;">Start Over</a>
+                <a href="{{ route('password.forgot') }}" style="color: var(--primary); text-decoration: none;">Start Over</a>
             </div>
         </div>
     </div>

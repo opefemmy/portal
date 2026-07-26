@@ -27,9 +27,6 @@
                         <a href="{{ route('student.medical.lab-results') }}" class="btn btn-outline-primary">
                             <i class="fas fa-vial me-2"></i>Lab Results
                         </a>
-                        <a href="{{ route('student.medical.admissions') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-procedures me-2"></i>Admissions
-                        </a>
                     </div>
                 </div>
             </div>
@@ -44,19 +41,18 @@
                     <h5 class="mb-0">Patient Information</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Patient No:</strong> {{ $patient->patient_number }}</p>
-                    <p><strong>Name:</strong> {{ $patient->full_name }}</p>
-                    <p><strong>Gender:</strong> {{ ucfirst($patient->gender) }}</p>
-                    <p><strong>Age:</strong> {{ $patient->age }} years</p>
-                    <p><strong>Blood Group:</strong> {{ $patient->blood_group ?? 'Not Set' }}</p>
-                    <p><strong>Genotype:</strong> {{ $patient->genotype ?? 'Not Set' }}</p>
+                    <p><strong>Name:</strong> {{ $patient->first_name }} {{ $patient->last_name }}</p>
+                    <p><strong>Gender:</strong> {{ ucfirst($patient->gender ?? 'Not Set') }}</p>
+                    <p><strong>Phone:</strong> {{ $patient->phone ?? 'Not Set' }}</p>
+                    <p><strong>Blood Type:</strong> {{ $patient->blood_type ?? 'Not Set' }}</p>
+                    <p><strong>Allergies:</strong> {{ $patient->allergies ?? 'None' }}</p>
                 </div>
             </div>
         </div>
 
         <div class="col-md-8">
             <!-- Recent Appointments -->
-            <div class="card mb-3">
+            <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">Recent Appointments</h5>
                 </div>
@@ -64,37 +60,15 @@
                     @forelse($appointments as $appointment)
                     <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                         <div>
-                            <strong>{{ $appointment->appointment_date->format('d M Y') }}</strong>
-                            <br><small>Dr. {{ $appointment->doctor->last_name ?? 'N/A' }}</small>
+                            <strong>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</strong>
+                            <br><small>{{ $appointment->symptoms ?? 'No symptoms recorded' }}</small>
                         </div>
                         <span class="badge bg-{{ $appointment->status === 'completed' ? 'success' : 'warning' }}">
                             {{ ucfirst($appointment->status) }}
                         </span>
                     </div>
                     @empty
-                    <p class="text-muted">No appointments</p>
-                    @endforelse
-                </div>
-            </div>
-
-            <!-- Recent Prescriptions -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Prescriptions</h5>
-                </div>
-                <div class="card-body">
-                    @forelse($prescriptions as $prescription)
-                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                        <div>
-                            <strong>{{ $prescription->created_at->format('d M Y') }}</strong>
-                            <br><small>{{ $prescription->items->count() }} item(s)</small>
-                        </div>
-                        <span class="badge bg-{{ $prescription->status === 'dispensed' ? 'success' : 'warning' }}">
-                            {{ ucfirst($prescription->status) }}
-                        </span>
-                    </div>
-                    @empty
-                    <p class="text-muted">No prescriptions</p>
+                    <p class="text-muted">No appointments yet. <a href="{{ route('student.medical.book') }}">Book your first appointment</a></p>
                     @endforelse
                 </div>
             </div>

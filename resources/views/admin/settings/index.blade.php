@@ -65,8 +65,8 @@ $institutionIcon = SystemSetting::get('institution_icon');
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Logo (Recommended: 200x60px)</label>
-                        <input type="file" name="institution_logo" class="form-control" accept="image/*">
+                        <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
+                        <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
                         @if($institutionLogo)
                             <div class="mt-2">
                                 <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;">
@@ -77,12 +77,41 @@ $institutionIcon = SystemSetting::get('institution_icon');
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Favicon / Icon (Recommended: 32x32px)</label>
-                        <input type="file" name="institution_icon" class="form-control" accept="image/*">
+                        <label class="form-label">Favicon / Icon (Recommended: 32x32px, PNG/JPG/ICO)</label>
+                        <input type="file" name="institution_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/ico,image/svg+xml,image/webp">
                         @if($institutionIcon)
                             <div class="mt-2">
                                 <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;">
                                 <span class="badge bg-success ms-2">Current Icon</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">House Icon (For Patient Portal Home - Recommended: 80x80px, PNG/JPG)</label>
+                        <input type="file" name="house_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
+                        @php
+                        $houseIcon = \App\Models\SystemSetting::get('house_icon');
+                        @endphp
+                        @if($houseIcon)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;">
+                                <span class="badge bg-success ms-2">Current</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
+                        <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
+                        @if($institutionLogo)
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;">
+                                <span class="badge bg-success ms-2">Current Logo</span>
                             </div>
                         @endif
                     </div>

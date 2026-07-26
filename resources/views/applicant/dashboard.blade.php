@@ -109,28 +109,41 @@
     {{-- Payment / Requery --}}
     <div class="col-md-4 mb-3">
         <div class="card h-100">
-            <div class="card-header bg-warning text-dark">
+            <div class="card-header bg-{{ $applicant->payment_status === 'completed' ? 'success' : 'warning' }} text-white">
                 <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment</h5>
             </div>
             <div class="card-body text-center">
-                <i class="fas fa-credit-card fa-3x text-warning mb-3"></i>
-                <p class="text-muted">Pay for application or validate payment</p>
+                <i class="fas fa-credit-card fa-3x text-{{ $applicant->payment_status === 'completed' ? 'success' : 'warning' }} mb-3"></i>
 
-                {{-- Pay Button - For making new payments --}}
+                {{-- Payment Status --}}
+                <div class="mb-3">
+                    @if($applicant->payment_status === 'completed')
+                        <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i> Payment Verified</span>
+                    @else
+                        <span class="badge bg-warning fs-6"><i class="fas fa-clock me-1"></i> Payment Required</span>
+                    @endif
+                </div>
+
+                {{-- Pay Now Button - For making new payments --}}
                 @if($applicant->status === 'admitted')
-                    <a href="{{ route('student.payments') }}" class="btn btn-success mb-2">
+                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
                         <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
                     </a>
                 @else
-                    <a href="{{ route('applicant.apply.payment') }}" class="btn btn-success mb-2">
-                        <i class="fas fa-credit-card me-2"></i>Pay Application Fee
+                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
+                        <i class="fas fa-credit-card me-2"></i>Pay Now
                     </a>
                 @endif
 
                 {{-- Validate Button - For verifying uploaded payments --}}
-                <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-primary">
-                    <i class="fas fa-check-circle me-2"></i>Validate Payment
+                <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-check-circle me-1"></i>Validate Payment
                 </a>
+
+                @if($applicant->payment_ref)
+                <hr>
+                <small class="text-muted">Ref: {{ $applicant->payment_ref }}</small>
+                @endif
             </div>
         </div>
     </div>
@@ -211,6 +224,43 @@
     </div>
 </div>
 @endif
+
+{{-- Payment History --}}
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Payment History</h5>
+    </div>
+    <div class="card-body">
+        @if($applicant && $applicant->payment_status === 'completed')
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? 'N/A' }}</td>
+                    <td>₦{{ number_format($applicant->payment_amount ?? 0, 2) }}</td>
+                    <td>{{ $applicant->payment_date ? \Carbon\Carbon::parse($applicant->payment_date)->format('d M Y') : 'N/A' }}</td>
+                    <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Verified</span></td>
+                </tr>
+            </tbody>
+        </table>
+        @else
+        <div class="text-center py-3">
+            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No payment history yet.</p>
+            <a href="{{ route('applicant.payment') }}" class="btn btn-primary">
+                <i class="fas fa-credit-card me-2"></i>Make Payment
+            </a>
+        </div>
+        @endif
+    </div>
+</div>
 
 @else
 <div class="row">

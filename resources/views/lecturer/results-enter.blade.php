@@ -75,7 +75,7 @@
                                 <input type="hidden" name="results[{{ $index }}][student_course_id]" value="{{ $sc->id }}">
                                 <strong>{{ $sc->student->matric_number }}</strong>
                             </td>
-                            <td>{{ $sc->student->user->name }}</td>
+                            <td>{{ $sc->student->user->name ?? 'N/A' }}</td>
                             <td>
                                 <input type="number" name="results[{{ $index }}][ca1]" class="form-control score-input"
                                     value="{{ $existingResult->ca1 ?? 0 }}" min="0" max="40" step="0.01">

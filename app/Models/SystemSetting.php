@@ -23,11 +23,15 @@ class SystemSetting extends Model
     const PAYMENT_PENALTY = 'payment_penalty';
     const RESULT_UPLOAD_OPEN = 'result_upload_open';
 
+    // Payment Settings
+    const PAYMENT_PORTAL_URL = 'payment_portal_url';
+
     // Institution Branding Settings
     const INSTITUTION_NAME = 'institution_name';
     const INSTITUTION_SHORT_NAME = 'institution_short_name';
     const INSTITUTION_LOGO = 'institution_logo';
     const INSTITUTION_ICON = 'institution_icon';
+    const HOUSE_ICON = 'house_icon';
     const INSTITUTION_ADDRESS = 'institution_address';
     const INSTITUTION_PHONE = 'institution_phone';
     const INSTITUTION_EMAIL = 'institution_email';
@@ -97,6 +101,14 @@ class SystemSetting extends Model
     }
 
     /**
+     * Get house icon URL
+     */
+    public static function getHouseIcon()
+    {
+        return static::get(static::HOUSE_ICON, null);
+    }
+
+    /**
      * Check if admission form requires payment
      */
     public static function requiresAdmissionFee()
@@ -110,5 +122,13 @@ class SystemSetting extends Model
     public static function getAdmissionFeeAmount()
     {
         return (float) static::get(static::ADMISSION_FEE_AMOUNT, 0);
+    }
+
+    /**
+     * Get payment portal URL
+     */
+    public static function getPaymentPortalUrl()
+    {
+        return static::get(static::PAYMENT_PORTAL_URL, null);
     }
 }

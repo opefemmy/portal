@@ -25,7 +25,7 @@
         <div class="row">
             <div class="col-md-3 text-center">
                 @if($user->passport)
-                    <img src="{{ asset('uploads/passports/' . $user->passport) }}" alt="Passport" class="img-thumbnail" style="max-width: 150px; border: 3px solid #1a237e;">
+                    <img src="{{ asset('uploads/passports/' . $user->passport) }}" alt="Passport" class="img-thumbnail" style="max-width: 150px; border: 3px solid #247D57;">
                 @else
                     <div class="bg-light d-flex align-items-center justify-content-center" style="width: 150px; height: 150px; margin: 0 auto;">
                         <i class="fas fa-user fa-3x text-muted"></i>

@@ -6,10 +6,11 @@
     <title>Admission List - {{ date('Y') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root { --primary: #247D57; }
         body { font-family: Arial, sans-serif; }
-        .header { text-align: center; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { color: #1a237e; margin: 0; }
-        .table th { background-color: #1a237e; color: white; }
+        .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { color: var(--primary); margin: 0; }
+        .table th { background-color: var(--primary); color: white; }
         @media print { .no-print { display: none; } }
     </style>
 </head>

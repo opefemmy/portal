@@ -21,10 +21,29 @@
                         <label class="form-label">Select Fee Type *</label>
                         <select name="fee_id" class="form-select" required>
                             <option value="">Select Fee</option>
-                            @foreach($fees as $fee)
-                            <option value="{{ $fee->id }}">{{ $fee->name }} - ₦{{ number_format($fee->amount) }}</option>
-                            @endforeach
+                            @php
+                                $groupedFees = $fees->groupBy('session_id');
+                            @endphp
+                            @forelse($fees as $fee)
+                            <option value="{{ $fee->id }}">
+                                {{ $fee->name }} - ₦{{ number_format($fee->amount) }}
+                                @if($fee->session)
+                                    ({{ $fee->session->name }})
+                                @endif
+                                @if(!$fee->is_active)
+                                    [Inactive]
+                                @endif
+                            </option>
+                            @empty
+                            <option value="">No fees configured</option>
+                            @endforelse
                         </select>
+                        @if($fees->count() === 0)
+                        <div class="alert alert-warning mt-2">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No fees found. Please configure fees in Admin > Fees first.
+                        </div>
+                        @endif
                     </div>
 
                     <div class="mb-3">

@@ -44,8 +44,10 @@ use App\Http\Controllers\Lecturer\DashboardController as LecturerDashboardContro
 use App\Http\Controllers\Lecturer\ResultController as LecturerResultController;
 use App\Http\Controllers\Lecturer\AttendanceController;
 use App\Http\Controllers\Applicant\ApplicationController;
+use App\Http\Controllers\Applicant\PaymentGatewayController;
 use App\Http\Controllers\Bursar\RegimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\UserUnlockController;
 
 // Public Routes
 Route::get('/', function () {
@@ -55,6 +57,44 @@ Route::get('/', function () {
 // Public Payment Validation (Before Login)
 Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('public.validate-payment');
 Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('public.payment.validate');
+
+// Online Payment System (Public - No Login Required)
+Route::prefix('online-payment')->name('online-payment.')->group(function () {
+    Route::post('/lookup', [\App\Http\Controllers\OnlinePaymentController::class, 'lookupStudent'])->name('lookup');
+    Route::post('/process', [\App\Http\Controllers\OnlinePaymentController::class, 'processPayment'])->name('process');
+    Route::post('/validate', [\App\Http\Controllers\OnlinePaymentController::class, 'validatePayment'])->name('validate');
+    Route::get('/receipt/{payment}', [\App\Http\Controllers\OnlinePaymentController::class, 'printReceipt'])->name('receipt');
+});
+
+// Hospital Payment System (Public - No Login Required)
+Route::prefix('hospital-payment')->name('hospital-payment.')->group(function () {
+    Route::get('/services', [\App\Http\Controllers\HospitalPaymentController::class, 'getServiceTypes'])->name('services');
+    Route::post('/process', [\App\Http\Controllers\HospitalPaymentController::class, 'processPayment'])->name('process');
+    Route::post('/validate', [\App\Http\Controllers\HospitalPaymentController::class, 'validatePayment'])->name('validate');
+    Route::get('/receipt/{payment}', [\App\Http\Controllers\HospitalPaymentController::class, 'printReceipt'])->name('receipt');
+});
+
+// Hospital Patient Portal (Public - External Patients)
+Route::prefix('patient-portal')->name('patient-portal.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'portalIndex'])->name('index');
+    Route::get('/register', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'showPortalRegister'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'registerPortal'])->name('register.store');
+    Route::get('/login', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'showPortalLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'loginPortal'])->name('login.post');
+    Route::post('/logout', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'logoutPortal'])->name('logout');
+
+    // Protected routes (require login)
+    Route::middleware('patient-portal')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'dashboardPortal'])->name('dashboard');
+        Route::get('/profile', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'profilePortal'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'updateProfilePortal'])->name('profile.update');
+        Route::post('/request-service', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'requestServicePortal'])->name('request-service');
+        Route::post('/initiate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'initiatePaymentPortal'])->name('initiate-payment');
+        Route::post('/validate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'validatePaymentPortal'])->name('validate-payment');
+        Route::get('/receipt/{payment}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'viewReceiptPortal'])->name('receipt');
+        Route::post('/regenerate-code', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'regenerateCodePortal'])->name('regenerate-code');
+    });
+});
 
 // Auth Routes
 Route::get('/login', function () {
@@ -67,14 +107,22 @@ Route::middleware('guest')->group(function () {
     // Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     // Route::post('/register', [RegisterController::class, 'register']);
 
-    // Password Reset Routes
+    // Password Reset Routes (Email-based)
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPasswordForm'])->name('password.forgot');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/password/reset/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/password/reset', [ForgotPasswordController::class, 'resetPassword'])->name('password.update');
+
+    // Legacy Secret Question Routes (Deprecated but kept for backward compatibility)
     Route::post('/forgot-password/verify-email', [ForgotPasswordController::class, 'verifyEmail'])->name('password.verify-email');
     Route::get('/forgot-password/secret-question', [ForgotPasswordController::class, 'showSecretQuestionForm'])->name('password.secret-question');
     Route::post('/forgot-password/verify-secret', [ForgotPasswordController::class, 'verifySecretAnswer'])->name('password.verify-secret');
     Route::get('/reset-password', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset-form');
-    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('password.reset');
 });
+
+// Public Unlock Route (accessible when logged out)
+Route::get('/unlock/{email}/{code}', [\App\Http\Controllers\Admin\UserUnlockController::class, 'showUnlockCode'])->name('public.unlock');
+Route::post('/unlock', [\App\Http\Controllers\Admin\UserUnlockController::class, 'unlockUser'])->name('public.unlock.process');
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
@@ -101,13 +149,13 @@ Route::get('/api/programmes/{departmentId}', function ($departmentId) {
     return response()->json($programmes);
 });
 
+// Applicant Public API Routes (for dropdowns - no auth required)
+Route::get('/applicant/departments/{schoolId}', [ApplicationController::class, 'getDepartments']);
+Route::get('/applicant/programmes/{departmentId}', [ApplicationController::class, 'getProgrammes']);
+Route::get('/applicant/lgas/{stateId}', [ApplicationController::class, 'getLGAs']);
+
 // Applicant Routes
 Route::prefix('applicant')->name('applicant.')->group(function () {
-    // Get departments by school
-    Route::get('/departments/{schoolId}', [ApplicationController::class, 'getDepartments']);
-
-    // Get LGAs by state
-    Route::get('/lgas/{stateId}', [ApplicationController::class, 'getLGAs']);
 
     // Payment Validation (External Payment System)
     Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('validate-payment');
@@ -131,6 +179,19 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/apply/payment', [ApplicationController::class, 'showApplyPayment'])->name('apply.payment');
         Route::post('/apply/payment', [ApplicationController::class, 'processApplyPayment'])->name('apply.payment.process');
 
+        // Separate payment page (for applicants to pay now)
+        Route::get('/payment', [PaymentGatewayController::class, 'showPaymentPage'])->name('payment');
+
+        // Payment Gateway - Pay Now with online payment
+        Route::get('/payment/gateway', [PaymentGatewayController::class, 'showPaymentPage'])->name('payment.gateway');
+        Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePayment'])->name('payment.initiate');
+        Route::get('/payment/callback', [PaymentGatewayController::class, 'paymentCallback'])->name('payment.callback');
+        Route::get('/payment/cancel', [PaymentGatewayController::class, 'cancelPayment'])->name('payment.cancel');
+
+        // Test Payment (for demo)
+        Route::get('/payment/test', [PaymentGatewayController::class, 'testPayment'])->name('payment.test');
+        Route::post('/payment/test/process', [PaymentGatewayController::class, 'processTestPayment'])->name('payment.test.process');
+
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
         Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
         Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');
@@ -145,6 +206,14 @@ Route::redirect('/admin', '/admin/dashboard');
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+    // User Unlock / Password Reset (MUST come before resource routes)
+    Route::get('/users/unlock', [UserUnlockController::class, 'showUnlockForm'])->name('users.unlock');
+    Route::post('/users/unlock/generate', [UserUnlockController::class, 'generateUnlockCode'])->name('users.unlock.generate');
+    Route::get('/users/unlock/code', [UserUnlockController::class, 'showUnlockCode'])->name('users.unlock.code');
+    Route::post('/users/unlock', [UserUnlockController::class, 'unlockUser'])->name('users.unlock.process');
+    Route::post('/users/unlock/quick', [UserUnlockController::class, 'quickUnlock'])->name('users.unlock.quick');
+    Route::post('/users/unlock/reset', [UserUnlockController::class, 'resetUserPassword'])->name('users.unlock.reset');
+
     // User Management
     Route::resource('users', UserController::class);
     Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
@@ -152,6 +221,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
     Route::get('/users/upload', [UserController::class, 'upload'])->name('users.upload');
+
     Route::post('/users/upload', [UserController::class, 'processUpload'])->name('users.upload.process');
     Route::post('/users/{user}/passport', [UserController::class, 'uploadPassport'])->name('users.passport');
 
@@ -163,6 +233,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::resource('admission-centres', \App\Http\Controllers\Admin\AdmissionCentreController::class);
     Route::post('/admission-centres/{centre}/toggle', [\App\Http\Controllers\Admin\AdmissionCentreController::class, 'toggleStatus'])->name('admission-centres.toggle');
     Route::post('/sessions/{session}/set-current', [SessionController::class, 'setCurrent'])->name('sessions.set_current');
+
+    // Hospital Services Management
+    Route::resource('hospital-services', \App\Http\Controllers\Admin\HospitalServiceController::class);
+    Route::post('/hospital-services/{service}/toggle', [\App\Http\Controllers\Admin\HospitalServiceController::class, 'toggleStatus'])->name('hospital-services.toggle');
 
     // Course Management
     Route::resource('courses', CourseController::class);
@@ -208,6 +282,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::resource('students', StudentController::class);
     Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
     Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
+
+    // Student Uniform Measurements
+    Route::get('/students/{student}/measurements', [StudentController::class, 'showMeasurements'])->name('students.measurements');
+    Route::get('/students/{student}/measurements/edit', [StudentController::class, 'editMeasurements'])->name('students.measurements.edit');
+    Route::put('/students/{student}/measurements', [StudentController::class, 'updateMeasurements'])->name('students.measurements.update');
+    Route::get('/students/measurements/export', [StudentController::class, 'exportMeasurements'])->name('students.measurements.export');
 
     // Student Import (NEW)
     Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
@@ -361,6 +441,11 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile');
     Route::put('/profile', [\App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/passport', [\App\Http\Controllers\Student\ProfileController::class, 'uploadPassport'])->name('profile.passport');
+
+    // Measurements (Uniform, Scrubs, Lab Coat)
+    Route::get('/measurements', function() {
+        return view('student.measurements');
+    })->name('measurements');
 
     // Hostel (NEW)
     Route::get('/hostel', [StudentHostelController::class, 'myHostel'])->name('hostel.my');
@@ -543,7 +628,7 @@ Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librar
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('password.update');
+    Route::put('/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::put('/secret-question', [\App\Http\Controllers\ProfileController::class, 'updateSecretQuestion'])->name('profile.update-secret');
 });
 

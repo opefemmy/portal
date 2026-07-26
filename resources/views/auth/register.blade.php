@@ -9,7 +9,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #1a237e 0%, #0d1442 50%, #6a1b9a 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--accent-wine) 100%);
     }
     .register-card {
         background: white;
@@ -19,7 +19,7 @@
         width: 100%;
     }
     .register-header {
-        background: linear-gradient(135deg, #1a237e, #6a1b9a);
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         padding: 30px;
         text-align: center;
         border-radius: 15px 15px 0 0;
@@ -27,12 +27,12 @@
     .register-body { padding: 40px; }
     .info-box {
         background: #f8f9fa;
-        border-left: 4px solid #1a237e;
+        border-left: 4px solid var(--primary);
         padding: 20px;
         margin-bottom: 20px;
         border-radius: 4px;
     }
-    .info-box h5 { color: #1a237e; margin-bottom: 10px; }
+    .info-box h5 { color: var(--primary); margin-bottom: 10px; }
     .info-box p { margin-bottom: 0; color: #666; font-size: 14px; }
 </style>
 

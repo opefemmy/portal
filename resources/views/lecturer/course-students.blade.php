@@ -61,7 +61,7 @@
                     @endphp
                     <tr>
                         <td><strong>{{ $sc->student->matric_number }}</strong></td>
-                        <td>{{ $sc->student->user->name }}</td>
+                        <td>{{ $sc->student->user->name ?? 'N/A' }}</td>
                         <td>{{ $sc->student->programme->name ?? 'N/A' }}</td>
                         <td>{{ $sc->student->level }}</td>
                         <td>

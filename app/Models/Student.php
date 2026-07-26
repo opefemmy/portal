@@ -8,7 +8,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
-    protected $fillable = ['user_id', 'matric_number', 'school_id', 'department_id', 'programme_id', 'session_id', 'level', 'status', 'state_id', 'lga_id', 'nationality_id'];
+    protected $fillable = [
+        'user_id', 'matric_number', 'school_id', 'department_id', 'programme_id',
+        'session_id', 'level', 'status', 'state_id', 'lga_id', 'nationality_id',
+        // Uniform measurements
+        'uniform_shirt_size', 'uniform_pant_size', 'uniform_shoe_size',
+        // Scrub measurements
+        'scrub_size', 'scrub_color',
+        // Lab coat measurements
+        'lab_coat_size', 'lab_coat_length',
+        // Measurement metadata
+        'measurements_taken_at', 'measured_by',
+    ];
 
     const LEVEL_NAMES = [
         1 => 'ND1 (100L)',
@@ -77,6 +88,81 @@ class Student extends Model
     public function nationality(): BelongsTo
     {
         return $this->belongsTo(Nationality::class);
+    }
+
+    public function measuredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'measured_by');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'measurements_taken_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Check if student has complete uniform measurements
+     */
+    public function hasUniformMeasurements(): bool
+    {
+        return !empty($this->uniform_shirt_size) &&
+               !empty($this->uniform_pant_size) &&
+               !empty($this->uniform_shoe_size);
+    }
+
+    /**
+     * Check if student has complete scrub measurements
+     */
+    public function hasScrubMeasurements(): bool
+    {
+        return !empty($this->scrub_size);
+    }
+
+    /**
+     * Check if student has complete lab coat measurements
+     */
+    public function hasLabCoatMeasurements(): bool
+    {
+        return !empty($this->lab_coat_size) &&
+               !empty($this->lab_coat_length);
+    }
+
+    /**
+     * Check if all measurements are complete
+     */
+    public function hasAllMeasurements(): bool
+    {
+        return $this->hasUniformMeasurements() &&
+               $this->hasScrubMeasurements() &&
+               $this->hasLabCoatMeasurements();
+    }
+
+    /**
+     * Get measurements summary
+     */
+    public function getMeasurementsSummaryAttribute(): array
+    {
+        return [
+            'uniform' => [
+                'shirt_size' => $this->uniform_shirt_size,
+                'pant_size' => $this->uniform_pant_size,
+                'shoe_size' => $this->uniform_shoe_size,
+                'complete' => $this->hasUniformMeasurements(),
+            ],
+            'scrub' => [
+                'size' => $this->scrub_size,
+                'color' => $this->scrub_color,
+                'complete' => $this->hasScrubMeasurements(),
+            ],
+            'lab_coat' => [
+                'size' => $this->lab_coat_size,
+                'length' => $this->lab_coat_length,
+                'complete' => $this->hasLabCoatMeasurements(),
+            ],
+            'taken_at' => $this->measurements_taken_at,
+        ];
     }
 
     public function calculateGPA($sessionId = null, $semester = null)

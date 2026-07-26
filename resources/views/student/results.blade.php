@@ -70,7 +70,7 @@ $gradingScale = [
 </div>
 
 {{-- Result Summary Card --}}
-<div class="card mb-4 border-3" style="border-color: #1a237e;">
+<div class="card mb-4 border-3" style="border-color: var(--primary);">
     <div class="card-header bg-dark text-white">
         <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Academic Summary</h5>
     </div>

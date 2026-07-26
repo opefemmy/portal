@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'library.access' => \App\Http\Middleware\LibraryAccessMiddleware::class,
             'student.onboarding' => \App\Http\Middleware\StudentOnboardingComplete::class,
+            'patient-portal' => \App\Http\Middleware\PatientPortalAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

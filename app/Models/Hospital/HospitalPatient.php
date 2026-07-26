@@ -13,10 +13,9 @@ class HospitalPatient extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'patient_number', 'first_name', 'last_name', 'other_name', 'gender',
-        'date_of_birth', 'blood_group', 'genotype', 'phone', 'email', 'address',
-        'state', 'lga', 'nationality', 'next_of_kin_name', 'next_of_kin_phone',
-        'next_of_kin_relationship', 'next_of_kin_address', 'patient_type', 'registered_by', 'is_active'
+        'user_id', 'first_name', 'last_name', 'gender',
+        'date_of_birth', 'blood_type', 'phone', 'email', 'address',
+        'allergies', 'medical_history', 'is_active'
     ];
 
     protected $casts = [

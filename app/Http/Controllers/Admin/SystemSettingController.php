@@ -137,6 +137,17 @@ class SystemSettingController extends Controller
      */
     public function updateBranding(Request $request)
     {
+        // Validate text fields
+        $request->validate([
+            'institution_name' => 'nullable|string|max:255',
+            'institution_short_name' => 'nullable|string|max:50',
+            'institution_address' => 'nullable|string|max:500',
+            'institution_phone' => 'nullable|string|max:30',
+            'institution_email' => 'nullable|email|max:100',
+            'institution_website' => 'nullable|url|max:100',
+            'institution_tagline' => 'nullable|string|max:255',
+        ]);
+
         $brandingKeys = [
             'institution_name',
             'institution_short_name',
@@ -153,20 +164,58 @@ class SystemSettingController extends Controller
             }
         }
 
-        // Handle logo upload
+        // Validate and handle logo upload
         if ($request->hasFile('institution_logo')) {
+            $request->validate([
+                'institution_logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            ]);
+
             $logo = $request->file('institution_logo');
-            $logoName = 'logo.' . $logo->getClientOriginalExtension();
+
+            // Verify the image is not corrupted by trying to get image dimensions
+            if (!@getimagesize($logo->getRealPath())) {
+                return back()->with('error', 'The logo file appears to be corrupted or is not a valid image.');
+            }
+
+            $logoName = 'logo_' . time() . '.' . $logo->getClientOriginalExtension();
             $logo->storeAs('public/branding', $logoName);
             SystemSetting::set('institution_logo', 'branding/' . $logoName);
         }
 
-        // Handle icon upload
+        // Validate and handle icon/favicon upload
         if ($request->hasFile('institution_icon')) {
+            $request->validate([
+                'institution_icon' => 'required|image|mimes:jpeg,png,jpg,gif,ico,svg,webp|max:1024',
+            ]);
+
             $icon = $request->file('institution_icon');
-            $iconName = 'icon.' . $icon->getClientOriginalExtension();
+
+            // Verify the image is not corrupted
+            if (!@getimagesize($icon->getRealPath())) {
+                return back()->with('error', 'The favicon file appears to be corrupted or is not a valid image.');
+            }
+
+            $iconName = 'icon_' . time() . '.' . $icon->getClientOriginalExtension();
             $icon->storeAs('public/branding', $iconName);
             SystemSetting::set('institution_icon', 'branding/' . $iconName);
+        }
+
+        // Validate and handle house icon upload (for patient portal home)
+        if ($request->hasFile('house_icon')) {
+            $request->validate([
+                'house_icon' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:1024',
+            ]);
+
+            $houseIcon = $request->file('house_icon');
+
+            // Verify the image is not corrupted
+            if (!@getimagesize($houseIcon->getRealPath())) {
+                return back()->with('error', 'The house icon file appears to be corrupted or is not a valid image.');
+            }
+
+            $houseIconName = 'house_icon_' . time() . '.' . $houseIcon->getClientOriginalExtension();
+            $houseIcon->storeAs('public/branding', $houseIconName);
+            SystemSetting::set('house_icon', 'branding/' . $houseIconName);
         }
 
         return redirect()->route('admin.settings.index')

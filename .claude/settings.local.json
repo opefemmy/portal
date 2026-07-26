@@ -36,7 +36,26 @@
       "Bash(where mysqldump *)",
       "Bash(git checkout *)",
       "Bash(rm -rf storage/framework/views/*.php)",
-      "Bash(rm -rf bootstrap/cache/*.php)"
+      "Bash(rm -rf bootstrap/cache/*.php)",
+      "WebFetch(domain:desktop-rq8km01)",
+      "Bash(sed -i \"181s/\\)\\);/\\);/\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"355s/\\)\\);/\\);/\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"358s/\\)\\);/\\);/\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"364s/\\)\\);/\\);/\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"381s/\\)\\);/\\);/\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"64s/\\)\\);/\\)/\" app/Http/Controllers/Applicant/PaymentGatewayController.php)",
+      "Bash(sed -i \"223s/\\)\\);/\\)/\" app/Http/Controllers/Applicant/PaymentGatewayController.php)",
+      "Bash(xxd)",
+      "Bash(awk 'NR==33{print NR\": \"$0}' app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(awk 'NR==32{print NR\": \"$0}' app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(awk 'NR==670{print NR\": \"$0}' app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"s/compact\\('applicant'\\)\\);$/compact\\('applicant'\\)\\);/g\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "Bash(sed -i \"s/compact\\('applicant', 'paymentType'\\)\\);$/compact\\('applicant', 'paymentType'\\)\\);/g\" app/Http/Controllers/Applicant/ApplicationController.php)",
+      "WebSearch",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:localhost)",
+      "Bash(pkill -f \"artisan serve\")"
     ]
   }
 }

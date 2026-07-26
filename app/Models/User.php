@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -18,7 +20,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'date_of_birth', 'phone', 'address', 'state', 'lga',
         'next_of_kin', 'next_of_kin_phone', 'matric_number', 'staff_id',
         'school_id', 'department_id', 'programme_id', 'level',
-        'two_factor_secret', 'is_active', 'must_change_password'
+        'two_factor_secret', 'is_active', 'must_change_password',
+        'unlock_code', 'unlock_code_expires_at', 'password_changed_at'
     ];
 
     protected $hidden = ['password', 'remember_token', 'two_factor_secret'];
@@ -30,6 +33,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'date_of_birth' => 'date',
             'is_active' => 'boolean',
             'password' => 'hashed',
+            'unlock_code_expires_at' => 'datetime',
+            'password_changed_at' => 'datetime',
         ];
     }
 
@@ -66,6 +71,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function courseAssignments(): HasMany
     {
         return $this->hasMany(CourseAssignment::class, 'lecturer_id');
+    }
+
+    public function hospitalStaff(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Hospital\HospitalStaff::class);
     }
 
     public function isAdmin(): bool
@@ -178,5 +188,60 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getMustChangePasswordAttribute(): bool
     {
         return $this->attributes['must_change_password'] ?? false;
+    }
+
+    /**
+     * Generate a unique unlock code for admin password reset
+     */
+    public function generateUnlockCode(): string
+    {
+        $code = strtoupper(Str::random(8));
+        $this->update([
+            'unlock_code' => Hash::make($code),
+            'unlock_code_expires_at' => now()->addHours(24),
+        ]);
+        return $code;
+    }
+
+    /**
+     * Validate unlock code
+     */
+    public function validateUnlockCode(string $code): bool
+    {
+        if (!$this->unlock_code || !$this->unlock_code_expires_at) {
+            return false;
+        }
+
+        if (now()->greaterThan($this->unlock_code_expires_at)) {
+            return false;
+        }
+
+        return Hash::check($code, $this->unlock_code);
+    }
+
+    /**
+     * Clear unlock code after use
+     */
+    public function clearUnlockCode(): void
+    {
+        $this->update([
+            'unlock_code' => null,
+            'unlock_code_expires_at' => null,
+        ]);
+    }
+
+    /**
+     * Unlock user password without knowing current password
+     */
+    public function unlockWithNewPassword(string $newPassword): bool
+    {
+        $this->update([
+            'password' => Hash::make($newPassword),
+            'password_changed_at' => now(),
+            'must_change_password' => false,
+            'unlock_code' => null,
+            'unlock_code_expires_at' => null,
+        ]);
+        return true;
     }
 }

@@ -5,9 +5,10 @@
     <title>Transcript - {{ $student->matric_number }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root { --primary: #247D57; }
         body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-        .header { text-align: center; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { color: #1a237e; margin: 0; }
+        .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { color: var(--primary); margin: 0; }
         .student-info { margin-bottom: 20px; }
         .student-info table td { padding: 5px 10px; }
         .footer { margin-top: 30px; text-align: center; font-size: 10pt; }

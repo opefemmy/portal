@@ -7,6 +7,13 @@
     <h4>Application Form</h4>
 </div>
 
+{{-- Success message if payment was verified --}}
+@if(session('success') && str_contains(session('success'), 'Payment verified'))
+<div class="alert alert-success mb-4">
+    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+</div>
+@endif
+
 <form method="POST" action="{{ route('applicant.apply') }}" enctype="multipart/form-data">
     @csrf
 
@@ -508,61 +515,107 @@
     </div>
 </form>
 
-@push('scripts')
+@section('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+
     // Show disability details if "other" is selected
-    document.querySelector('select[name="disability"]').addEventListener('change', function() {
-        const details = document.getElementById('disability-details');
-        if (this.value === 'other' || this.value === 'physical' || this.value === 'visual' || this.value === 'hearing') {
-            details.style.display = 'block';
-        } else {
-            details.style.display = 'none';
-        }
-    });
+    const disabilitySelect = document.querySelector('select[name="disability"]');
+    if (disabilitySelect) {
+        disabilitySelect.addEventListener('change', function() {
+            const details = document.getElementById('disability-details');
+            if (this.value === 'other' || this.value === 'physical' || this.value === 'visual' || this.value === 'hearing') {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        });
+    }
 
     // Load LGA when state is selected
-    document.getElementById('state_id').addEventListener('change', function() {
-        const stateId = this.value;
-        const lgaSelect = document.getElementById('lga_id');
-        lgaSelect.innerHTML = '<option value="">Loading...</option>';
+    const stateSelectEl = document.getElementById('state_id');
+    if (stateSelectEl) {
+        stateSelectEl.addEventListener('change', function() {
+            const stateId = this.value;
+            const lgaSelectEl = document.getElementById('lga_id');
+            if (!lgaSelectEl) return;
+            lgaSelectEl.innerHTML = '<option value="">Loading...</option>';
 
-        fetch(`/applicant/lgas/${stateId}`)
-            .then(response => response.json())
-            .then(data => {
-                lgaSelect.innerHTML = '<option value="">Select LGA</option>';
-                data.forEach(lga => {
-                    const option = document.createElement('option');
-                    option.value = lga.id;
-                    option.textContent = lga.name;
-                    lgaSelect.appendChild(option);
+            fetch('/applicant/lgas/' + stateId)
+                .then(response => response.json())
+                .then(data => {
+                    lgaSelectEl.innerHTML = '<option value="">Select LGA</option>';
+                    data.forEach(lga => {
+                        const option = document.createElement('option');
+                        option.value = lga.id;
+                        option.textContent = lga.name;
+                        lgaSelectEl.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    lgaSelectEl.innerHTML = '<option value="">Error loading LGA</option>';
                 });
-            })
-            .catch(error => {
-                lgaSelect.innerHTML = '<option value="">Error loading LGA</option>';
-            });
-    });
+        });
+    }
 
     // Load departments when school is selected
-    document.getElementById('school_id').addEventListener('change', function() {
-        const schoolId = this.value;
-        const deptSelect = document.getElementById('department_id');
-        deptSelect.innerHTML = '<option value="">Loading...</option>';
+    const schoolSelectEl = document.getElementById('school_id');
+    if (schoolSelectEl) {
+        schoolSelectEl.addEventListener('change', function() {
+            const schoolId = this.value;
+            const deptSelectEl = document.getElementById('department_id');
+            const progSelectEl = document.getElementById('programme_id');
 
-        fetch(`/applicant/departments/${schoolId}`)
-            .then(response => response.json())
-            .then(data => {
-                deptSelect.innerHTML = '<option value="">Select Department</option>';
-                data.forEach(dept => {
-                    const option = document.createElement('option');
-                    option.value = dept.id;
-                    option.textContent = dept.name;
-                    deptSelect.appendChild(option);
+            if (!deptSelectEl) return;
+
+            if (progSelectEl) progSelectEl.innerHTML = '<option value="">Select Programme</option>';
+            deptSelectEl.innerHTML = '<option value="">Loading...</option>';
+
+            fetch('/applicant/departments/' + schoolId)
+                .then(response => response.json())
+                .then(data => {
+                    deptSelectEl.innerHTML = '<option value="">Select Department</option>';
+                    data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        deptSelectEl.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    deptSelectEl.innerHTML = '<option value="">Error loading departments</option>';
                 });
-            })
-            .catch(error => {
-                deptSelect.innerHTML = '<option value="">Error loading departments</option>';
-            });
-    });
+        });
+    }
+
+    // Load programmes when department is selected
+    const deptSelectEl = document.getElementById('department_id');
+    if (deptSelectEl) {
+        deptSelectEl.addEventListener('change', function() {
+            const departmentId = this.value;
+            const progSelectEl = document.getElementById('programme_id');
+            if (!progSelectEl) return;
+
+            progSelectEl.innerHTML = '<option value="">Loading...</option>';
+
+            fetch('/applicant/programmes/' + departmentId)
+                .then(response => response.json())
+                .then(data => {
+                    progSelectEl.innerHTML = '<option value="">Select Programme</option>';
+                    data.forEach(prog => {
+                        const option = document.createElement('option');
+                        option.value = prog.id;
+                        option.textContent = prog.name;
+                        progSelectEl.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    progSelectEl.innerHTML = '<option value="">Error loading programmes</option>';
+                });
+        });
+    }
+
+}); // End DOMContentLoaded
 </script>
-@endpush
+@endsection
 @endsection

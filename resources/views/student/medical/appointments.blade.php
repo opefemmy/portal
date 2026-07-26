@@ -16,29 +16,21 @@
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Time</th>
-                    <th>Doctor</th>
-                    <th>Complaint</th>
+                    <th>Appointment No.</th>
+                    <th>Symptoms</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($appointments as $appointment)
                 <tr>
-                    <td>{{ $appointment->appointment_date->format('d M Y') }}</td>
-                    <td>{{ $appointment->appointment_time }}</td>
-                    <td>Dr. {{ $appointment->doctor->last_name ?? 'N/A' }}</td>
-                    <td>{{ Str::limit($appointment->complaint, 50) }}</td>
+                    <td>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</td>
+                    <td>{{ $appointment->appointment_number }}</td>
+                    <td>{{ Str::limit($appointment->symptoms, 50) }}</td>
                     <td>
                         @switch($appointment->status)
                             @case('scheduled')
                                 <span class="badge bg-primary">Scheduled</span>
-                                @break
-                            @case('confirmed')
-                                <span class="badge bg-info">Confirmed</span>
-                                @break
-                            @case('checked_in')
-                                <span class="badge bg-warning">Checked In</span>
                                 @break
                             @case('completed')
                                 <span class="badge bg-success">Completed</span>
@@ -53,7 +45,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="text-center">No appointments found</td>
+                    <td colspan="4" class="text-center">No appointments found</td>
                 </tr>
                 @endforelse
             </tbody>

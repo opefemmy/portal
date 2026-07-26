@@ -246,4 +246,99 @@ class StudentController extends Controller
             'Content-Disposition' => 'attachment; filename="student_upload_template.csv"',
         ]);
     }
+
+    // =============================================
+    // UNIFORM MEASUREMENTS METHODS
+    // =============================================
+
+    /**
+     * Show student measurements
+     */
+    public function showMeasurements(Student $student)
+    {
+        $student->load(['user', 'school', 'department', 'programme', 'measuredBy']);
+        return view('admin.students.measurements.show', compact('student'));
+    }
+
+    /**
+     * Edit student measurements
+     */
+    public function editMeasurements(Student $student)
+    {
+        return view('admin.students.measurements.edit', compact('student'));
+    }
+
+    /**
+     * Update student measurements
+     */
+    public function updateMeasurements(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            // Uniform
+            'uniform_shirt_size' => 'nullable|string|max:50',
+            'uniform_pant_size' => 'nullable|string|max:50',
+            'uniform_shoe_size' => 'nullable|string|max:50',
+            // Scrubs
+            'scrub_size' => 'nullable|string|max:50',
+            'scrub_color' => 'nullable|string|max:50',
+            // Lab coat
+            'lab_coat_size' => 'nullable|string|max:50',
+            'lab_coat_length' => 'nullable|string|max:50',
+        ]);
+
+        $validated['measurements_taken_at'] = now();
+        $validated['measured_by'] = auth()->id();
+
+        $student->update($validated);
+
+        return redirect()->route('admin.students.measurements', $student->id)
+            ->with('success', 'Measurements updated successfully');
+    }
+
+    /**
+     * Export all student measurements
+     */
+    public function exportMeasurements(Request $request)
+    {
+        $students = Student::with(['user', 'school', 'department', 'programme'])
+            ->when($request->school_id, function($q) use ($request) {
+                $q->where('school_id', $request->school_id);
+            })
+            ->when($request->department_id, function($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            })
+            ->when($request->level, function($q) use ($request) {
+                $q->where('level', $request->level);
+            })
+            ->get();
+
+        $csv = "Matric Number,Name,Email,School,Department,Programme,Level,Status,";
+        $csv .= "Uniform Shirt Size,Uniform Pant Size,Uniform Shoe Size,";
+        $csv .= "Scrub Size,Scrub Color,";
+        $csv .= "Lab Coat Size,Lab Coat Length,Measured At\n";
+
+        foreach ($students as $student) {
+            $csv .= "{$student->matric_number},";
+            $csv .= "\"{$student->user->name}\",";
+            $csv .= "{$student->user->email},";
+            $csv .= "\"{$student->school->name}\",";
+            $csv .= "\"{$student->department->name}\",";
+            $csv .= "\"{$student->programme->name}\",";
+            $csv .= "{$student->level},";
+            $csv .= "{$student->status},";
+            $csv .= "{$student->uniform_shirt_size},";
+            $csv .= "{$student->uniform_pant_size},";
+            $csv .= "{$student->uniform_shoe_size},";
+            $csv .= "{$student->scrub_size},";
+            $csv .= "{$student->scrub_color},";
+            $csv .= "{$student->lab_coat_size},";
+            $csv .= "{$student->lab_coat_length},";
+            $csv .= "{$student->measurements_taken_at}\n";
+        }
+
+        return response()->make($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="student_measurements_' . date('Y-m-d') . '.csv"',
+        ]);
+    }
 }

@@ -90,8 +90,13 @@ $role = $user->role->slug ?? '';
     </div>
 </li>
 <li class="nav-item">
-    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
+    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') && !request()->is('admin/users/unlock*') ? 'active' : '' }}">
         <i class="fas fa-users"></i> Users
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('admin.users.unlock') }}" class="nav-link {{ request()->is('admin/users/unlock*') ? 'active' : '' }}">
+        <i class="fas fa-unlock-alt"></i> Unlock Users
     </a>
 </li>
 <li class="nav-item">
@@ -210,7 +215,12 @@ $role = $user->role->slug ?? '';
             </li>
             <li class="nav-item">
                 <a href="{{ route('admin.students.import') }}" class="nav-link {{ request()->is('admin/students/import*') ? 'active' : '' }}">
-                    <i class="fas fa-key me-2"></i>Reset Student Password
+                    <i class="fas fa-upload me-2"></i>Import Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.students.measurements.export') }}" class="nav-link {{ request()->is('admin/students/measurements*') ? 'active' : '' }}">
+                    <i class="fas fa-tshirt me-2"></i>Uniform Measurements
                 </a>
             </li>
             <li class="nav-item">
@@ -337,6 +347,11 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.hospital-services.index') }}" class="nav-link {{ request()->is('admin/hospital-services*') ? 'active' : '' }}">
+                    <i class="fas fa-hospital me-2"></i>Hospital Services
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ url('/bursar/payments/sync') }}" class="nav-link">
                     <i class="fas fa-sync-alt me-2"></i>Payment Synchronization
                 </a>
@@ -448,6 +463,11 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-user-cog"></i> My Profile
     </a>
 </li>
+<li class="nav-item">
+    <a href="{{ route('student.measurements') }}" class="nav-link {{ request()->is('student/measurements*') ? 'active' : '' }}">
+        <i class="fas fa-tshirt"></i> My Measurements
+    </a>
+</li>
 <li class="nav-item dropdown">
     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
         <i class="fas fa-graduation-cap"></i> Academic <span class="caret"></span>
@@ -469,7 +489,7 @@ $role = $user->role->slug ?? '';
     </a>
     <ul class="dropdown-menu">
         <li><a class="dropdown-item" href="{{ route('student.hostel.my') }}"><i class="fas fa-home me-2"></i>My Hostel</a></li>
-        <li><a class="dropdown-item" href="{{ route('hostel.apply') }}"><i class="fas fa-plus me-2"></i>Apply for Hostel</a></li>
+        <li><a class="dropdown-item" href="{{ route('student.hostel.apply') }}"><i class="fas fa-plus me-2"></i>Apply for Hostel</a></li>
     </ul>
 </li>
 <li class="nav-item">
@@ -632,6 +652,11 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('hospital.external-patients.index') }}" class="nav-link {{ request()->is('hospital/external-patients*') ? 'active' : '' }}">
+        <i class="fas fa-user-friends"></i> External Patients
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('hospital.patients.index') }}" class="nav-link {{ request()->is('hospital/patients*') ? 'active' : '' }}">
         <i class="fas fa-users"></i> Patients
     </a>
@@ -747,6 +772,11 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('applicant.application') }}" class="nav-link {{ request()->is('applicant/application*') ? 'active' : '' }}">
         <i class="fas fa-file-alt"></i> My Application
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('applicant.payment') }}" class="nav-link {{ request()->is('applicant/payment*') ? 'active' : '' }}">
+        <i class="fas fa-credit-card"></i> Make Payment
     </a>
 </li>
 @endif

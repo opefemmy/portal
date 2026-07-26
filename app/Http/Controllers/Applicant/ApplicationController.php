@@ -58,7 +58,7 @@ class ApplicationController extends Controller
             'schools' => \Schema::hasTable('schools') ? School::all() : collect([]),
             'departments' => \Schema::hasTable('departments') ? Department::all() : collect([]),
             'programmes' => \Schema::hasTable('programmes') ? Programme::all() : collect([]),
-            'sessions' => \Schema::hasTable('sessions') ? Session::orderBy('name', 'desc')->get() : collect([]),
+            'sessions' => \Schema::hasTable('sessions') ? Session::where('is_current', true)->orderBy('name', 'desc')->get() : collect([]),
             'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
             'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
             'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),
@@ -330,6 +330,12 @@ class ApplicationController extends Controller
         return response()->json($lgas);
     }
 
+    public function getProgrammes($departmentId)
+    {
+        $programmes = Programme::where('department_id', $departmentId)->get();
+        return response()->json($programmes);
+    }
+
     /**
      * Edit application form
      */
@@ -351,7 +357,7 @@ class ApplicationController extends Controller
             'schools' => \Schema::hasTable('schools') ? School::all() : collect([]),
             'departments' => \Schema::hasTable('departments') ? Department::all() : collect([]),
             'programmes' => \Schema::hasTable('programmes') ? Programme::all() : collect([]),
-            'sessions' => \Schema::hasTable('sessions') ? Session::orderBy('name', 'desc')->get() : collect([]),
+            'sessions' => \Schema::hasTable('sessions') ? Session::where('is_current', true)->orderBy('name', 'desc')->get() : collect([]),
             'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
             'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
             'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),

@@ -1,10 +1,12 @@
 @php
     use Illuminate\Support\Facades\Schema;
+    use Illuminate\Support\Facades\Cache;
     use App\Models\SystemSetting;
     $institutionShortName = 'EKSCOTECH';
     if (Schema::hasTable('system_settings')) {
         try {
-            $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
+            // Cache for 60 minutes to improve performance
+            $institutionShortName = Cache::remember('institution_short_name', 60, fn() => SystemSetting::get('institution_short_name', 'EKSCOTECH'));
         } catch (\Exception $e) {
             $institutionShortName = 'EKSCOTECH';
         }
@@ -39,6 +41,12 @@
             --accent: #247D57;
             --accent-wine: #82103C;
             --accent-wine-2: #9A1648;
+            --hover-color: #EC4899;
+
+            /* Global Hover Color */
+            a:hover, .btn:hover, .nav-link:hover, .dropdown-item:hover {
+                color: var(--hover-color) !important;
+            }
 
             /* Bootstrap Colors */
             --blue: #007bff;
@@ -96,7 +104,7 @@
         .sidebar .nav-link:hover, .sidebar .nav-link.active {
             background: var(--sidebar-hover);
             color: var(--sidebar-link);
-            border-left: 3px solid var(--accent-wine);
+            border-left: 3px solid var(--hover-color);
         }
 
         .sidebar .nav-link i {
@@ -400,9 +408,10 @@
         $logoExists = false;
         if (Schema::hasTable('system_settings')) {
             try {
-                $institutionName = SystemSetting::get('institution_name', 'Ekiti State College of Technology');
-                $institutionShortName = SystemSetting::get('institution_short_name', 'EKSCOTECH');
-                $institutionLogo = SystemSetting::get('institution_logo');
+                // Cache for 60 minutes for better performance
+                $institutionName = Cache::remember('institution_name', 60, fn() => SystemSetting::get('institution_name', 'Ekiti State College of Technology'));
+                $institutionShortName = Cache::remember('institution_short_name', 60, fn() => SystemSetting::get('institution_short_name', 'EKSCOTECH'));
+                $institutionLogo = Cache::remember('institution_logo', 60, fn() => SystemSetting::get('institution_logo'));
                 $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
                 $logoExists = $institutionLogo && file_exists($logoPath);
             } catch (\Exception $e) {
