@@ -33,42 +33,12 @@
                 @if(isset($paymentType) && $paymentType)
                 <h4>Application Fee: ₦{{ number_format($paymentType->amount, 2) }}</h4>
                 @else
-                <h4>Application Fee: ₦{{ number_format($feeAmount ?? 0, 2) }}</h4>
+                <h4>Application Fee: ₦{{ number_format($feeAmount ?? 5000, 2) }}</h4>
                 @endif
 
-                <p class="text-muted">Enter your payment transaction ID to validate payment</p>
+                <p class="text-muted">Complete your payment to proceed with application</p>
 
                 <hr>
-
-                <form method="POST" action="{{ route('applicant.payment.verify-external') }}">
-                    @csrf
-                    <div class="mb-3">
-                        <label class="form-label">Payment Reference / Transaction ID *</label>
-                        <input type="text" name="payment_ref" class="form-control" placeholder="Enter your payment reference" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Amount Paid (₦) *</label>
-                        <input type="number" name="amount" class="form-control" placeholder="Enter amount paid" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Payment Date *</label>
-                        <input type="date" name="payment_date" class="form-control" required>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100 mb-3">
-                        <i class="fas fa-check me-2"></i>Validate Payment
-                    </button>
-                </form>
-
-                <hr>
-
-                <div class="alert alert-warning">
-                    <h6><i class="fas fa-info-circle me-2"></i>How to Pay:</h6>
-                    <ol class="mb-0 text-start">
-                        <li>Click the Pay Now button to redirect to the payment page</li>
-                        <li>Copy the payment reference and validate your payment</li>
-                        <li><strong>Note:</strong> Don't pay to any individual</li>
-                    </ol>
-                </div>
 
                 {{-- Pay Now Button --}}
                 @php
@@ -87,6 +57,14 @@
                     </a>
                 </div>
                 @endif
+
+                <hr>
+
+                {{-- Validate Payment Button --}}
+                <p class="text-muted mb-2">Already paid? Validate your payment below:</p>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#validatePaymentModal">
+                    <i class="fas fa-check-circle me-2"></i>Validate Payment
+                </button>
             </div>
         </div>
 
@@ -103,9 +81,48 @@
                         <span class="badge bg-warning">{{ ucfirst($applicant->payment_status) }}</span>
                     @endif
                 </p>
+                @if($applicant->payment_ref)
+                <p><strong>Reference:</strong> {{ $applicant->payment_ref }}</p>
+                @endif
             </div>
         </div>
         @endif
+    </div>
+</div>
+
+{{-- Validate Payment Modal --}}
+<div class="modal fade" id="validatePaymentModal" tabindex="-1" aria-labelledby="validatePaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="validatePaymentModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Validate Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ route('applicant.payment.verify-external') }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        After making payment, enter your payment reference/transaction ID to validate.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Reference / Transaction ID <span class="text-danger">*</span></label>
+                        <input type="text" name="payment_ref" class="form-control" placeholder="Enter your payment reference" required>
+                        <small class="text-muted">The transaction ID you received after payment</small>
+                    </div>
+                    <input type="hidden" name="amount" value="{{ $feeAmount ?? 5000 }}">
+                    <input type="hidden" name="payment_date" value="{{ date('Y-m-d') }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Validate
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
