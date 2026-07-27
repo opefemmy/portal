@@ -27,7 +27,7 @@ $houseIcon = SystemSetting::get('house_icon');
         <h5 class="mb-0"><i class="fas fa-university me-2"></i>Institution Branding</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('settings.branding') }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-md-6">
@@ -80,10 +80,10 @@ $houseIcon = SystemSetting::get('house_icon');
                                 @else
                                     <span class="badge bg-danger me-2">File not found: {{ $institutionLogo }}</span>
                                 @endif
-                                <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                <a href="{{ route('settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
+                                <form method="POST" action="{{ route('settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -110,10 +110,10 @@ $houseIcon = SystemSetting::get('house_icon');
                                 @else
                                     <span class="badge bg-danger me-2">File not found: {{ $institutionIcon }}</span>
                                 @endif
-                                <a href="{{ route('admin.settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                <a href="{{ route('settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.settings.delete.icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                <form method="POST" action="{{ route('settings.delete.icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -142,10 +142,10 @@ $houseIcon = SystemSetting::get('house_icon');
                                 @else
                                     <span class="badge bg-danger me-2">File not found: {{ $houseIcon }}</span>
                                 @endif
-                                <a href="{{ route('admin.settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
+                                <a href="{{ route('settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.settings.delete.house-icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                <form method="POST" action="{{ route('settings.delete.house-icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -164,7 +164,7 @@ $houseIcon = SystemSetting::get('house_icon');
     </div>
 </div>
 
-<form method="POST" action="{{ route('admin.settings.update') }}">
+<form method="POST" action="{{ route('settings.update') }}">
     @csrf
 
     {{-- Admission Settings --}}
@@ -408,7 +408,7 @@ $houseIcon = SystemSetting::get('house_icon');
         <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Gateway Configuration</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.settings.gateway') }}">
+        <form method="POST" action="{{ route('settings.gateway') }}">
             @csrf
             <div class="row">
                 <div class="col-md-6">
