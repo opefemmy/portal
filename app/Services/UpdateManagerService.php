@@ -465,7 +465,7 @@ class UpdateManagerService
 
         $settings = [
             ['key' => 'institution_name', 'value' => 'Ekiti State College of Technology'],
-            ['key' => 'institution_address', 'value' => 'University Road, Iyin Ekiti, Ekiti State'],
+            ['key' => 'institution_address', 'value' => 'Ekiti State College of Technology, Jero Ekiti, Ekiti State'],
             ['key' => 'institution_email', 'value' => 'info@ekticotech.edu.ng'],
             ['key' => 'admission_form_open', 'value' => 'true'],
             ['key' => 'course_registration_open', 'value' => 'true'],

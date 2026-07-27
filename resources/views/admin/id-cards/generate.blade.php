@@ -27,9 +27,10 @@
 
                     <div class="text-center mb-3">
                         @if($student->user->passport)
-                        <img src="{{ asset('storage/' . $student->user->passport) }}"
+                        <img src="{{ asset('uploads/passports/' . $student->user->passport) }}"
                              alt="Passport"
-                             style="width: 120px; height: 120px; border-radius: 10px; border: 3px solid white;">
+                             style="width: 120px; height: 120px; border-radius: 10px; border: 3px solid white; object-fit: cover;"
+                             onerror="this.src='{{ asset('storage/passports/' . $student->user->passport) }}'">
                         @else
                         <div style="width: 120px; height: 120px; border-radius: 10px; border: 3px solid white; background: #ccc; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-user fa-3x text-white"></i>

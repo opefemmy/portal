@@ -28,24 +28,19 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.08;
+            opacity: 0.06;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: url('{{ asset(\App\Models\Setting::get('institution_logo', 'images/logo.png')) }}');
-            background-size: 400px 400px;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-image: none;
         }
         .watermark-bg::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(26, 35, 126, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%);
-            backdrop-filter: blur(2px);
+            content: '{{ \App\Models\Setting::get("institution_name", "EKSCOTECH") }}';
+            font-size: 120px;
+            font-weight: bold;
+            color: #1a237e;
+            transform: rotate(-30deg);
+            white-space: nowrap;
         }
         .invoice-header {
             text-align: center;
@@ -188,7 +183,7 @@
             <div class="col-md-12 text-center">
                 <div class="photo-frame mx-auto mb-3">
                     @if($applicant->passport)
-                        <img src="{{ asset('storage/passports/' . $applicant->passport) }}" alt="Passport">
+                        <img src="{{ asset('uploads/passports/' . $applicant->passport) }}" alt="Passport" onerror="this.src='{{ asset('storage/passports/' . $applicant->passport) }}'" style="max-width: 150px; max-height: 180px; object-fit: cover;">
                     @else
                         <span class="text-muted"><i class="fas fa-user fa-3x"></i></span>
                     @endif

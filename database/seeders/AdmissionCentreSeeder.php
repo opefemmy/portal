@@ -13,7 +13,7 @@ class AdmissionCentreSeeder extends Seeder
             [
                 'name' => 'Main Campus',
                 'code' => 'MAIN',
-                'address' => 'Ekiti State College of Technology, Iyin Ekiti',
+                'address' => 'Ekiti State College of Technology, Jero Ekiti',
                 'phone' => '08012345678',
                 'email' => 'admission@ekscotech.edu.ng',
                 'is_active' => true,

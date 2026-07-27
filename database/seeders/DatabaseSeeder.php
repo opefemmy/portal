@@ -445,7 +445,7 @@ class DatabaseSeeder extends Seeder
         // Create Settings
         Setting::set('institution_name', 'Ekiti State College of Technology');
         Setting::set('institution_short_name', 'EKSCOTECH');
-        Setting::set('institution_address', 'Iyin Ekiti, Ekiti State');
+        Setting::set('institution_address', 'Ekiti State College of Technology, Jero Ekiti, Ekiti State');
         Setting::set('institution_email', 'info@ekscotech.edu.ng');
         Setting::set('institution_phone', '08012345678');
         Setting::set('institution_website', 'www.ekscotech.edu.ng');
