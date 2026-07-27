@@ -131,11 +131,6 @@ class Applicant extends Model
         return 'APP-' . strtoupper(Str::random(8));
     }
 
-    public function getFullNameAttribute()
-    {
-        return "{$this->first_name} {$this->surname}";
-    }
-
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
