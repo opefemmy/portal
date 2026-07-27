@@ -80,6 +80,12 @@
                         <i class="fas fa-credit-card me-2"></i>Pay Now
                     </a>
                 </div>
+                @else
+                <div class="d-grid mt-3">
+                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-credit-card me-2"></i>Pay Now
+                    </a>
+                </div>
                 @endif
             </div>
         </div>
