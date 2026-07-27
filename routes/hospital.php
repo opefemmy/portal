@@ -5,6 +5,11 @@ use App\Http\Controllers\Hospital\DashboardController;
 use App\Http\Controllers\Hospital\ExternalPatientController;
 use App\Http\Controllers\Hospital\ExternalVisitController;
 use App\Http\Controllers\Hospital\ExternalPortalController;
+use App\Http\Controllers\Hospital\PatientController;
+use App\Http\Controllers\Hospital\AppointmentController;
+use App\Http\Controllers\Hospital\PharmacyController;
+use App\Http\Controllers\Hospital\LaboratoryController;
+use App\Http\Controllers\Hospital\ConsultationController;
 
 // Public Patient Portal Routes (for outsiders)
 Route::prefix('patient')->name('patient.')->group(function () {
@@ -71,4 +76,63 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
 
     // Quick patient lookup
     Route::post('/patient/lookup', [ExternalPatientController::class, 'lookup'])->name('patient.lookup');
+
+    // Internal Hospital Patients (registered patients)
+    Route::prefix('patients')->name('patients.')->group(function () {
+        Route::get('/', [PatientController::class, 'index'])->name('index');
+        Route::get('/create', [PatientController::class, 'create'])->name('create');
+        Route::post('/', [PatientController::class, 'store'])->name('store');
+        Route::get('/{patient}', [PatientController::class, 'show'])->name('show');
+        Route::get('/{patient}/edit', [PatientController::class, 'edit'])->name('edit');
+        Route::put('/{patient}', [PatientController::class, 'update'])->name('update');
+        Route::get('/search', [PatientController::class, 'search'])->name('search');
+        Route::get('/{patient}/timeline', [PatientController::class, 'timeline'])->name('timeline');
+    });
+
+    // Hospital Appointments
+    Route::prefix('appointments')->name('appointments.')->group(function () {
+        Route::get('/', [AppointmentController::class, 'index'])->name('index');
+        Route::get('/create', [AppointmentController::class, 'create'])->name('create');
+        Route::post('/', [AppointmentController::class, 'store'])->name('store');
+        Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
+        Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
+        Route::post('/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('check-in');
+        Route::post('/{appointment}/start', [AppointmentController::class, 'start'])->name('start');
+        Route::get('/queue', [AppointmentController::class, 'queue'])->name('queue');
+    });
+
+    // Pharmacy Routes
+    Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
+        Route::get('/drugs', [PharmacyController::class, 'index'])->name('drugs');
+        Route::get('/drugs/create', [PharmacyController::class, 'createDrug'])->name('drugs.create');
+        Route::post('/drugs', [PharmacyController::class, 'storeDrug'])->name('drugs.store');
+        Route::get('/drugs/{drug}/edit', [PharmacyController::class, 'editDrug'])->name('drugs.edit');
+        Route::put('/drugs/{drug}', [PharmacyController::class, 'updateDrug'])->name('drugs.update');
+        Route::delete('/drugs/{drug}', [PharmacyController::class, 'destroyDrug'])->name('drugs.destroy');
+        Route::get('/prescriptions', [PharmacyController::class, 'prescriptions'])->name('prescriptions');
+        Route::get('/prescriptions/{prescription}', [PharmacyController::class, 'showPrescription'])->name('prescriptions.show');
+        Route::post('/prescriptions/{prescription}/dispense', [PharmacyController::class, 'dispensePrescription'])->name('prescriptions.dispense');
+        Route::get('/categories', [PharmacyController::class, 'categories'])->name('categories');
+        Route::get('/low-stock', [PharmacyController::class, 'lowStock'])->name('low-stock');
+        Route::get('/expiring', [PharmacyController::class, 'expiring'])->name('expiring');
+        Route::get('/suppliers', [PharmacyController::class, 'suppliers'])->name('suppliers');
+        Route::post('/suppliers', [PharmacyController::class, 'storeSupplier'])->name('suppliers.store');
+    });
+
+    // Laboratory Routes
+    Route::prefix('lab')->name('lab.')->group(function () {
+        Route::get('/', [LaboratoryController::class, 'index'])->name('index');
+        Route::get('/requests', [LaboratoryController::class, 'requests'])->name('requests');
+        Route::get('/requests/{request}', [LaboratoryController::class, 'showRequest'])->name('show');
+        Route::post('/requests/{request}/collect', [LaboratoryController::class, 'collectSample'])->name('collect');
+        Route::post('/requests/{request}/process', [LaboratoryController::class, 'processResult'])->name('process');
+        Route::post('/requests/{request}/complete', [LaboratoryController::class, 'complete'])->name('complete');
+    });
+
+    // Consultations
+    Route::prefix('consultations')->name('consultations.')->group(function () {
+        Route::get('/', [ConsultationController::class, 'index'])->name('index');
+        Route::get('/create', [ConsultationController::class, 'create'])->name('create');
+        Route::post('/', [ConsultationController::class, 'store'])->name('store');
+    });
 });

@@ -189,4 +189,22 @@ class PatientController extends Controller
 
         return $prefix . $year . str_pad($number, 6, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Display patient timeline.
+     */
+    public function timeline(HospitalPatient $patient)
+    {
+        $patient->load([
+            'appointments',
+            'medicalRecords',
+            'prescriptions',
+            'labRequests',
+            'admissions',
+            'vitalSigns',
+            'referrals',
+        ]);
+
+        return view('hospital.patients.timeline', compact('patient'));
+    }
 }
