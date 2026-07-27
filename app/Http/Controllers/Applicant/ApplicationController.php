@@ -297,7 +297,13 @@ class ApplicationController extends Controller
 
     public function printApplication()
     {
-        $applicant = Applicant::where('user_id', auth()->id())->firstOrFail();
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        if (!$applicant) {
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'No application found. Please submit an application first.');
+        }
+
         return view('applicant.print', compact('applicant'));
     }
 
