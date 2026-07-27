@@ -238,6 +238,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade1" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -255,6 +256,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade2" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -272,6 +274,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade3" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -289,6 +292,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade4" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -306,6 +310,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade5" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -359,6 +364,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade1" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -376,6 +382,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade2" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -393,6 +400,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade3" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -410,6 +418,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade4" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>
@@ -427,6 +436,7 @@
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade5" class="form-select">
                         <option value="">Grade</option>
+                        <option value="A/R">A/R (Awaiting Result)</option>
                         <option value="A1">A1</option>
                         <option value="B2">B2</option>
                         <option value="B3">B3</option>

@@ -197,48 +197,47 @@ class ApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            // Personal Information - All optional now
-            'surname' => 'nullable|string|max:255',
-            'first_name' => 'nullable|string|max:255',
+            // Personal Information - Required
+            'surname' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:20',
-            'gender' => 'nullable|in:Male,Female,Other',
-            'date_of_birth' => 'nullable|date',
-            'place_of_birth' => 'nullable|string|max:255',
-            'religion' => 'nullable|string|max:100',
+            'phone' => 'required|string|max:20',
+            'gender' => 'required|in:Male,Female,Other',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'required|string|max:255',
+            'religion' => 'required|string|max:100',
             'blood_group' => 'nullable|string|max:5',
             'genotype' => 'nullable|string|max:5',
             'disability' => 'nullable|in:none,physical,visual,hearing,other',
             'disability_details' => 'nullable|string|max:500',
 
-            // Address - All optional now
-            'address' => 'nullable|string|max:500',
-            'state_id' => 'nullable|exists:states,id',
-            'lga_id' => 'nullable|exists:local_governments,id',
-            'nationality_id' => 'nullable|exists:nationalities,id',
+            // Address - Required
+            'address' => 'required|string|max:500',
+            'state_id' => 'required|exists:states,id',
+            'lga_id' => 'required|exists:local_governments,id',
+            'nationality_id' => 'required|exists:nationalities,id',
 
-            // Programme Selection - All optional now
-            'school_id' => 'nullable|exists:schools,id',
-            'department_id' => 'nullable|exists:departments,id',
-            'programme_id' => 'nullable|exists:programmes,id',
-            'session_id' => 'nullable|exists:sessions,id',
-            'centre_id' => 'nullable|exists:admission_centres,id',
+            // Programme Selection - Required
+            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id' => 'required|exists:programmes,id',
+            'session_id' => 'required|exists:sessions,id',
+            'centre_id' => 'required|exists:admission_centres,id',
 
-            // O-Level Results - All optional now
-            'olevel1_subject1' => 'nullable|string|max:100',
-            'olevel1_grade1' => 'nullable|string|max:5',
-            'olevel1_subject2' => 'nullable|string|max:100',
-            'olevel1_grade2' => 'nullable|string|max:5',
-            'olevel1_subject3' => 'nullable|string|max:100',
-            'olevel1_grade3' => 'nullable|string|max:5',
-            'olevel1_subject4' => 'nullable|string|max:100',
-            'olevel1_grade4' => 'nullable|string|max:5',
-            'olevel1_subject5' => 'nullable|string|max:100',
-            'olevel1_grade5' => 'nullable|string|max:5',
-            'olevel1_exam_year' => 'nullable|integer|min:2000|max:2030',
-            'olevel1_exam_type' => 'nullable|string|max:50',
-            'olevel1_exam_number' => 'nullable|string|max:50',
+            // O-Level Results - At least first sitting required
+            'olevel1_subject1' => 'required|string|max:100',
+            'olevel1_grade1' => 'required|string|max:5',
+            'olevel1_subject2' => 'required|string|max:100',
+            'olevel1_grade2' => 'required|string|max:5',
+            'olevel1_subject3' => 'required|string|max:100',
+            'olevel1_grade3' => 'required|string|max:5',
+            'olevel1_subject4' => 'required|string|max:100',
+            'olevel1_grade4' => 'required|string|max:5',
+            'olevel1_subject5' => 'required|string|max:100',
+            'olevel1_grade5' => 'required|string|max:5',
+            'olevel1_exam_year' => 'required|integer|min:2000|max:2030',
+            'olevel1_exam_type' => 'required|string|max:50',
+            'olevel1_exam_number' => 'required|string|max:50',
 
             'olevel2_subject1' => 'nullable|string|max:100',
             'olevel2_grade1' => 'nullable|string|max:5',
@@ -254,15 +253,15 @@ class ApplicationController extends Controller
             'olevel2_exam_type' => 'nullable|string|max:50',
             'olevel2_exam_number' => 'nullable|string|max:50',
 
-            // Guardian Information
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_relationship' => 'nullable|string|max:50',
-            'guardian_phone' => 'nullable|string|max:20',
+            // Guardian Information - Required
+            'guardian_name' => 'required|string|max:255',
+            'guardian_relationship' => 'required|string|max:50',
+            'guardian_phone' => 'required|string|max:20',
             'guardian_email' => 'nullable|email',
             'guardian_occupation' => 'nullable|string|max:100',
             'guardian_address' => 'nullable|string|max:500',
 
-            // Extra Curricular
+            // Extra Curricular - Optional
             'extra_curricular' => 'nullable|string|max:1000',
         ]);
 
@@ -388,47 +387,47 @@ class ApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            // Personal Information - All optional now
-            'surname' => 'nullable|string|max:255',
-            'first_name' => 'nullable|string|max:255',
+            // Personal Information - Required
+            'surname' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'gender' => 'nullable|in:Male,Female,Other',
-            'date_of_birth' => 'nullable|date',
-            'place_of_birth' => 'nullable|string|max:255',
-            'religion' => 'nullable|string|max:100',
+            'phone' => 'required|string|max:20',
+            'gender' => 'required|in:Male,Female,Other',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'required|string|max:255',
+            'religion' => 'required|string|max:100',
             'blood_group' => 'nullable|string|max:5',
             'genotype' => 'nullable|string|max:5',
             'disability' => 'nullable|in:none,physical,visual,hearing,other',
             'disability_details' => 'nullable|string|max:500',
 
-            // Address - All optional now
-            'address' => 'nullable|string|max:500',
-            'state_id' => 'nullable|exists:states,id',
-            'lga_id' => 'nullable|exists:local_governments,id',
-            'nationality_id' => 'nullable|exists:nationalities,id',
+            // Address - Required
+            'address' => 'required|string|max:500',
+            'state_id' => 'required|exists:states,id',
+            'lga_id' => 'required|exists:local_governments,id',
+            'nationality_id' => 'required|exists:nationalities,id',
 
-            // Programme Selection - All optional now
-            'school_id' => 'nullable|exists:schools,id',
-            'department_id' => 'nullable|exists:departments,id',
-            'programme_id' => 'nullable|exists:programmes,id',
-            'session_id' => 'nullable|exists:sessions,id',
-            'centre_id' => 'nullable|exists:admission_centres,id',
+            // Programme Selection - Required
+            'school_id' => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id' => 'required|exists:programmes,id',
+            'session_id' => 'required|exists:sessions,id',
+            'centre_id' => 'required|exists:admission_centres,id',
 
-            // O-Level Results
-            'olevel1_subject1' => 'nullable|string|max:100',
-            'olevel1_grade1' => 'nullable|string|max:5',
-            'olevel1_subject2' => 'nullable|string|max:100',
-            'olevel1_grade2' => 'nullable|string|max:5',
-            'olevel1_subject3' => 'nullable|string|max:100',
-            'olevel1_grade3' => 'nullable|string|max:5',
-            'olevel1_subject4' => 'nullable|string|max:100',
-            'olevel1_grade4' => 'nullable|string|max:5',
-            'olevel1_subject5' => 'nullable|string|max:100',
-            'olevel1_grade5' => 'nullable|string|max:5',
-            'olevel1_exam_year' => 'nullable|integer|min:2000|max:2030',
-            'olevel1_exam_type' => 'nullable|string|max:50',
-            'olevel1_exam_number' => 'nullable|string|max:50',
+            // O-Level Results - At least first sitting required
+            'olevel1_subject1' => 'required|string|max:100',
+            'olevel1_grade1' => 'required|string|max:5',
+            'olevel1_subject2' => 'required|string|max:100',
+            'olevel1_grade2' => 'required|string|max:5',
+            'olevel1_subject3' => 'required|string|max:100',
+            'olevel1_grade3' => 'required|string|max:5',
+            'olevel1_subject4' => 'required|string|max:100',
+            'olevel1_grade4' => 'required|string|max:5',
+            'olevel1_subject5' => 'required|string|max:100',
+            'olevel1_grade5' => 'required|string|max:5',
+            'olevel1_exam_year' => 'required|integer|min:2000|max:2030',
+            'olevel1_exam_type' => 'required|string|max:50',
+            'olevel1_exam_number' => 'required|string|max:50',
 
             'olevel2_subject1' => 'nullable|string|max:100',
             'olevel2_grade1' => 'nullable|string|max:5',
@@ -444,8 +443,13 @@ class ApplicationController extends Controller
             'olevel2_exam_type' => 'nullable|string|max:50',
             'olevel2_exam_number' => 'nullable|string|max:50',
 
-            // Guardian Information
-            'guardian_name' => 'nullable|string|max:255',
+            // Guardian Information - Required
+            'guardian_name' => 'required|string|max:255',
+            'guardian_relationship' => 'required|string|max:50',
+            'guardian_phone' => 'required|string|max:20',
+            'guardian_email' => 'nullable|email',
+            'guardian_occupation' => 'nullable|string|max:100',
+            'guardian_address' => 'nullable|string|max:500',
             'guardian_relationship' => 'nullable|string|max:50',
             'guardian_phone' => 'nullable|string|max:20',
             'guardian_email' => 'nullable|email',
