@@ -11,9 +11,14 @@ $institutionPhone = SystemSetting::get('institution_phone', '');
 $institutionEmail = SystemSetting::get('institution_email', '');
 $institutionWebsite = SystemSetting::get('institution_website', '');
 $institutionTagline = SystemSetting::get('institution_tagline', '');
-$institutionLogo = SystemSetting::get('institution_logo');
-$institutionIcon = SystemSetting::get('institution_icon');
-$houseIcon = SystemSetting::get('house_icon');
+
+// Image paths - just copy files to public/images/ folder
+$logoPath = 'images/logo.png';
+$iconPath = 'images/icon.png';
+$houseIconPath = 'images/house-icon.png';
+$logoExists = file_exists(public_path($logoPath));
+$iconExists = file_exists(public_path($iconPath));
+$houseIconExists = file_exists(public_path($houseIconPath));
 @endphp
 
 @section('content')
@@ -27,7 +32,7 @@ $houseIcon = SystemSetting::get('house_icon');
         <h5 class="mb-0"><i class="fas fa-university me-2"></i>Institution Branding</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('settings.branding') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-md-6">
@@ -63,108 +68,88 @@ $houseIcon = SystemSetting::get('house_icon');
                     </div>
                 </div>
             </div>
+
+            <hr>
+
+            <h6 class="mb-3"><i class="fas fa-images me-2"></i>Institution Images</h6>
+            <p class="text-muted small mb-3">
+                <i class="fas fa-info-circle"></i>
+                Simply copy your image files to the <code>public/images/</code> folder in your project.
+                Use these exact filenames: <code>logo.png</code>, <code>icon.png</code>, <code>house-icon.png</code>
+            </p>
+
             <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
-                        <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
-                        @php
-                            $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
-                            $logoExists = $logoPath && file_exists($logoPath);
-                        @endphp
-                        @if($institutionLogo)
-                            <div class="mt-2 d-flex align-items-center">
-                                @if($logoExists)
-                                    <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
-                                    <span class="badge bg-success me-2">Current</span>
-                                @else
-                                    <span class="badge bg-danger me-2">File not found: {{ $institutionLogo }}</span>
-                                @endif
-                                <a href="{{ route('settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <a href="{{ route('settings.delete.logo') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this logo?')) { document.getElementById('delete-logo-form').submit(); }">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <form id="delete-logo-form" method="POST" action="{{ route('settings.delete.logo') }}" class="d-none">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-                            </div>
-                        @endif
+                {{-- LOGO --}}
+                <div class="col-md-4">
+                    <div class="mb-3 text-center">
+                        <label class="form-label">Institution Logo</label>
+                        <div class="border rounded p-3" style="min-height: 120px;">
+                            @if($logoExists)
+                                <img src="{{ asset($logoPath) }}?v={{ time() }}" alt="Logo" style="max-height: 80px;" class="mb-2">
+                                <div><span class="badge bg-success">Active</span></div>
+                            @else
+                                <div class="text-muted py-4">
+                                    <i class="fas fa-image fa-2x mb-2 d-block"></i>
+                                    No logo found<br>
+                                    <small>Copy as: logo.png</small>
+                                </div>
+                            @endif
+                        </div>
+                        <small class="text-muted">Path: <code>public/images/logo.png</code></small>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Favicon / Icon (Recommended: 32x32px, PNG/JPG/ICO)</label>
-                        <input type="file" name="institution_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/ico,image/svg+xml,image/webp">
-                        @php
-                            $iconPath = $institutionIcon ? storage_path('app/public/' . $institutionIcon) : null;
-                            $iconExists = $iconPath && file_exists($iconPath);
-                        @endphp
-                        @if($institutionIcon)
-                            <div class="mt-2 d-flex align-items-center">
-                                @if($iconExists)
-                                    <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;" class="me-2">
-                                    <span class="badge bg-success me-2">Current</span>
-                                @else
-                                    <span class="badge bg-danger me-2">File not found: {{ $institutionIcon }}</span>
-                                @endif
-                                <a href="{{ route('settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <a href="{{ route('settings.delete.icon') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this icon?')) { document.getElementById('delete-icon-form').submit(); }">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <form id="delete-icon-form" method="POST" action="{{ route('settings.delete.icon') }}" class="d-none">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-                            </div>
-                        @endif
+
+                {{-- ICON/FAVICON --}}
+                <div class="col-md-4">
+                    <div class="mb-3 text-center">
+                        <label class="form-label">Favicon / Icon</label>
+                        <div class="border rounded p-3" style="min-height: 120px;">
+                            @if($iconExists)
+                                <img src="{{ asset($iconPath) }}?v={{ time() }}" alt="Icon" style="max-height: 60px;" class="mb-2">
+                                <div><span class="badge bg-success">Active</span></div>
+                            @else
+                                <div class="text-muted py-4">
+                                    <i class="fas fa-image fa-2x mb-2 d-block"></i>
+                                    No icon found<br>
+                                    <small>Copy as: icon.png</small>
+                                </div>
+                            @endif
+                        </div>
+                        <small class="text-muted">Path: <code>public/images/icon.png</code></small>
+                    </div>
+                </div>
+
+                {{-- HOUSE ICON --}}
+                <div class="col-md-4">
+                    <div class="mb-3 text-center">
+                        <label class="form-label">House Icon (Patient Portal)</label>
+                        <div class="border rounded p-3" style="min-height: 120px;">
+                            @if($houseIconExists)
+                                <img src="{{ asset($houseIconPath) }}?v={{ time() }}" alt="House Icon" style="max-height: 60px;" class="mb-2">
+                                <div><span class="badge bg-success">Active</span></div>
+                            @else
+                                <div class="text-muted py-4">
+                                    <i class="fas fa-image fa-2x mb-2 d-block"></i>
+                                    No icon found<br>
+                                    <small>Copy as: house-icon.png</small>
+                                </div>
+                            @endif
+                        </div>
+                        <small class="text-muted">Path: <code>public/images/house-icon.png</code></small>
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">House Icon (For Patient Portal Home - Recommended: 80x80px, PNG/JPG)</label>
-                        <input type="file" name="house_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
-                        @php
-                            $houseIconPath = $houseIcon ? storage_path('app/public/' . $houseIcon) : null;
-                            $houseIconExists = $houseIconPath && file_exists($houseIconPath);
-                        @endphp
-                        @if($houseIcon)
-                            <div class="mt-2 d-flex align-items-center">
-                                @if($houseIconExists)
-                                    <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;" class="me-2">
-                                    <span class="badge bg-success me-2">Current</span>
-                                @else
-                                    <span class="badge bg-danger me-2">File not found: {{ $houseIcon }}</span>
-                                @endif
-                                <a href="{{ route('settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <a href="{{ route('settings.delete.house-icon') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this icon?')) { document.getElementById('delete-house-icon-form').submit(); }">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <form id="delete-house-icon-form" method="POST" action="{{ route('settings.delete.house-icon') }}" class="d-none">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-                </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i>Save Branding
+                </button>
             </div>
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-save me-2"></i>Save Branding
-            </button>
         </form>
     </div>
 </div>
 
-<form method="POST" action="{{ route('settings.update') }}">
+<form method="POST" action="{{ route('admin.settings.update') }}">
     @csrf
 
     {{-- Admission Settings --}}
@@ -408,7 +393,7 @@ $houseIcon = SystemSetting::get('house_icon');
         <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Gateway Configuration</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('settings.gateway') }}">
+        <form method="POST" action="{{ route('admin.settings.gateway') }}">
             @csrf
             <div class="row">
                 <div class="col-md-6">
