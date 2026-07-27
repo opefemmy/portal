@@ -240,7 +240,7 @@ class PaymentGatewayController extends Controller
         // For applicants, we don't have a student record yet
         $payment = Payment::create([
             'student_id' => $studentId,
-            'fee_id' => $paymentType?->id,
+            'fee_id' => $paymentType ? $paymentType->id : null,
             'amount' => $request->amount,
             'reference' => $reference,
             'transaction_id' => $reference,
