@@ -269,10 +269,28 @@
             <div class="card-body text-center py-5">
                 <i class="fas fa-file-circle-plus fa-4x text-muted mb-4"></i>
                 <h4>No Application Submitted</h4>
-                <p class="text-muted">You haven't submitted an application yet. Apply now to get started.</p>
-                <a href="{{ route('applicant.apply') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-paper-plane me-2"></i>Apply Now
-                </a>
+                <p class="text-muted">You haven't submitted an application yet.
+                    @php
+                    $requireFee = \App\Models\SystemSetting::get(\App\Models\SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
+                    $feeAmount = \App\Models\SystemSetting::get(\App\Models\SystemSetting::ADMISSION_FEE_AMOUNT, 0);
+                    @endphp
+                    @if($requireFee && $feeAmount > 0)
+                        <br><small class="text-danger">Application fee of ₦{{ number_format($feeAmount) }} is required before you can apply.</small>
+                    @else
+                        Apply now to get started.
+                    @endif
+                </p>
+
+                {{-- Check if payment is required and redirect accordingly --}}
+                @if($requireFee && $feeAmount > 0)
+                    <a href="{{ route('applicant.apply.payment') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-credit-card me-2"></i>Pay Application Fee First
+                    </a>
+                @else
+                    <a href="{{ route('applicant.apply') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-paper-plane me-2"></i>Apply Now
+                    </a>
+                @endif
             </div>
         </div>
     </div>
