@@ -35,10 +35,20 @@ if (Schema::hasTable('system_settings')) {
         display: flex;
         align-items: center;
         justify-content: center;
+        background: none !important;
+    }
+    .login-page::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background-image: url("{{ asset('uploads/backgrounds/login-bg.png') }}") !important;
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
+        z-index: -1;
     }
 
     .login-card {
