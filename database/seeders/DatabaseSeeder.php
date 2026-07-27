@@ -15,6 +15,7 @@ use App\Models\GradingScale;
 use App\Models\GradeClassification;
 use App\Models\Setting;
 use App\Models\Student;
+use App\Models\SystemSetting;
 use App\Services\ResultComputationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -443,16 +444,23 @@ class DatabaseSeeder extends Seeder
         );
 
         // Create Settings
-        Setting::set('institution_name', 'Ekiti State College of Technology');
+        Setting::set('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti');
         Setting::set('institution_short_name', 'EKSCOTECH');
-        Setting::set('institution_address', 'Ekiti State College of Technology, Jero Ekiti, Ekiti State');
-        Setting::set('institution_email', 'info@ekscotech.edu.ng');
+        Setting::set('institution_address', 'Ijero-Ekiti, Ekiti State, Nigeria');
+        Setting::set('institution_email', 'info@ekticotech.edu.ng');
         Setting::set('institution_phone', '08012345678');
-        Setting::set('institution_website', 'www.ekscotech.edu.ng');
+        Setting::set('institution_website', 'www.ekticotech.edu.ng');
         Setting::set('institution_tagline', 'Excellence in Technical Education');
         Setting::set('session_id', $session->id);
         Setting::set('max_course_units', 24);
         Setting::set('min_course_units', 12);
+
+        // System Settings (for admission and other features)
+        SystemSetting::set('admission_form_open', 'true');
+        SystemSetting::set('admission_require_application_fee', 'true');
+        SystemSetting::set('admission_application_fee_amount', '5000');
+        SystemSetting::set('course_registration_open', 'true');
+        SystemSetting::set('payment_open', '0');
 
         // Seed States and Local Governments
         $this->call([
