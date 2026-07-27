@@ -56,7 +56,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:localhost)",
       "Bash(pkill -f \"artisan serve\")",
-      "Bash(grep -E \"^.{3,6}\\\\s+\\\\|\")"
+      "Bash(grep -E \"^.{3,6}\\\\s+\\\\|\")",
+      "Bash(git reset *)"
     ]
   }
 }
