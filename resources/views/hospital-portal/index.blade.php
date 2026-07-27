@@ -81,9 +81,12 @@
 <div class="portal-header text-center">
     <div class="container">
         @php
+        $logoExists = file_exists(public_path('images/logo.png'));
         $logo = \App\Models\SystemSetting::get('institution_logo');
         @endphp
-        @if($logo)
+        @if($logoExists)
+            <img src="{{ asset('images/logo.png') }}?v={{ time() }}" alt="Logo" style="max-height: 70px; margin-bottom: 15px;">
+        @elseif($logo)
             <img src="{{ asset('storage/' . $logo) }}" alt="Logo" style="max-height: 70px; margin-bottom: 15px;">
         @else
             <i class="fas fa-hospital fa-4x mb-3" style="color: #247D57;"></i>

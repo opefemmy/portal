@@ -23,6 +23,8 @@
     <!-- Favicon / Institution Icon -->
     @php
     $institutionIcon = null;
+    $iconExists = false;
+    $publicIconExists = file_exists(public_path('images/icon.png'));
     try {
         $institutionIcon = Cache::remember('institution_icon', 60, fn() => \App\Models\SystemSetting::get('institution_icon'));
         $iconPath = $institutionIcon ? storage_path('app/public/' . $institutionIcon) : null;
@@ -31,11 +33,14 @@
         $iconExists = false;
     }
     @endphp
-    @if($institutionIcon && $iconExists)
+    @if($publicIconExists)
+        <link rel="icon" type="image/png" href="{{ asset('images/icon.png') }}?v={{ time() }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/icon.png') }}?v={{ time() }}">
+    @elseif($institutionIcon && $iconExists)
         <link rel="icon" type="image/png" href="{{ asset('storage/' . $institutionIcon) }}">
         <link rel="apple-touch-icon" href="{{ asset('storage/' . $institutionIcon) }}">
     @else
-        <link rel="icon" type="image/png" href="{{ asset('favicon.ico') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/icon.png') }}">
     @endif
 
     <!-- Bootstrap 5 CSS -->
