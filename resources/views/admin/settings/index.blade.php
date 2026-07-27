@@ -13,6 +13,7 @@ $institutionWebsite = SystemSetting::get('institution_website', '');
 $institutionTagline = SystemSetting::get('institution_tagline', '');
 $institutionLogo = SystemSetting::get('institution_logo');
 $institutionIcon = SystemSetting::get('institution_icon');
+$houseIcon = SystemSetting::get('house_icon');
 @endphp
 
 @section('content')
@@ -120,10 +121,6 @@ $institutionIcon = SystemSetting::get('institution_icon');
                                     </button>
                                 </form>
                             </div>
-                        @endif</i>
-                                    </button>
-                                </form>
-                            </div>
                         @endif
                     </div>
                 </div>
@@ -134,9 +131,8 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         <label class="form-label">House Icon (For Patient Portal Home - Recommended: 80x80px, PNG/JPG)</label>
                         <input type="file" name="house_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
                         @php
-                        $houseIcon = \App\Models\SystemSetting::get('house_icon');
-                        $houseIconPath = $houseIcon ? storage_path('app/public/' . $houseIcon) : null;
-                        $houseIconExists = $houseIconPath && file_exists($houseIconPath);
+                            $houseIconPath = $houseIcon ? storage_path('app/public/' . $houseIcon) : null;
+                            $houseIconExists = $houseIconPath && file_exists($houseIconPath);
                         @endphp
                         @if($houseIcon)
                             <div class="mt-2 d-flex align-items-center">
@@ -150,36 +146,6 @@ $institutionIcon = SystemSetting::get('institution_icon');
                                     <i class="fas fa-download"></i>
                                 </a>
                                 <form method="POST" action="{{ route('admin.settings.delete.house-icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
-                        <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
-                        @php
-                            $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
-                            $logoExists = $logoPath && file_exists($logoPath);
-                        @endphp
-                        @if($institutionLogo)
-                            <div class="mt-2 d-flex align-items-center">
-                                @if($logoExists)
-                                    <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
-                                    <span class="badge bg-success me-2">Current</span>
-                                @else
-                                    <span class="badge bg-danger me-2">File not found: {{ $institutionLogo }}</span>
-                                @endif
-                                <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                                <form method="POST" action="{{ route('admin.settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
