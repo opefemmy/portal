@@ -197,13 +197,13 @@ class ApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            // Personal Information
-            'surname' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
+            // Personal Information - All optional now
+            'surname' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:applicants,email',
-            'phone' => 'required|string|max:20',
-            'gender' => 'required|in:Male,Female,Other',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:Male,Female,Other',
             'date_of_birth' => 'nullable|date',
             'place_of_birth' => 'nullable|string|max:255',
             'religion' => 'nullable|string|max:100',
@@ -212,20 +212,20 @@ class ApplicationController extends Controller
             'disability' => 'nullable|in:none,physical,visual,hearing,other',
             'disability_details' => 'nullable|string|max:500',
 
-            // Address
-            'address' => 'required|string|max:500',
-            'state_id' => 'required|exists:states,id',
-            'lga_id' => 'required|exists:local_governments,id',
-            'nationality_id' => 'required|exists:nationalities,id',
+            // Address - All optional now
+            'address' => 'nullable|string|max:500',
+            'state_id' => 'nullable|exists:states,id',
+            'lga_id' => 'nullable|exists:local_governments,id',
+            'nationality_id' => 'nullable|exists:nationalities,id',
 
-            // Programme Selection
-            'school_id' => 'required|exists:schools,id',
-            'department_id' => 'required|exists:departments,id',
-            'programme_id' => 'required|exists:programmes,id',
-            'session_id' => 'required|exists:sessions,id',
-            'centre_id' => 'required|exists:admission_centres,id',
+            // Programme Selection - All optional now
+            'school_id' => 'nullable|exists:schools,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'session_id' => 'nullable|exists:sessions,id',
+            'centre_id' => 'nullable|exists:admission_centres,id',
 
-            // O-Level Results
+            // O-Level Results - All optional now
             'olevel1_subject1' => 'nullable|string|max:100',
             'olevel1_grade1' => 'nullable|string|max:5',
             'olevel1_subject2' => 'nullable|string|max:100',
@@ -388,12 +388,12 @@ class ApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            // Personal Information
-            'surname' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
+            // Personal Information - All optional now
+            'surname' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'phone' => 'required|string|max:20',
-            'gender' => 'required|in:Male,Female,Other',
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:Male,Female,Other',
             'date_of_birth' => 'nullable|date',
             'place_of_birth' => 'nullable|string|max:255',
             'religion' => 'nullable|string|max:100',
@@ -402,18 +402,18 @@ class ApplicationController extends Controller
             'disability' => 'nullable|in:none,physical,visual,hearing,other',
             'disability_details' => 'nullable|string|max:500',
 
-            // Address
-            'address' => 'required|string|max:500',
-            'state_id' => 'required|exists:states,id',
-            'lga_id' => 'required|exists:local_governments,id',
-            'nationality_id' => 'required|exists:nationalities,id',
+            // Address - All optional now
+            'address' => 'nullable|string|max:500',
+            'state_id' => 'nullable|exists:states,id',
+            'lga_id' => 'nullable|exists:local_governments,id',
+            'nationality_id' => 'nullable|exists:nationalities,id',
 
-            // Programme Selection
-            'school_id' => 'required|exists:schools,id',
-            'department_id' => 'required|exists:departments,id',
-            'programme_id' => 'required|exists:programmes,id',
-            'session_id' => 'required|exists:sessions,id',
-            'centre_id' => 'required|exists:admission_centres,id',
+            // Programme Selection - All optional now
+            'school_id' => 'nullable|exists:schools,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'session_id' => 'nullable|exists:sessions,id',
+            'centre_id' => 'nullable|exists:admission_centres,id',
 
             // O-Level Results
             'olevel1_subject1' => 'nullable|string|max:100',

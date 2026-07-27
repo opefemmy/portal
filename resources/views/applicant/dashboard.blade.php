@@ -124,21 +124,23 @@
                     @endif
                 </div>
 
-                {{-- Pay Now Button - For making new payments --}}
-                @if($applicant->status === 'admitted')
-                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
-                        <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
-                    </a>
-                @else
-                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
-                        <i class="fas fa-credit-card me-2"></i>Pay Now
+                {{-- Pay Now Button - Only show if payment not completed --}}
+                @if($applicant->payment_status !== 'completed')
+                    @if($applicant->status === 'admitted')
+                        <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
+                            <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                        </a>
+                    @else
+                        <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
+                            <i class="fas fa-credit-card me-2"></i>Pay Now
+                        </a>
+                    @endif
+
+                    {{-- Validate Button - For verifying uploaded payments --}}
+                    <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-check-circle me-1"></i>Validate Payment
                     </a>
                 @endif
-
-                {{-- Validate Button - For verifying uploaded payments --}}
-                <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-check-circle me-1"></i>Validate Payment
-                </a>
 
                 @if($applicant->payment_ref)
                 <hr>
