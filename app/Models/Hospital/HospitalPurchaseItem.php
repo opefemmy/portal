@@ -3,9 +3,12 @@
 namespace App\Models\Hospital;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HospitalPurchaseItem extends Model
 {
+    protected $table = 'hospital_purchase_items';
+
     protected $fillable = [
         'purchase_id', 'item_id', 'item_type', 'item_name', 'quantity', 'unit_cost',
         'total', 'batch_number', 'expiry_date'

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HospitalPurchaseItem extends Model
 {
+    protected $table = 'hospital_purchase_items';
+
     protected $fillable = [
         'purchase_id',
         'item_id',

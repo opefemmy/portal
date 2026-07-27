@@ -43,12 +43,12 @@ class HospitalVisit extends Model
 
     public function prescriptions()
     {
-        return $this->hasMany(HospitalPrescription::class, 'visit_id');
+        return $this->hasMany(ExternalPrescription::class, 'visit_id');
     }
 
     public function labOrders()
     {
-        return $this->hasMany(HospitalLabOrder::class, 'visit_id');
+        return $this->hasMany(ExternalLabOrder::class, 'visit_id');
     }
 
     public function doctor()

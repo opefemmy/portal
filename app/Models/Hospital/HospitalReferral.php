@@ -10,6 +10,8 @@ class HospitalReferral extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_referrals';
+
     protected $fillable = [
         'patient_id', 'referrer_id', 'referred_to_id', 'external_facility', 'reason',
         'notes', 'status', 'referred_at', 'accepted_at'

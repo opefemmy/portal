@@ -460,6 +460,7 @@ class DatabaseSeeder extends Seeder
             NationalitiesSeeder::class,
             ERPRolesSeeder::class,
             PaymentTypeSeeder::class,
+            HospitalModuleSeeder::class,
         ]);
     }
 }

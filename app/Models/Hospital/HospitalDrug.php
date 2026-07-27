@@ -11,6 +11,8 @@ class HospitalDrug extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_drugs';
+
     protected $fillable = [
         'category_id', 'name', 'generic_name', 'code', 'form', 'strength', 'unit',
         'cost_price', 'selling_price', 'reorder_level', 'current_stock', 'storage_location',

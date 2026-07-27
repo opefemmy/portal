@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HospitalPurchase extends Model
 {
+    protected $table = 'hospital_purchases';
+
     protected $fillable = [
         'purchase_number',
         'supplier_id',

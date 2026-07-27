@@ -10,6 +10,8 @@ class HospitalDrugBatch extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_drug_batches';
+
     protected $fillable = [
         'drug_id', 'batch_number', 'quantity', 'remaining_quantity', 'unit_cost',
         'manufacture_date', 'expiry_date', 'received_date', 'supplier_id', 'status'

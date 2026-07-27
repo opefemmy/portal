@@ -79,12 +79,12 @@ class ExternalPatient extends Model
 
     public function communications()
     {
-        return $this->hasMany(HospitalCommunication::class, 'patient_id');
+        return $this->hasMany(ExternalCommunication::class, 'patient_id');
     }
 
     public function prescriptions()
     {
-        return $this->hasManyThrough(HospitalPrescription::class, HospitalVisit::class);
+        return $this->hasManyThrough(ExternalPrescription::class, HospitalVisit::class);
     }
 
     public function service_requests()

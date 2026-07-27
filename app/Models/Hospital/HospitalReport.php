@@ -11,6 +11,8 @@ class HospitalReport extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_reports';
+
     protected $fillable = [
         'patient_id', 'generated_by', 'report_type', 'title', 'content', 'file_path', 'status', 'released_at'
     ];

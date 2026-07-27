@@ -10,6 +10,8 @@ class HospitalLabResult extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_lab_results';
+
     protected $fillable = [
         'lab_request_id', 'recorded_by', 'test_name', 'parameter', 'result', 'unit',
         'reference_range', 'status', 'notes', 'recorded_at'

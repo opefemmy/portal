@@ -10,6 +10,8 @@ class HospitalStoreItem extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_store_items';
+
     protected $fillable = [
         'name', 'code', 'category', 'unit', 'cost_price', 'selling_price',
         'current_stock', 'reorder_level', 'description', 'is_active'

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HospitalDrugCategory extends Model
 {
+    protected $table = 'hospital_drug_categories';
+
     protected $fillable = [
         'name',
         'code',

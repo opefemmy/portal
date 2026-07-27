@@ -10,6 +10,8 @@ class HospitalVitalSign extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_vital_signs';
+
     protected $fillable = [
         'patient_id', 'recorded_by', 'temperature', 'blood_pressure_systolic',
         'blood_pressure_diastolic', 'weight', 'height', 'pulse', 'oxygen_level',

@@ -12,6 +12,8 @@ class HospitalAppointment extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_appointments';
+
     protected $fillable = [
         'patient_id', 'staff_id', 'appointment_number', 'appointment_date',
         'status', 'symptoms', 'notes'

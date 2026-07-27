@@ -10,6 +10,8 @@ class HospitalInventoryMovement extends Model
 {
     public $timestamps = false;
 
+    protected $table = 'hospital_inventory_movements';
+
     protected $fillable = [
         'drug_id', 'batch_id', 'user_id', 'movement_type', 'quantity', 'quantity_before',
         'quantity_after', 'unit_cost', 'reference', 'notes', 'created_at'

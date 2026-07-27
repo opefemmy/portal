@@ -10,6 +10,8 @@ class HospitalAdmission extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_admissions';
+
     protected $fillable = [
         'patient_id', 'doctor_id', 'bed_id', 'admission_number', 'admission_date',
         'discharge_date', 'status', 'reason', 'diagnosis', 'treatment_plan',

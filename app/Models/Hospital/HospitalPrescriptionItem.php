@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HospitalPrescriptionItem extends Model
 {
+    protected $table = 'hospital_prescription_items';
+
     protected $fillable = [
         'prescription_id', 'drug_id', 'drug_name', 'dosage', 'frequency', 'duration',
         'quantity', 'instructions', 'is_dispensed'

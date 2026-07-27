@@ -12,6 +12,8 @@ class HospitalStaff extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_staff';
+
     protected $fillable = [
         'user_id', 'staff_number', 'first_name', 'last_name', 'staff_type',
         'phone', 'email', 'is_active', 'is_available'

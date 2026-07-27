@@ -10,6 +10,8 @@ class HospitalDiagnosis extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_diagnoses';
+
     protected $fillable = [
         'medical_record_id', 'patient_id', 'icd_code', 'diagnosis', 'description', 'severity', 'type'
     ];

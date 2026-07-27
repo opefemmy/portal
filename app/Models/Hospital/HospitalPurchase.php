@@ -12,6 +12,8 @@ class HospitalPurchase extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_purchases';
+
     protected $fillable = [
         'purchase_number', 'supplier_id', 'requested_by', 'approved_by', 'purchase_date',
         'expected_delivery', 'actual_delivery', 'subtotal', 'tax', 'total', 'status', 'notes'

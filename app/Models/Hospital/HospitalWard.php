@@ -11,6 +11,8 @@ class HospitalWard extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_wards';
+
     protected $fillable = [
         'name', 'type', 'total_beds', 'available_beds', 'daily_rate', 'description', 'is_active'
     ];

@@ -11,6 +11,8 @@ class HospitalLabRequest extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_lab_requests';
+
     protected $fillable = [
         'patient_id', 'doctor_id', 'medical_record_id', 'test_type', 'clinical_notes',
         'status', 'requested_at', 'completed_at', 'amount'

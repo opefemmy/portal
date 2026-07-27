@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HospitalStoreBatch extends Model
 {
+    protected $table = 'hospital_store_batches';
+
     protected $fillable = [
         'item_id',
         'batch_number',

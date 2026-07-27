@@ -10,6 +10,8 @@ class HospitalSupplier extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_suppliers';
+
     protected $fillable = [
         'name', 'code', 'contact_person', 'phone', 'email', 'address',
         'bank_name', 'account_number', 'account_name', 'notes', 'is_active'

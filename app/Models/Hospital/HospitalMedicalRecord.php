@@ -11,6 +11,8 @@ class HospitalMedicalRecord extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'hospital_medical_records';
+
     protected $fillable = [
         'patient_id', 'doctor_id', 'appointment_id', 'chief_complaint', 'symptoms',
         'examination_findings', 'doctor_notes', 'treatment_plan', 'consultation_date', 'visit_type'
