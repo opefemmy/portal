@@ -229,15 +229,18 @@ class PaymentGatewayController extends Controller
         $paymentType = PaymentType::where('code', 'APP_FORM')->first();
         $feeAmount = $paymentType ? $paymentType->amount : 5000;
 
-        // Create payment record - use nullable student_id
+        // Create payment record
         $reference = 'TEST-' . Str::upper(Str::random(10));
 
-        // Get student_id if user has a student record, otherwise null
+        // Get student_id if user has a student record, otherwise use a placeholder
         $student = \App\Models\Student::where('user_id', $user->id)->first();
+        $studentId = $student?->id;
 
+        // If no student record, create a placeholder or skip
+        // For applicants, we don't have a student record yet
         $payment = Payment::create([
-            'student_id' => $student?->id, // nullable
-            'fee_id' => $paymentType->id ?? 1,
+            'student_id' => $studentId,
+            'fee_id' => $paymentType?->id,
             'amount' => $request->amount,
             'reference' => $reference,
             'transaction_id' => $reference,
@@ -249,6 +252,7 @@ class PaymentGatewayController extends Controller
                 'test_mode' => true,
                 'simulated' => true,
                 'user_id' => $user->id,
+                'applicant_mode' => true,
             ]),
         ]);
 
