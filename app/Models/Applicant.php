@@ -70,6 +70,17 @@ class Applicant extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get full name (from applicant or user)
+     */
+    public function getFullNameAttribute()
+    {
+        if ($this->surname || $this->first_name) {
+            return trim(($this->surname ?? '') . ' ' . ($this->first_name ?? '') . ' ' . ($this->middle_name ?? ''));
+        }
+        return $this->user?->name ?? 'N/A';
+    }
+
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

@@ -191,7 +191,7 @@
 
         <div class="invoice-header">
             <div class="institution-logo">
-                <img src="{{ asset(\App\Models\Setting::get('institution_logo', 'images/logo.png')) }}" alt="Logo" onerror="this.src='{{ asset('images/logo-placeholder.png') }}'">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.style.display='none'">
             </div>
             <h1>{{ \App\Models\Setting::get('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti') }}</h1>
             <p><strong>{{ \App\Models\Setting::get('institution_address', 'Ijero-Ekiti, Ekiti State, Nigeria') }}</strong></p>
@@ -233,8 +233,8 @@
                     <td colspan="2" class="table-primary"><strong><i class="fas fa-user me-2"></i>PERSONAL INFORMATION</strong></td>
                 </tr>
                 <tr>
-                    <td width="50%"><strong>Surname:</strong> {{ $applicant->surname }}</td>
-                    <td width="50%"><strong>First Name:</strong> {{ $applicant->first_name }}</td>
+                    <td width="50%"><strong>Surname:</strong> {{ $applicant->surname ?? ($applicant->user?->name ? implode(' ', array_slice(explode(' ', $applicant->user->name), 1)) : 'N/A') }}</td>
+                    <td width="50%"><strong>First Name:</strong> {{ $applicant->first_name ?? ($applicant->user?->name ? explode(' ', $applicant->user->name)[0] : 'N/A') }}</td>
                 </tr>
                 @if($applicant->middle_name)
                 <tr>
