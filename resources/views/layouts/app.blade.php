@@ -445,6 +445,8 @@
         $institutionShortName = 'EKSCOTECH';
         $institutionLogo = null;
         $logoExists = false;
+        $publicLogoExists = file_exists(public_path('images/logo.png'));
+
         if (Schema::hasTable('system_settings')) {
             try {
                 // Cache for 60 minutes for better performance
@@ -464,7 +466,9 @@
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar p-0" id="sidebar">
                 <div class="text-center py-4">
-                    @if($institutionLogo && $logoExists)
+                    @if($publicLogoExists)
+                        <img src="{{ asset('images/logo.png') }}?v={{ time() }}" alt="Logo" class="mb-2" style="max-height: 50px;">
+                    @elseif($institutionLogo && $logoExists)
                         <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" class="mb-2" style="max-height: 50px;">
                     @else
                         <h4 class="text-white mb-0">

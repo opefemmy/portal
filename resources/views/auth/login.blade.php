@@ -12,6 +12,7 @@ $institutionShortName = 'EKSCOTECH';
 $institutionLogo = null;
 $institutionTagline = 'Staff, Student & Admin Login';
 $logoExists = false;
+$publicLogoExists = file_exists(public_path('images/logo.png'));
 
 if (Schema::hasTable('system_settings')) {
     try {
@@ -225,7 +226,9 @@ if (Schema::hasTable('system_settings')) {
 <div class="login-page">
     <div class="login-card">
         <div class="login-header">
-            @if($institutionLogo && $logoExists)
+            @if($publicLogoExists)
+                <img src="{{ asset('images/logo.png') }}?v={{ time() }}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">
+            @elseif($institutionLogo && $logoExists)
                 <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">
             @else
                 <i class="fas fa-university institution-logo"></i>
