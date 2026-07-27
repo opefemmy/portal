@@ -83,12 +83,12 @@ $houseIcon = SystemSetting::get('house_icon');
                                 <a href="{{ route('settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('settings.delete.logo') }}" class="d-inline" onsubmit="return confirm('Delete this logo?');">
+                                <a href="{{ route('settings.delete.logo') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this logo?')) { document.getElementById('delete-logo-form').submit(); }">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-logo-form" method="POST" action="{{ route('settings.delete.logo') }}" class="d-none">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
                                 </form>
                             </div>
                         @endif
@@ -113,12 +113,12 @@ $houseIcon = SystemSetting::get('house_icon');
                                 <a href="{{ route('settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('settings.delete.icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                <a href="{{ route('settings.delete.icon') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this icon?')) { document.getElementById('delete-icon-form').submit(); }">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-icon-form" method="POST" action="{{ route('settings.delete.icon') }}" class="d-none">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
                                 </form>
                             </div>
                         @endif
@@ -145,12 +145,12 @@ $houseIcon = SystemSetting::get('house_icon');
                                 <a href="{{ route('settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <form method="POST" action="{{ route('settings.delete.house-icon') }}" class="d-inline" onsubmit="return confirm('Delete this icon?');">
+                                <a href="{{ route('settings.delete.house-icon') }}" class="btn btn-sm btn-danger" title="Delete" onclick="event.preventDefault(); if(confirm('Delete this icon?')) { document.getElementById('delete-house-icon-form').submit(); }">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-house-icon-form" method="POST" action="{{ route('settings.delete.house-icon') }}" class="d-none">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
                                 </form>
                             </div>
                         @endif

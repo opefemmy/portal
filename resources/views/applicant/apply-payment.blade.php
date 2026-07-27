@@ -46,6 +46,14 @@
                         <label class="form-label">Payment Reference / Transaction ID *</label>
                         <input type="text" name="payment_ref" class="form-control" placeholder="Enter your payment reference" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount Paid (₦) *</label>
+                        <input type="number" name="amount" class="form-control" placeholder="Enter amount paid" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Date *</label>
+                        <input type="date" name="payment_date" class="form-control" required>
+                    </div>
                     <button type="submit" class="btn btn-success w-100 mb-3">
                         <i class="fas fa-check me-2"></i>Validate Payment
                     </button>

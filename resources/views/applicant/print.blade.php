@@ -35,7 +35,7 @@
             background-image: none;
         }
         .watermark-bg::before {
-            content: '{{ \App\Models\Setting::get("institution_name", "EKSCOTECH") }}';
+            content: '{{ \App\Models\Setting::get("institution_name", "Ekiti State College of Technology") }}';
             font-size: 120px;
             font-weight: bold;
             color: #1a237e;
@@ -151,7 +151,30 @@
                 print-color-adjust: exact;
             }
         }
-    </style>
+    <script>
+        function tryNextPassport(img, path2, path3) {
+            if (img.src.includes(path2) || img.dataset.tried2) {
+                // Try third path
+                if (img.dataset.tried2 && img.src.includes(path3)) {
+                    // All paths failed, show placeholder
+                    img.style.display = 'none';
+                    var frame = document.getElementById('passport-frame');
+                    var placeholder = document.createElement('span');
+                    placeholder.className = 'text-muted';
+                    placeholder.innerHTML = '<i class="fas fa-user fa-3x"></i>';
+                    if (!frame.querySelector('.text-muted')) {
+                        frame.appendChild(placeholder);
+                    }
+                    return;
+                }
+                img.dataset.tried2 = 'true';
+                img.src = '{{ asset("") }}' + path3;
+            } else {
+                // Try second path
+                img.src = '{{ asset("") }}' + path2;
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="watermark-bg"></div>
@@ -170,8 +193,8 @@
             <div class="institution-logo">
                 <img src="{{ asset(\App\Models\Setting::get('institution_logo', 'images/logo.png')) }}" alt="Logo" onerror="this.src='{{ asset('images/logo-placeholder.png') }}'">
             </div>
-            <h1>{{ \App\Models\Setting::get('institution_name', 'Institution Management Portal') }}</h1>
-            <p><strong>{{ \App\Models\Setting::get('institution_address', 'University Road, City, State, Nigeria') }}</strong></p>
+            <h1>{{ \App\Models\Setting::get('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti') }}</h1>
+            <p><strong>{{ \App\Models\Setting::get('institution_address', 'Ijero-Ekiti, Ekiti State, Nigeria') }}</strong></p>
             <p>Phone: {{ \App\Models\Setting::get('institution_phone', '+2348000000000') }} | Email: {{ \App\Models\Setting::get('institution_email', 'info@portal.edu') }}</p>
         </div>
 
@@ -181,9 +204,18 @@
 
         <div class="row mb-4">
             <div class="col-md-12 text-center">
-                <div class="photo-frame mx-auto mb-3">
+                <div class="photo-frame mx-auto mb-3" id="passport-frame">
+                    @php
+                        $passportPaths = [
+                            'storage/passports/' . $applicant->passport,
+                            'uploads/passports/' . $applicant->passport,
+                            'storage/app/public/passports/' . $applicant->passport,
+                        ];
+                    @endphp
                     @if($applicant->passport)
-                        <img src="{{ asset('uploads/passports/' . $applicant->passport) }}" alt="Passport" onerror="this.src='{{ asset('storage/passports/' . $applicant->passport) }}'" style="max-width: 150px; max-height: 180px; object-fit: cover;">
+                        <img id="passport-img" src="{{ asset($passportPaths[0]) }}" alt="Passport"
+                             onerror="tryNextPassport(this, '{{ $passportPaths[1] }}', '{{ $passportPaths[2] }}')"
+                             style="max-width: 150px; max-height: 180px; object-fit: cover;">
                     @else
                         <span class="text-muted"><i class="fas fa-user fa-3x"></i></span>
                     @endif
@@ -384,7 +416,7 @@
 
         <div class="text-center mt-4 text-muted" style="font-size: 10pt;">
             <p><strong>Generated on:</strong> {{ date('d M Y, h:i A') }}</p>
-            <p>This is a computer-generated document. {{ \App\Models\Setting::get('institution_name', 'Institution Management Portal') }}</p>
+            <p>This is a computer-generated document. {{ \App\Models\Setting::get('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti') }}</p>
         </div>
     </div>
 </body>
