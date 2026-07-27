@@ -224,6 +224,17 @@
                 <span class="badge badge-status bg-{{ $applicant->status === 'admitted' ? 'success' : ($applicant->status === 'pending' ? 'warning' : 'secondary') }}">
                     {{ strtoupper($applicant->status) }}
                 </span>
+                @if($applicant->payment_ref || $applicant->payment_transaction_id)
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-receipt me-1"></i>
+                        Payment Ref: <strong>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id }}</strong>
+                        @if($applicant->payment_amount)
+                            | Amount: ₦{{ number_format($applicant->payment_amount, 2) }}
+                        @endif
+                    </small>
+                </div>
+                @endif
             </div>
         </div>
 
