@@ -67,10 +67,18 @@ $institutionIcon = SystemSetting::get('institution_icon');
                     <div class="mb-3">
                         <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
                         <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
+                        @php
+                            $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
+                            $logoExists = $logoPath && file_exists($logoPath);
+                        @endphp
                         @if($institutionLogo)
                             <div class="mt-2 d-flex align-items-center">
-                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
-                                <span class="badge bg-success me-2">Current</span>
+                                @if($logoExists)
+                                    <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
+                                    <span class="badge bg-success me-2">Current</span>
+                                @else
+                                    <span class="badge bg-danger me-2">File not found: {{ $institutionLogo }}</span>
+                                @endif
                                 <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -89,10 +97,18 @@ $institutionIcon = SystemSetting::get('institution_icon');
                     <div class="mb-3">
                         <label class="form-label">Favicon / Icon (Recommended: 32x32px, PNG/JPG/ICO)</label>
                         <input type="file" name="institution_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/ico,image/svg+xml,image/webp">
+                        @php
+                            $iconPath = $institutionIcon ? storage_path('app/public/' . $institutionIcon) : null;
+                            $iconExists = $iconPath && file_exists($iconPath);
+                        @endphp
                         @if($institutionIcon)
                             <div class="mt-2 d-flex align-items-center">
-                                <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;" class="me-2">
-                                <span class="badge bg-success me-2">Current</span>
+                                @if($iconExists)
+                                    <img src="{{ asset('storage/' . $institutionIcon) }}" alt="Icon" style="max-height: 32px;" class="me-2">
+                                    <span class="badge bg-success me-2">Current</span>
+                                @else
+                                    <span class="badge bg-danger me-2">File not found: {{ $institutionIcon }}</span>
+                                @endif
                                 <a href="{{ route('admin.settings.download.icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -101,6 +117,10 @@ $institutionIcon = SystemSetting::get('institution_icon');
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                         <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        @endif</i>
                                     </button>
                                 </form>
                             </div>
@@ -115,11 +135,17 @@ $institutionIcon = SystemSetting::get('institution_icon');
                         <input type="file" name="house_icon" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
                         @php
                         $houseIcon = \App\Models\SystemSetting::get('house_icon');
+                        $houseIconPath = $houseIcon ? storage_path('app/public/' . $houseIcon) : null;
+                        $houseIconExists = $houseIconPath && file_exists($houseIconPath);
                         @endphp
                         @if($houseIcon)
                             <div class="mt-2 d-flex align-items-center">
-                                <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;" class="me-2">
-                                <span class="badge bg-success me-2">Current</span>
+                                @if($houseIconExists)
+                                    <img src="{{ asset('storage/' . $houseIcon) }}" alt="House Icon" style="max-height: 40px;" class="me-2">
+                                    <span class="badge bg-success me-2">Current</span>
+                                @else
+                                    <span class="badge bg-danger me-2">File not found: {{ $houseIcon }}</span>
+                                @endif
                                 <a href="{{ route('admin.settings.download.house-icon') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -138,10 +164,18 @@ $institutionIcon = SystemSetting::get('institution_icon');
                     <div class="mb-3">
                         <label class="form-label">Logo (Recommended: 200x60px, PNG/JPG)</label>
                         <input type="file" name="institution_logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
+                        @php
+                            $logoPath = $institutionLogo ? storage_path('app/public/' . $institutionLogo) : null;
+                            $logoExists = $logoPath && file_exists($logoPath);
+                        @endphp
                         @if($institutionLogo)
                             <div class="mt-2 d-flex align-items-center">
-                                <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
-                                <span class="badge bg-success me-2">Current</span>
+                                @if($logoExists)
+                                    <img src="{{ asset('storage/' . $institutionLogo) }}" alt="Logo" style="max-height: 60px;" class="me-2">
+                                    <span class="badge bg-success me-2">Current</span>
+                                @else
+                                    <span class="badge bg-danger me-2">File not found: {{ $institutionLogo }}</span>
+                                @endif
                                 <a href="{{ route('admin.settings.download.logo') }}" class="btn btn-sm btn-primary me-1" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
