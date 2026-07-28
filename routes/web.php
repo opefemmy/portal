@@ -168,7 +168,7 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [ApplicationController::class, 'dashboard'])->name('dashboard');
         Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('apply');
-        Route::post('/apply', [ApplicationController::class, 'submitApplication']);
+        Route::post('/apply', [ApplicationController::class, 'submitApplication'])->name('apply.submit');
 
         // Payment routes - application fee
         Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])->name('apply.fee');
