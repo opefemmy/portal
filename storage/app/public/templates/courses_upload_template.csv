@@ -1,0 +1,7 @@
+code,title,units,semester,school_code,department_code,programme_code,level,description
+CSC101,Introduction to Computer Science,3,first,Science,Computer Science,Computer Engineering,100,Fundamentals of computing
+CSC102,Data Structures and Algorithms,3,second,Science,Computer Science,Computer Engineering,100,Basic data structures
+MTH101,Calculus I,3,first,Science,Computer Science,Computer Engineering,100,Introduction to calculus
+MTH102,Calculus II,3,second,Science,Computer Science,Computer Engineering,100,Advanced calculus
+PHY101,General Physics I,3,first,Science,Computer Science,Computer Engineering,100,Mechanics and heat
+PHY102,General Physics II,3,second,Science,Computer Science,Computer Engineering,100,Electricity and magnetism
