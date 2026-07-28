@@ -313,9 +313,15 @@ class ApplicationController extends Controller
 
     public function printApplication()
     {
-        $applicant = Applicant::where('user_id', auth()->id())->first();
+        $userId = auth()->id();
+
+        // Debug: Log the user ID
+        \Log::info('Print Application - User ID: ' . $userId);
+
+        $applicant = Applicant::where('user_id', $userId)->first();
 
         if (!$applicant) {
+            \Log::warning('Print Application - No applicant found for user: ' . $userId);
             return redirect()->route('applicant.dashboard')
                 ->with('error', 'No application found. Please submit an application first.');
         }
@@ -327,6 +333,8 @@ class ApplicationController extends Controller
                 ->where('payment_status', 'completed')
                 ->first();
         }
+
+        \Log::info('Print Application - Applicant found: ' . $applicant->application_number);
 
         return view('applicant.print', compact('applicant', 'externalPayment'));
     }

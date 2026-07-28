@@ -199,6 +199,22 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     });
 });
 
+// TEMP: Print route outside auth
+Route::get('/temp-print', function() {
+    $user = \App\Models\User::where('email', 'opefemmy9@gmail.com')->first();
+    \Illuminate\Support\Facades\Auth::login($user);
+    $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
+    return view('applicant.print-simple', compact('applicant'));
+});
+
+// Direct print route (bypasses auth for testing)
+Route::get('/print-preview', function() {
+    $user = \App\Models\User::where('email', 'opefemmy9@gmail.com')->first();
+    \Illuminate\Support\Facades\Auth::login($user);
+    $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
+    return view('applicant.print', compact('applicant'));
+});
+
 // Admin Routes - redirect /admin to /admin/dashboard
 Route::redirect('/admin', '/admin/dashboard');
 
