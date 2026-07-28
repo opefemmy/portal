@@ -320,7 +320,15 @@ class ApplicationController extends Controller
                 ->with('error', 'No application found. Please submit an application first.');
         }
 
-        return view('applicant.print', compact('applicant'));
+        // Get external payment if exists
+        $externalPayment = null;
+        if ($applicant) {
+            $externalPayment = \App\Models\ExternalPayment::where('applicant_id', $applicant->id)
+                ->where('payment_status', 'completed')
+                ->first();
+        }
+
+        return view('applicant.print', compact('applicant', 'externalPayment'));
     }
 
     public function checkStatus(Request $request)

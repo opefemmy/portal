@@ -228,18 +228,22 @@
         <div class="row mb-4">
             <div class="col-md-12 text-center">
                 <div class="photo-frame mx-auto mb-3" id="passport-frame">
-                    @php
-                        $passportPaths = [
-                            'storage/passports/' . $applicant->passport,
-                            'storage/app/public/passports/' . $applicant->passport,
-                            'uploads/passports/' . $applicant->passport,
-                            'public/storage/passports/' . $applicant->passport,
-                        ];
-                    @endphp
                     @if($applicant->passport)
-                        <img id="passport-img" src="{{ asset($passportPaths[0]) }}" alt="Passport"
-                             onerror="tryNextPassport(this, '{{ $passportPaths[1] }}', '{{ $passportPaths[2] }}')"
-                             style="max-width: 150px; max-height: 180px; object-fit: cover;">
+                        @php
+                        $passportUrl = '';
+                        if (file_exists(public_path('storage/passports/' . $applicant->passport))) {
+                            $passportUrl = 'storage/passports/' . $applicant->passport;
+                        } elseif (file_exists(public_path('storage/app/public/passports/' . $applicant->passport))) {
+                            $passportUrl = 'storage/app/public/passports/' . $applicant->passport;
+                        } elseif (file_exists(public_path('uploads/passports/' . $applicant->passport))) {
+                            $passportUrl = 'uploads/passports/' . $applicant->passport;
+                        }
+                        @endphp
+                        @if($passportUrl)
+                            <img id="passport-img" src="{{ asset($passportUrl) }}" alt="Passport" style="max-width: 150px; max-height: 180px; object-fit: cover;">
+                        @else
+                            <span class="text-muted"><i class="fas fa-user fa-3x"></i></span>
+                        @endif
                     @else
                         <span class="text-muted"><i class="fas fa-user fa-3x"></i></span>
                     @endif
@@ -248,16 +252,16 @@
                 <span class="badge badge-status bg-{{ $applicant->status === 'admitted' ? 'success' : ($applicant->status === 'pending' ? 'warning' : 'secondary') }}">
                     {{ strtoupper($applicant->status) }}
                 </span>
-                @if($applicant->payment_ref || $applicant->payment_transaction_id)
+                @if($applicant->payment_ref || $applicant->payment_transaction_id || (isset($externalPayment) && $externalPayment))
                 <div class="mt-2">
                     <small class="text-muted">
                         <i class="fas fa-receipt me-1"></i>
-                        Payment Ref: <strong>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id }}</strong>
-                        @if($applicant->payment_amount)
-                            | Amount: ₦{{ number_format($applicant->payment_amount, 2) }}
+                        Payment Ref: <strong>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? ($externalPayment->transaction_id ?? 'N/A') }}</strong>
+                        @if($applicant->payment_amount ?? $externalPayment->amount)
+                            | Amount: ₦{{ number_format($applicant->payment_amount ?? $externalPayment->amount, 2) }}
                         @endif
-                        @if($applicant->payment_date)
-                            | Date Paid: {{ \Carbon\Carbon::parse($applicant->payment_date)->format('d M, Y') }}
+                        @if($applicant->payment_date ?? $externalPayment->payment_date)
+                            | Date Paid: {{ \Carbon\Carbon::parse($applicant->payment_date ?? $externalPayment->payment_date)->format('d M, Y') }}
                         @endif
                     </small>
                 </div>
