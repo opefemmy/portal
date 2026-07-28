@@ -107,6 +107,20 @@
                     @endif
                 </td>
             </tr>
+            @if($applicant->payment_status === 'completed')
+            <tr>
+                <th>Payment Reference:</th>
+                <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Amount Paid:</th>
+                <td>{{ $applicant->payment_amount ? number_format($applicant->payment_amount, 2) : 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Date Paid:</th>
+                <td>{{ $applicant->payment_date ? \Carbon\Carbon::parse($applicant->payment_date)->format('d M, Y') : 'N/A' }}</td>
+            </tr>
+            @endif
         </table>
     </div>
 </div>

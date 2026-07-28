@@ -232,6 +232,9 @@
                         @if($applicant->payment_amount)
                             | Amount: ₦{{ number_format($applicant->payment_amount, 2) }}
                         @endif
+                        @if($applicant->payment_date)
+                            | Date Paid: {{ \Carbon\Carbon::parse($applicant->payment_date)->format('d M, Y') }}
+                        @endif
                     </small>
                 </div>
                 @endif
