@@ -239,6 +239,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/hospital-services/{service}/toggle', [\App\Http\Controllers\Admin\HospitalServiceController::class, 'toggleStatus'])->name('hospital-services.toggle');
 
     // Course Management
+    Route::get('/courses/upload', [CourseController::class, 'uploadForm'])->name('courses.upload.form');
+    Route::post('/courses/upload', [CourseController::class, 'upload'])->name('courses.upload');
     Route::resource('courses', CourseController::class);
 
     // Fee Management

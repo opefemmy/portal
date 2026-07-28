@@ -5,9 +5,14 @@
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4>Courses</h4>
-    <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Add Course
-    </a>
+    <div>
+        <a href="{{ route('admin.courses.upload.form') }}" class="btn btn-success">
+            <i class="fas fa-upload me-2"></i>Upload Courses
+        </a>
+        <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add Course
+        </a>
+    </div>
 </div>
 
 <div class="card">
