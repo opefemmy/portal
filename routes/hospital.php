@@ -16,6 +16,7 @@ Route::prefix('patient')->name('patient.')->group(function () {
     Route::get('/login', [ExternalPortalController::class, 'showLogin'])->name('login');
     Route::post('/login', [ExternalPortalController::class, 'login']);
     Route::post('/logout', [ExternalPortalController::class, 'logout'])->name('logout');
+    Route::get('/logout', [ExternalPortalController::class, 'logout'])->name('logout.get');
 
     // Protected routes
     Route::middleware('patient.portal')->group(function () {
