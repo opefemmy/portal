@@ -8,7 +8,7 @@
     <p class="text-muted">Fill all fields correctly. Fields marked with * are required.</p>
 </div>
 
-<form method="POST" action="{{ route('applicant.submit') }}" enctype="multipart/form-data" id="applicationForm">
+<form method="POST" action="{{ route('applicant.apply.submit') }}" enctype="multipart/form-data" id="applicationForm">
     @csrf
 
     <!-- Personal Information -->
