@@ -245,9 +245,9 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? 'N/A' }}</td>
-                    <td>₦{{ number_format($applicant->payment_amount ?? 0, 2) }}</td>
-                    <td>{{ $applicant->payment_date ? \Carbon\Carbon::parse($applicant->payment_date)->format('d M Y') : 'N/A' }}</td>
+                    <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? ($externalPayment->transaction_id ?? 'N/A') }}</td>
+                    <td>₦{{ number_format($applicant->payment_amount ?? ($externalPayment->amount ?? 0), 2) }}</td>
+                    <td>{{ ($applicant->payment_date ?? ($externalPayment->payment_date ?? null)) ? \Carbon\Carbon::parse($applicant->payment_date ?? $externalPayment->payment_date)->format('d M Y') : 'N/A' }}</td>
                     <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Verified</span></td>
                 </tr>
             </tbody>

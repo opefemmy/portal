@@ -13,7 +13,7 @@ use App\Models\LocalGovernment;
 use App\Models\SystemSetting;
 use App\Models\Student;
 use App\Models\User;
-use App\Models\Role;
+use App\Models\ExternalPayment;
 use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +28,16 @@ class ApplicationController extends Controller
     public function dashboard()
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
-        return view('applicant.dashboard', compact('applicant'));
+
+        // Get external payment if applicant exists
+        $externalPayment = null;
+        if ($applicant) {
+            $externalPayment = ExternalPayment::where('applicant_id', $applicant->id)
+                ->where('payment_status', 'completed')
+                ->first();
+        }
+
+        return view('applicant.dashboard', compact('applicant', 'externalPayment'));
     }
 
     public function showApplicationForm()
@@ -286,12 +295,20 @@ class ApplicationController extends Controller
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
+        // Get external payment if applicant exists
+        $externalPayment = null;
+        if ($applicant) {
+            $externalPayment = ExternalPayment::where('applicant_id', $applicant->id)
+                ->where('payment_status', 'completed')
+                ->first();
+        }
+
         // If no application exists, show a friendly message instead of 404
         if (!$applicant) {
             return view('applicant.application', compact('applicant'));
         }
 
-        return view('applicant.application', compact('applicant'));
+        return view('applicant.application', compact('applicant', 'externalPayment'));
     }
 
     public function printApplication()
