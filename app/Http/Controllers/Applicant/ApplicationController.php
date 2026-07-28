@@ -336,7 +336,7 @@ class ApplicationController extends Controller
 
         \Log::info('Print Application - Applicant found: ' . $applicant->application_number);
 
-        return view('applicant.print', compact('applicant', 'externalPayment'));
+        return view('applicant.print-simple', compact('applicant'));
     }
 
     public function checkStatus(Request $request)
