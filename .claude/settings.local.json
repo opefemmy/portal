@@ -57,7 +57,8 @@
       "WebFetch(domain:localhost)",
       "Bash(pkill -f \"artisan serve\")",
       "Bash(grep -E \"^.{3,6}\\\\s+\\\\|\")",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(findstr /i \"print\")"
     ]
   }
 }

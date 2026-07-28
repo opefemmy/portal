@@ -196,6 +196,8 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
         Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');
         Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
+
+        // Debug route (no auth required)
     });
 });
 
