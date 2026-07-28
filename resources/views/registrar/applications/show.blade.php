@@ -110,7 +110,22 @@
                     @if($applicant->passport)
                     <div class="col-md-3 text-center">
                         <p>Passport</p>
-                        <img src="{{ asset('storage/passports/' . $applicant->passport) }}" class="img-thumbnail" style="max-width: 100px;">
+                        @php
+                            $passportPath = '';
+                            $passportFile = $applicant->passport;
+                            if (file_exists(public_path('storage/passports/' . $passportFile))) {
+                                $passportPath = 'storage/passports/' . $passportFile;
+                            } elseif (file_exists(public_path('storage/app/public/passports/' . $passportFile))) {
+                                $passportPath = 'storage/app/public/passports/' . $passportFile;
+                            } elseif (file_exists(public_path('uploads/passports/' . $passportFile))) {
+                                $passportPath = 'uploads/passports/' . $passportFile;
+                            }
+                        @endphp
+                        @if($passportPath)
+                            <img src="{{ asset($passportPath) }}" class="img-thumbnail" style="max-width: 100px;">
+                        @else
+                            <img src="{{ asset('storage/passports/' . $passportFile) }}" class="img-thumbnail" style="max-width: 100px;" onerror="this.style.display='none'">
+                        @endif
                     </div>
                     @endif
                     @if($applicant->olevel_certificate)

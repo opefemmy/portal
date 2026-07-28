@@ -521,7 +521,22 @@
         <div class="card-body">
             @if($applicant->passport)
             <div class="mb-2">
-                <img src="{{ asset('storage/passports/' . $applicant->passport) }}" alt="Passport" style="max-width: 150px;">
+                @php
+                    $passportPath = '';
+                    $passportFile = $applicant->passport;
+                    if (file_exists(public_path('storage/passports/' . $passportFile))) {
+                        $passportPath = 'storage/passports/' . $passportFile;
+                    } elseif (file_exists(public_path('storage/app/public/passports/' . $passportFile))) {
+                        $passportPath = 'storage/app/public/passports/' . $passportFile;
+                    } elseif (file_exists(public_path('uploads/passports/' . $passportFile))) {
+                        $passportPath = 'uploads/passports/' . $passportFile;
+                    }
+                @endphp
+                @if($passportPath)
+                    <img src="{{ asset($passportPath) }}" alt="Passport" style="max-width: 150px;">
+                @else
+                    <img src="{{ asset('storage/passports/' . $passportFile) }}" alt="Passport" style="max-width: 150px;" onerror="this.style.display='none'">
+                @endif
                 <p class="text-muted small">Current passport photo</p>
             </div>
             @endif

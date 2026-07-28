@@ -35,12 +35,22 @@
             background-image: none;
         }
         .watermark-bg::before {
-            content: '{{ \App\Models\Setting::get("institution_name", "Ekiti State College of Technology") }}';
+            content: '';
             font-size: 120px;
             font-weight: bold;
             color: #1a237e;
             transform: rotate(-30deg);
             white-space: nowrap;
+        }
+        .watermark-img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            width: 600px;
+            opacity: 0.08;
+            z-index: -1;
+            pointer-events: none;
         }
         .invoice-header {
             text-align: center;
@@ -177,7 +187,13 @@
     </script>
 </head>
 <body>
+    @php
+        $watermarkLogo = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_LOGO);
+    @endphp
     <div class="watermark-bg"></div>
+    @if($watermarkLogo)
+        <img src="{{ asset($watermarkLogo) }}" class="watermark-img" alt="Watermark">
+    @endif
 
     <div class="print-container mt-4">
         <div class="no-print mb-3 text-end">
@@ -191,11 +207,18 @@
 
         <div class="invoice-header">
             <div class="institution-logo">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.style.display='none'">
+                @php
+                    $institutionLogo = \App\Models\SystemSetting::getInstitutionLogo();
+                @endphp
+                @if($institutionLogo)
+                    <img src="{{ asset($institutionLogo) }}" alt="Logo" onerror="this.style.display='none'">
+                @else
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.style.display='none'">
+                @endif
             </div>
-            <h1>{{ \App\Models\Setting::get('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti') }}</h1>
-            <p><strong>{{ \App\Models\Setting::get('institution_address', 'Ijero-Ekiti, Ekiti State, Nigeria') }}</strong></p>
-            <p>Phone: {{ \App\Models\Setting::get('institution_phone', '+2348000000000') }} | Email: {{ \App\Models\Setting::get('institution_email', 'info@portal.edu') }}</p>
+            <h1>{{ \App\Models\SystemSetting::getInstitutionName() }}</h1>
+            <p><strong>{{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_ADDRESS, 'Ijero-Ekiti, Ekiti State, Nigeria') }}</strong></p>
+            <p>Phone: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE, '+2348000000000') }} | Email: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL, 'info@portal.edu') }}</p>
         </div>
 
         <h3 class="text-center mb-4" style="color: var(--primary);">
@@ -208,8 +231,9 @@
                     @php
                         $passportPaths = [
                             'storage/passports/' . $applicant->passport,
-                            'uploads/passports/' . $applicant->passport,
                             'storage/app/public/passports/' . $applicant->passport,
+                            'uploads/passports/' . $applicant->passport,
+                            'public/storage/passports/' . $applicant->passport,
                         ];
                     @endphp
                     @if($applicant->passport)
