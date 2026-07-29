@@ -384,107 +384,128 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Service type change - Simple and reliable
-    $('#service_type_id').change(function() {
-        var selectedValue = $(this).val();
-        var selectedText = $(this).find('option:selected').text();
-        var selectedOption = $(this).find('option:selected');
+document.addEventListener('DOMContentLoaded', function() {
+    // Service type change - Using vanilla JavaScript for reliability
+    var serviceSelect = document.getElementById('service_type_id');
+    var serviceAmountInput = document.getElementById('service_amount');
+    var serviceInfo = document.getElementById('serviceInfo');
+    var serviceInfoText = document.getElementById('serviceInfoText');
+    var submitBtn = document.getElementById('submitBtn');
+    var appointmentFields = document.getElementById('appointmentFields');
 
-        // Get amount from data attribute
-        var amount = selectedOption.attr('data-amount');
-        var requiresAppointment = selectedOption.attr('data-requires-appointment');
+    if (serviceSelect) {
+        serviceSelect.addEventListener('change', function() {
+            var selectedValue = this.value;
+            var selectedOption = this.options[this.selectedIndex];
+            var selectedText = selectedOption.text;
+            var amount = selectedOption.getAttribute('data-amount');
+            var requiresAppointment = selectedOption.getAttribute('data-requires-appointment');
 
-        if (selectedValue && amount) {
-            // Format amount
-            var amountNum = parseFloat(amount);
-            if (!isNaN(amountNum)) {
-                $('#service_amount').val('₦' + amountNum.toLocaleString());
-                $('#serviceInfo').show();
-                $('#serviceInfoText').text(selectedText + ' - ₦' + amountNum.toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
-                $('#submitBtn').prop('disabled', false);
+            console.log('Selected:', selectedText, 'Amount:', amount);
+
+            if (selectedValue && amount) {
+                // Format amount
+                var amountNum = parseFloat(amount);
+                if (!isNaN(amountNum)) {
+                    serviceAmountInput.value = '₦' + amountNum.toLocaleString();
+                    serviceInfo.style.display = 'block';
+                    serviceInfoText.textContent = selectedText + ' - ₦' + amountNum.toLocaleString() + '. Click Submit to generate invoice and proceed to payment.';
+                    submitBtn.disabled = false;
+                } else {
+                    serviceAmountInput.value = 'Amount: ' + amount;
+                    serviceInfo.style.display = 'block';
+                    serviceInfoText.textContent = selectedText + ' - ' + amount + '. Click Submit to generate invoice.';
+                    submitBtn.disabled = false;
+                }
             } else {
-                $('#service_amount').val('Amount: ' + amount);
-                $('#serviceInfo').show();
-                $('#serviceInfoText').text(selectedText + ' - ' + amount + '. Click Submit to generate invoice.');
-                $('#submitBtn').prop('disabled', false);
+                serviceAmountInput.value = '';
+                serviceInfo.style.display = 'none';
+                submitBtn.disabled = true;
             }
-        } else {
-            $('#service_amount').val('');
-            $('#serviceInfo').hide();
-            $('#submitBtn').prop('disabled', true);
-        }
 
-        // Show/hide appointment fields
-        if (requiresAppointment === '1') {
-            $('#appointmentFields').show();
-        } else {
-            $('#appointmentFields').hide();
-        }
-    });
+            // Show/hide appointment fields
+            if (appointmentFields) {
+                if (requiresAppointment === '1') {
+                    appointmentFields.style.display = 'flex';
+                } else {
+                    appointmentFields.style.display = 'none';
+                }
+            }
+        });
+    }
 
     // Submit service request
-    $('#serviceRequestForm').submit(function(e) {
-        e.preventDefault();
+    var serviceForm = document.getElementById('serviceRequestForm');
+    if (serviceForm) {
+        serviceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        var selectedOption = $('#service_type_id').find('option:selected');
-        var serviceName = selectedOption.text().trim();
-        var amount = selectedOption.attr('data-amount');
+            var selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            var serviceName = selectedOption.text.trim();
+            var amount = selectedOption.getAttribute('data-amount');
 
-        // Confirm before submitting - handle if amount is undefined
-        var confirmMsg = 'You are about to request: ' + serviceName;
-        if (amount) {
-            confirmMsg += '\nAmount: ₦' + parseFloat(amount).toLocaleString();
-        }
-        confirmMsg += '\n\nClick OK to generate invoice and proceed to payment.';
-
-        if (!confirm(confirmMsg)) {
-            return;
-        }
-
-        $.ajax({
-            url: '{{ route("patient-portal.request-service") }}',
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(response) {
-                alert('Service request submitted! Request Code: ' + response.request_code);
-                location.reload();
-            },
-            error: function(xhr) {
-                alert('Error: ' + xhr.responseJSON.message);
+            // Confirm before submitting
+            var confirmMsg = 'You are about to request: ' + serviceName;
+            if (amount) {
+                confirmMsg += '\nAmount: ₦' + parseFloat(amount).toLocaleString();
             }
+            confirmMsg += '\n\nClick OK to generate invoice and proceed to payment.';
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            // Get form data
+            var formData = new FormData(serviceForm);
+
+            fetch('{{ route("patient-portal.request-service") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Service request submitted! Request Code: ' + data.request_code);
+                location.reload();
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
         });
-    });
+    }
 
     // Validate payment
-    $('#validatePaymentForm').submit(function(e) {
-        e.preventDefault();
+    var validateForm = document.getElementById('validatePaymentForm');
+    var validationResult = document.getElementById('validationResult');
+    if (validateForm && validationResult) {
+        validateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        $.ajax({
-            url: '{{ route("patient-portal.validate-payment-portal") }}',
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(response) {
-                if (response.success) {
-                    const p = response.payment;
-                    $('#validationResult').html(`
-                        <div class="alert alert-success">
-                            <strong>Payment Verified!</strong><br>
-                            Reference: ${p.reference}<br>
-                            Service: ${p.service_name}<br>
-                            Amount: ₦${p.total_amount}<br>
-                            Status: ${p.status}
-                        </div>
-                    `);
-                } else {
-                    $('#validationResult').html('<div class="alert alert-danger">' + response.message + '</div>');
+            var formData = new FormData(validateForm);
+
+            fetch('{{ route("patient-portal.validate-payment-portal") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
-            },
-            error: function(xhr) {
-                $('#validationResult').html('<div class="alert alert-danger">Error validating payment</div>');
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var p = data.payment;
+                    validationResult.innerHTML = '<div class="alert alert-success"><strong>Payment Verified!</strong><br>Reference: ' + p.reference + '<br>Service: ' + p.service_name + '<br>Amount: ₦' + p.total_amount + '<br>Status: ' + p.status + '</div>';
+                } else {
+                    validationResult.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+                }
+            })
+            .catch(error => {
+                validationResult.innerHTML = '<div class="alert alert-danger">Error validating payment</div>';
+            });
         });
-    });
+    }
 });
 </script>
 </div>
