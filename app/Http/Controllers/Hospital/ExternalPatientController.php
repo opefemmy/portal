@@ -403,6 +403,9 @@ class ExternalPatientController extends Controller
         $patientId = session('hospital_patient_id');
 
         if (!$patientId) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Session expired. Please login again.'], 401);
+            }
             return redirect()->route('patient-portal.login');
         }
 

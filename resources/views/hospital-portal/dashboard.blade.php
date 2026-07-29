@@ -465,12 +465,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401) {
+                    // Session expired - redirect to login
+                    alert('Your session has expired. Please login again.');
+                    window.location.href = '{{ route("patient-portal.login") }}';
+                    return;
+                }
+                return response.json();
+            })
             .then(data => {
-                alert('Service request submitted! Request Code: ' + data.request_code);
-                location.reload();
+                if (data) {
+                    alert('Service request submitted! Request Code: ' + data.request_code);
+                    location.reload();
+                }
             })
             .catch(error => {
+                console.error('Error:', error);
                 alert('Error: ' + error.message);
             });
         });
