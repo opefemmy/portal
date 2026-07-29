@@ -547,7 +547,7 @@ class ExternalPatientController extends Controller
     public function logoutPortal()
     {
         session()->forget(['hospital_patient_id', 'hospital_patient_code']);
-        return redirect()->route('patient-portal.index')
+        return redirect('/')
             ->with('success', 'You have been logged out successfully.');
     }
 

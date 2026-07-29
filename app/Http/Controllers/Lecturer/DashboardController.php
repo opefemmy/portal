@@ -55,10 +55,15 @@ class DashboardController extends Controller
 
     public function courses()
     {
-        $assignments = CourseAssignment::where('lecturer_id', auth()->id())
-            ->with(['course', 'course.department', 'session'])
-            ->get();
-        return view('lecturer.courses', compact('assignments'));
+        try {
+            $assignments = CourseAssignment::where('lecturer_id', auth()->id())
+                ->with(['course', 'course.department', 'session'])
+                ->get();
+            return view('lecturer.courses', compact('assignments'));
+        } catch (\Exception $e) {
+            \Log::error('Lecturer courses error: ' . $e->getMessage());
+            return view('lecturer.courses', ['assignments' => collect()]);
+        }
     }
 
     public function courseStudents(Course $course)
