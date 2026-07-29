@@ -554,7 +554,7 @@ Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(func
     Route::get('/dashboard', [\App\Http\Controllers\HOD\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/courses', [\App\Http\Controllers\HOD\CourseController::class, 'index'])->name('courses');
     Route::get('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'assign'])->name('courses.assign');
-    Route::post('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'storeAssignment']);
+    Route::post('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'storeAssignment'])->name('courses.assign.store');
     Route::put('/courses/{assignment}/reassign', [\App\Http\Controllers\HOD\CourseController::class, 'reassign'])->name('courses.reassign');
     Route::delete('/courses/{assignment}/remove', [\App\Http\Controllers\HOD\CourseController::class, 'removeAssignment'])->name('courses.remove');
 

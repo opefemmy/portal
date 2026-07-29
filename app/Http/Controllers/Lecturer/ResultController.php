@@ -22,7 +22,7 @@ class ResultController extends Controller
     {
         // Verify lecturer is assigned to this course
         $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
@@ -53,7 +53,7 @@ class ResultController extends Controller
     {
         // Verify lecturer is assigned to this course
         $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
@@ -83,7 +83,7 @@ class ResultController extends Controller
     public function store(Request $request, Course $course)
     {
         $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
@@ -144,7 +144,7 @@ class ResultController extends Controller
         // Verify lecturer owns this result
         $studentCourse = $result->studentCourse;
         $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
@@ -166,7 +166,7 @@ class ResultController extends Controller
     {
         $studentCourse = $result->studentCourse;
         $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
@@ -211,7 +211,7 @@ class ResultController extends Controller
     public function bulkUpload(Request $request, Course $course)
     {
         $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('user_id', auth()->id())
+            ->where('lecturer_id', auth()->id())
             ->first();
 
         if (!$assignment) {
