@@ -166,9 +166,11 @@ class StudentImportController extends Controller
                         'lga_id' => $lgaId,
                         'year_of_entry' => $record['year_of_entry'] ?? date('Y'),
                         'status' => 'active',
+                        // Mark as manually uploaded (not from application)
+                        'from_application' => false,
                     ]);
                 } else {
-                    // Create new student
+                    // Create new student - mark as manually uploaded
                     Student::create([
                         'user_id' => $user->id,
                         'matric_number' => $record['matric_number'],
@@ -181,6 +183,8 @@ class StudentImportController extends Controller
                         'lga_id' => $lgaId,
                         'year_of_entry' => $record['year_of_entry'] ?? date('Y'),
                         'status' => 'active',
+                        // Mark as manually uploaded (not from application)
+                        'from_application' => false,
                     ]);
                 }
 

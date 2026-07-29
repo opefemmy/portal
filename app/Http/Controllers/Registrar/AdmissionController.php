@@ -157,7 +157,8 @@ class AdmissionController extends Controller
             // Generate matric number
             $matricNumber = $this->generateMatricNumber($applicant);
 
-            Student::create([
+            // Create student record
+            $student = Student::create([
                 'user_id' => $user->id,
                 'matric_number' => $matricNumber,
                 'school_id' => $applicant->school_id,
@@ -169,13 +170,78 @@ class AdmissionController extends Controller
                 'state_id' => $applicant->state_id ?? null,
                 'lga_id' => $applicant->lga_id ?? null,
                 'nationality_id' => $applicant->nationality_id ?? null,
+                // Track that this student came from an application
+                'from_application' => true,
+                'applicant_id' => $applicant->id,
             ]);
+
+            // Copy application payments to student payments
+            $this->copyApplicationPaymentsToStudent($applicant, $student);
 
             $applicant->update([
                 'student_created' => true,
                 'matric_number' => $matricNumber,
             ]);
         });
+    }
+
+    /**
+     * Copy payments from applicant to student record
+     */
+    protected function copyApplicationPaymentsToStudent(Applicant $applicant, Student $student)
+    {
+        // Get external payments made by this applicant
+        $externalPayments = \App\Models\ExternalPayment::where('email', $applicant->email)
+            ->where('payment_status', 'completed')
+            ->where('is_used', true)
+            ->get();
+
+        foreach ($externalPayments as $extPayment) {
+            // Check if payment already copied
+            $existingPayment = \App\Models\Payment::where('reference', $extPayment->transaction_id)->first();
+
+            if (!$existingPayment) {
+                // Create payment record for student
+                \App\Models\Payment::create([
+                    'student_id' => $student->id,
+                    'amount' => $extPayment->amount,
+                    'reference' => $extPayment->transaction_id,
+                    'transaction_id' => $extPayment->transaction_id,
+                    'gateway' => 'external',
+                    'status' => 'completed',
+                    'payment_details' => json_encode([
+                        'original_payment_id' => $extPayment->id,
+                        'payment_type' => 'application_fee',
+                        'copied_from' => 'applicant',
+                    ]),
+                    'student_type' => $applicant->category ?? 'fresh',
+                    'is_verified' => true,
+                    'fee_type' => 'application_fee',
+                ]);
+            }
+        }
+
+        // Also copy from applicant's own payment record if exists
+        if ($applicant->payment_status === 'completed' && $applicant->payment_amount) {
+            $existingPayment = \App\Models\Payment::where('reference', $applicant->payment_ref)->first();
+
+            if (!$existingPayment) {
+                \App\Models\Payment::create([
+                    'student_id' => $student->id,
+                    'amount' => $applicant->payment_amount,
+                    'reference' => $applicant->payment_ref,
+                    'transaction_id' => $applicant->payment_transaction_id ?? $applicant->payment_ref,
+                    'gateway' => 'external',
+                    'status' => 'completed',
+                    'payment_details' => json_encode([
+                        'copied_from' => 'applicant_record',
+                    ]),
+                    'student_type' => $applicant->category ?? 'fresh',
+                    'is_verified' => true,
+                    'fee_type' => 'application_fee',
+                ]);
+            }
+        }
     }
 
     protected function generateMatricNumber(Applicant $applicant)

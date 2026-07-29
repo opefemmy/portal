@@ -62,6 +62,16 @@ class DashboardController extends Controller
 
         $unpaidFees = $fees->whereNotIn('id', $paidFeeIds);
 
+        // If student was manually uploaded (not from application), filter out application/acceptance fees
+        if ($student->from_application === false) {
+            // Manually uploaded students should not pay application fee
+            $unpaidFees = $unpaidFees->filter(function($fee) {
+                $feeNameLower = strtolower($fee->name ?? '');
+                // Exclude application fee and acceptance fee for manually uploaded students
+                return !in_array($feeNameLower, ['application fee', 'acceptance fee', 'admission fee', 'application form fee']);
+            });
+        }
+
         return view('student.dashboard', compact('student', 'registeredCourses', 'payments', 'fees', 'unpaidFees', 'profileIncomplete'));
     }
 }

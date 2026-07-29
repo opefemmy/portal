@@ -11,6 +11,8 @@ class Student extends Model
     protected $fillable = [
         'user_id', 'matric_number', 'school_id', 'department_id', 'programme_id',
         'session_id', 'level', 'status', 'state_id', 'lga_id', 'nationality_id',
+        // Student source tracking
+        'from_application', 'applicant_id',
         // Uniform measurements
         'uniform_shirt_size', 'uniform_pant_size', 'uniform_shoe_size',
         // Scrub measurements
