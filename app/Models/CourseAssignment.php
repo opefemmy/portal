@@ -29,4 +29,14 @@ class CourseAssignment extends Model
     {
         return $this->hasMany(Timetable::class);
     }
+
+    public function studentCourses(): HasMany
+    {
+        return $this->hasMany(StudentCourse::class);
+    }
+
+    public function results(): HasMany
+    {
+        return $this->hasMany(Result::class, 'course_id', 'course_id');
+    }
 }

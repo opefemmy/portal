@@ -3,6 +3,7 @@
 namespace App\Models\Hospital;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HospitalServiceType extends Model
 {
@@ -31,5 +32,19 @@ class HospitalServiceType extends Model
     public function scopeByCategory($query, $category)
     {
         return $query->where('category', $category);
+    }
+
+    /**
+     * Check if a service with the same name already exists
+     */
+    public static function hasDuplicate(string $name, int $excludeId = null): bool
+    {
+        $query = self::whereRaw('LOWER(name) = ?', [strtolower(trim($name))]);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
     }
 }

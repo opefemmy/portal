@@ -12,7 +12,7 @@
         <div class="card stat-card success">
             <div class="card-body">
                 <h6>Assigned Courses</h6>
-                <h2>{{ $assignments->count() }}</h2>
+                <h2>{{ $stats['total_courses'] ?? 0 }}</h2>
             </div>
         </div>
     </div>
@@ -20,7 +20,7 @@
         <div class="card stat-card info">
             <div class="card-body">
                 <h6>Total Students</h6>
-                <h2>{{ $assignments->sum(function($a) { return $a->studentCourses->count(); }) }}</h2>
+                <h2>{{ $stats['total_students'] ?? 0 }}</h2>
             </div>
         </div>
     </div>
@@ -28,7 +28,7 @@
         <div class="card stat-card warning">
             <div class="card-body">
                 <h6>Pending Results</h6>
-                <h2>{{ $assignments->sum(function($a) { return $a->results->where('status', 'pending_approval')->count(); }) }}</h2>
+                <h2>{{ $stats['pending_results'] ?? 0 }}</h2>
             </div>
         </div>
     </div>
@@ -55,13 +55,13 @@
                 <tbody>
                     @forelse($assignments as $assignment)
                     <tr>
-                        <td><strong>{{ $assignment->course->code }}</strong></td>
-                        <td>{{ $assignment->course->title }}</td>
-                        <td>{{ $assignment->department->name ?? 'N/A' }}</td>
-                        <td>{{ $assignment->course->level }}</td>
+                        <td><strong>{{ $assignment->course->code ?? 'N/A' }}</strong></td>
+                        <td>{{ $assignment->course->title ?? 'N/A' }}</td>
+                        <td>{{ $assignment->course->department->name ?? 'N/A' }}</td>
+                        <td>{{ $assignment->course->level ?? 'N/A' }}</td>
                         <td>{{ $assignment->session->name ?? 'N/A' }}</td>
                         <td>
-                            <span class="badge bg-primary">{{ $assignment->studentCourses->count() }}</span>
+                            <span class="badge bg-primary">{{ $assignment->studentCourses->count() ?? 0 }}</span>
                         </td>
                         <td>
                             <div class="btn-group">

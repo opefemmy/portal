@@ -23,6 +23,11 @@ class HospitalServiceController extends Controller
             'requires_appointment' => 'boolean',
         ]);
 
+        // Check for duplicate
+        if (HospitalServiceType::hasDuplicate($request->name)) {
+            return back()->with('error', 'A service with this name already exists. Please use the existing service or choose a different name.');
+        }
+
         HospitalServiceType::create([
             'name' => $request->name,
             'category' => $request->category,
@@ -42,6 +47,11 @@ class HospitalServiceController extends Controller
             'amount' => 'required|numeric|min:0',
             'requires_appointment' => 'boolean',
         ]);
+
+        // Check for duplicate (excluding current service)
+        if (HospitalServiceType::hasDuplicate($request->name, $service->id)) {
+            return back()->with('error', 'A service with this name already exists. Please use the existing service or choose a different name.');
+        }
 
         $service->update([
             'name' => $request->name,

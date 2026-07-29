@@ -387,15 +387,16 @@
 $(document).ready(function() {
     // Service type change
     $('#service_type_id').change(function() {
-        const amount = $(this).find(':selected').data('amount');
-        const requiresAppointment = $(this).find(':selected').data('requires-appointment');
-        const serviceName = $(this).find(':selected').text().trim();
+        const selectedOption = $(this).find(':selected');
+        const amount = selectedOption.attr('data-amount');
+        const requiresAppointment = selectedOption.attr('data-requires-appointment');
+        const serviceName = selectedOption.text().trim();
 
         // Show amount only after selection
-        if (amount) {
-            $('#service_amount').val('₦' + amount.toLocaleString());
+        if (amount && amount !== '') {
+            $('#service_amount').val('₦' + parseFloat(amount).toLocaleString());
             $('#serviceInfo').show();
-            $('#serviceInfoText').text(serviceName + ' - ₦' + amount.toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
+            $('#serviceInfoText').text(serviceName + ' - ₦' + parseFloat(amount).toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
             $('#submitBtn').prop('disabled', false);
         } else {
             $('#service_amount').val('');
@@ -404,7 +405,7 @@ $(document).ready(function() {
         }
 
         // Show/hide appointment fields
-        if (requiresAppointment == '1') {
+        if (requiresAppointment === '1') {
             $('#appointmentFields').show();
             $('#serviceInfoText').append(' Note: This service requires an appointment.');
         } else {
@@ -418,10 +419,10 @@ $(document).ready(function() {
 
         const selectedService = $('#service_type_id').find(':selected');
         const serviceName = selectedService.text().trim();
-        const amount = selectedService.data('amount');
+        const amount = selectedService.attr('data-amount');
 
         // Confirm before submitting
-        if (!confirm('You are about to request: ' + serviceName + '\nAmount: ₦' + amount.toLocaleString() + '\n\nClick OK to generate invoice and proceed to payment.')) {
+        if (!confirm('You are about to request: ' + serviceName + '\nAmount: ₦' + parseFloat(amount).toLocaleString() + '\n\nClick OK to generate invoice and proceed to payment.')) {
             return;
         }
 
