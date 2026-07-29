@@ -385,19 +385,30 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Service type change
+    // Service type change - Simple and reliable
     $('#service_type_id').change(function() {
-        const selectedOption = $(this).find(':selected');
-        const amount = selectedOption.attr('data-amount');
-        const requiresAppointment = selectedOption.attr('data-requires-appointment');
-        const serviceName = selectedOption.text().trim();
+        var selectedValue = $(this).val();
+        var selectedText = $(this).find('option:selected').text();
+        var selectedOption = $(this).find('option:selected');
 
-        // Show amount only after selection
-        if (amount && amount !== '') {
-            $('#service_amount').val('₦' + parseFloat(amount).toLocaleString());
-            $('#serviceInfo').show();
-            $('#serviceInfoText').text(serviceName + ' - ₦' + parseFloat(amount).toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
-            $('#submitBtn').prop('disabled', false);
+        // Get amount from data attribute
+        var amount = selectedOption.attr('data-amount');
+        var requiresAppointment = selectedOption.attr('data-requires-appointment');
+
+        if (selectedValue && amount) {
+            // Format amount
+            var amountNum = parseFloat(amount);
+            if (!isNaN(amountNum)) {
+                $('#service_amount').val('₦' + amountNum.toLocaleString());
+                $('#serviceInfo').show();
+                $('#serviceInfoText').text(selectedText + ' - ₦' + amountNum.toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
+                $('#submitBtn').prop('disabled', false);
+            } else {
+                $('#service_amount').val('Amount: ' + amount);
+                $('#serviceInfo').show();
+                $('#serviceInfoText').text(selectedText + ' - ' + amount + '. Click Submit to generate invoice.');
+                $('#submitBtn').prop('disabled', false);
+            }
         } else {
             $('#service_amount').val('');
             $('#serviceInfo').hide();
@@ -407,7 +418,6 @@ $(document).ready(function() {
         // Show/hide appointment fields
         if (requiresAppointment === '1') {
             $('#appointmentFields').show();
-            $('#serviceInfoText').append(' Note: This service requires an appointment.');
         } else {
             $('#appointmentFields').hide();
         }
@@ -417,12 +427,18 @@ $(document).ready(function() {
     $('#serviceRequestForm').submit(function(e) {
         e.preventDefault();
 
-        const selectedService = $('#service_type_id').find(':selected');
-        const serviceName = selectedService.text().trim();
-        const amount = selectedService.attr('data-amount');
+        var selectedOption = $('#service_type_id').find('option:selected');
+        var serviceName = selectedOption.text().trim();
+        var amount = selectedOption.attr('data-amount');
 
-        // Confirm before submitting
-        if (!confirm('You are about to request: ' + serviceName + '\nAmount: ₦' + parseFloat(amount).toLocaleString() + '\n\nClick OK to generate invoice and proceed to payment.')) {
+        // Confirm before submitting - handle if amount is undefined
+        var confirmMsg = 'You are about to request: ' + serviceName;
+        if (amount) {
+            confirmMsg += '\nAmount: ₦' + parseFloat(amount).toLocaleString();
+        }
+        confirmMsg += '\n\nClick OK to generate invoice and proceed to payment.';
+
+        if (!confirm(confirmMsg)) {
             return;
         }
 
