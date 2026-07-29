@@ -7,20 +7,41 @@
     @php
         $institutionName = \App\Models\SystemSetting::getInstitutionName() ?? 'Ekiti State College of Technology';
         $institutionAddress = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_ADDRESS, 'Ijero-Ekiti, Ekiti State, Nigeria');
-        $institutionPhone = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE, '+2348000000000');
-        $institutionEmail = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL, 'info@portal.edu');
+        $institutionPhone = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE, '08061234567');
+        $institutionEmail = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL, 'admissions@eksu.edu.ng');
 
-        // Check passport - files are in storage/app/public/passports/
+        // Check passport - check multiple locations for backward compatibility
         $passportPath = '';
-        if ($applicant->passport) {
-            $passportFile = $applicant->passport;
-            // Use storage/passports path (after storage:link)
-            if (file_exists(public_path('storage/passports/' . $passportFile))) {
+        $passportFile = $applicant->passport ?? '';
+
+        if ($passportFile) {
+            // Check uploads/passports (old location)
+            if (file_exists(public_path('uploads/passports/' . $passportFile))) {
+                $passportPath = 'uploads/passports/' . $passportFile;
+            }
+            // Check storage/passports (new location)
+            elseif (file_exists(public_path('storage/passports/' . $passportFile))) {
                 $passportPath = 'storage/passports/' . $passportFile;
+            }
+            // Check public/passports
+            elseif (file_exists(public_path('passports/' . $passportFile))) {
+                $passportPath = 'passports/' . $passportFile;
             }
         }
 
-        // Logo - check public/images folder
+        // Also check for user passport if applicant passport is empty
+        if (empty($passportPath) && $applicant->user) {
+            $userPassport = $applicant->user->passport ?? '';
+            if ($userPassport) {
+                if (file_exists(public_path('uploads/passports/' . $userPassport))) {
+                    $passportPath = 'uploads/passports/' . $userPassport;
+                } elseif (file_exists(public_path('storage/passports/' . $userPassport))) {
+                    $passportPath = 'storage/passports/' . $userPassport;
+                }
+            }
+        }
+
+        // Logo - check multiple locations
         $logoPath = '';
         if (file_exists(public_path('images/logo.png'))) {
             $logoPath = 'images/logo.png';
@@ -30,6 +51,8 @@
             $logoPath = 'images/logo.jpeg';
         } elseif (file_exists(public_path('images/logo.gif'))) {
             $logoPath = 'images/logo.gif';
+        } elseif (file_exists(public_path('storage/logos/logo.png'))) {
+            $logoPath = 'storage/logos/logo.png';
         }
 
     @endphp
@@ -63,11 +86,11 @@
             @endif
             <h1>{{ $institutionName }}</h1>
             <p><strong>{{ $institutionAddress }}</strong></p>
-            <p>Phone: {{ $institutionPhone }} | Email: {{ $institutionEmail }}</p>
+            <p>Phone: {{ $institutionPhone ?: '08061234567' }} | Email: {{ $institutionEmail ?: 'admissions@eksu.edu.ng' }}</p>
         </div>
 
-        <p><strong>Application Number:</strong> {{ $applicant->application_number }}</p>
-        <p><strong>Status:</strong> {{ strtoupper($applicant->status) }}</p>
+        <p><strong>Application Number:</strong> {{ $applicant->application_number ?? 'N/A' }}</p>
+        <p><strong>Status:</strong> {{ strtoupper($applicant->status ?? 'pending') }}</p>
 
         <h2>PERSONAL INFORMATION</h2>
         <table>
@@ -81,22 +104,22 @@
                     @endif
                 </td>
                 <td>
-                    <strong>Surname:</strong> {{ $applicant->surname ?? 'N/A' }}<br>
+                    <strong>Surname:</strong> {{ $applicant->surname ?? ($applicant->user->name ?? 'N/A') }}<br>
                     <strong>First Name:</strong> {{ $applicant->first_name ?? 'N/A' }}<br>
                     <strong>Middle Name:</strong> {{ $applicant->middle_name ?? 'N/A' }}<br>
-                    <strong>Gender:</strong> {{ $applicant->gender ?? 'N/A' }}
+                    <strong>Gender:</strong> {{ $applicant->gender ?? ($applicant->user->gender ?? 'N/A') }}
                 </td>
             </tr>
             <tr>
-                <td><strong>Date of Birth:</strong> {{ $applicant->date_of_birth ?? 'N/A' }}</td>
+                <td><strong>Date of Birth:</strong> {{ $applicant->date_of_birth ? \Carbon\Carbon::parse($applicant->date_of_birth)->format('d M, Y') : 'N/A' }}</td>
                 <td><strong>Place of Birth:</strong> {{ $applicant->place_of_birth ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td><strong>Religion:</strong> {{ $applicant->religion ?? 'N/A' }}</td>
-                <td><strong>Phone:</strong> {{ $applicant->phone ?? 'N/A' }}</td>
+                <td><strong>Phone:</strong> {{ $applicant->phone ?? ($applicant->user->phone ?? 'N/A') }}</td>
             </tr>
             <tr>
-                <td colspan="2"><strong>Address:</strong> {{ $applicant->address ?? 'N/A' }}</td>
+                <td colspan="2"><strong>Address:</strong> {{ $applicant->address ?? ($applicant->user->address ?? 'N/A') }}</td>
             </tr>
         </table>
 

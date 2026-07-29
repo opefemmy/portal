@@ -218,7 +218,7 @@
             </div>
             <h1>{{ \App\Models\SystemSetting::getInstitutionName() }}</h1>
             <p><strong>{{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_ADDRESS, 'Ijero-Ekiti, Ekiti State, Nigeria') }}</strong></p>
-            <p>Phone: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE, '+2348000000000') }} | Email: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL, 'info@portal.edu') }}</p>
+            <p>Phone: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE, '08061234567') }} | Email: {{ \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL, 'admissions@eksu.edu.ng') }}</p>
         </div>
 
         <h3 class="text-center mb-4" style="color: var(--primary);">
