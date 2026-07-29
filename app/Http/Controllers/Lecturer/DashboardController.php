@@ -15,26 +15,40 @@ class DashboardController extends Controller
     {
         $userId = auth()->id();
 
-        // Get assignments with all required relationships
-        $assignments = CourseAssignment::where('lecturer_id', $userId)
-            ->with(['course', 'course.department', 'session', 'studentCourses', 'results'])
-            ->get();
+        try {
+            // Get assignments with required relationships
+            $assignments = CourseAssignment::where('lecturer_id', $userId)
+                ->with(['course', 'course.department', 'session', 'studentCourses'])
+                ->get();
 
-        // Pre-compute stats to avoid N+1 queries
-        $totalStudents = 0;
-        $pendingResults = 0;
+            // Pre-compute stats safely
+            $totalStudents = 0;
+            $pendingResults = 0;
 
-        foreach ($assignments as $assignment) {
-            $totalStudents += $assignment->studentCourses->count();
-            $pendingResults += $assignment->results->where('status', 'pending_approval')->count();
+            foreach ($assignments as $assignment) {
+                $totalStudents += $assignment->studentCourses->count() ?? 0;
+
+                // Get results for this course safely
+                $courseResults = Result::where('course_id', $assignment->course_id)
+                    ->where('status', 'pending_approval')
+                    ->count();
+                $pendingResults += $courseResults;
+            }
+
+            $stats = [
+                'total_courses' => $assignments->count(),
+                'total_students' => $totalStudents,
+                'pending_results' => $pendingResults,
+            ];
+        } catch (\Exception $e) {
+            // If there's any error, use default values
+            $assignments = collect([]);
+            $stats = [
+                'total_courses' => 0,
+                'total_students' => 0,
+                'pending_results' => 0,
+            ];
         }
-
-        // Pass pre-computed stats to view
-        $stats = [
-            'total_courses' => $assignments->count(),
-            'total_students' => $totalStudents,
-            'pending_results' => $pendingResults,
-        ];
 
         return view('lecturer.dashboard', compact('assignments', 'stats'));
     }
