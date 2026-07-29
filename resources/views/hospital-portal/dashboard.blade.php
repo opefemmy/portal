@@ -462,23 +462,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
                 }
             })
             .then(response => {
-                if (response.status === 401) {
-                    // Session expired - redirect to login
-                    alert('Your session has expired. Please login again.');
-                    window.location.href = '{{ route("patient-portal.login") }}';
-                    return;
-                }
-                return response.json();
+                console.log('Response status:', response.status);
+                return response.text().then(text => {
+                    console.log('Response text:', text.substring(0, 200));
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ': ' + text.substring(0, 100));
+                    }
+                    return JSON.parse(text);
+                });
             })
             .then(data => {
-                if (data) {
-                    alert('Service request submitted! Request Code: ' + data.request_code);
-                    location.reload();
-                }
+                alert('Service request submitted! Request Code: ' + data.request_code);
+                location.reload();
             })
             .catch(error => {
                 console.error('Error:', error);
