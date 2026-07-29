@@ -11,6 +11,10 @@ class PatientPortalAuth
     public function handle(Request $request, Closure $next): Response
     {
         if (!session()->has('hospital_patient_id')) {
+            // Return JSON for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Please login to access the patient portal.'], 401);
+            }
             return redirect()->route('patient-portal.login')
                 ->with('error', 'Please login to access the patient portal.');
         }
