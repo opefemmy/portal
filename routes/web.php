@@ -90,7 +90,7 @@ Route::prefix('patient-portal')->name('patient-portal.')->group(function () {
         Route::put('/profile', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'updateProfilePortal'])->name('profile.update');
         Route::post('/request-service', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'requestServicePortal'])->name('request-service');
         Route::post('/initiate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'initiatePaymentPortal'])->name('initiate-payment');
-        Route::post('/validate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'validatePaymentPortal'])->name('validate-payment');
+        Route::post('/validate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'validatePaymentPortal'])->name('validate-payment-portal');
         Route::get('/receipt/{payment}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'viewReceiptPortal'])->name('receipt');
         Route::post('/regenerate-code', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'regenerateCodePortal'])->name('regenerate-code');
     });

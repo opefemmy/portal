@@ -461,7 +461,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         $.ajax({
-            url: '{{ route("patient-portal.validate-payment") }}',
+            url: '{{ route("patient-portal.validate-payment-portal") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
