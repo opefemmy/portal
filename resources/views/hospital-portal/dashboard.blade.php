@@ -27,9 +27,12 @@
             <p class="text-muted mb-0">Patient Number: <strong>{{ $patient->patient_number }}</strong></p>
         </div>
         <div class="col-md-4 text-md-end">
-            <a href="{{ route('patient-portal.logout') }}" class="btn btn-outline-danger">
-                <i class="fas fa-sign-out-alt me-2"></i>Logout
-            </a>
+            <form method="POST" action="{{ route('patient-portal.logout') }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </button>
+            </form>
         </div>
     </div>
 
@@ -120,12 +123,12 @@
                             <div class="col-md-8 mb-3">
                                 <label class="form-label">Select Service <span class="text-danger">*</span></label>
                                 <select name="service_type_id" id="service_type_id" class="form-select" required>
-                                    <option value="">Select Service</option>
+                                    <option value="">Select a Service</option>
                                     @foreach($services as $category => $categoryServices)
                                         <optgroup label="{{ $category }}">
                                             @foreach($categoryServices as $service)
                                                 <option value="{{ $service->id }}" data-amount="{{ $service->amount }}" data-requires-appointment="{{ $service->requires_appointment ? '1' : '0' }}">
-                                                    {{ $service->name }} - ₦{{ number_format($service->amount) }}
+                                                    {{ $service->name }}
                                                 </option>
                                             @endforeach
                                         </optgroup>
@@ -133,8 +136,8 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Amount</label>
-                                <input type="text" id="service_amount" class="form-control" readonly>
+                                <label class="form-label">Amount (₦)</label>
+                                <input type="text" id="service_amount" class="form-control bg-light" readonly placeholder="Select a service to see amount">
                             </div>
                         </div>
 
@@ -149,8 +152,13 @@
                             </div>
                         </div>
 
+                        <div class="alert alert-info" id="serviceInfo" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="serviceInfoText">Please select a service</span>
+                        </div>
+
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-danger">
+                            <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
                                 <i class="fas fa-paper-plane me-2"></i>Submit Service Request
                             </button>
                         </div>
@@ -381,11 +389,24 @@ $(document).ready(function() {
     $('#service_type_id').change(function() {
         const amount = $(this).find(':selected').data('amount');
         const requiresAppointment = $(this).find(':selected').data('requires-appointment');
+        const serviceName = $(this).find(':selected').text().trim();
 
-        $('#service_amount').val(amount ? '₦' + amount.toLocaleString() : '');
+        // Show amount only after selection
+        if (amount) {
+            $('#service_amount').val('₦' + amount.toLocaleString());
+            $('#serviceInfo').show();
+            $('#serviceInfoText').text(serviceName + ' - ₦' + amount.toLocaleString() + '. Click Submit to generate invoice and proceed to payment.');
+            $('#submitBtn').prop('disabled', false);
+        } else {
+            $('#service_amount').val('');
+            $('#serviceInfo').hide();
+            $('#submitBtn').prop('disabled', true);
+        }
 
+        // Show/hide appointment fields
         if (requiresAppointment == '1') {
             $('#appointmentFields').show();
+            $('#serviceInfoText').append(' Note: This service requires an appointment.');
         } else {
             $('#appointmentFields').hide();
         }
@@ -394,6 +415,15 @@ $(document).ready(function() {
     // Submit service request
     $('#serviceRequestForm').submit(function(e) {
         e.preventDefault();
+
+        const selectedService = $('#service_type_id').find(':selected');
+        const serviceName = selectedService.text().trim();
+        const amount = selectedService.data('amount');
+
+        // Confirm before submitting
+        if (!confirm('You are about to request: ' + serviceName + '\nAmount: ₦' + amount.toLocaleString() + '\n\nClick OK to generate invoice and proceed to payment.')) {
+            return;
+        }
 
         $.ajax({
             url: '{{ route("patient-portal.request-service") }}',

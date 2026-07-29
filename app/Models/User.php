@@ -174,7 +174,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getAvatarUrlAttribute(): string
     {
         if ($this->passport) {
-            return asset('storage/passports/' . $this->passport);
+            // Check both possible locations for backward compatibility
+            $publicPath = public_path('uploads/passports/' . $this->passport);
+            $storagePath = public_path('storage/passports/' . $this->passport);
+
+            if (file_exists($publicPath)) {
+                return asset('uploads/passports/' . $this->passport);
+            } elseif (file_exists($storagePath)) {
+                return asset('storage/passports/' . $this->passport);
+            }
         }
 
         // Generate avatar based on initials

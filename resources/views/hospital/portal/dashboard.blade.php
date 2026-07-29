@@ -3,7 +3,7 @@
 @section('title', 'My Dashboard')
 
 @section('content')
-style>
+<style>
     .welcome-header {
         background: linear-gradient(135deg, #dc3545, #b21f3d);
         color: white;
@@ -21,7 +21,7 @@ style>
     .quick-link:hover {
         transform: translateY(-5px);
     }
-@endstyle
+</style>
 
 <div class="welcome-header">
     <div class="d-flex justify-content-between align-items-center">
@@ -29,9 +29,12 @@ style>
             <h3><i class="fas fa-user me-2"></i>Welcome, {{ session('external_patient_name') }}</h3>
             <p class="mb-0">Patient Number: {{ session('external_patient_number') }}</p>
         </div>
-        <a href="{{ route('patient.logout') }}" class="btn btn-outline-light">
-            <i class="fas fa-sign-out-alt me-2"></i>Logout
-        </a>
+        <form method="POST" action="{{ route('patient.logout') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-light">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </button>
+        </form>
     </div>
 </div>
 

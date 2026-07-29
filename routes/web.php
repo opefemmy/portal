@@ -125,6 +125,9 @@ Route::get('/unlock/{email}/{code}', [\App\Http\Controllers\Admin\UserUnlockCont
 Route::post('/unlock', [\App\Http\Controllers\Admin\UserUnlockController::class, 'unlockUser'])->name('public.unlock.process');
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+Route::get('/logout', function () {
+    return redirect('/login');
+})->name('logout.get');
 
 // Email Verification Routes
 Route::middleware('auth')->group(function () {
@@ -199,17 +202,33 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     });
 });
 
-// TEMP: Print route outside auth
+// TEMP: Print route - Only available in local environment
 Route::get('/temp-print', function() {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     $user = \App\Models\User::where('email', 'opefemmy9@gmail.com')->first();
+    if (!$user) {
+        abort(404, 'User not found');
+    }
     \Illuminate\Support\Facades\Auth::login($user);
     $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
     return view('applicant.print-simple', compact('applicant'));
 });
 
-// Direct print route (bypasses auth for testing)
+// Direct print route - Only available in local environment
 Route::get('/print-preview', function() {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     $user = \App\Models\User::where('email', 'opefemmy9@gmail.com')->first();
+    if (!$user) {
+        abort(404, 'User not found');
+    }
     \Illuminate\Support\Facades\Auth::login($user);
     $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
     return view('applicant.print', compact('applicant'));
@@ -663,8 +682,13 @@ Route::middleware('auth')->group(function () {
 // Redirect based on role
 Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->middleware('auth');
 
-// Setup Route (For Render Deployment - Remove after use)
+// Setup Route - Only available in local environment
 Route::get('/setup', function () {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     try {
         // Clear config cache
         \Illuminate\Support\Facades\Artisan::call('config:clear');
@@ -693,8 +717,13 @@ Route::get('/setup', function () {
     }
 });
 
-// TEST LOGIN Route - Use this to test login before deployment
+// TEST LOGIN Route - Only available in local environment
 Route::get('/test-login-creds', function () {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     // First check if DB config is loaded
     $dbDriver = config('database.default');
     $dbHost = config('database.connections.'.$dbDriver.'.host');
@@ -714,8 +743,13 @@ Route::get('/test-login-creds', function () {
     ]);
 });
 
-// Test database connection
+// Test database connection - Only available in local environment
 Route::get('/test-db', function () {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     try {
         \DB::connection()->getPdo();
         return response()->json([
@@ -732,8 +766,13 @@ Route::get('/test-db', function () {
     }
 });
 
-// Test route without CSRF - REMOVE AFTER TESTING
+// Test route without CSRF - REMOVE AFTER TESTING - Only available in local environment
 Route::post('/login-test', function (\Illuminate\Http\Request $request) {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     $credentials = $request->validate([
         'email' => 'required|email',
         'password' => 'required',
@@ -782,8 +821,13 @@ Route::middleware('auth')->group(function () {
 // ===========================================
 require __DIR__.'/executive.php';
 
-// Simple test login page - REMOVE AFTER TESTING
+// Simple test login page - Only available in local environment
 Route::get('/test-login', function () {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     return '<html><head><title>Direct Login Test</title></head><body style="font-family:Arial;padding:20px;">
 <h2>🔑 Direct Login Test</h2>
 <form id="loginForm" style="max-width:300px;">
@@ -816,8 +860,13 @@ document.getElementById("loginForm").onsubmit = async function(e) {
 </body></html>';
 });
 
-// NEW DIRECT LOGIN - bypasses all session issues
+// DIRECT LOGIN - Only available in local environment
 Route::post('/direct-login', function (\Illuminate\Http\Request $request) {
+    // Only allow in local environment
+    if (app()->environment('production')) {
+        abort(404);
+    }
+
     try {
         $user = \App\Models\User::where('email', $request->email)->first();
 

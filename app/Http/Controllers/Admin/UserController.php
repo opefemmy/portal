@@ -10,15 +10,31 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('role', 'department')->latest()->get();
+        // Filter to only show staff users - exclude students, applicants, parents, visitors
+        $roleSlug = $request->get('role', '');
+
+        $users = User::with('role', 'department')
+            ->whereHas('role', function($query) use ($roleSlug) {
+                // Exclude student, applicant roles from the users page
+                $query->whereNotIn('slug', ['student', 'applicant']);
+
+                // Apply additional role filter if specified
+                if ($roleSlug) {
+                    $query->where('slug', $roleSlug);
+                }
+            })
+            ->latest()
+            ->paginate(20);
+
         return view('admin.users.index', compact('users'));
     }
 
     public function create()
     {
-        $roles = Role::all();
+        // Only show staff roles for creation
+        $roles = Role::whereNotIn('slug', ['student', 'applicant'])->get();
         return view('admin.users.create', compact('roles'));
     }
 

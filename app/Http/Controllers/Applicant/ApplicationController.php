@@ -293,7 +293,17 @@ class ApplicationController extends Controller
 
     public function viewApplication()
     {
-        $applicant = Applicant::where('user_id', auth()->id())->first();
+        // Eager load all relationships to prevent N/A issues
+        $applicant = Applicant::with([
+            'school',
+            'department',
+            'programme',
+            'session',
+            'state',
+            'lga',
+            'nationality',
+            'user'
+        ])->where('user_id', auth()->id())->first();
 
         // Get external payment if applicant exists
         $externalPayment = null;
@@ -315,13 +325,19 @@ class ApplicationController extends Controller
     {
         $userId = auth()->id();
 
-        // Debug: Log the user ID
-        \Log::info('Print Application - User ID: ' . $userId);
-
-        $applicant = Applicant::where('user_id', $userId)->first();
+        // Eager load all relationships to prevent N/A issues
+        $applicant = Applicant::with([
+            'school',
+            'department',
+            'programme',
+            'session',
+            'state',
+            'lga',
+            'nationality',
+            'user'
+        ])->where('user_id', $userId)->first();
 
         if (!$applicant) {
-            \Log::warning('Print Application - No applicant found for user: ' . $userId);
             return redirect()->route('applicant.dashboard')
                 ->with('error', 'No application found. Please submit an application first.');
         }
@@ -333,8 +349,6 @@ class ApplicationController extends Controller
                 ->where('payment_status', 'completed')
                 ->first();
         }
-
-        \Log::info('Print Application - Applicant found: ' . $applicant->application_number);
 
         return view('applicant.print-simple', compact('applicant'));
     }
