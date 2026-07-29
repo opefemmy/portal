@@ -550,10 +550,12 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.9.0/dist/sweetalert2.min.js"></script>
 
     <script>
-        // Sidebar toggle
-        $('#sidebarToggle').on('click', function() {
-            $('#sidebar').toggleClass('show');
-        });
+        // Sidebar toggle - check if element exists first
+        if ($('#sidebarToggle').length) {
+            $('#sidebarToggle').on('click', function() {
+                $('#sidebar').toggleClass('show');
+            });
+        }
 
         // DataTables initialization
         $(document).ready(function() {
@@ -634,25 +636,31 @@
 
         // Check saved theme
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
+        if (savedTheme === 'dark' && themeIcon) {
             document.body.classList.add('dark-mode');
             themeIcon.classList.remove('fa-moon');
             themeIcon.classList.add('fa-sun');
         }
 
-        themeToggle.addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
 
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-            }
-        });
+                if (document.body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                    if (themeIcon) {
+                        themeIcon.classList.remove('fa-moon');
+                        themeIcon.classList.add('fa-sun');
+                    }
+                } else {
+                    localStorage.setItem('theme', 'light');
+                    if (themeIcon) {
+                        themeIcon.classList.remove('fa-sun');
+                        themeIcon.classList.add('fa-moon');
+                    }
+                }
+            });
+        }
     </script>
     @yield('scripts')
 </body>
