@@ -470,6 +470,7 @@ class DatabaseSeeder extends Seeder
             PaymentTypeSeeder::class,
             HospitalModuleSeeder::class,
             DataCleanupSeeder::class,
+            PaymentGatewaySeeder::class,
         ]);
     }
 }

@@ -64,6 +64,10 @@ Route::prefix('online-payment')->name('online-payment.')->group(function () {
     Route::post('/process', [\App\Http\Controllers\OnlinePaymentController::class, 'processPayment'])->name('process');
     Route::post('/validate', [\App\Http\Controllers\OnlinePaymentController::class, 'validatePayment'])->name('validate');
     Route::get('/receipt/{payment}', [\App\Http\Controllers\OnlinePaymentController::class, 'printReceipt'])->name('receipt');
+
+    // XpressPayments callback routes
+    Route::get('/callback', [\App\Http\Controllers\OnlinePaymentController::class, 'xpressCallback'])->name('callback');
+    Route::post('/verify', [\App\Http\Controllers\OnlinePaymentController::class, 'verifyXpressPayment'])->name('verify');
 });
 
 // Hospital Payment System (Public - No Login Required)

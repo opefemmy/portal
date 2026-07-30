@@ -700,24 +700,65 @@ $(document).ready(function() {
     $('#onlinePaymentForm').submit(function(e) {
         e.preventDefault();
 
+        var form = $(this);
+        var submitBtn = form.find('button[type="submit"]');
+        var originalBtnText = submitBtn.html();
+
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+
         $.ajax({
             url: '{{ route("online-payment.process") }}',
             type: 'POST',
-            data: $(this).serialize(),
+            data: form.serialize() + '&gateway=xpresspayments',
             success: function(response) {
                 if(response.success) {
-                    alert('Payment initiated successfully! Reference: ' + response.reference);
-                    // Show print receipt option
-                    if(response.receipt_url) {
-                        window.open(response.receipt_url, '_blank');
+                    // Check if we should redirect to payment gateway
+                    if(response.auto_redirect && response.form_url) {
+                        // Create and submit a form to redirect to XpressPayments
+                        var redirectForm = $('<form>', {
+                            method: 'POST',
+                            action: response.form_url
+                        });
+
+                        // Add all form data
+                        $.each(response.form_data, function(key, value) {
+                            $('<input>').attr({
+                                type: 'hidden',
+                                name: key,
+                                value: value
+                            }).appendTo(redirectForm);
+                        });
+
+                        // Add CSRF token
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: '_token',
+                            value: '{{ csrf_token() }}'
+                        }).appendTo(redirectForm);
+
+                        redirectForm.appendTo('body').submit();
+                    } else {
+                        // Just show success message and receipt
+                        alert('Payment initiated successfully!\n\nReference: ' + response.reference);
+                        if(response.receipt_url) {
+                            window.open(response.receipt_url, '_blank');
+                        }
+                        form[0].reset();
+                        $('#onlinePaymentModal').modal('hide');
                     }
                 } else {
                     alert('Error: ' + response.message);
                 }
             },
-            error: function() {
-                alert('Error processing payment');
+            error: function(xhr) {
+                var errorMessage = 'Error processing payment';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                alert(errorMessage);
             }
+        }).always(function() {
+            submitBtn.prop('disabled', false).html(originalBtnText);
         });
     });
 

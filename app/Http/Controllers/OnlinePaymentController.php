@@ -7,12 +7,21 @@ use App\Models\User;
 use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\PaymentType;
+use App\Models\PaymentGateway;
+use App\Services\XpressPaymentsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class OnlinePaymentController extends Controller
 {
+    protected XpressPaymentsService $xpressService;
+
+    public function __construct()
+    {
+        $this->xpressService = new XpressPaymentsService();
+    }
+
     /**
      * Lookup student by matric number, phone, or registration number
      */
@@ -71,7 +80,7 @@ class OnlinePaymentController extends Controller
     }
 
     /**
-     * Process online payment
+     * Process online payment - supports multiple gateways
      */
     public function processPayment(Request $request)
     {
@@ -87,10 +96,14 @@ class OnlinePaymentController extends Controller
             'portal_charge' => 'nullable|numeric|min:0',
             'total_amount' => 'required|numeric|min:1',
             'payment_method' => 'required|in:online,bank_transfer',
+            'gateway' => 'nullable|string|in:paystack,xpresspayments,test',
         ]);
 
         // Get payment type details
         $paymentType = PaymentType::findOrFail($request->payment_type_id);
+
+        // Determine which gateway to use
+        $gateway = $request->gateway ?? 'xpresspayments';
 
         // Generate unique payment reference
         $paymentRef = 'ONL-' . strtoupper(Str::random(10));
@@ -116,16 +129,56 @@ class OnlinePaymentController extends Controller
             'payer_phone' => $request->payer_phone,
             'payer_id' => $request->payer_id,
             'payment_purpose' => $paymentType->name,
+            'gateway' => $gateway,
         ]);
 
-        // In production, you would integrate with payment gateway here
-        // For now, we'll mark as pending and provide receipt
+        // Process based on selected gateway
+        if ($gateway === 'xpresspayments' && $this->xpressService->isConfigured()) {
+            // Use XpressPayments
+            try {
+                $result = $this->xpressService->initializeGenericPayment(
+                    $request->payer_email,
+                    $request->payer_name,
+                    $request->total_amount,
+                    $paymentType->name,
+                    $request->payer_phone,
+                    [
+                        'payment_id' => $payment->id,
+                        'payment_ref' => $paymentRef,
+                    ]
+                );
 
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment initiated successfully!',
+                    'payment_id' => $payment->id,
+                    'reference' => $paymentRef,
+                    'gateway' => 'xpresspayments',
+                    'form_url' => $result['form_url'],
+                    'form_data' => $result['form_data'],
+                    'auto_redirect' => true,
+                    'receipt_url' => route('online-payment.receipt', $payment->id),
+                ]);
+            } catch (\Exception $e) {
+                $payment->update([
+                    'status' => 'failed',
+                    'notes' => 'XpressPayments Error: ' . $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment initialization failed: ' . $e->getMessage(),
+                ], 500);
+            }
+        }
+
+        // Default: return payment details for manual processing
         return response()->json([
             'success' => true,
             'message' => 'Payment initiated successfully!',
             'payment_id' => $payment->id,
             'reference' => $paymentRef,
+            'gateway' => $gateway,
             'receipt_url' => route('online-payment.receipt', $payment->id),
         ]);
     }
@@ -175,5 +228,56 @@ class OnlinePaymentController extends Controller
     public function printReceipt(Payment $payment)
     {
         return view('online-payment.receipt', compact('payment'));
+    }
+
+    /**
+     * Handle callback from XpressPayments
+     */
+    public function xpressCallback(Request $request)
+    {
+        try {
+            $data = $request->all();
+            $payment = $this->xpressService->handleCallback($data);
+
+            if ($payment->status === 'paid') {
+                return redirect()->route('online-payment.receipt', $payment->id)
+                    ->with('success', 'Payment successful!');
+            }
+
+            return redirect()->route('login')
+                ->with('error', 'Payment failed or pending. Please check your payment status.');
+        } catch (\Exception $e) {
+            return redirect()->route('login')
+                ->with('error', 'Payment verification failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verify XpressPayments payment
+     */
+    public function verifyXpressPayment(Request $request)
+    {
+        $request->validate([
+            'transaction_ref' => 'required|string',
+        ]);
+
+        try {
+            $payment = $this->xpressService->verifyPayment($request->transaction_ref);
+
+            return response()->json([
+                'success' => true,
+                'payment' => [
+                    'id' => $payment->id,
+                    'status' => $payment->status,
+                    'amount' => $payment->amount,
+                    'paid_at' => $payment->paid_at?->format('Y-m-d H:i:s'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 }
