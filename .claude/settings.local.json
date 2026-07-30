@@ -65,7 +65,10 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Select-Object -First 20)",
       "WebFetch(domain:xpresspayments.com)",
-      "WebFetch(domain:docs.xpresspayonline.com)"
+      "WebFetch(domain:docs.xpresspayonline.com)",
+      "Bash(node -e \"const fs = require\\('fs'\\); const html = fs.readFileSync\\('resources/views/applicant/apply.blade.php', 'utf8'\\); const scriptMatch = html.match\\(/<script>\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\); if\\(scriptMatch\\) { try { new Function\\(scriptMatch[1]\\); console.log\\('JavaScript syntax OK'\\); } catch\\(e\\) { console.log\\('Syntax error:', e.message\\); } }\")",
+      "Bash(copy .env.production .env)",
+      "PowerShell(Copy-Item *)"
     ]
   }
 }

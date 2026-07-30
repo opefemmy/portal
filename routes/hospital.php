@@ -104,7 +104,7 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
 
     // Pharmacy Routes
     Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
-        Route::get('/drugs', [PharmacyController::class, 'index'])->name('drugs');
+        Route::get('/drugs', [PharmacyController::class, 'drugs'])->name('drugs');
         Route::get('/drugs/create', [PharmacyController::class, 'createDrug'])->name('drugs.create');
         Route::post('/drugs', [PharmacyController::class, 'storeDrug'])->name('drugs.store');
         Route::get('/drugs/{drug}/edit', [PharmacyController::class, 'editDrug'])->name('drugs.edit');
@@ -112,7 +112,7 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         Route::delete('/drugs/{drug}', [PharmacyController::class, 'destroyDrug'])->name('drugs.destroy');
         Route::get('/prescriptions', [PharmacyController::class, 'prescriptions'])->name('prescriptions');
         Route::get('/prescriptions/{prescription}', [PharmacyController::class, 'showPrescription'])->name('prescriptions.show');
-        Route::post('/prescriptions/{prescription}/dispense', [PharmacyController::class, 'dispensePrescription'])->name('prescriptions.dispense');
+        Route::post('/prescriptions/{prescription}/dispense', [PharmacyController::class, 'dispense'])->name('prescriptions.dispense');
         Route::get('/categories', [PharmacyController::class, 'categories'])->name('categories');
         Route::get('/low-stock', [PharmacyController::class, 'lowStock'])->name('low-stock');
         Route::get('/expiring', [PharmacyController::class, 'expiring'])->name('expiring');

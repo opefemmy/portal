@@ -6,6 +6,7 @@ use App\Models\Hospital\HospitalServiceType;
 use App\Models\Hospital\HospitalPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class HospitalPaymentController extends Controller
 {
@@ -99,7 +100,7 @@ class HospitalPaymentController extends Controller
     }
 
     /**
-     * Validate payment by reference
+     * Validate payment by reference - verifies with gateway and updates status
      */
     public function validatePayment(Request $request)
     {
@@ -118,22 +119,190 @@ class HospitalPaymentController extends Controller
             ]);
         }
 
+        // If payment is already completed, return success
+        if ($payment->status === 'completed') {
+            return response()->json([
+                'success' => true,
+                'payment' => $this->formatPaymentResponse($payment),
+            ]);
+        }
+
+        // If payment method is online, try to verify with gateway
+        if ($payment->payment_method === 'online') {
+            $verifiedStatus = $this->verifyWithGateway($payment);
+            if ($verifiedStatus) {
+                $payment->refresh();
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'payment' => [
-                'id' => $payment->id,
-                'reference' => $payment->payment_ref,
-                'patient_name' => $payment->patient_name,
-                'patient_email' => $payment->patient_email,
-                'patient_phone' => $payment->patient_phone,
-                'service_name' => $payment->service_name,
-                'amount' => $payment->amount,
-                'portal_charge' => $payment->portal_charge,
-                'total_amount' => $payment->total_amount,
-                'status' => $payment->status,
-                'payment_method' => $payment->payment_method,
-                'created_at' => $payment->created_at->format('d M Y, h:i A'),
-            ],
+            'payment' => $this->formatPaymentResponse($payment),
+        ]);
+    }
+
+    /**
+     * Verify payment with payment gateway
+     */
+    protected function verifyWithGateway(HospitalPayment $payment): bool
+    {
+        // Get gateway settings from database
+        $gateway = \App\Models\PaymentGateway::where('is_active', true)->first();
+
+        if (!$gateway) {
+            return false;
+        }
+
+        try {
+            if ($gateway->provider === 'xpresspayments') {
+                return $this->verifyXpressPayment($payment, $gateway);
+            } elseif ($gateway->provider === 'paystack') {
+                return $this->verifyPaystackPayment($payment, $gateway);
+            } elseif ($gateway->provider === 'flutterwave') {
+                return $this->verifyFlutterwavePayment($payment, $gateway);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Payment verification failed: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify with XpressPayments
+     */
+    protected function verifyXpressPayment(HospitalPayment $payment, $gateway): bool
+    {
+        $publicKey = $gateway->getPublicKey();
+        $secretKey = $gateway->getSecretKey();
+        $baseUrl = $gateway->getBaseUrl();
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post($baseUrl . '/api/v1/payments/query', [
+                'transactionId' => $payment->payment_ref,
+                'publicKey' => $publicKey,
+            ]);
+
+            $data = $response->json();
+
+            if (isset($data['responseCode']) && $data['responseCode'] === '00') {
+                $payment->update([
+                    'status' => 'completed',
+                    'notes' => 'Verified via XpressPayments: ' . ($data['responseMessage'] ?? 'Success'),
+                ]);
+                return true;
+            }
+        } catch (\Exception $e) {
+            \Log::error('XpressPayment verification error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify with Paystack
+     */
+    protected function verifyPaystackPayment(HospitalPayment $payment, $gateway): bool
+    {
+        $secretKey = $gateway->getSecretKey();
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+            ])->get('https://api.paystack.co/transaction/verify/' . $payment->payment_ref);
+
+            $data = $response->json();
+
+            if ($data['status'] === true && $data['data']['status'] === 'success') {
+                $payment->update([
+                    'status' => 'completed',
+                    'notes' => 'Verified via Paystack: ' . ($data['data']['gateway_response'] ?? 'Success'),
+                ]);
+                return true;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Paystack verification error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify with Flutterwave
+     */
+    protected function verifyFlutterwavePayment(HospitalPayment $payment, $gateway): bool
+    {
+        $secretKey = $gateway->getSecretKey();
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+            ])->get('https://api.flutterwave.com/v3/transactions/' . $payment->payment_ref . '/verify');
+
+            $data = $response->json();
+
+            if ($data['status'] === 'success' && $data['data']['status'] === 'successful') {
+                $payment->update([
+                    'status' => 'completed',
+                    'notes' => 'Verified via Flutterwave: ' . ($data['data']['processor_response'] ?? 'Success'),
+                ]);
+                return true;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Flutterwave verification error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Format payment response
+     */
+    protected function formatPaymentResponse(HospitalPayment $payment): array
+    {
+        return [
+            'id' => $payment->id,
+            'reference' => $payment->payment_ref,
+            'patient_name' => $payment->patient_name,
+            'patient_email' => $payment->patient_email,
+            'patient_phone' => $payment->patient_phone,
+            'service_name' => $payment->service_name,
+            'amount' => $payment->amount,
+            'portal_charge' => $payment->portal_charge,
+            'total_amount' => $payment->total_amount,
+            'status' => $payment->status,
+            'payment_method' => $payment->payment_method,
+            'created_at' => $payment->created_at->format('d M Y, h:i A'),
+        ];
+    }
+
+    /**
+     * Check payment status via reference (GET request)
+     */
+    public function checkPayment($reference)
+    {
+        $payment = HospitalPayment::where('payment_ref', $reference)
+            ->orWhere('payment_ref', 'like', '%' . $reference . '%')
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found',
+            ]);
+        }
+
+        // If payment is pending, try to verify
+        if ($payment->status === 'pending' && $payment->payment_method === 'online') {
+            $this->verifyWithGateway($payment);
+            $payment->refresh();
+        }
+
+        return response()->json([
+            'success' => true,
+            'payment' => $this->formatPaymentResponse($payment),
         ]);
     }
 
@@ -142,6 +311,12 @@ class HospitalPaymentController extends Controller
      */
     public function printReceipt(HospitalPayment $payment)
     {
+        // If payment is pending and online, try to verify first
+        if ($payment->status === 'pending' && $payment->payment_method === 'online') {
+            $this->verifyWithGateway($payment);
+            $payment->refresh();
+        }
+
         return view('hospital-payment.receipt', compact('payment'));
     }
 }

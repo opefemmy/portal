@@ -2,6 +2,10 @@
 
 @section('title', 'Hospital Payment Receipt')
 
+@php
+$showPaymentModal = request('pay') && $payment->status === 'pending';
+@endphp
+
 @section('content')
 <style>
     .receipt {
@@ -158,6 +162,11 @@
         </div>
 
         <div class="text-center mt-4 no-print">
+            @if($payment->status === 'pending')
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                <i class="fas fa-credit-card me-2"></i>Pay Now
+            </button>
+            @endif
             <button onclick="window.print()" class="btn btn-danger">
                 <i class="fas fa-print me-2"></i>Print Receipt
             </button>
@@ -167,4 +176,202 @@
         </div>
     </div>
 </div>
+
+<!-- Payment Modal -->
+@if($payment->status === 'pending')
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Complete Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <h4>{{ $payment->service_name }}</h4>
+                    <h3 class="text-danger">₦{{ number_format($payment->total_amount, 2) }}</h3>
+                    <p class="text-muted">Ref: {{ $payment->payment_ref }}</p>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="payWithXpress()">
+                        <i class="fas fa-credit-card me-2"></i>Pay with XpressPayment
+                    </button>
+                    <button type="button" class="btn btn-info btn-lg" onclick="payWithPaystack()">
+                        <i class="fas fa-university me-2"></i>Pay with Paystack
+                    </button>
+                </div>
+
+                <hr>
+                <div class="text-center">
+                    <p class="text-muted">Or pay at bank and upload evidence</p>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#bankTransferModal">
+                        <i class="fas fa-bank me-2"></i>Bank Transfer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bank Transfer Modal -->
+<div class="modal fade" id="bankTransferModal" tabindex="-1" aria-labelledby="bankTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bankTransferModalLabel">Bank Transfer Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Bank Details:</strong><br>
+                    Account Name: {{ config('app.name', 'Institution') }} Hospital<br>
+                    Account Number: 1234567890<br>
+                    Bank: First Bank
+                </div>
+                <form id="bankTransferForm">
+                    @csrf
+                    <input type="hidden" name="payment_reference" value="{{ $payment->payment_ref }}">
+                    <div class="mb-3">
+                        <label class="form-label">Upload Payment Proof</label>
+                        <input type="file" class="form-control" name="payment_proof" accept="image/*,.pdf" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Submit Payment Proof</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="https://checkout.xpresspay.com/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if($showPaymentModal)
+    // Auto-show payment modal
+    setTimeout(function() {
+        var paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        paymentModal.show();
+    }, 500);
+    @endif
+
+    // Handle bank transfer form submission
+    document.getElementById('bankTransferForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Payment proof submitted for review. You will be notified once verified.');
+        var modal = bootstrap.Modal.getInstance(document.getElementById('bankTransferModal'));
+        modal.hide();
+    });
+});
+
+function payWithXpress() {
+    var paymentRef = '{{ $payment->payment_ref }}';
+    var amount = {{ $payment->total_amount }};
+    var email = '{{ $payment->patient_email ?? 'patient@example.com' }}';
+
+    // XpressPayment integration
+    if (typeof XpressPay !== 'undefined') {
+        var xpress = new XpressPay({
+            key: '{{ config("services.xpresspayments.public_key", "") }}',
+            amount: amount,
+            email: email,
+            ref: paymentRef,
+            callback: function(response) {
+                if (response.status === 'success') {
+                    verifyPayment(paymentRef);
+                }
+            }
+        });
+        xpress.open();
+    } else {
+        // Fallback: Open XpressPayment in new window
+        var url = 'https://checkout.xpresspay.com/?ref=' + paymentRef + '&amount=' + amount + '&email=' + email;
+        window.open(url, '_blank');
+
+        // Poll for payment verification
+        setTimeout(function() {
+            verifyPayment(paymentRef);
+        }, 5000);
+    }
+}
+
+function payWithPaystack() {
+    var paymentRef = '{{ $payment->payment_ref }}';
+    var amount = {{ $payment->total_amount * 100 }}; // Paystack uses kobo
+    var email = '{{ $payment->patient_email ?? 'patient@example.com' }}';
+
+    var handler = PaystackPop.setup({
+        key: '{{ config("services.paystack.public_key", "") }}',
+        email: email,
+        amount: amount,
+        ref: paymentRef,
+        callback: function(response) {
+            verifyPayment(paymentRef);
+        },
+        onClose: function() {
+            alert('Payment window closed');
+        }
+    });
+    handler.openIframe();
+}
+
+function verifyPayment(paymentRef) {
+    // Show loading
+    document.body.style.cursor = 'wait';
+
+    // Try POST validate first
+    fetch('/hospital-payment/validate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ payment_reference: paymentRef })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.body.style.cursor = 'default';
+        if (data.success && data.payment.status === 'completed') {
+            alert('Payment successful!');
+            window.location.reload();
+        } else if (data.success && data.payment.status === 'pending') {
+            // Try GET check endpoint as fallback
+            checkPaymentStatus(paymentRef);
+        } else {
+            alert('Payment verification failed. Please try again or contact support.');
+        }
+    })
+    .catch(error => {
+        // Fallback to GET check
+        checkPaymentStatus(paymentRef);
+    });
+}
+
+function checkPaymentStatus(paymentRef) {
+    document.body.style.cursor = 'wait';
+
+    fetch('/hospital-payment/check/' + paymentRef)
+    .then(response => response.json())
+    .then(data => {
+        document.body.style.cursor = 'default';
+        if (data.success && data.payment.status === 'completed') {
+            alert('Payment successful!');
+            window.location.reload();
+        } else if (data.success && data.payment.status === 'pending') {
+            alert('Payment is being processed. Please wait a moment and refresh.');
+            setTimeout(function() {
+                window.location.reload();
+            }, 3000);
+        } else {
+            alert('Payment verification failed. Please try again or contact support.');
+        }
+    })
+    .catch(error => {
+        document.body.style.cursor = 'default';
+        console.error('Error:', error);
+        alert('Error verifying payment. Please refresh the page.');
+    });
+}
+</script>
 @endsection

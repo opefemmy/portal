@@ -75,6 +75,7 @@ Route::prefix('hospital-payment')->name('hospital-payment.')->group(function () 
     Route::get('/services', [\App\Http\Controllers\HospitalPaymentController::class, 'getServiceTypes'])->name('services');
     Route::post('/process', [\App\Http\Controllers\HospitalPaymentController::class, 'processPayment'])->name('process');
     Route::post('/validate', [\App\Http\Controllers\HospitalPaymentController::class, 'validatePayment'])->name('validate');
+    Route::get('/check/{reference}', [\App\Http\Controllers\HospitalPaymentController::class, 'checkPayment'])->name('check');
     Route::get('/receipt/{payment}', [\App\Http\Controllers\HospitalPaymentController::class, 'printReceipt'])->name('receipt');
 });
 
