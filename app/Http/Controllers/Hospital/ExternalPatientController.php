@@ -74,14 +74,19 @@ class ExternalPatientController extends Controller
             'age' => $request->date_of_birth ? \Carbon\Carbon::parse($request->date_of_birth)->age : null,
         ]);
 
-        // Create initial communication about registration
-        ExternalCommunication::create([
-            'patient_id' => $patient->id,
-            'staff_id' => auth()->id(),
-            'type' => 'registration',
-            'subject' => 'Patient Registration',
-            'message' => 'New external patient registered: ' . $patient->full_name,
-        ]);
+        // Create initial communication about registration (only if authenticated)
+        try {
+            ExternalCommunication::create([
+                'patient_id' => $patient->id,
+                'staff_id' => auth()->id() ?? null,
+                'type' => 'registration',
+                'subject' => 'Patient Registration',
+                'message' => 'New external patient registered: ' . $patient->full_name,
+            ]);
+        } catch (\Exception $e) {
+            // Log error but don't fail the registration
+            \Illuminate\Support\Facades\Log::warning('Failed to create registration communication: ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Patient registered successfully! Patient Number: ' . $patient->patient_number);
     }
@@ -409,7 +414,14 @@ class ExternalPatientController extends Controller
             return redirect()->route('patient-portal.login');
         }
 
-        $patient = ExternalPatient::findOrFail($patientId);
+        $patient = ExternalPatient::find($patientId);
+
+        if (!$patient) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Patient not found. Please login again.'], 401);
+            }
+            return redirect()->route('patient-portal.login');
+        }
 
         $validated = $request->validate([
             'service_type_id' => 'required|exists:hospital_service_types,id',
@@ -417,16 +429,24 @@ class ExternalPatientController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $service = HospitalServiceType::findOrFail($validated['service_type_id']);
+        $service = HospitalServiceType::find($validated['service_type_id']);
+
+        if (!$service) {
+            return response()->json(['error' => 'Service not found. Please select a valid service.'], 422);
+        }
 
         // Calculate totals
         $portalCharge = ($service->amount * 2) / 100;
         $totalAmount = $service->amount + $portalCharge;
 
+        // Generate request code
+        $requestCode = 'HSR-' . strtoupper(Str::random(8));
+
         // Create service request
         $serviceRequest = HospitalServiceRequest::create([
             'patient_id' => $patient->id,
             'service_type_id' => $service->id,
+            'request_code' => $requestCode,
             'service_name' => $service->name,
             'category' => $service->category,
             'amount' => $service->amount,
