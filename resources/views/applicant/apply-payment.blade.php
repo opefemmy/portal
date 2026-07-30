@@ -32,31 +32,19 @@
 
                 @if(isset($paymentType) && $paymentType)
                 <h4>Application Fee: ₦{{ number_format($paymentType->amount, 2) }}</h4>
+                @php $amount = $paymentType->amount; @endphp
                 @else
                 <h4>Application Fee: ₦{{ number_format($feeAmount ?? 5000, 2) }}</h4>
+                @php $amount = $feeAmount ?? 5000; @endphp
                 @endif
 
                 <p class="text-muted">Complete your payment to proceed with application</p>
 
                 <hr>
 
-                {{-- Pay Now Button --}}
-                @php
-                $paymentPortalUrl = \App\Models\SystemSetting::getPaymentPortalUrl();
-                @endphp
-                @if($paymentPortalUrl)
-                <div class="d-grid mt-3">
-                    <a href="{{ $paymentPortalUrl }}" target="_blank" class="btn btn-primary btn-lg">
-                        <i class="fas fa-credit-card me-2"></i>Pay Now
-                    </a>
-                </div>
-                @else
-                <div class="d-grid mt-3">
-                    <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-credit-card me-2"></i>Pay Now
-                    </a>
-                </div>
-                @endif
+                <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentGatewayModal">
+                    <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                </button>
 
                 <hr>
 
@@ -90,6 +78,14 @@
     </div>
 </div>
 
+@include('components.payment-modal', [
+    'payment' => (object)['id' => 1, 'payment_ref' => 'APP-' . time(), 'amount' => $amount ?? 5000],
+    'amount' => $amount ?? 5000,
+    'email' => auth()->user()->email ?? null,
+    'name' => auth()->user()->name ?? 'Applicant',
+    'description' => 'Application Fee'
+])
+
 {{-- Validate Payment Modal --}}
 <div class="modal fade" id="validatePaymentModal" tabindex="-1" aria-labelledby="validatePaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -108,11 +104,11 @@
                         After making payment, enter your payment reference/transaction ID to validate.
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Payment Reference / Transaction ID <span class="text-danger">*</span></label>
+                        <label class="form-label"> Payment Reference / Transaction ID <span class="text-danger">*</span></label>
                         <input type="text" name="payment_ref" class="form-control" placeholder="Enter your payment reference" required>
                         <small class="text-muted">The transaction ID you received after payment</small>
                     </div>
-                    <input type="hidden" name="amount" value="{{ $feeAmount ?? 5000 }}">
+                    <input type="hidden" name="amount" value="{{ $amount ?? 5000 }}">
                     <input type="hidden" name="payment_date" value="{{ date('Y-m-d') }}">
                 </div>
                 <div class="modal-footer">

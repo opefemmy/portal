@@ -70,6 +70,11 @@ Route::prefix('online-payment')->name('online-payment.')->group(function () {
     Route::post('/verify', [\App\Http\Controllers\OnlinePaymentController::class, 'verifyXpressPayment'])->name('verify');
 });
 
+// General Payment Verification API
+Route::prefix('api/payment')->name('api.payment.')->group(function () {
+    Route::get('/verify/{reference}', [\App\Http\Controllers\PaymentVerificationController::class, 'verify'])->name('verify');
+});
+
 // Hospital Payment System (Public - No Login Required)
 Route::prefix('hospital-payment')->name('hospital-payment.')->group(function () {
     Route::get('/services', [\App\Http\Controllers\HospitalPaymentController::class, 'getServiceTypes'])->name('services');
