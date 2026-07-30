@@ -179,6 +179,9 @@ $showPaymentModal = request('pay') && $payment->status === 'pending';
 
 <!-- Payment Modal -->
 @if($payment->status === 'pending')
+@php
+$gateways = \App\Models\PaymentGateway::where('is_active', true)->get();
+@endphp
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -193,13 +196,37 @@ $showPaymentModal = request('pay') && $payment->status === 'pending';
                     <p class="text-muted">Ref: {{ $payment->payment_ref }}</p>
                 </div>
 
-                <div class="d-grid gap-2">
+                <div class="d-grid gap-3">
+                    @forelse($gateways as $gateway)
+                        @if($gateway->provider === 'xpresspayments')
+                        <button type="button" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2" onclick="payWithXpress()">
+                            <img src="https://xpresspay.com.ng/wp-content/uploads/2023/01/Xpress-Logo-1.png" alt="XpressPayment" height="25" onerror="this.style.display='none'">
+                            <span>Pay with XpressPayment</span>
+                        </button>
+                        @elseif($gateway->provider === 'paystack')
+                        <button type="button" class="btn btn-info btn-lg d-flex align-items-center justify-content-center gap-2" onclick="payWithPaystack()">
+                            <img src="https://cdnjs.cloudflare.com/ajax/libs/paystack-badge/1.0.0/paystack-badge.png" alt="Paystack" height="25" onerror="this.style.display='none'">
+                            <span>Pay with Paystack</span>
+                        </button>
+                        @elseif($gateway->provider === 'flutterwave')
+                        <button type="button" class="btn btn-warning btn-lg d-flex align-items-center justify-content-center gap-2" onclick="payWithFlutterwave()">
+                            <img src="https://flutterwave.com/images/logo-dark.png" alt="Flutterwave" height="25" onerror="this.style.display='none'" style="background: white; padding: 2px;">
+                            <span>Pay with Flutterwave</span>
+                        </button>
+                        @elseif($gateway->provider === 'remita')
+                        <button type="button" class="btn btn-success btn-lg d-flex align-items-center justify-content-center gap-2" onclick="payWithRemita()">
+                            <img src="https://www.remita.net/wp-content/uploads/2023/04/Remita-Logo.png" alt="Remita" height="25" onerror="this.style.display='none'">
+                            <span>Pay with Remita</span>
+                        </button>
+                        @endif
+                    @empty
                     <button type="button" class="btn btn-primary btn-lg" onclick="payWithXpress()">
                         <i class="fas fa-credit-card me-2"></i>Pay with XpressPayment
                     </button>
                     <button type="button" class="btn btn-info btn-lg" onclick="payWithPaystack()">
                         <i class="fas fa-university me-2"></i>Pay with Paystack
                     </button>
+                    @endforelse
                 </div>
 
                 <hr>
@@ -246,6 +273,7 @@ $showPaymentModal = request('pay') && $payment->status === 'pending';
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="https://checkout.xpresspay.com/script.js"></script>
+<script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     @if($showPaymentModal)
@@ -314,6 +342,76 @@ function payWithPaystack() {
         }
     });
     handler.openIframe();
+}
+
+function payWithFlutterwave() {
+    var paymentRef = '{{ $payment->payment_ref }}';
+    var amount = {{ $payment->total_amount }};
+    var email = '{{ $payment->patient_email ?? 'patient@example.com' }}';
+    var name = '{{ $payment->patient_name ?? '' }}';
+
+    // Flutterwave inline payment
+    if (typeof FlutterwaveCheckout !== 'undefined') {
+        var flutterwave = FlutterwaveCheckout({
+            public_key: '{{ config("services.flutterwave.public_key", "") }}',
+            tx_ref: paymentRef,
+            amount: amount,
+            currency: 'NGN',
+            payment_options: 'card,mobilemoney,ussd',
+            customer: {
+                email: email,
+                name: name,
+            },
+            customizations: {
+                title: '{{ config("app.name", "Hospital Payment") }}',
+                description: '{{ $payment->service_name }}',
+                logo: '{{ asset("images/logo.png") }}',
+            },
+            callback: function(response) {
+                if (response.status === 'successful' || response.tx_ref) {
+                    verifyPayment(paymentRef);
+                }
+            },
+            onclose: function() {
+                console.log('Payment window closed');
+            }
+        });
+    } else {
+        // Fallback: Open Flutterwave payment page
+        var url = 'https://checkout.flutterwave.com/pay/' + paymentRef + '?amount=' + amount + '&email=' + email + '&name=' + encodeURIComponent(name);
+        window.open(url, '_blank');
+
+        setTimeout(function() {
+            verifyPayment(paymentRef);
+        }, 5000);
+    }
+}
+
+function payWithRemita() {
+    var paymentRef = '{{ $payment->payment_ref }}';
+    var amount = {{ $payment->total_amount }};
+    var email = '{{ $payment->patient_email ?? 'patient@example.com' }}';
+    var name = '{{ $payment->patient_name ?? '' }}';
+    var phone = '{{ $payment->patient_phone ?? '' }}';
+
+    // Remita uses a redirect approach
+    // Build the payment URL with query parameters
+    var merchantId = '{{ config("services.remita.merchant_id", "") }}';
+    var serviceTypeId = '{{ config("services.remita.service_type_id", "4430731") }}';
+
+    // Generate hash for Remita
+    var hash = '{{ md5(config("services.remita.api_key", "") . $payment->payment_ref . $payment->total_amount . $serviceTypeId) }}';
+
+    // Remita payment URL
+    var url = 'https://login.remita.net/payment/' + merchantId + '/' + paymentRef + '/' + amount + '/' + hash + '?serviceTypeId=' + serviceTypeId + '&payer.email=' + encodeURIComponent(email) + '&payer.name=' + encodeURIComponent(name) + '&payer.phone=' + encodeURIComponent(phone);
+
+    // Open Remita payment page
+    window.open(url, '_blank');
+
+    // Poll for payment verification
+    setTimeout(function() {
+        verifyPayment(paymentRef);
+    }, 5000);
 }
 
 function verifyPayment(paymentRef) {

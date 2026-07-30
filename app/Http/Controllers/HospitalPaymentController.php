@@ -42,7 +42,7 @@ class HospitalPaymentController extends Controller
             'payment_method' => 'required|in:online,bank_transfer',
             'appointment_date' => 'nullable|date|after_or_equal:today',
             'doctor_name' => 'nullable|string|max:255',
-            'gateway' => 'nullable|string|in:xpresspayments,paystack,flutterwave',
+            'gateway' => 'nullable|string|in:xpresspayments,paystack,flutterwave,remita',
         ]);
 
         // Get service details
@@ -160,6 +160,8 @@ class HospitalPaymentController extends Controller
                 return $this->verifyPaystackPayment($payment, $gateway);
             } elseif ($gateway->provider === 'flutterwave') {
                 return $this->verifyFlutterwavePayment($payment, $gateway);
+            } elseif ($gateway->provider === 'remita') {
+                return $this->verifyRemitaPayment($payment, $gateway);
             }
         } catch (\Exception $e) {
             \Log::error('Payment verification failed: ' . $e->getMessage());
@@ -252,6 +254,53 @@ class HospitalPaymentController extends Controller
             }
         } catch (\Exception $e) {
             \Log::error('Flutterwave verification error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Verify with Remita
+     */
+    protected function verifyRemitaPayment(HospitalPayment $payment, $gateway): bool
+    {
+        $merchantId = $gateway->getPublicKey();
+        $apiKey = $gateway->getSecretKey();
+        $serviceTypeId = $gateway->test_secret_key ?? '4430731';
+        $baseUrl = $gateway->getBaseUrl();
+
+        try {
+            // Generate hash
+            $hashString = $apiKey . $payment->payment_ref . $payment->total_amount . $serviceTypeId;
+            $hash = hash('sha512', $hashString);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'remitaConsumerKey=' . $merchantId . ',remitaConsumerToken=' . $hash,
+            ])->post($baseUrl . '/api/v2/payments/query', [
+                'merchantId' => $merchantId,
+                'serviceTypeId' => $serviceTypeId,
+                'orderId' => $payment->payment_ref,
+                'amount' => $payment->total_amount,
+            ]);
+
+            $data = $response->json();
+
+            // Status 00 = successful, 021 = pending
+            if (isset($data['status']) && $data['status'] === '00') {
+                $payment->update([
+                    'status' => 'completed',
+                    'notes' => 'Verified via Remita: ' . ($data['message'] ?? 'Success'),
+                ]);
+                return true;
+            } elseif (isset($data['status']) && $data['status'] === '021') {
+                // Payment pending
+                $payment->update([
+                    'notes' => 'Payment pending: ' . ($data['message'] ?? 'Pending'),
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Remita verification error: ' . $e->getMessage());
         }
 
         return false;

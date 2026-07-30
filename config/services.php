@@ -46,4 +46,10 @@ return [
         'secret_key' => env('FLUTTERWAVE_SECRET_KEY', 'sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'),
     ],
 
+    'remita' => [
+        'merchant_id' => env('REMITA_MERCHANT_ID', ''),
+        'api_key' => env('REMITA_API_KEY', ''),
+        'service_type_id' => env('REMITA_SERVICE_TYPE_ID', '4430731'),
+    ],
+
 ];

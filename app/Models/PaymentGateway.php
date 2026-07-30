@@ -17,12 +17,22 @@ class PaymentGateway extends Model
     const PROVIDER_PAYSTACK = 'paystack';
     const PROVIDER_STRIPE = 'stripe';
     const PROVIDER_XPRESSPAYMENTS = 'xpresspayments';
+    const PROVIDER_REMITA = 'remita';
 
     const PROVIDERS = [
         self::PROVIDER_FLUTTERWAVE => 'Flutterwave',
         self::PROVIDER_PAYSTACK => 'Paystack',
         self::PROVIDER_STRIPE => 'Stripe',
         self::PROVIDER_XPRESSPAYMENTS => 'XpressPayments',
+        self::PROVIDER_REMITA => 'Remita',
+    ];
+
+    const PROVIDER_LOGOS = [
+        self::PROVIDER_FLUTTERWAVE => 'https://flutterwave.com/images/logo-dark.png',
+        self::PROVIDER_PAYSTACK => 'https://cdnjs.cloudflare.com/ajax/libs/paystack-badge/1.0.0/paystack-badge.png',
+        self::PROVIDER_STRIPE => 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg',
+        self::PROVIDER_XPRESSPAYMENTS => 'https://xpresspay.com.ng/wp-content/uploads/2023/01/Xpress-Logo-1.png',
+        self::PROVIDER_REMITA => 'https://www.remita.net/wp-content/uploads/2023/04/Remita-Logo.png',
     ];
 
     public static function getActiveGateway()
@@ -85,9 +95,36 @@ class PaymentGateway extends Model
 
     public function getBaseUrl(): string
     {
-        if ($this->is_test_mode) {
-            return 'https://xpresspayonlinesandbox.xpresspayments.com:8000';
+        if ($this->provider === self::PROVIDER_XPRESSPAYMENTS) {
+            if ($this->is_test_mode) {
+                return 'https://xpresspayonlinesandbox.xpresspayments.com:8000';
+            }
+            return 'https://xpresspayonline.com';
         }
-        return 'https://xpresspayonline.com';
+
+        if ($this->provider === self::PROVIDER_REMITA) {
+            if ($this->is_test_mode) {
+                return 'https://remitademo.xpresspayments.com';
+            }
+            return 'https://login.remita.net';
+        }
+
+        return '';
+    }
+
+    /**
+     * Get gateway logo URL
+     */
+    public function getLogoUrl(): string
+    {
+        return self::PROVIDER_LOGOS[$this->provider] ?? '';
+    }
+
+    /**
+     * Get provider display name
+     */
+    public function getDisplayName(): string
+    {
+        return self::PROVIDERS[$this->provider] ?? ucfirst($this->provider);
     }
 }

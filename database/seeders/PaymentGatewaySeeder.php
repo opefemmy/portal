@@ -57,6 +57,17 @@ class PaymentGatewaySeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'provider' => 'remita',
+                'test_public_key' => env('REMITA_MERCHANT_ID', ''), // Merchant ID goes in public_key
+                'test_secret_key' => env('REMITA_API_KEY', ''), // API Key goes in secret_key
+                'live_public_key' => env('REMITA_LIVE_MERCHANT_ID', ''),
+                'live_secret_key' => env('REMITA_LIVE_API_KEY', ''),
+                'is_test_mode' => true,
+                'is_active' => true, // Enable by default
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         foreach ($gateways as $gateway) {
