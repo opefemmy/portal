@@ -400,8 +400,10 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Payment Provider</label>
                         <select name="provider" class="form-select">
+                            <option value="xpresspayments">XpressPayment</option>
                             <option value="paystack">Paystack</option>
                             <option value="flutterwave">Flutterwave</option>
+                            <option value="remita">Remita</option>
                             <option value="stripe">Stripe</option>
                         </select>
                     </div>

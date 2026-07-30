@@ -4,7 +4,7 @@
 --}}
 
 @php
-$gateways = \App\Models\PaymentGateway::where('is_active', true)->get();
+$gateways = \App\Models\PaymentGateway::getActiveGatewaysWithConfig();
 $paymentId = $payment->id ?? $payment->payment_ref ?? time();
 $paymentRef = $payment->payment_ref ?? $payment->reference ?? 'PAY-' . time();
 $totalAmount = $amount ?? $payment->total_amount ?? $payment->amount ?? 0;

@@ -73,9 +73,10 @@
             </div>
             <div class="card-body">
                 <ul class="mb-0">
+                    <li><strong>XpressPayment</strong> - Card payments, USSD, Bank transfers</li>
                     <li><strong>Paystack</strong> - Card payments, USSD, Bank transfers</li>
                     <li><strong>Flutterwave</strong> - Card payments, Mobile money</li>
-                    <li><strong>Stripe</strong> - International cards</li>
+                    <li><strong>Remita</strong> - Direct debit, Bank transfers</li>
                 </ul>
             </div>
         </div>

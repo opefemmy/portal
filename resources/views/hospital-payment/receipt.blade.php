@@ -180,7 +180,7 @@ $showPaymentModal = request('pay') && $payment->status === 'pending';
 <!-- Payment Modal -->
 @if($payment->status === 'pending')
 @php
-$gateways = \App\Models\PaymentGateway::where('is_active', true)->get();
+$gateways = \App\Models\PaymentGateway::getActiveGatewaysWithConfig();
 @endphp
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">

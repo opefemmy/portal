@@ -53,13 +53,8 @@ class PaymentGateway extends Model
      */
     public static function getEnabledProviders(): array
     {
-        // Show all gateways that have API keys configured
-        $gateways = static::where(function($query) {
-            $query->whereNotNull('test_public_key')
-                  ->where('test_public_key', '!=', '')
-                  ->orWhereNotNull('live_public_key')
-                  ->where('live_public_key', '!=', '');
-        })->get();
+        // Show all active gateways - even without keys for testing
+        $gateways = static::where('is_active', true)->get();
 
         $providers = [];
 
@@ -73,6 +68,14 @@ class PaymentGateway extends Model
         }
 
         return $providers;
+    }
+
+    /**
+     * Get all active gateways with their configurations
+     */
+    public static function getActiveGatewaysWithConfig(): \Illuminate\Database\Eloquent\Collection
+    {
+        return static::where('is_active', true)->get();
     }
 
     /**
