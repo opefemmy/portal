@@ -22,31 +22,45 @@ class HospitalWardsSeeder extends Seeder
             ['name' => 'NICU', 'type' => 'private', 'total_beds' => 4, 'daily_rate' => 20000],
         ];
 
+        // Insert or update wards (prevent duplicates)
         foreach ($wards as $ward) {
-            DB::table('hospital_wards')->insert([
-                'name' => $ward['name'],
-                'type' => $ward['type'],
-                'total_beds' => $ward['total_beds'],
-                'available_beds' => $ward['total_beds'],
-                'daily_rate' => $ward['daily_rate'],
-                'description' => $ward['type'] . ' ward with ' . $ward['total_beds'] . ' beds',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        // Create beds for each ward
-        $wards = DB::table('hospital_wards')->get();
-        foreach ($wards as $ward) {
-            for ($i = 1; $i <= $ward->total_beds; $i++) {
-                DB::table('hospital_beds')->insert([
-                    'ward_id' => $ward->id,
-                    'bed_number' => 'BED-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                    'status' => 'available',
+            DB::table('hospital_wards')->updateOrInsert(
+                ['name' => $ward['name']],
+                [
+                    'name' => $ward['name'],
+                    'type' => $ward['type'],
+                    'total_beds' => $ward['total_beds'],
+                    'available_beds' => $ward['total_beds'],
+                    'daily_rate' => $ward['daily_rate'],
+                    'description' => $ward['type'] . ' ward with ' . $ward['total_beds'] . ' beds',
+                    'is_active' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ]
+            );
+        }
+
+        // Create beds for each ward (only if they don't exist)
+        $allWards = DB::table('hospital_wards')->get();
+        foreach ($allWards as $ward) {
+            // Check if beds already exist for this ward
+            $existingBeds = DB::table('hospital_beds')->where('ward_id', $ward->id)->count();
+
+            if ($existingBeds > 0) {
+                continue; // Skip if beds already exist
+            }
+
+            for ($i = 1; $i <= $ward->total_beds; $i++) {
+                DB::table('hospital_beds')->updateOrInsert(
+                    ['ward_id' => $ward->id, 'bed_number' => 'BED-' . str_pad($i, 3, '0', STR_PAD_LEFT)],
+                    [
+                        'ward_id' => $ward->id,
+                        'bed_number' => 'BED-' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'status' => 'available',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             }
         }
 

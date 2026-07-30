@@ -54,6 +54,17 @@ class HospitalStaffSeeder extends Seeder
         ];
 
         foreach ($staff as $index => $member) {
+            // Check if staff already exists to prevent duplicates
+            $exists = DB::table('hospital_staff')
+                ->where('first_name', $member['first_name'])
+                ->where('last_name', $member['last_name'])
+                ->where('staff_type', $member['staff_type'])
+                ->exists();
+
+            if ($exists) {
+                continue; // Skip if already exists
+            }
+
             DB::table('hospital_staff')->insert([
                 'staff_number' => 'STF' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
                 'first_name' => $member['first_name'],

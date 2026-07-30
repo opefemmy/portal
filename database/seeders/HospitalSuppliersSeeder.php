@@ -21,21 +21,24 @@ class HospitalSuppliersSeeder extends Seeder
         ];
 
         foreach ($suppliers as $supplier) {
-            DB::table('hospital_suppliers')->insert([
-                'name' => $supplier['name'],
-                'code' => $supplier['code'],
-                'contact_person' => $supplier['contact_person'],
-                'phone' => $supplier['phone'],
-                'email' => $supplier['email'],
-                'address' => 'Lagos, Nigeria',
-                'bank_name' => 'First Bank of Nigeria',
-                'account_number' => '1234567890',
-                'account_name' => $supplier['name'],
-                'notes' => 'Reliable supplier with fast delivery',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('hospital_suppliers')->updateOrInsert(
+                ['code' => $supplier['code']],
+                [
+                    'name' => $supplier['name'],
+                    'code' => $supplier['code'],
+                    'contact_person' => $supplier['contact_person'],
+                    'phone' => $supplier['phone'],
+                    'email' => $supplier['email'],
+                    'address' => 'Lagos, Nigeria',
+                    'bank_name' => 'First Bank of Nigeria',
+                    'account_number' => '1234567890',
+                    'account_name' => $supplier['name'],
+                    'notes' => 'Reliable supplier with fast delivery',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
 
         echo "Suppliers seeded successfully!\n";

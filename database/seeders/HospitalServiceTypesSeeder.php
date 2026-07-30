@@ -59,15 +59,18 @@ class HospitalServiceTypesSeeder extends Seeder
         ];
 
         foreach ($services as $service) {
-            DB::table('hospital_service_types')->insert([
-                'name' => $service['name'],
-                'category' => $service['category'],
-                'amount' => $service['amount'],
-                'is_active' => true,
-                'requires_appointment' => $service['requires_appointment'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('hospital_service_types')->updateOrInsert(
+                ['name' => $service['name'], 'category' => $service['category']],
+                [
+                    'name' => $service['name'],
+                    'category' => $service['category'],
+                    'amount' => $service['amount'],
+                    'is_active' => true,
+                    'requires_appointment' => $service['requires_appointment'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
 
         echo 'Hospital service types seeded successfully!';

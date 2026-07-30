@@ -25,14 +25,17 @@ class HospitalDrugCategoriesSeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            DB::table('hospital_drug_categories')->insert([
-                'name' => $category['name'],
-                'code' => $category['code'],
-                'description' => $category['description'],
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('hospital_drug_categories')->updateOrInsert(
+                ['code' => $category['code']],
+                [
+                    'name' => $category['name'],
+                    'code' => $category['code'],
+                    'description' => $category['description'],
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
 
         echo "Drug categories seeded successfully!\n";

@@ -76,24 +76,28 @@ class HospitalDrugsSeeder extends Seeder
 
         foreach ($drugs as $drug) {
             $categoryId = $categories[$drug['category']] ?? null;
-            DB::table('hospital_drugs')->insert([
-                'category_id' => $categoryId,
-                'name' => $drug['name'],
-                'generic_name' => $drug['generic_name'],
-                'code' => $drug['code'],
-                'form' => $drug['form'],
-                'strength' => $drug['strength'],
-                'unit' => $drug['unit'],
-                'cost_price' => $drug['cost_price'],
-                'selling_price' => $drug['selling_price'],
-                'reorder_level' => 50,
-                'current_stock' => rand(100, 500),
-                'storage_location' => 'Pharmacy Store A',
-                'requires_prescription' => in_array($drug['category'], ['Antibiotics', 'Analgesics', 'Cardiovascular', 'Diabetes']),
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+
+            DB::table('hospital_drugs')->updateOrInsert(
+                ['code' => $drug['code']],
+                [
+                    'category_id' => $categoryId,
+                    'name' => $drug['name'],
+                    'generic_name' => $drug['generic_name'],
+                    'code' => $drug['code'],
+                    'form' => $drug['form'],
+                    'strength' => $drug['strength'],
+                    'unit' => $drug['unit'],
+                    'cost_price' => $drug['cost_price'],
+                    'selling_price' => $drug['selling_price'],
+                    'reorder_level' => 50,
+                    'current_stock' => rand(100, 500),
+                    'storage_location' => 'Pharmacy Store A',
+                    'requires_prescription' => in_array($drug['category'], ['Antibiotics', 'Analgesics', 'Cardiovascular', 'Diabetes']),
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
 
         echo "Drugs seeded successfully!\n";
