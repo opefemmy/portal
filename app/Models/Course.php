@@ -81,4 +81,20 @@ class Course extends Model
     {
         return $this->hasOne(CourseClassification::class);
     }
+
+    /**
+     * Scope for courses in a specific department
+     */
+    public function scopeForDepartment($query, int $departmentId)
+    {
+        return $query->where('department_id', $departmentId);
+    }
+
+    /**
+     * Scope for courses in a specific school
+     */
+    public function scopeForSchool($query, int $schoolId)
+    {
+        return $query->where('school_id', $schoolId);
+    }
 }

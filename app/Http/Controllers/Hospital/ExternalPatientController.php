@@ -437,8 +437,12 @@ class ExternalPatientController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->route('patient-portal.dashboard')
-            ->with('success', 'Service request submitted! Please proceed to payment. Your Service Code: ' . $serviceRequest->request_code);
+        return response()->json([
+            'success' => true,
+            'message' => 'Service request submitted!',
+            'request_code' => $serviceRequest->request_code,
+            'amount' => $totalAmount,
+        ]);
     }
 
     /**

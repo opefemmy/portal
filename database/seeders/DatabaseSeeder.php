@@ -469,6 +469,7 @@ class DatabaseSeeder extends Seeder
             ERPRolesSeeder::class,
             PaymentTypeSeeder::class,
             HospitalModuleSeeder::class,
+            DataCleanupSeeder::class,
         ]);
     }
 }

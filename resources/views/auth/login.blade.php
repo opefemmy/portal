@@ -769,13 +769,28 @@ $(document).ready(function() {
     $('#hospitalPaymentForm').submit(function(e) {
         e.preventDefault();
 
+        var form = $(this);
+        var submitBtn = form.find('button[type="submit"]');
+        var originalBtnText = submitBtn.html();
+
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+
         $.ajax({
             url: '{{ route("hospital-payment.process") }}',
             type: 'POST',
-            data: $(this).serialize(),
+            data: form.serialize(),
             success: function(response) {
                 if(response.success) {
-                    alert('Payment initiated successfully! Reference: ' + response.reference);
+                    // Close the modal
+                    $('#hospitalPaymentModal').modal('hide');
+
+                    // Reset the form
+                    form[0].reset();
+
+                    // Show success message
+                    alert('Payment initiated successfully!\n\nReference: ' + response.reference + '\nAmount: ₦' + response.amount);
+
+                    // Optionally open receipt in new tab
                     if(response.receipt_url) {
                         window.open(response.receipt_url, '_blank');
                     }
@@ -783,9 +798,22 @@ $(document).ready(function() {
                     alert('Error: ' + response.message);
                 }
             },
-            error: function() {
-                alert('Error processing payment');
+            error: function(xhr) {
+                var errorMessage = 'Error processing payment';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseText) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.message) {
+                            errorMessage = response.message;
+                        }
+                    } catch(e) {}
+                }
+                alert(errorMessage);
             }
+        }).always(function() {
+            submitBtn.prop('disabled', false).html(originalBtnText);
         });
     });
 

@@ -99,6 +99,7 @@ class ResultController extends Controller
         ]);
 
         $currentSession = Session::getCurrentSession();
+        $resultsSaved = 0;
 
         foreach ($request->results as $resultData) {
             $studentCourseId = $resultData['student_course_id'];
@@ -110,30 +111,33 @@ class ResultController extends Controller
             // Calculate grade
             $grade = \App\Models\Grade::getGrade($total);
 
-            // Check if result already exists
-            $result = Result::updateOrCreate(
-                ['student_course_id' => $studentCourseId],
-                [
-                    'ca1' => $ca1,
-                    'ca2' => $ca2,
-                    'exam' => $exam,
-                    'total_score' => $total,
-                    'grade' => $grade ? $grade->grade : null,
-                    'grade_point' => $grade ? $grade->grade_point : 0,
-                    'remarks' => $grade ? $grade->remark : null,
-                    'status' => 'pending_approval',
-                    'course_id' => $course->id,
-                ]
-            );
+            // SPIKE: Delete existing result first to avoid duplicates, then create new
+            Result::where('student_course_id', $studentCourseId)->delete();
+
+            // Create fresh result record
+            $result = Result::create([
+                'student_course_id' => $studentCourseId,
+                'course_id' => $course->id,
+                'ca1' => $ca1,
+                'ca2' => $ca2,
+                'exam' => $exam,
+                'total_score' => $total,
+                'grade' => $grade ? $grade->grade : null,
+                'grade_point' => $grade ? $grade->grade_point : 0,
+                'remarks' => $grade ? $grade->remark : null,
+                'status' => 'pending_approval',
+            ]);
 
             // Calculate GPA/CGPA for the student
             $studentCourse = StudentCourse::find($studentCourseId);
             if ($studentCourse) {
                 $result->calculateAll($studentCourse->student_id);
             }
+
+            $resultsSaved++;
         }
 
-        return back()->with('success', 'Results saved successfully!');
+        return back()->with('success', "{$resultsSaved} results saved successfully! Previous records have been replaced.");
     }
 
     /**
@@ -267,20 +271,22 @@ class ResultController extends Controller
             $total = $ca1 + $ca2 + $exam;
             $grade = \App\Models\Grade::getGrade($total);
 
-            Result::updateOrCreate(
-                ['student_course_id' => $studentCourse->id],
-                [
-                    'ca1' => $ca1,
-                    'ca2' => $ca2,
-                    'exam' => $exam,
-                    'total_score' => $total,
-                    'grade' => $grade ? $grade->grade : null,
-                    'grade_point' => $grade ? $grade->grade_point : 0,
-                    'remarks' => $grade ? $grade->remark : null,
-                    'status' => 'pending_approval',
-                    'course_id' => $course->id,
-                ]
-            );
+            // SPIKE: Delete existing result first to avoid duplicates
+            Result::where('student_course_id', $studentCourse->id)->delete();
+
+            // Create fresh result record
+            Result::create([
+                'student_course_id' => $studentCourse->id,
+                'course_id' => $course->id,
+                'ca1' => $ca1,
+                'ca2' => $ca2,
+                'exam' => $exam,
+                'total_score' => $total,
+                'grade' => $grade ? $grade->grade : null,
+                'grade_point' => $grade ? $grade->grade_point : 0,
+                'remarks' => $grade ? $grade->remark : null,
+                'status' => 'pending_approval',
+            ]);
 
             $successCount++;
         }

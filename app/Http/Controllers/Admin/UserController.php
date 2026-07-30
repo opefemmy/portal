@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -38,18 +40,23 @@ class UserController extends Controller
         return view('admin.users.create', compact('roles'));
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id',
-        ]);
+        $validated = $request->validated();
 
-        User::create(array_merge($validated, [
+        // Create user with validated data
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-        ]));
+            'role_id' => $validated['role_id'],
+            'school_id' => $validated['school_id'] ?? null,
+            'department_id' => $validated['department_id'] ?? null,
+            'staff_id' => $validated['staff_id'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully');
     }
@@ -65,15 +72,23 @@ class UserController extends Controller
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'role_id' => 'required|exists:roles,id',
+        $validated = $request->validated();
+
+        // Update user with validated data
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role_id' => $validated['role_id'],
+            'school_id' => $validated['school_id'] ?? null,
+            'department_id' => $validated['department_id'] ?? null,
+            'staff_id' => $validated['staff_id'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        $user->update($validated);
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully');
     }
 

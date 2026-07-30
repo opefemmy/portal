@@ -15,6 +15,8 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
 
+    protected $guarded = ['id'];
+
     protected $fillable = [
         'name', 'email', 'password', 'role_id', 'passport', 'gender',
         'date_of_birth', 'phone', 'address', 'state', 'lga',
@@ -101,6 +103,52 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isDean(): bool
     {
         return $this->role && $this->role->slug === 'dean';
+    }
+
+    /**
+     * Get the department if user is HOD
+     */
+    public function getDepartment(): ?Department
+    {
+        return $this->department;
+    }
+
+    /**
+     * Get the school if user is Dean
+     */
+    public function getSchool(): ?School
+    {
+        return $this->school;
+    }
+
+    /**
+     * Scope to filter users by HOD role
+     */
+    public function scopeHod($query)
+    {
+        return $query->whereHas('role', function($q) {
+            $q->where('slug', 'hod');
+        });
+    }
+
+    /**
+     * Scope to filter users by Dean role
+     */
+    public function scopeDean($query)
+    {
+        return $query->whereHas('role', function($q) {
+            $q->where('slug', 'dean');
+        });
+    }
+
+    /**
+     * Scope to filter users by Lecturer role
+     */
+    public function scopeLecturer($query)
+    {
+        return $query->whereHas('role', function($q) {
+            $q->where('slug', 'lecturer');
+        });
     }
 
     public function routeNotificationForMail(): string
