@@ -442,6 +442,9 @@ class ExternalPatientController extends Controller
         // Generate request code
         $requestCode = 'HSR-' . strtoupper(Str::random(8));
 
+        // Generate payment reference
+        $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+
         // Create service request
         $serviceRequest = HospitalServiceRequest::create([
             'patient_id' => $patient->id,
@@ -457,11 +460,35 @@ class ExternalPatientController extends Controller
             'status' => 'pending',
         ]);
 
+        // Also create a hospital payment record for this service request
+        $payment = HospitalPayment::create([
+            'payment_ref' => $paymentRef,
+            'patient_name' => $patient->full_name,
+            'patient_email' => $patient->email,
+            'patient_phone' => $patient->phone,
+            'patient_gender' => $patient->gender,
+            'patient_age' => $patient->age,
+            'service_type_id' => $service->id,
+            'service_name' => $service->name,
+            'amount' => $service->amount,
+            'portal_charge' => $portalCharge,
+            'total_amount' => $totalAmount,
+            'payment_method' => 'online',
+            'status' => 'pending',
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        // Link payment to service request
+        $serviceRequest->update(['payment_id' => $payment->id]);
+
         return response()->json([
             'success' => true,
             'message' => 'Service request submitted!',
-            'request_code' => $serviceRequest->request_code,
+            'request_code' => $requestCode,
             'amount' => $totalAmount,
+            'payment_id' => $payment->id,
+            'payment_ref' => $paymentRef,
+            'proceed_to_payment' => true,
         ]);
     }
 

@@ -21,6 +21,18 @@
     <div class="row justify-content-center">
         <div class="col-lg-6">
             <div class="card border-0 shadow portal-card-custom">
+                @if($payment->status == 'pending' && request('pay'))
+                <div class="card-header bg-warning text-dark py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Complete Payment
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please complete your payment to confirm your service request.
+                    </div>
+                @elseif($payment->status == 'completed')
                 <div class="card-header bg-success text-white py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-receipt me-2"></i>Payment Receipt
@@ -31,6 +43,14 @@
                         <i class="fas fa-check-circle fa-4x text-success"></i>
                         <h4 class="mt-3">Payment Verified</h4>
                     </div>
+                @else
+                <div class="card-header bg-secondary text-white py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>Payment Details
+                    </h4>
+                </div>
+                <div class="card-body">
+                @endif
 
                     <table class="table table-borderless">
                         <tr>
@@ -95,6 +115,11 @@
                     </table>
 
                     <div class="d-grid gap-2 mt-4">
+                        @if($payment->status == 'pending')
+                            <a href="{{ route('patient-portal.receipt', $payment->id) }}?pay=1" class="btn btn-success btn-lg">
+                                <i class="fas fa-credit-card me-2"></i>Pay Now
+                            </a>
+                        @endif
                         <button onclick="window.print()" class="btn btn-primary">
                             <i class="fas fa-print me-2"></i>Print Receipt
                         </button>

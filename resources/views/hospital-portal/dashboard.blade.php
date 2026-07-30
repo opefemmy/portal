@@ -253,6 +253,15 @@
                                                 @endif
                                             </td>
                                             <td>
+                                                @if($payment->status == 'pending')
+                                                    <button class="btn btn-sm btn-success pay-now-btn"
+                                                        data-payment-id="{{ $payment->id }}"
+                                                        data-payment-ref="{{ $payment->payment_ref }}"
+                                                        data-amount="{{ $payment->total_amount }}"
+                                                        data-service="{{ $payment->service_name }}">
+                                                        <i class="fas fa-credit-card"></i> Pay Now
+                                                    </button>
+                                                @endif
                                                 <a href="{{ route('patient-portal.receipt', $payment->id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
@@ -477,14 +486,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             })
             .then(data => {
-                alert('Service request submitted! Request Code: ' + data.request_code);
-                location.reload();
+                if (data.success) {
+                    // Show success and redirect to payment
+                    var msg = 'Service request submitted!\n\n';
+                    msg += 'Request Code: ' + data.request_code + '\n';
+                    msg += 'Amount: ₦' + parseFloat(data.amount).toLocaleString() + '\n\n';
+                    msg += 'Redirecting to payment...';
+
+                    alert(msg);
+
+                    // Store payment info in sessionStorage for the payment modal
+                    sessionStorage.setItem('pending_payment_id', data.payment_id);
+                    sessionStorage.setItem('pending_payment_ref', data.payment_ref);
+                    sessionStorage.setItem('pending_amount', data.amount);
+
+                    // Reload the page - the payment will be shown in pending section
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to submit service request'));
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error: ' + error.message);
             });
         });
+    }
+
+    // Handle Pay Now buttons
+    var payNowBtns = document.querySelectorAll('.pay-now-btn');
+    payNowBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            var paymentId = this.getAttribute('data-payment-id');
+            var paymentRef = this.getAttribute('data-payment-ref');
+            var amount = this.getAttribute('data-amount');
+            var service = this.getAttribute('data-service');
+
+            if (confirm('Pay for ' + service + ' (₦' + parseFloat(amount).toLocaleString() + ')?\n\nPayment Reference: ' + paymentRef)) {
+                // Redirect to payment receipt page with payment flag
+                window.location.href = '{{ route("patient-portal.receipt", ["payment" => ":paymentId"]) }}'.replace(':paymentId', paymentId) + '?pay=1';
+            }
+        });
+    });
+
+    // Check for pending payment in sessionStorage and auto-show payment modal
+    var pendingPaymentId = sessionStorage.getItem('pending_payment_id');
+    var pendingRef = sessionStorage.getItem('pending_payment_ref');
+    var pendingAmount = sessionStorage.getItem('pending_amount');
+
+    if (pendingPaymentId && pendingRef) {
+        // Clear the stored payment info
+        sessionStorage.removeItem('pending_payment_id');
+        sessionStorage.removeItem('pending_payment_ref');
+        sessionStorage.removeItem('pending_amount');
+
+        // Show payment prompt
+        setTimeout(function() {
+            if (confirm('You have a pending payment!\n\nReference: ' + pendingRef + '\nAmount: ₦' + parseFloat(pendingAmount).toLocaleString() + '\n\nClick OK to proceed to payment.')) {
+                window.location.href = '{{ route("patient-portal.receipt", ["payment" => ":paymentId"]) }}'.replace(':paymentId', pendingPaymentId) + '?pay=1';
+            }
+        }, 1000);
     }
 
     // Validate payment
