@@ -325,6 +325,22 @@ if (Schema::hasTable('system_settings')) {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Gateway Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Select Payment Gateway <span class="text-danger">*</span></label>
+                    <select name="gateway" id="online_gateway" class="form-select form-select-lg" required>
+                        <option value="">-- Select Payment Gateway --</option>
+                        @php
+                        $enabledProviders = \App\Models\PaymentGateway::getEnabledProviders();
+                        @endphp
+                        @forelse($enabledProviders as $key => $name)
+                            <option value="{{ $key }}">{{ $name }}</option>
+                        @empty
+                            <option value="">No payment gateway available</option>
+                        @endforelse
+                    </select>
+                    <div class="form-text">Choose your preferred payment method</div>
+                </div>
                 <form id="onlinePaymentForm">
                     @csrf
                     <input type="hidden" name="student_id" id="student_id">
@@ -476,6 +492,23 @@ if (Schema::hasTable('system_settings')) {
             <div class="modal-body">
                 <form id="hospitalPaymentForm">
                     @csrf
+
+                    <!-- Gateway Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Select Payment Gateway <span class="text-danger">*</span></label>
+                        <select name="gateway" id="hospital_gateway" class="form-select form-select-lg" required>
+                            <option value="">-- Select Payment Gateway --</option>
+                            @php
+                            $enabledProviders = \App\Models\PaymentGateway::getEnabledProviders();
+                            @endphp
+                            @forelse($enabledProviders as $key => $name)
+                                <option value="{{ $key }}">{{ $name }}</option>
+                            @empty
+                                <option value="">No payment gateway available</option>
+                            @endforelse
+                        </select>
+                        <div class="form-text">Choose your preferred payment method</div>
+                    </div>
 
                     <!-- Patient Information -->
                     <h6 class="fw-bold text-danger mb-3">Patient Information</h6>
@@ -704,17 +737,24 @@ $(document).ready(function() {
         var submitBtn = form.find('button[type="submit"]');
         var originalBtnText = submitBtn.html();
 
+        // Get selected gateway
+        var gateway = $('#online_gateway').val();
+        if (!gateway) {
+            alert('Please select a payment gateway');
+            return;
+        }
+
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
 
         $.ajax({
             url: '{{ route("online-payment.process") }}',
             type: 'POST',
-            data: form.serialize() + '&gateway=xpresspayments',
+            data: form.serialize() + '&gateway=' + gateway,
             success: function(response) {
                 if(response.success) {
                     // Check if we should redirect to payment gateway
                     if(response.auto_redirect && response.form_url) {
-                        // Create and submit a form to redirect to XpressPayments
+                        // Create and submit a form to redirect to payment gateway
                         var redirectForm = $('<form>', {
                             method: 'POST',
                             action: response.form_url
@@ -814,12 +854,19 @@ $(document).ready(function() {
         var submitBtn = form.find('button[type="submit"]');
         var originalBtnText = submitBtn.html();
 
+        // Get selected gateway
+        var gateway = $('#hospital_gateway').val();
+        if (!gateway) {
+            alert('Please select a payment gateway');
+            return;
+        }
+
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
 
         $.ajax({
             url: '{{ route("hospital-payment.process") }}',
             type: 'POST',
-            data: form.serialize(),
+            data: form.serialize() + '&gateway=' + gateway,
             success: function(response) {
                 if(response.success) {
                     // Close the modal

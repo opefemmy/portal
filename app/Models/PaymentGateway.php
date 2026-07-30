@@ -30,6 +30,49 @@ class PaymentGateway extends Model
         return static::where('is_active', true)->first();
     }
 
+    /**
+     * Get all active gateways for selection
+     */
+    public static function getActiveGateways()
+    {
+        return static::where('is_active', true)->get();
+    }
+
+    /**
+     * Get all gateway providers for dropdown (both active and inactive for configuration)
+     */
+    public static function getEnabledProviders(): array
+    {
+        // Show all gateways that have API keys configured
+        $gateways = static::where(function($query) {
+            $query->whereNotNull('test_public_key')
+                  ->where('test_public_key', '!=', '')
+                  ->orWhereNotNull('live_public_key')
+                  ->where('live_public_key', '!=', '');
+        })->get();
+
+        $providers = [];
+
+        foreach ($gateways as $gateway) {
+            $providers[$gateway->provider] = self::PROVIDERS[$gateway->provider] ?? ucfirst($gateway->provider);
+        }
+
+        // If no gateways configured, show all available options
+        if (empty($providers)) {
+            return self::PROVIDERS;
+        }
+
+        return $providers;
+    }
+
+    /**
+     * Get all available gateway providers including those without keys
+     */
+    public static function getAllProviders(): array
+    {
+        return self::PROVIDERS;
+    }
+
     public function getPublicKey(): string
     {
         return $this->is_test_mode ? $this->test_public_key : $this->live_public_key;

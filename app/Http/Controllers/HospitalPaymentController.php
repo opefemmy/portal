@@ -41,6 +41,7 @@ class HospitalPaymentController extends Controller
             'payment_method' => 'required|in:online,bank_transfer',
             'appointment_date' => 'nullable|date|after_or_equal:today',
             'doctor_name' => 'nullable|string|max:255',
+            'gateway' => 'nullable|string|in:xpresspayments,paystack,flutterwave',
         ]);
 
         // Get service details
@@ -52,6 +53,9 @@ class HospitalPaymentController extends Controller
 
         // Generate unique payment reference
         $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+
+        // Get selected gateway (default to xpresspayments)
+        $gateway = $request->gateway ?? 'xpresspayments';
 
         // Create payment record
         $payment = HospitalPayment::create([
@@ -74,13 +78,24 @@ class HospitalPaymentController extends Controller
             'notes' => $request->notes,
         ]);
 
-        return response()->json([
+        // Build response with gateway info
+        $response = [
             'success' => true,
             'message' => 'Payment initiated successfully!',
             'payment_id' => $payment->id,
             'reference' => $paymentRef,
+            'amount' => $totalAmount,
+            'gateway' => $gateway,
             'receipt_url' => route('hospital-payment.receipt', $payment->id),
-        ]);
+        ];
+
+        // For online payments, provide redirect info
+        if ($request->payment_method === 'online') {
+            $response['redirect_to_payment'] = true;
+            $response['payment_url'] = route('hospital-payment.receipt', $payment->id) . '?pay=1';
+        }
+
+        return response()->json($response);
     }
 
     /**

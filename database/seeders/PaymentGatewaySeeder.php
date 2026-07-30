@@ -20,7 +20,7 @@ class PaymentGatewaySeeder extends Seeder
                 'live_public_key' => env('PAYSTACK_LIVE_PUBLIC_KEY', ''),
                 'live_secret_key' => env('PAYSTACK_LIVE_SECRET_KEY', ''),
                 'is_test_mode' => true,
-                'is_active' => false,
+                'is_active' => true, // Enable by default
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -31,7 +31,7 @@ class PaymentGatewaySeeder extends Seeder
                 'live_public_key' => env('XPRESSPAYMENTS_LIVE_PUBLIC_KEY', ''),
                 'live_secret_key' => env('XPRESSPAYMENTS_LIVE_SECRET_KEY', ''),
                 'is_test_mode' => true,
-                'is_active' => true,
+                'is_active' => true, // Enable by default
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -42,7 +42,18 @@ class PaymentGatewaySeeder extends Seeder
                 'live_public_key' => env('FLUTTERWAVE_LIVE_PUBLIC_KEY', ''),
                 'live_secret_key' => env('FLUTTERWAVE_LIVE_SECRET_KEY', ''),
                 'is_test_mode' => true,
-                'is_active' => false,
+                'is_active' => true, // Enable by default
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'provider' => 'stripe',
+                'test_public_key' => env('STRIPE_PUBLIC_KEY', ''),
+                'test_secret_key' => env('STRIPE_SECRET_KEY', ''),
+                'live_public_key' => env('STRIPE_LIVE_PUBLIC_KEY', ''),
+                'live_secret_key' => env('STRIPE_LIVE_SECRET_KEY', ''),
+                'is_test_mode' => true,
+                'is_active' => false, // Disable by default
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
