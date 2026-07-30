@@ -21,7 +21,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-6">
             <div class="card border-0 shadow portal-card-custom">
-                @if($payment->status == 'pending' && request('pay'))
+                @if(($showPaymentModal ?? false) && $payment->status == 'pending')
                 <div class="card-header bg-warning text-dark py-3">
                     <h4 class="mb-0">
                         <i class="fas fa-credit-card me-2"></i>Complete Payment
@@ -116,9 +116,9 @@
 
                     <div class="d-grid gap-2 mt-4">
                         @if($payment->status == 'pending')
-                            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                                <i class="fas fa-credit-card me-2"></i>Pay Now
-                            </button>
+                        <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                            <i class="fas fa-credit-card me-2"></i>Pay Now
+                        </button>
                         @endif
                         <button onclick="window.print()" class="btn btn-primary">
                             <i class="fas fa-print me-2"></i>Print Receipt
@@ -146,7 +146,6 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Gateway Selection -->
                 <div class="mb-4">
                     <label class="form-label fw-bold">Select Payment Gateway <span class="text-danger">*</span></label>
                     <select id="paymentGateway" class="form-select form-select-lg">
@@ -155,12 +154,11 @@
                         $enabledProviders = \App\Models\PaymentGateway::getEnabledProviders();
                         @endphp
                         @foreach($enabledProviders as $key => $name)
-                            <option value="{{ $key }}">{{ $name }}</option>
+                        <option value="{{ $key }}">{{ $name }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                <!-- Payment Details -->
                 <div class="alert alert-info">
                     <h5 class="alert-heading">Payment Details</h5>
                     <p class="mb-1"><strong>Reference:</strong> {{ $payment->payment_ref }}</p>
@@ -177,21 +175,6 @@
         </div>
     </div>
 </div>
-
-<!-- Auto-show payment modal if pay=1 -->
-@if($showPaymentModal ?? false)
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        var paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-        paymentModal.show();
-    }, 500);
-});
-</script>
-@endpush
-@endif
-
 @endif
 
 @push('scripts')
@@ -209,13 +192,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Show loading
             processBtn.disabled = true;
             processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
 
-            // For demo/testing, simulate payment completion
-            // In production, this would redirect to payment gateway
-            var paymentId = {{ $payment->id }};
             var paymentRef = '{{ $payment->payment_ref }}';
 
             // Simulate payment processing
@@ -231,8 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                // For demo, we'll mark as completed
-                // In real implementation, this would verify with the payment gateway
                 location.href = '{{ route("patient-portal.dashboard") }}?payment=completed';
             })
             .catch(error => {
@@ -245,6 +222,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
-@endif
-
 @endsection
