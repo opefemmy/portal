@@ -33,25 +33,20 @@
 
                 <hr>
 
-                <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentGatewayModal">
-                    <i class="fas fa-credit-card me-2"></i>Proceed to Payment
-                </button>
+                <form method="POST" action="{{ route('student.payments.initiate', $fee) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                    </button>
+                </form>
 
                 <div class="text-center mt-3">
                     <small class="text-muted">
-                        <i class="fas fa-lock me-1"></i>Secure payment powered by multiple gateways
+                        <i class="fas fa-lock me-1"></i>Secure payment powered by {{ ucfirst($gateway->provider ?? 'Payment Gateway') }}
                     </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-@include('components.payment-modal', [
-    'payment' => $fee,
-    'amount' => $fee->amount,
-    'email' => auth()->user()->email,
-    'name' => auth()->user()->name,
-    'description' => $fee->name
-])
 @endsection

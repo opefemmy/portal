@@ -32,11 +32,11 @@ $requireFee = true;
                         <div class="p-4 border rounded">
                             <i class="fas fa-credit-card fa-3x text-primary mb-3"></i>
                             <h5>Pay Now Online</h5>
-                            <p class="text-muted small">Pay securely using multiple payment gateways</p>
+                            <p class="text-muted small">Pay securely using debit card, bank transfer, or USSD</p>
                             @auth
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentGatewayModal">
+                            <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-primary">
                                 <i class="fas fa-external-link-alt me-1"></i> Pay Now
-                            </button>
+                            </a>
                             @else
                             <a href="{{ route('login') }}" class="btn btn-primary">
                                 <i class="fas fa-lock me-1"></i> Login to Pay
@@ -61,26 +61,23 @@ $requireFee = true;
                 <div class="alert alert-warning">
                     <h6><i class="fas fa-info-circle me-2"></i>How to Pay:</h6>
                     <ol class="mb-0">
-                        <li>Click <strong>"Pay Now Online"</strong> to select a payment gateway</li>
-                        <li>Complete payment using your preferred gateway</li>
+                        <li>Click <strong>"Pay Now Online"</strong> to make payment via secure gateway</li>
                         <li>Or <strong>"Validate Existing Payment"</strong> if you already paid externally</li>
                         <li><strong>Note:</strong> Don't pay to any individual - use only the official payment channels</li>
                     </ol>
                 </div>
+
+                @auth
+                <div class="mt-3">
+                    <a href="{{ route('applicant.payment.test') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-flask me-1"></i> Test Payment (Demo)
+                    </a>
+                </div>
+                @endauth
             </div>
         </div>
     </div>
 </div>
-
-@auth
-@include('components.payment-modal', [
-    'payment' => (object)['id' => 1, 'payment_ref' => 'APP-' . time(), 'amount' => $feeAmount],
-    'amount' => $feeAmount,
-    'email' => auth()->user()->email,
-    'name' => auth()->user()->name,
-    'description' => 'Application Fee'
-])
-@endauth
 
 <!-- Validate Payment Modal -->
 <div class="modal fade" id="validateModal" tabindex="-1" aria-labelledby="validateModalLabel" aria-hidden="true">
