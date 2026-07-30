@@ -608,7 +608,7 @@ class ExternalPatientController extends Controller
     /**
      * View payment receipt
      */
-    public function viewReceiptPortal(HospitalPayment $payment)
+    public function viewReceiptPortal(Request $request, HospitalPayment $payment)
     {
         $patientId = session('hospital_patient_id');
 
@@ -616,7 +616,8 @@ class ExternalPatientController extends Controller
         if ($patientId) {
             $patient = ExternalPatient::find($patientId);
             if ($patient && ($payment->patient_phone == $patient->phone || $payment->patient_email == $patient->email)) {
-                return view('hospital-portal.receipt', compact('payment'));
+                $showPaymentModal = $request->has('pay') && $payment->status == 'pending';
+                return view('hospital-portal.receipt', compact('payment', 'showPaymentModal'));
             }
         }
 
