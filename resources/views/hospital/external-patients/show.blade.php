@@ -107,7 +107,7 @@
                         <div>
                             <h5><span class="badge bg-primary">{{ $visit->visit_number }}</span>
                             <span class="badge bg-{{ $visit->status == 'completed' ? 'success' : 'warning' }}">{{ ucfirst($visit->status) }}</span></h5>
-                            <p class="mb-1"><strong>Date:</strong> {{ $visit->visit_date->format('d M Y, h:i A') }}</p>
+                            <p class="mb-1"><strong>Date:</strong> {{ optional($visit->visit_date)->format('d M Y, h:i A') ?? 'N/A' }}</p>
                             <p class="mb-1"><strong>Type:</strong> {{ $visit->visit_type ?? 'General' }}</p>
                             @if($visit->chief_complaint)
                             <p class="mb-1"><strong>Complaint:</strong> {{ $visit->chief_complaint }}</p>
@@ -128,7 +128,7 @@
                         </div>
                         @endif
                         <div class="mt-2">
-                            <a href="{{ route('hospital.visits.edit', $visit->id) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('hospital.visits.edit', $visit->id) }}" class="btn btn-sm btn-outline-primary" title="Edit visit details, add vitals, prescriptions, or lab orders">
                                 <i class="fas fa-edit"></i> Manage Visit
                             </a>
                         </div>

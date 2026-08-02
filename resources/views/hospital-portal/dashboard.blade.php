@@ -187,7 +187,7 @@
                                 <tbody>
                                     @foreach($appointments as $appointment)
                                         <tr>
-                                            <td>{{ $appointment->appointment_date->format('d M Y, h:i A') }}</td>
+                                            <td>{{ optional($appointment->appointment_date)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                                             <td>{{ $appointment->serviceType->name ?? 'N/A' }}</td>
                                             <td>
                                                 @switch($appointment->status)

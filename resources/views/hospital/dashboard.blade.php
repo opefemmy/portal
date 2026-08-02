@@ -120,7 +120,7 @@
                         <tbody>
                             @forelse($todayAppointments as $appointment)
                             <tr>
-                                <td>{{ $appointment->appointment_date->format('h:i A') }}</td>
+                                <td>{{ optional($appointment->appointment_date)->format('h:i A') ?? 'N/A' }}</td>
                                 <td>
                                     <strong>{{ $appointment->patient->first_name ?? '' }} {{ $appointment->patient->last_name ?? '' }}</strong>
                                 </td>

@@ -5,9 +5,11 @@
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4><i class="fas fa-user-friends me-2"></i>External Patients Management</h4>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
-        <i class="fas fa-plus me-2"></i>Register New Patient
-    </button>
+    @permission('external-patients.create')
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal" title="Register a new external patient">
+            <i class="fas fa-plus me-2"></i>Register New Patient
+        </button>
+    @endpermission
 </div>
 
 @if(session('success'))
@@ -94,15 +96,20 @@
                         <td>{{ $patient->age ?? 'N/A' }}</td>
                         <td>
                             @if($patient->latestVisit)
-                            <span class="badge bg-info">{{ $patient->latestVisit->visit_date->format('d M Y') }}</span>
+                            <span class="badge bg-info">{{ optional($patient->latestVisit->visit_date)->format('d M Y') ?? 'N/A' }}</span>
                             @else
                             <span class="badge bg-secondary">No visits</span>
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('hospital.external-patients.show', $patient->id) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('hospital.external-patients.show', $patient->id) }}" class="btn btn-sm btn-outline-primary" title="View patient details and history">
                                 <i class="fas fa-eye"></i> View
                             </a>
+                            @permission('external-patients.create')
+                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addPatientModal" title="Register a new external patient">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            @endpermission
                         </td>
                     </tr>
                     @empty

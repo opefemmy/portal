@@ -210,7 +210,7 @@
                             </h6>
                             <p class="mb-0 small"><strong>Admitted:</strong> {{ optional($admission->admission_date)->format('d M Y') ?? 'N/A' }}
                                 @if($admission->discharge_date)
-                                    <strong>Discharged:</strong> {{ $admission->discharge_date->format('d M Y') }}
+                                    <strong>Discharged:</strong> {{ optional($admission->discharge_date)->format('d M Y') ?? 'N/A' }}
                                 @endif
                             </p>
                             @if($admission->reason)

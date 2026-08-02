@@ -36,7 +36,7 @@
                                 <ul class="list-group">
                                     @foreach($patient->appointments as $appointment)
                                     <li class="list-group-item">
-                                        <strong>{{ $appointment->appointment_date->format('d M Y') }}</strong> -
+                                        <strong>{{ optional($appointment->appointment_date)->format('d M Y') ?? 'N/A' }}</strong> -
                                         Status: {{ ucfirst($appointment->status) }}
                                     </li>
                                     @endforeach

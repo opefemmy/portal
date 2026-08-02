@@ -120,7 +120,7 @@
                 <h5 class="mb-0">Visit Info</h5>
             </div>
             <div class="card-body">
-                <p><strong>Visit Date:</strong> {{ $visit->visit_date->format('d M Y, h:i A') }}</p>
+                <p><strong>Visit Date:</strong> {{ optional($visit->visit_date)->format('d M Y, h:i A') ?? 'N/A' }}</p>
                 <p><strong>Type:</strong> {{ $visit->visit_type ?? 'General' }}</p>
                 <p><strong>Status:</strong>
                     @if($visit->status == 'completed')

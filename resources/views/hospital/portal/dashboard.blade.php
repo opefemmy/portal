@@ -117,7 +117,7 @@
         <div class="border-bottom pb-2 mb-2">
             <div class="d-flex justify-content-between">
                 <div>
-                    <strong>{{ $visit->visit_number }}</strong> - {{ $visit->visit_date->format('d M Y') }}
+                    <strong>{{ $visit->visit_number }}</strong> - {{ optional($visit->visit_date)->format('d M Y') ?? 'N/A' }}
                     <p class="mb-0 text-muted">{{ Str::limit($visit->chief_complaint ?? 'No complaint recorded', 50 }}</p>
                 </div>
                 <span class="badge bg-{{ $visit->status == 'completed' ? 'success' : 'warning' }}">{{ ucfirst($visit->status) }}</span>
