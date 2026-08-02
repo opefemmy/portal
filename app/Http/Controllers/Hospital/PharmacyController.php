@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalDrug;
 use App\Models\Hospital\HospitalDrugBatch;
@@ -9,18 +10,27 @@ use App\Models\Hospital\HospitalDrugCategory;
 use App\Models\Hospital\HospitalSupplier;
 use App\Models\Hospital\HospitalPrescription;
 use App\Models\Hospital\HospitalPrescriptionItem;
-use App\Models\Hospital\HospitalInventoryMovement;
+use App\Models\Hospital\HospitalOrderItem;
 use App\Models\AuditLog;
+use App\Services\Hospital\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PharmacyController extends Controller
 {
+    use EnforcesHospitalPermission;
+
+    public function __construct(protected InventoryService $inventory)
+    {
+    }
+
     /**
      * Display drugs inventory.
      */
     public function drugs(Request $request)
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $query = HospitalDrug::with('category');
 
         if ($request->search) {
@@ -50,6 +60,7 @@ class PharmacyController extends Controller
      */
     public function createDrug()
     {
+        $this->requirePermission('pharmacy.drugs');
         $categories = HospitalDrugCategory::where('is_active', true)->get();
         return view('hospital.pharmacy.drug-create', compact('categories'));
     }
@@ -59,6 +70,8 @@ class PharmacyController extends Controller
      */
     public function storeDrug(Request $request)
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'generic_name' => 'nullable|string|max:255',
@@ -70,6 +83,7 @@ class PharmacyController extends Controller
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'reorder_level' => 'required|integer|min:0',
+            'current_stock' => 'nullable|integer|min:0',
             'requires_prescription' => 'boolean',
         ]);
 
@@ -77,7 +91,24 @@ class PharmacyController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $drug = HospitalDrug::create($request->all());
+        $initialStock = (int) ($request->input('current_stock', 0));
+        $drug = HospitalDrug::create(array_merge(
+            $request->except('current_stock'),
+            ['current_stock' => $initialStock]
+        ));
+
+        // Record an opening balance via InventoryService if any stock was supplied.
+        if ($initialStock > 0) {
+            try {
+                $this->inventory->receive(
+                    $drug,
+                    $initialStock,
+                    'Opening balance on drug creation'
+                );
+            } catch (\Throwable $e) {
+                \Log::warning('Initial stock movement failed: ' . $e->getMessage());
+            }
+        }
 
         AuditLog::log([
             'module' => 'hospital',
@@ -91,12 +122,91 @@ class PharmacyController extends Controller
     }
 
     /**
+     * Edit drug form (placeholder — full edit UI not yet shipped).
+     */
+    public function editDrug(HospitalDrug $drug)
+    {
+        $this->requirePermission('pharmacy.drugs');
+        $categories = HospitalDrugCategory::where('is_active', true)->get();
+        return view('hospital.pharmacy.drug-create', compact('drug', 'categories'));
+    }
+
+    /**
+     * Update drug.
+     */
+    public function updateDrug(Request $request, HospitalDrug $drug)
+    {
+        $this->requirePermission('pharmacy.drugs');
+
+        $validator = Validator::make($request->all(), [
+            'name'             => 'required|string|max:255',
+            'generic_name'     => 'nullable|string|max:255',
+            'code'             => 'required|string|unique:hospital_drugs,code,' . $drug->id,
+            'category_id'      => 'nullable|exists:hospital_drug_categories,id',
+            'form'             => 'required|string',
+            'strength'         => 'nullable|string',
+            'unit'             => 'required|string',
+            'cost_price'       => 'required|numeric|min:0',
+            'selling_price'    => 'required|numeric|min:0',
+            'reorder_level'    => 'required|integer|min:0',
+            'requires_prescription' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $drug->update($request->except(['_token', '_method']));
+
+        AuditLog::log([
+            'module'      => 'hospital',
+            'action'      => 'drug_updated',
+            'description' => "Updated drug: {$drug->name}",
+            'entity_type' => 'hospital_drugs',
+            'entity_id'   => $drug->id,
+        ]);
+
+        return redirect()->route('hospital.pharmacy.drugs')->with('success', 'Drug updated successfully');
+    }
+
+    /**
+     * Soft-delete (deactivate) a drug.
+     */
+    public function destroyDrug(HospitalDrug $drug)
+    {
+        $this->requirePermission('pharmacy.drugs');
+
+        $drug->update(['is_active' => false]);
+
+        AuditLog::log([
+            'module'      => 'hospital',
+            'action'      => 'drug_deactivated',
+            'description' => "Deactivated drug: {$drug->name}",
+            'entity_type' => 'hospital_drugs',
+            'entity_id'   => $drug->id,
+        ]);
+
+        return redirect()->route('hospital.pharmacy.drugs')->with('success', 'Drug deactivated');
+    }
+
+    /**
      * Display pending prescriptions.
      */
     public function prescriptions()
     {
+        $this->requirePermission('prescriptions.view');
+
+        // Only surface prescriptions whose items are paid for (or legacy rows
+        // without an order-item link). Items still awaiting payment stay hidden
+        // until the patient pays.
         $prescriptions = HospitalPrescription::with(['patient', 'doctor', 'items'])
             ->where('status', 'pending')
+            ->where(function ($q) {
+                $q->whereDoesntHave('items.orderItems')
+                  ->orWhereHas('items.orderItems', function ($sub) {
+                      $sub->where('status', HospitalOrderItem::STATUS_PAID);
+                  });
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -108,6 +218,8 @@ class PharmacyController extends Controller
      */
     public function showPrescription(HospitalPrescription $prescription)
     {
+        $this->requirePermission('prescriptions.view');
+
         $prescription->load(['patient', 'doctor', 'items.drug', 'dispensedBy']);
 
         return view('hospital.pharmacy.prescription-show', compact('prescription'));
@@ -118,6 +230,8 @@ class PharmacyController extends Controller
      */
     public function dispense(Request $request, HospitalPrescription $prescription)
     {
+        $this->requirePermission('pharmacy.dispense');
+
         if ($prescription->status !== 'pending') {
             return redirect()->back()->with('error', 'Prescription already dispensed');
         }
@@ -140,24 +254,18 @@ class PharmacyController extends Controller
             if ($isDispensed && $item->drug) {
                 $drug = $item->drug;
 
-                if ($drug->current_stock < ($item->quantity ?? 1)) {
-                    return redirect()->back()->with('error', "Insufficient stock for {$drug->name}");
+                try {
+                    $this->inventory->dispense(
+                        $drug,
+                        (int) ($item->quantity ?? 1),
+                        "Prescription #{$prescription->id}"
+                    );
+                } catch (\Throwable $e) {
+                    return redirect()->back()->with(
+                        'error',
+                        "Cannot dispense {$drug->name}: {$e->getMessage()}"
+                    );
                 }
-
-                // Update drug stock
-                $drug->decrement('current_stock', $item->quantity ?? 1);
-
-                // Record inventory movement
-                HospitalInventoryMovement::create([
-                    'drug_id' => $drug->id,
-                    'user_id' => auth()->id(),
-                    'movement_type' => 'sale',
-                    'quantity' => $item->quantity ?? 1,
-                    'quantity_before' => $drug->current_stock + ($item->quantity ?? 1),
-                    'quantity_after' => $drug->current_stock,
-                    'unit_cost' => $drug->cost_price,
-                    'reference' => "Prescription #{$prescription->id}",
-                ]);
 
                 $item->update(['is_dispensed' => true]);
             } elseif (!$isDispensed) {
@@ -189,6 +297,8 @@ class PharmacyController extends Controller
      */
     public function lowStock()
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $drugs = HospitalDrug::whereRaw('current_stock <= reorder_level')
             ->orderBy('current_stock')
             ->get();
@@ -201,6 +311,8 @@ class PharmacyController extends Controller
      */
     public function expiring()
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $expiringBatches = HospitalDrugBatch::where('status', 'active')
             ->whereDate('expiry_date', '<=', now()->addDays(30))
             ->whereDate('expiry_date', '>', now())
@@ -216,6 +328,8 @@ class PharmacyController extends Controller
      */
     public function categories()
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $categories = HospitalDrugCategory::orderBy('name')->get();
         return view('hospital.pharmacy.categories', compact('categories'));
     }
@@ -225,6 +339,8 @@ class PharmacyController extends Controller
      */
     public function storeCategory(Request $request)
     {
+        $this->requirePermission('pharmacy.drugs');
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:hospital_drug_categories,code',
@@ -245,6 +361,8 @@ class PharmacyController extends Controller
      */
     public function suppliers()
     {
+        $this->requirePermission('pharmacy.receive');
+
         $suppliers = HospitalSupplier::orderBy('name')->get();
         return view('hospital.pharmacy.suppliers', compact('suppliers'));
     }
@@ -254,6 +372,8 @@ class PharmacyController extends Controller
      */
     public function storeSupplier(Request $request)
     {
+        $this->requirePermission('pharmacy.receive');
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:hospital_suppliers,code',

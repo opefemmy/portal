@@ -16,13 +16,26 @@ class HospitalServiceType extends Model
         'amount',
         'is_active',
         'requires_appointment',
+        'auto_dispense_drug_id',
+        'auto_dispense_quantity',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'is_active' => 'boolean',
         'requires_appointment' => 'boolean',
+        'auto_dispense_quantity' => 'integer',
     ];
+
+    public function autoDispenseDrug(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(HospitalDrug::class, 'auto_dispense_drug_id');
+    }
+
+    public function hasAutoDispense(): bool
+    {
+        return !is_null($this->auto_dispense_drug_id);
+    }
 
     public function scopeActive($query)
     {

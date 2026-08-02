@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\AuditLog;
@@ -11,11 +12,15 @@ use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {
+    use EnforcesHospitalPermission;
+
     /**
      * Display a listing of patients.
      */
     public function index(Request $request)
     {
+        $this->requirePermission('patients.view');
+
         $query = HospitalPatient::with(['registeredByUser']);
 
         if ($request->search) {
@@ -45,6 +50,7 @@ class PatientController extends Controller
      */
     public function create()
     {
+        $this->requirePermission('patients.create');
         return view('hospital.patients.create');
     }
 
@@ -53,6 +59,8 @@ class PatientController extends Controller
      */
     public function store(Request $request)
     {
+        $this->requirePermission('patients.create');
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -101,6 +109,8 @@ class PatientController extends Controller
      */
     public function show(HospitalPatient $patient)
     {
+        $this->requirePermission('patients.view');
+
         $patient->load([
             'appointments.doctor',
             'medicalRecords.doctor',
@@ -119,6 +129,7 @@ class PatientController extends Controller
      */
     public function edit(HospitalPatient $patient)
     {
+        $this->requirePermission('patients.edit');
         return view('hospital.patients.edit', compact('patient'));
     }
 
@@ -127,6 +138,8 @@ class PatientController extends Controller
      */
     public function update(Request $request, HospitalPatient $patient)
     {
+        $this->requirePermission('patients.edit');
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -162,6 +175,8 @@ class PatientController extends Controller
      */
     public function search(Request $request)
     {
+        $this->requirePermission('patients.search');
+
         $term = $request->term;
         $patients = HospitalPatient::where('patient_number', 'like', "%{$term}%")
             ->orWhere('first_name', 'like', "%{$term}%")
@@ -195,6 +210,8 @@ class PatientController extends Controller
      */
     public function timeline(HospitalPatient $patient)
     {
+        $this->requirePermission('patients.view');
+
         $patient->load([
             'appointments',
             'medicalRecords',

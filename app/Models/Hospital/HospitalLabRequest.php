@@ -5,6 +5,7 @@ namespace App\Models\Hospital;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HospitalLabRequest extends Model
@@ -42,5 +43,14 @@ class HospitalLabRequest extends Model
     public function results(): HasMany
     {
         return $this->hasMany(HospitalLabResult::class, 'lab_request_id');
+    }
+
+    /**
+     * Order items that reference this lab request (used for payment gating
+     * and lab queue filtering).
+     */
+    public function orderItems(): MorphMany
+    {
+        return $this->morphMany(HospitalOrderItem::class, 'orderable');
     }
 }

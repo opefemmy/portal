@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\ExternalPatient;
 use App\Models\Hospital\ExternalAppointment;
@@ -9,6 +10,7 @@ use App\Models\Hospital\ExternalCommunication;
 use App\Models\Hospital\HospitalVisit;
 use App\Models\Hospital\HospitalPayment;
 use App\Models\Hospital\HospitalAppointment;
+use App\Models\Hospital\HospitalOrderItem;
 use App\Models\Hospital\HospitalServiceType;
 use App\Models\Hospital\HospitalServiceRequest;
 use Illuminate\Http\Request;
@@ -18,11 +20,15 @@ use Carbon\Carbon;
 
 class ExternalPatientController extends Controller
 {
+    use EnforcesHospitalPermission;
+
     /**
      * List all external patients
      */
     public function index(Request $request)
     {
+        $this->requirePermission('external-patients.view');
+
         $search = $request->get('search');
         $patients = ExternalPatient::when($search, function($query) use ($search) {
             return $query->where(function($q) use ($search) {
@@ -40,6 +46,8 @@ class ExternalPatientController extends Controller
      */
     public function show(ExternalPatient $patient)
     {
+        $this->requirePermission('external-patients.view');
+
         $patient->load(['visits', 'appointments', 'communications']);
         $payments = HospitalPayment::where('patient_phone', $patient->phone)->get();
 
@@ -51,6 +59,8 @@ class ExternalPatientController extends Controller
      */
     public function store(Request $request)
     {
+        $this->requirePermission('external-patients.create');
+
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -96,6 +106,8 @@ class ExternalPatientController extends Controller
      */
     public function update(Request $request, ExternalPatient $patient)
     {
+        $this->requirePermission('external-patients.edit');
+
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -123,6 +135,8 @@ class ExternalPatientController extends Controller
      */
     public function createVisit(Request $request, ExternalPatient $patient)
     {
+        $this->requirePermission('external-patients.visit');
+
         $request->validate([
             'visit_type' => 'required|string',
             'chief_complaint' => 'nullable|string',
@@ -156,6 +170,8 @@ class ExternalPatientController extends Controller
      */
     public function scheduleAppointment(Request $request, ExternalPatient $patient)
     {
+        $this->requirePermission('external-patients.appointment');
+
         $request->validate([
             'appointment_date' => 'required|date|after_or_equal:today',
             'purpose' => 'required|string',
@@ -187,6 +203,8 @@ class ExternalPatientController extends Controller
      */
     public function sendCommunication(Request $request, ExternalPatient $patient)
     {
+        $this->requirePermission('external-patients.view');
+
         $request->validate([
             'type' => 'required|in:sms,email,call,note',
             'subject' => 'required|string|max:255',
@@ -209,6 +227,8 @@ class ExternalPatientController extends Controller
      */
     public function lookup(Request $request)
     {
+        $this->requirePermission('external-patients.view');
+
         $patient = ExternalPatient::where('phone', $request->phone)->first();
 
         if ($patient) {
@@ -397,7 +417,28 @@ class ExternalPatientController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('hospital-portal.dashboard', compact('patient', 'payments', 'appointments', 'services', 'serviceRequests'));
+        // Items the doctor prescribed for this patient (or someone sharing
+        // their phone / email) that are awaiting payment.
+        $pendingOrders = HospitalOrderItem::query()
+            ->where(function ($q) use ($patient) {
+                $q->where('external_patient_id', $patient->id);
+
+                // Cover the case where the doctor prescribed against an
+                // internal HospitalPatient row but the patient logs in here
+                // under the matching phone/email.
+                if ($patient->phone || $patient->email) {
+                    $q->orWhereHas('patient', function ($sub) use ($patient) {
+                        $sub->when($patient->phone, fn ($q2) => $q2->orWhere('phone', $patient->phone))
+                            ->when($patient->email, fn ($q2) => $q2->orWhere('email', $patient->email));
+                    });
+                }
+            })
+            ->where('status', HospitalOrderItem::STATUS_AWAITING_PAYMENT)
+            ->with('orderable')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('hospital-portal.dashboard', compact('patient', 'payments', 'appointments', 'services', 'serviceRequests', 'pendingOrders'));
     }
 
     /**
@@ -696,5 +737,61 @@ class ExternalPatientController extends Controller
         ]);
 
         return back()->with('success', 'New access code generated: ' . $newCode)->with('new_code', $newCode);
+    }
+
+    /**
+     * Pay for one or more prescribed items.
+     *
+     * Sums the selected order items, calculates the 2% portal charge,
+     * creates a single HospitalPayment and links it back to each item.
+     * Patient is redirected to the receipt with `?pay=1` so the existing
+     * gateway flow kicks in.
+     */
+    public function payOrderItemsPortal(Request $request)
+    {
+        $patientId = session('hospital_patient_id');
+
+        if (!$patientId) {
+            return redirect()->route('patient-portal.login');
+        }
+
+        $patient = ExternalPatient::findOrFail($patientId);
+
+        $data = $request->validate([
+            'order_item_ids'   => 'required|array|min:1',
+            'order_item_ids.*' => 'integer|exists:hospital_order_items,id',
+        ]);
+
+        $items = HospitalOrderItem::whereIn('id', $data['order_item_ids'])
+            ->where('status', HospitalOrderItem::STATUS_AWAITING_PAYMENT)
+            ->get();
+
+        if ($items->isEmpty()) {
+            return back()->with('error', 'No pending items selected.');
+        }
+
+        $amount       = (float) $items->sum('amount');
+        $portalCharge = round($amount * 0.02, 2);
+
+        $payment = HospitalPayment::create([
+            'payment_ref'    => 'HSP-' . strtoupper(Str::random(10)),
+            'patient_name'   => $patient->full_name,
+            'patient_email'  => $patient->email,
+            'patient_phone'  => $patient->phone,
+            'patient_gender' => $patient->gender,
+            'patient_age'    => $patient->age ?? null,
+            'service_name'   => 'Doctor orders (' . $items->count() . ' item' . ($items->count() === 1 ? '' : 's') . ')',
+            'amount'         => $amount,
+            'portal_charge'  => $portalCharge,
+            'total_amount'   => $amount + $portalCharge,
+            'status'         => HospitalPayment::STATUS_PENDING,
+            'notes'          => 'Order item IDs: ' . $items->pluck('id')->implode(', '),
+        ]);
+
+        foreach ($items as $item) {
+            $item->update(['payment_id' => $payment->id]);
+        }
+
+        return redirect()->route('patient-portal.receipt', ['payment' => $payment->id, 'pay' => 1]);
     }
 }

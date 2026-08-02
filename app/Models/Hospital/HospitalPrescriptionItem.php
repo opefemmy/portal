@@ -4,6 +4,7 @@ namespace App\Models\Hospital;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class HospitalPrescriptionItem extends Model
 {
@@ -26,5 +27,14 @@ class HospitalPrescriptionItem extends Model
     public function drug(): BelongsTo
     {
         return $this->belongsTo(HospitalDrug::class, 'drug_id');
+    }
+
+    /**
+     * Order items that reference this prescription_item (used for payment
+     * gating and pharmacy queue filtering).
+     */
+    public function orderItems(): MorphMany
+    {
+        return $this->morphMany(HospitalOrderItem::class, 'orderable');
     }
 }

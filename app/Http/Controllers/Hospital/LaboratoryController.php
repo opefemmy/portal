@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalLabRequest;
 use App\Models\Hospital\HospitalLabResult;
+use App\Models\Hospital\HospitalOrderItem;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
@@ -12,11 +14,15 @@ use Illuminate\Support\Facades\Validator;
 
 class LaboratoryController extends Controller
 {
+    use EnforcesHospitalPermission;
+
     /**
      * Display lab requests.
      */
     public function index(Request $request)
     {
+        $this->requirePermission('lab.view');
+
         $query = HospitalLabRequest::with(['patient', 'doctor']);
 
         if ($request->status) {
@@ -26,6 +32,15 @@ class LaboratoryController extends Controller
         if ($request->date) {
             $query->whereDate('requested_at', $request->date);
         }
+
+        // Hide lab requests whose doctor-suggested payment is still awaiting
+        // payment. Legacy rows (no order_items link) remain visible.
+        $query->where(function ($q) {
+            $q->whereDoesntHave('orderItems')
+              ->orWhereHas('orderItems', function ($sub) {
+                  $sub->where('status', HospitalOrderItem::STATUS_PAID);
+              });
+        });
 
         $requests = $query->orderBy('requested_at', 'desc')->paginate(20);
 
@@ -37,6 +52,8 @@ class LaboratoryController extends Controller
      */
     public function show(HospitalLabRequest $labRequest)
     {
+        $this->requirePermission('lab.view');
+
         $labRequest->load(['patient', 'doctor', 'results', 'medicalRecord']);
 
         return view('hospital.lab.request-show', compact('labRequest'));
@@ -47,6 +64,7 @@ class LaboratoryController extends Controller
      */
     public function collectSample(HospitalLabRequest $labRequest)
     {
+        $this->requirePermission('lab.collect');
         if ($labRequest->status !== 'pending') {
             return redirect()->back()->with('error', 'Sample already collected');
         }
@@ -69,6 +87,7 @@ class LaboratoryController extends Controller
      */
     public function startProcessing(HospitalLabRequest $labRequest)
     {
+        $this->requirePermission('lab.process');
         if (!in_array($labRequest->status, ['pending', 'sample_collected'])) {
             return redirect()->back()->with('error', 'Cannot start processing');
         }
@@ -83,6 +102,7 @@ class LaboratoryController extends Controller
      */
     public function recordResults(Request $request, HospitalLabRequest $labRequest)
     {
+        $this->requirePermission('lab.process');
         $validator = Validator::make($request->all(), [
             'results' => 'required|array',
             'results.*.test_name' => 'required|string',
@@ -132,6 +152,7 @@ class LaboratoryController extends Controller
      */
     public function cancel(Request $request, HospitalLabRequest $labRequest)
     {
+        $this->requirePermission('lab.process');
         $labRequest->update([
             'status' => 'cancelled',
             'notes' => $request->reason,

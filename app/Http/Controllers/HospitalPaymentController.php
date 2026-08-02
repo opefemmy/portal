@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Hospital\HospitalServiceType;
 use App\Models\Hospital\HospitalPayment;
+use App\Services\Hospital\HospitalPaymentNotificationService;
+use App\Services\Hospital\PharmacyAutoDispenseService;
+use App\Services\Hospital\OrderFulfillmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
@@ -153,21 +156,49 @@ class HospitalPaymentController extends Controller
             return false;
         }
 
+        $wasCompleted = $payment->status === HospitalPayment::STATUS_COMPLETED;
+
         try {
             if ($gateway->provider === 'xpresspayments') {
-                return $this->verifyXpressPayment($payment, $gateway);
+                $verified = $this->verifyXpressPayment($payment, $gateway);
             } elseif ($gateway->provider === 'paystack') {
-                return $this->verifyPaystackPayment($payment, $gateway);
+                $verified = $this->verifyPaystackPayment($payment, $gateway);
             } elseif ($gateway->provider === 'flutterwave') {
-                return $this->verifyFlutterwavePayment($payment, $gateway);
+                $verified = $this->verifyFlutterwavePayment($payment, $gateway);
             } elseif ($gateway->provider === 'remita') {
-                return $this->verifyRemitaPayment($payment, $gateway);
+                $verified = $this->verifyRemitaPayment($payment, $gateway);
+            } else {
+                $verified = false;
             }
         } catch (\Exception $e) {
             \Log::error('Payment verification failed: ' . $e->getMessage());
+            return false;
         }
 
-        return false;
+        // If the payment just transitioned to completed, auto-dispense pharmacy drugs
+// and notify the receiving office. Both hooks are failure-tolerant so a bug in
+// either never breaks payment verification.
+        if ($verified && !$wasCompleted && $payment->fresh()->status === HospitalPayment::STATUS_COMPLETED) {
+            try {
+                app(PharmacyAutoDispenseService::class)->dispenseOnPayment($payment->fresh());
+            } catch (\Exception $e) {
+                \Log::error('Pharmacy auto-dispense failed: ' . $e->getMessage());
+            }
+            try {
+                HospitalPaymentNotificationService::notifyPaymentCompleted($payment->fresh());
+            } catch (\Exception $e) {
+                \Log::error('Hospital payment notification failed: ' . $e->getMessage());
+            }
+            // Mark any HospitalOrderItem rows linked to this payment as paid so
+            // they appear on the pharmacy / lab queues.
+            try {
+                app(OrderFulfillmentService::class)->fulfillOnPayment($payment->fresh());
+            } catch (\Exception $e) {
+                \Log::error('Hospital order fulfilment failed: ' . $e->getMessage());
+            }
+        }
+
+        return $verified;
     }
 
     /**

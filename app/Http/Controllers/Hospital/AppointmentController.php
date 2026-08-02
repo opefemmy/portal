@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalPatient;
@@ -12,11 +13,15 @@ use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
+    use EnforcesHospitalPermission;
+
     /**
      * Display appointment queue.
      */
     public function queue()
     {
+        $this->requirePermission('appointments.view');
+
         $appointments = HospitalAppointment::with(['patient', 'doctor'])
             ->whereIn('status', ['scheduled', 'confirmed', 'checked_in', 'in_progress'])
             ->orderBy('appointment_date')
@@ -31,6 +36,8 @@ class AppointmentController extends Controller
      */
     public function index(Request $request)
     {
+        $this->requirePermission('appointments.view');
+
         $query = HospitalAppointment::with(['patient', 'doctor', 'scheduledByUser']);
 
         if ($request->date) {
@@ -62,6 +69,8 @@ class AppointmentController extends Controller
      */
     public function create(Request $request)
     {
+        $this->requirePermission('appointments.create');
+
         $patientId = $request->patient_id;
         $patients = HospitalPatient::where('is_active', true)->get();
         $doctors = HospitalStaff::where('staff_type', 'doctor')
@@ -77,6 +86,8 @@ class AppointmentController extends Controller
      */
     public function store(Request $request)
     {
+        $this->requirePermission('appointments.create');
+
         $validator = Validator::make($request->all(), [
             'patient_id' => 'required|exists:hospital_patients,id',
             'doctor_id' => 'required|exists:hospital_staff,id',
@@ -111,9 +122,48 @@ class AppointmentController extends Controller
      */
     public function show(HospitalAppointment $appointment)
     {
+        $this->requirePermission('appointments.view');
+
         $appointment->load(['patient', 'doctor', 'scheduledByUser', 'medicalRecords']);
 
         return view('hospital.appointments.show', compact('appointment'));
+    }
+
+    /**
+     * Show the form for editing the specified appointment.
+     */
+    public function edit(HospitalAppointment $appointment)
+    {
+        $this->requirePermission('appointments.update');
+
+        $patients = HospitalPatient::where('is_active', true)->get();
+        $doctors = HospitalStaff::where('staff_type', 'doctor')
+            ->where('is_active', true)
+            ->get();
+
+        return view('hospital.appointments.edit', compact('appointment', 'patients', 'doctors'));
+    }
+
+    /**
+     * Update the specified appointment.
+     */
+    public function update(Request $request, HospitalAppointment $appointment)
+    {
+        $this->requirePermission('appointments.update');
+
+        $data = $request->validate([
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required',
+            'doctor_id'        => 'required|exists:hospital_staff,id',
+            'complaint'        => 'nullable|string',
+            'notes'            => 'nullable|string',
+            'status'           => 'nullable|in:scheduled,confirmed,checked_in,in_progress,completed,cancelled',
+        ]);
+
+        $appointment->update($data);
+
+        return redirect()->route('hospital.appointments.show', $appointment)
+            ->with('success', 'Appointment updated.');
     }
 
     /**
@@ -121,6 +171,7 @@ class AppointmentController extends Controller
      */
     public function checkIn(HospitalAppointment $appointment)
     {
+        $this->requirePermission('appointments.check-in');
         if ($appointment->status !== 'confirmed' && $appointment->status !== 'scheduled') {
             return redirect()->back()->with('error', 'Appointment cannot be checked in');
         }
@@ -146,6 +197,7 @@ class AppointmentController extends Controller
      */
     public function startConsultation(HospitalAppointment $appointment)
     {
+        $this->requirePermission('appointments.start');
         $appointment->update(['status' => 'in_progress']);
 
         return redirect()->route('hospital.consultations.create', ['appointment_id' => $appointment->id]);
@@ -156,6 +208,8 @@ class AppointmentController extends Controller
      */
     public function complete(Request $request, HospitalAppointment $appointment)
     {
+        $this->requirePermission('appointments.update');
+
         $appointment->update([
             'status' => 'completed',
             'completed_at' => now(),
@@ -179,6 +233,7 @@ class AppointmentController extends Controller
      */
     public function cancel(Request $request, HospitalAppointment $appointment)
     {
+        $this->requirePermission('appointments.update');
         $appointment->update([
             'status' => 'cancelled',
             'notes' => $request->reason,
@@ -201,6 +256,7 @@ class AppointmentController extends Controller
      */
     public function availableSlots(Request $request)
     {
+        $this->requirePermission('appointments.view');
         $date = $request->date;
         $doctorId = $request->doctor_id;
 

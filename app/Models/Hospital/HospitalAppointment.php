@@ -15,7 +15,7 @@ class HospitalAppointment extends Model
     protected $table = 'hospital_appointments';
 
     protected $fillable = [
-        'patient_id', 'staff_id', 'appointment_number', 'appointment_date',
+        'patient_id', 'doctor_id', 'appointment_number', 'appointment_date',
         'status', 'symptoms', 'notes'
     ];
 
@@ -32,7 +32,7 @@ class HospitalAppointment extends Model
 
     public function staff(): BelongsTo
     {
-        return $this->belongsTo(HospitalStaff::class, 'staff_id');
+        return $this->belongsTo(HospitalStaff::class, 'doctor_id');
     }
 
     /**
@@ -40,7 +40,7 @@ class HospitalAppointment extends Model
      */
     public function doctor(): BelongsTo
     {
-        return $this->belongsTo(HospitalStaff::class, 'staff_id');
+        return $this->belongsTo(HospitalStaff::class, 'doctor_id');
     }
 
     public function scheduledByUser(): BelongsTo

@@ -265,16 +265,21 @@ class AdmissionController extends Controller
 
     public function settings()
     {
-        // Get system settings for admission
+        // Get system settings for admission (defensive: null if system_settings unavailable)
+        $get = function ($key, $default = null) {
+            try { return SystemSetting::get($key, $default); }
+            catch (\Throwable $e) { \Log::warning('system_settings unavailable: ' . $e->getMessage()); return $default; }
+        };
+
         $settings = [
-            'admission_form_open' => SystemSetting::get('admission_form_open', 'false'),
-            'admission_form_penalty' => SystemSetting::get('admission_form_penalty', 'false'),
-            'admission_form_penalty_amount' => SystemSetting::get('admission_form_penalty_amount', 0),
-            'admission_require_application_fee' => SystemSetting::get('admission_require_application_fee', 'false'),
-            'admission_application_fee_amount' => SystemSetting::get('admission_application_fee_amount', 5000),
-            'admission_accept_fee_amount' => SystemSetting::get('admission_accept_fee_amount', 10000),
-            'admission_school_fee_amount' => SystemSetting::get('admission_school_fee_amount', 50000),
-            'admission_letter_template' => SystemSetting::get('admission_letter_template'),
+            'admission_form_open' => $get('admission_form_open', 'false'),
+            'admission_form_penalty' => $get('admission_form_penalty', 'false'),
+            'admission_form_penalty_amount' => $get('admission_form_penalty_amount', 0),
+            'admission_require_application_fee' => $get('admission_require_application_fee', 'false'),
+            'admission_application_fee_amount' => $get('admission_application_fee_amount', 5000),
+            'admission_accept_fee_amount' => $get('admission_accept_fee_amount', 10000),
+            'admission_school_fee_amount' => $get('admission_school_fee_amount', 50000),
+            'admission_letter_template' => $get('admission_letter_template'),
         ];
 
         return view('registrar.admission.settings', $settings);
@@ -292,14 +297,19 @@ class AdmissionController extends Controller
             'admission_school_fee_amount' => 'nullable|numeric|min:0',
         ]);
 
-        // Update settings
-        SystemSetting::set('admission_form_open', $request->boolean('admission_form_open') ? 'true' : 'false');
-        SystemSetting::set('admission_form_penalty', $request->boolean('admission_form_penalty') ? 'true' : 'false');
-        SystemSetting::set('admission_form_penalty_amount', $request->admission_form_penalty_amount ?? 0);
-        SystemSetting::set('admission_require_application_fee', $request->boolean('admission_require_application_fee') ? 'true' : 'false');
-        SystemSetting::set('admission_application_fee_amount', $request->admission_application_fee_amount ?? 5000);
-        SystemSetting::set('admission_accept_fee_amount', $request->admission_accept_fee_amount ?? 10000);
-        SystemSetting::set('admission_school_fee_amount', $request->admission_school_fee_amount ?? 50000);
+        try {
+            // Update settings
+            SystemSetting::set('admission_form_open', $request->boolean('admission_form_open') ? 'true' : 'false');
+            SystemSetting::set('admission_form_penalty', $request->boolean('admission_form_penalty') ? 'true' : 'false');
+            SystemSetting::set('admission_form_penalty_amount', $request->admission_form_penalty_amount ?? 0);
+            SystemSetting::set('admission_require_application_fee', $request->boolean('admission_require_application_fee') ? 'true' : 'false');
+            SystemSetting::set('admission_application_fee_amount', $request->admission_application_fee_amount ?? 5000);
+            SystemSetting::set('admission_accept_fee_amount', $request->admission_accept_fee_amount ?? 10000);
+            SystemSetting::set('admission_school_fee_amount', $request->admission_school_fee_amount ?? 50000);
+        } catch (\Throwable $e) {
+            \Log::error('updateSettings failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to save settings: ' . $e->getMessage());
+        }
 
         return redirect()->route('registrar.admission.settings')->with('success', 'Admission settings updated successfully');
     }
@@ -344,7 +354,14 @@ class AdmissionController extends Controller
      */
     public function showLetterTemplate()
     {
-        $template = SystemSetting::get('admission_letter_template');
+        $template = null;
+        try {
+            $template = SystemSetting::get('admission_letter_template');
+        } catch (\Throwable $e) {
+            // system_settings may be unavailable (table missing, DB down, etc.).
+            // Render the page anyway so the user gets a 200 with a clear form.
+            \Log::warning('system_settings unavailable for showLetterTemplate: ' . $e->getMessage());
+        }
         return view('registrar.admission.letter-template', compact('template'));
     }
 
@@ -357,18 +374,24 @@ class AdmissionController extends Controller
             'template' => 'required|file|mimes:pdf,doc,docx|max:5120',
         ]);
 
-        // Create templates directory if it doesn't exist
-        if (!is_dir(public_path('templates'))) {
-            mkdir(public_path('templates'), 0755, true);
+        try {
+            // Create templates directory if it doesn't exist
+            $destination = public_path('templates');
+            if (!is_dir($destination)) {
+                @mkdir($destination, 0755, true);
+            }
+
+            $file = $request->file('template');
+            $filename = 'admission_letter_template.' . $file->getClientOriginalExtension();
+            $file->move($destination, $filename);
+
+            SystemSetting::set('admission_letter_template', $filename);
+
+            return back()->with('success', 'Admission letter template uploaded successfully');
+        } catch (\Throwable $e) {
+            \Log::error('Template upload failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to upload template: ' . $e->getMessage());
         }
-
-        $file = $request->file('template');
-        $filename = 'admission_letter_template.' . $file->getClientOriginalExtension();
-        $file->move(public_path('templates'), $filename);
-
-        SystemSetting::set('admission_letter_template', $filename);
-
-        return back()->with('success', 'Admission letter template uploaded successfully');
     }
 
     /**

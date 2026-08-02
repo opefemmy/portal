@@ -13,20 +13,48 @@ use Illuminate\Support\Facades\DB;
 
 class ApplicantController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // Only show pending and processing applicants, not admitted ones
-        $applicants = Applicant::with('user', 'department', 'programme', 'school')
-            ->whereIn('status', ['pending', 'screening', 'approved'])
+        $query = Applicant::with('user', 'department', 'programme', 'school', 'session');
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('application_number', 'like', "%{$request->search}%")
+                  ->orWhere('surname', 'like', "%{$request->search}%")
+                  ->orWhere('first_name', 'like', "%{$request->search}%")
+                  ->orWhere('email', 'like', "%{$request->search}%")
+                  ->orWhere('phone', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->school_id) {
+            $query->where('school_id', $request->school_id);
+        }
+
+        if ($request->department_id) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        $applicants = $query->whereIn('status', ['pending', 'screening', 'approved'])
             ->latest()
-            ->get();
-        return view('registrar.applicants.index', compact('applicants'));
+            ->paginate(20);
+        $schools = \App\Models\School::all();
+        $departments = \App\Models\Department::all();
+
+        // Reuse the existing applications.index view (statistics, filters, table already built).
+        return view('registrar.applications.index', compact('applicants', 'schools', 'departments'));
     }
 
     public function show(Applicant $applicant)
     {
         $applicant->load('user', 'department', 'programme', 'school', 'session', 'state', 'lga');
-        return view('registrar.applicants.show', compact('applicant'));
+        // Reuse the existing admission.show view (same Applicant model).
+        return view('registrar.admission.show', compact('applicant'));
     }
 
     public function admit(Applicant $applicant, Request $request)

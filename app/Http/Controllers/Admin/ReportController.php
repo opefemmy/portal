@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Applicant;
 use App\Models\Student;
 use App\Models\Payment;
 use App\Models\Result;
@@ -34,6 +35,24 @@ class ReportController extends Controller
 
         $students = $query->latest()->get();
         return view('admin.reports.students', compact('students'));
+    }
+
+    public function applications(Request $request)
+    {
+        $query = Applicant::with('school', 'department', 'programme', 'session');
+
+        if ($request->school_id) {
+            $query->where('school_id', $request->school_id);
+        }
+        if ($request->department_id) {
+            $query->where('department_id', $request->department_id);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $applications = $query->latest()->get();
+        return view('admin.reports.applications', compact('applications'));
     }
 
     public function results(Request $request)

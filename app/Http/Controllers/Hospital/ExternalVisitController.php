@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
+use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalVisit;
 use App\Models\Hospital\ExternalPrescription;
@@ -10,11 +11,14 @@ use Illuminate\Http\Request;
 
 class ExternalVisitController extends Controller
 {
+    use EnforcesHospitalPermission;
+
     /**
      * Edit/Manage a visit
      */
     public function edit(HospitalVisit $visit)
     {
+        $this->requirePermission('patients.view');
         $visit->load(['patient', 'prescriptions', 'labOrders', 'doctor']);
         return view('hospital.external-visits.edit', compact('visit'));
     }
@@ -24,6 +28,7 @@ class ExternalVisitController extends Controller
      */
     public function update(Request $request, HospitalVisit $visit)
     {
+        $this->requirePermission('patients.edit');
         $request->validate([
             'diagnosis' => 'nullable|string',
             'treatment' => 'nullable|string',
@@ -46,6 +51,7 @@ class ExternalVisitController extends Controller
      */
     public function addVitals(Request $request, HospitalVisit $visit)
     {
+        $this->requirePermission('visits.vitals');
         $request->validate([
             'vital_signs_temperature' => 'nullable|string',
             'vital_signs_bp' => 'nullable|string',
@@ -69,6 +75,7 @@ class ExternalVisitController extends Controller
      */
     public function addPrescription(Request $request, HospitalVisit $visit)
     {
+        $this->requirePermission('prescriptions.create');
         $request->validate([
             'medication_name' => 'required|string',
             'dosage' => 'nullable|string',
@@ -96,6 +103,7 @@ class ExternalVisitController extends Controller
      */
     public function addLabOrder(Request $request, HospitalVisit $visit)
     {
+        $this->requirePermission('lab.create');
         $request->validate([
             'test_name' => 'required|string',
             'test_type' => 'nullable|string',
@@ -118,6 +126,7 @@ class ExternalVisitController extends Controller
      */
     public function complete(HospitalVisit $visit)
     {
+        $this->requirePermission('patients.edit');
         $visit->update(['status' => 'completed']);
 
         // Create communication

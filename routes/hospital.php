@@ -10,6 +10,7 @@ use App\Http\Controllers\Hospital\AppointmentController;
 use App\Http\Controllers\Hospital\PharmacyController;
 use App\Http\Controllers\Hospital\LaboratoryController;
 use App\Http\Controllers\Hospital\ConsultationController;
+use App\Http\Controllers\Hospital\InventoryController;
 
 // Public Patient Portal Routes (for outsiders)
 Route::prefix('patient')->name('patient.')->group(function () {
@@ -34,28 +35,25 @@ Route::prefix('patient')->name('patient.')->group(function () {
 Route::prefix('hospital')->name('hospital.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Doctor Dashboard
+    // Role-specific dashboards
     Route::get('/doctor/dashboard', [DashboardController::class, 'doctorDashboard'])
         ->name('doctor.dashboard');
 
-    // Nurse Dashboard
     Route::get('/nurse/dashboard', [DashboardController::class, 'nurseDashboard'])
         ->name('nurse.dashboard');
 
-    // Receptionist Dashboard
     Route::get('/reception/dashboard', [DashboardController::class, 'receptionistDashboard'])
         ->name('reception.dashboard');
 
-    // Pharmacy Dashboard
     Route::get('/pharmacy/dashboard', [DashboardController::class, 'pharmacyDashboard'])
         ->name('pharmacy.dashboard');
 
-    // Lab Dashboard
     Route::get('/lab/dashboard', [DashboardController::class, 'labDashboard'])
         ->name('lab.dashboard');
 
     // External Patients Management (for outsiders)
-    Route::prefix('external-patients')->name('external-patients.')->group(function () {
+    // Receptionists manage; doctors/nurses/cmd view.
+    Route::prefix('external-patients')->name('external-patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,super_admin,admin')->group(function () {
         Route::get('/', [ExternalPatientController::class, 'index'])->name('index');
         Route::post('/', [ExternalPatientController::class, 'store'])->name('store');
         Route::get('/{patient}', [ExternalPatientController::class, 'show'])->name('show');
@@ -65,8 +63,8 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         Route::post('/{patient}/communication', [ExternalPatientController::class, 'sendCommunication'])->name('communication');
     });
 
-    // Visit Management (external patients)
-    Route::prefix('visits')->name('visits.')->group(function () {
+    // Visit Management (external patients) — doctors and nurses
+    Route::prefix('visits')->name('visits.')->middleware('role:cmd,doctor,nurse,super_admin,admin')->group(function () {
         Route::get('/{visit}/edit', [ExternalVisitController::class, 'edit'])->name('edit');
         Route::put('/{visit}', [ExternalVisitController::class, 'update'])->name('update');
         Route::post('/{visit}/vitals', [ExternalVisitController::class, 'addVitals'])->name('vitals');
@@ -76,10 +74,12 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
     });
 
     // Quick patient lookup
-    Route::post('/patient/lookup', [ExternalPatientController::class, 'lookup'])->name('patient.lookup');
+    Route::post('/patient/lookup', [ExternalPatientController::class, 'lookup'])
+        ->middleware('role:cmd,doctor,nurse,hospital_receptionist,pharmacist,lab_scientist,super_admin,admin')
+        ->name('patient.lookup');
 
     // Internal Hospital Patients (registered patients)
-    Route::prefix('patients')->name('patients.')->group(function () {
+    Route::prefix('patients')->name('patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,pharmacist,lab_scientist,super_admin,admin')->group(function () {
         Route::get('/', [PatientController::class, 'index'])->name('index');
         Route::get('/create', [PatientController::class, 'create'])->name('create');
         Route::post('/', [PatientController::class, 'store'])->name('store');
@@ -91,19 +91,20 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
     });
 
     // Hospital Appointments
-    Route::prefix('appointments')->name('appointments.')->group(function () {
+    Route::prefix('appointments')->name('appointments.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,super_admin,admin')->group(function () {
         Route::get('/', [AppointmentController::class, 'index'])->name('index');
         Route::get('/create', [AppointmentController::class, 'create'])->name('create');
         Route::post('/', [AppointmentController::class, 'store'])->name('store');
-        Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
+        Route::get('/{appointment}/edit', [AppointmentController::class, 'edit'])->name('edit');
         Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
+        Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
         Route::post('/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('check-in');
         Route::post('/{appointment}/start', [AppointmentController::class, 'start'])->name('start');
         Route::get('/queue', [AppointmentController::class, 'queue'])->name('queue');
     });
 
-    // Pharmacy Routes
-    Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
+    // Pharmacy Routes (pharmacist / store_keeper / cmd)
+    Route::prefix('pharmacy')->name('pharmacy.')->middleware('role:cmd,pharmacist,store_keeper,super_admin,admin')->group(function () {
         Route::get('/drugs', [PharmacyController::class, 'drugs'])->name('drugs');
         Route::get('/drugs/create', [PharmacyController::class, 'createDrug'])->name('drugs.create');
         Route::post('/drugs', [PharmacyController::class, 'storeDrug'])->name('drugs.store');
@@ -118,22 +119,36 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         Route::get('/expiring', [PharmacyController::class, 'expiring'])->name('expiring');
         Route::get('/suppliers', [PharmacyController::class, 'suppliers'])->name('suppliers');
         Route::post('/suppliers', [PharmacyController::class, 'storeSupplier'])->name('suppliers.store');
+
+        // Inventory operations (receive / adjust / expire)
+        Route::get('/receive', [InventoryController::class, 'showReceive'])->name('receive');
+        Route::post('/receive', [InventoryController::class, 'receive'])->name('receive.store');
+        Route::get('/adjust', [InventoryController::class, 'showAdjust'])->name('adjust');
+        Route::post('/adjust', [InventoryController::class, 'adjust'])->name('adjust.store');
+        Route::get('/expire', [InventoryController::class, 'showExpire'])->name('expire');
+        Route::post('/expire', [InventoryController::class, 'expire'])->name('expire.store');
     });
 
-    // Laboratory Routes
-    Route::prefix('lab')->name('lab.')->group(function () {
+    // Laboratory Routes (lab_scientist / cmd)
+    Route::prefix('lab')->name('lab.')->middleware('role:cmd,lab_scientist,super_admin,admin')->group(function () {
         Route::get('/', [LaboratoryController::class, 'index'])->name('index');
-        Route::get('/requests', [LaboratoryController::class, 'requests'])->name('requests');
-        Route::get('/requests/{request}', [LaboratoryController::class, 'showRequest'])->name('show');
+        Route::get('/requests', [LaboratoryController::class, 'index'])->name('requests');
+        Route::get('/requests/{request}', [LaboratoryController::class, 'show'])->name('show');
         Route::post('/requests/{request}/collect', [LaboratoryController::class, 'collectSample'])->name('collect');
-        Route::post('/requests/{request}/process', [LaboratoryController::class, 'processResult'])->name('process');
-        Route::post('/requests/{request}/complete', [LaboratoryController::class, 'complete'])->name('complete');
+        Route::post('/requests/{request}/process', [LaboratoryController::class, 'recordResults'])->name('process');
+        Route::post('/requests/{request}/complete', [LaboratoryController::class, 'startProcessing'])->name('complete');
     });
 
-    // Consultations
-    Route::prefix('consultations')->name('consultations.')->group(function () {
+    // Consultations (doctor / cmd)
+    Route::prefix('consultations')->name('consultations.')->middleware('role:cmd,doctor,super_admin,admin')->group(function () {
         Route::get('/', [ConsultationController::class, 'index'])->name('index');
         Route::get('/create', [ConsultationController::class, 'create'])->name('create');
         Route::post('/', [ConsultationController::class, 'store'])->name('store');
+        Route::get('/{consultation}', [ConsultationController::class, 'show'])->name('show');
+        // Doctor prescribing & lab suggestions
+        Route::post('/{consultation}/prescriptions', [ConsultationController::class, 'addPrescription'])
+            ->name('prescriptions.store');
+        Route::post('/{consultation}/lab-requests', [ConsultationController::class, 'addLabRequest'])
+            ->name('lab-requests.store');
     });
 });

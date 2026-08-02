@@ -13,7 +13,7 @@ class AdmissionCentreController extends Controller
      */
     public function index()
     {
-        $centres = AdmissionCentre::orderBy('name')->get();
+        $centres = AdmissionCentre::withCount('applicants')->orderBy('name')->get();
         return view('admin.admission-centres.index', compact('centres'));
     }
 
