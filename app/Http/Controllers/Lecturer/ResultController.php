@@ -29,19 +29,33 @@ class ResultController extends Controller
             return back()->with('error', 'You are not assigned to this course.');
         }
 
-        $currentSession = Session::getCurrentSession();
+        $studentCourses = collect();
+        $results = collect();
 
-        // Get students registered for this course
-        $studentCourses = StudentCourse::where('course_id', $course->id)
-            ->where('session_id', $currentSession->id ?? 0)
-            ->where('status', 'registered')
-            ->with(['student.user', 'student.department', 'student.programme', 'results'])
-            ->get();
+        try {
+            $currentSession = Session::getCurrentSession();
+            $sessionId = $currentSession->id ?? null;
 
-        // Get existing results to show status
-        $results = Result::whereIn('student_course_id', $studentCourses->pluck('id'))
-            ->get()
-            ->keyBy('student_course_id');
+            // Get students registered for this course (don't filter by session if no current session)
+            $query = StudentCourse::where('course_id', $course->id)
+                ->where('status', 'registered')
+                ->with(['student.user', 'student.department', 'student.programme', 'results']);
+
+            if ($sessionId) {
+                $query->where('session_id', $sessionId);
+            }
+
+            $studentCourses = $query->get();
+
+            // Get existing results to show status
+            if ($studentCourses->isNotEmpty()) {
+                $results = Result::whereIn('student_course_id', $studentCourses->pluck('id'))
+                    ->get()
+                    ->keyBy('student_course_id');
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer courseStudents failed: ' . $e->getMessage());
+        }
 
         return view('lecturer.course-students', compact('course', 'studentCourses', 'results', 'assignment'));
     }
@@ -60,19 +74,33 @@ class ResultController extends Controller
             return back()->with('error', 'You are not assigned to this course.');
         }
 
-        $currentSession = Session::getCurrentSession();
+        $studentCourses = collect();
+        $existingResults = collect();
 
-        // Get students registered for this course
-        $studentCourses = StudentCourse::where('course_id', $course->id)
-            ->where('session_id', $currentSession->id ?? 0)
-            ->where('status', 'registered')
-            ->with(['student.user', 'results'])
-            ->get();
+        try {
+            $currentSession = Session::getCurrentSession();
+            $sessionId = $currentSession->id ?? null;
 
-        // Get existing results
-        $existingResults = Result::whereIn('student_course_id', $studentCourses->pluck('id'))
-            ->get()
-            ->keyBy('student_course_id');
+            // Get students registered for this course
+            $query = StudentCourse::where('course_id', $course->id)
+                ->where('status', 'registered')
+                ->with(['student.user', 'results']);
+
+            if ($sessionId) {
+                $query->where('session_id', $sessionId);
+            }
+
+            $studentCourses = $query->get();
+
+            // Get existing results
+            if ($studentCourses->isNotEmpty()) {
+                $existingResults = Result::whereIn('student_course_id', $studentCourses->pluck('id'))
+                    ->get()
+                    ->keyBy('student_course_id');
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer enter failed: ' . $e->getMessage());
+        }
 
         return view('lecturer.results-enter', compact('course', 'studentCourses', 'existingResults', 'assignment'));
     }

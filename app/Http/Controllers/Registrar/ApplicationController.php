@@ -142,10 +142,10 @@ class ApplicationController extends Controller
         $stats = [
             'total' => Applicant::count(),
             'pending' => Applicant::where('status', 'pending')->count(),
-            'screening' => Applicant::byStatus('screening')->count(),
-            'approved' => Applicant::byStatus('approved')->count(),
-            'admitted' => Applicant::byStatus('admitted')->count(),
-            'rejected' => Applicant::byStatus('rejected')->count(),
+            'screening' => Applicant::where('status', 'screening')->count(),
+            'approved' => Applicant::where('status', 'approved')->count(),
+            'admitted' => Applicant::where('status', 'admitted')->count(),
+            'rejected' => Applicant::where('status', 'rejected')->count(),
         ];
 
         $bySchool = Applicant::selectRaw('school_id, COUNT(*) as count')

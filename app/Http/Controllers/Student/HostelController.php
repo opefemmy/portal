@@ -28,11 +28,17 @@ class HostelController extends Controller
 
     public function availableHostels(Request $request)
     {
-        $query = Hostel::where('is_active', true);
+        $query = Hostel::where('is_active', true)
+            ->with(['rooms' => function ($q) {
+                // Only rooms that still have available beds
+                $q->where('available_beds', '>', 0);
+            }]);
 
         if ($request->gender) {
-            $query->where('gender', $request->gender)
+            $query->where(function ($q) use ($request) {
+                $q->where('gender', $request->gender)
                   ->orWhere('gender', 'Both');
+            });
         }
 
         $hostels = $query->latest()->paginate(20);

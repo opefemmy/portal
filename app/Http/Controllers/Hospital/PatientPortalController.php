@@ -94,12 +94,19 @@ class PatientPortalController extends Controller
     public function myAppointments()
     {
         $user = auth()->user();
-        $patient = HospitalPatient::where('user_id', $user->id)->firstOrFail();
+        $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->with('staff')
-            ->orderBy('appointment_date', 'desc')
-            ->paginate(10);
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->with('staff')
+                    ->orderBy('appointment_date', 'desc')
+                    ->paginate(10);
+            } catch (\Throwable $e) {
+                \Log::error('Student medical appointments failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.appointments', compact('appointments'));
     }
@@ -110,11 +117,18 @@ class PatientPortalController extends Controller
     public function myMedicalHistory()
     {
         $user = auth()->user();
-        $patient = HospitalPatient::where('user_id', $user->id)->firstOrFail();
+        $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->paginate(10);
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->orderBy('appointment_date', 'desc')
+                    ->paginate(10);
+            } catch (\Throwable $e) {
+                \Log::error('Student medical history failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.history', compact('patient', 'appointments'));
     }
@@ -125,11 +139,18 @@ class PatientPortalController extends Controller
     public function myPrescriptions()
     {
         $user = auth()->user();
-        $patient = HospitalPatient::where('user_id', $user->id)->firstOrFail();
+        $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->paginate(10);
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->orderBy('appointment_date', 'desc')
+                    ->paginate(10);
+            } catch (\Throwable $e) {
+                \Log::error('Student medical prescriptions failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.prescriptions', compact('appointments'));
     }
@@ -140,11 +161,18 @@ class PatientPortalController extends Controller
     public function myLabResults()
     {
         $user = auth()->user();
-        $patient = HospitalPatient::where('user_id', $user->id)->firstOrFail();
+        $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->paginate(10);
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->orderBy('appointment_date', 'desc')
+                    ->paginate(10);
+            } catch (\Throwable $e) {
+                \Log::error('Student medical lab-results failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.lab-results', compact('appointments'));
     }
@@ -155,11 +183,18 @@ class PatientPortalController extends Controller
     public function myAdmissions()
     {
         $user = auth()->user();
-        $patient = HospitalPatient::where('user_id', $user->id)->firstOrFail();
+        $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->paginate(10);
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->orderBy('appointment_date', 'desc')
+                    ->paginate(10);
+            } catch (\Throwable $e) {
+                \Log::error('Student medical admissions failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.admissions', compact('appointments'));
     }

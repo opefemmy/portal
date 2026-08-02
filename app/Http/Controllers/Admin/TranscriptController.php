@@ -29,23 +29,36 @@ class TranscriptController extends Controller
 
     public function show(Student $student)
     {
-        $results = Result::whereHas('studentCourse', function($q) use ($student) {
-            $q->where('student_id', $student->id);
-        })->with(['studentCourse.course'])->get();
+        try {
+            $results = Result::whereHas('studentCourse', function($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })->with(['studentCourse.course'])->get();
 
-        $sessions = Session::all();
-        $cgpa = $student->calculateCGPA();
+            $sessions = Session::all();
+            $cgpa = $student->calculateCGPA();
+        } catch (\Throwable $e) {
+            \Log::error('Transcript show failed: ' . $e->getMessage());
+            $results = collect();
+            $sessions = collect();
+            $cgpa = 0.0;
+        }
 
         return view('admin.transcripts.show', compact('student', 'results', 'sessions', 'cgpa'));
     }
 
     public function print(Student $student)
     {
-        $results = Result::whereHas('studentCourse', function($q) use ($student) {
-            $q->where('student_id', $student->id);
-        })->with(['studentCourse.course', 'studentCourse.session'])->get();
+        try {
+            $results = Result::whereHas('studentCourse', function($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })->with(['studentCourse.course', 'studentCourse.session'])->get();
 
-        $cgpa = $student->calculateCGPA();
+            $cgpa = $student->calculateCGPA();
+        } catch (\Throwable $e) {
+            \Log::error('Transcript print failed: ' . $e->getMessage());
+            $results = collect();
+            $cgpa = 0.0;
+        }
 
         return view('admin.transcripts.print', compact('student', 'results', 'cgpa'));
     }

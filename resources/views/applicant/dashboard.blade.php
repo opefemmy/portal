@@ -265,16 +265,16 @@
                     <td>
                         @php
                             $paymentDateRaw = $applicant->payment_date ?? ($externalPayment->payment_date ?? null);
+                            $paymentDateFormatted = 'N/A';
+                            if ($paymentDateRaw) {
+                                try {
+                                    $paymentDateFormatted = \Carbon\Carbon::parse($paymentDateRaw)->format('d M Y');
+                                } catch (\Throwable $e) {
+                                    $paymentDateFormatted = (string) $paymentDateRaw;
+                                }
+                            }
                         @endphp
-                        @if($paymentDateRaw)
-                            @try
-                                {{ \Carbon\Carbon::parse($paymentDateRaw)->format('d M Y') }}
-                            @catch(\Throwable $e)
-                                {{ $paymentDateRaw }}
-                            @endtry
-                        @else
-                            N/A
-                        @endif
+                        {{ $paymentDateFormatted }}
                     </td>
                     <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Verified</span></td>
                 </tr>

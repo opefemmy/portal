@@ -151,6 +151,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
 
 <form method="POST" action="{{ route('admin.settings.update') }}">
     @csrf
+    @method('PUT')
 
     {{-- Admission Settings --}}
     <div class="card mb-4">
