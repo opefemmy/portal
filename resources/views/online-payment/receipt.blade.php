@@ -80,7 +80,7 @@
                 </tr>
                 <tr>
                     <th>Payment Date</th>
-                    <td>{{ $payment->created_at->format('d M Y, h:i A') }}</td>
+                    <td>{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                 </tr>
                 <tr>
                     <th>Status</th>

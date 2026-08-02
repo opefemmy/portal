@@ -38,6 +38,9 @@
             <div class="card-body">
                 <h6 class="text-muted">Debtors Count</h6>
                 <h2>{{ $paymentStats['debtors_count'] ?? 0 }}</h2>
+                <a href="{{ route('bursar.debtors') }}" class="btn btn-sm btn-outline-danger mt-2">
+                    <i class="fas fa-list me-1"></i>View All
+                </a>
             </div>
         </div>
     </div>
@@ -79,6 +82,9 @@
             <i class="fas fa-check-circle me-2"></i>Paid Students
             <span class="badge bg-success ms-2">{{ $paymentStats['paid_count'] ?? 0 }}</span>
         </button>
+        <a href="{{ route('bursar.paid-students') }}" class="btn btn-sm btn-outline-success ms-3">
+            <i class="fas fa-external-link-alt me-1"></i>View Full List
+        </a>
     </li>
 </ul>
 
@@ -157,7 +163,7 @@
                                 <td>{{ $payment->student->department->name ?? 'N/A' }}</td>
                                 <td>{{ $payment->student->programme->name ?? 'N/A' }}</td>
                                 <td>₦{{ number_format($payment->amount, 2) }}</td>
-                                <td>{{ $payment->created_at->format('d M, Y') }}</td>
+                                <td>{{ optional($payment->created_at)->format('d M, Y') ?? 'N/A' }}</td>
                                 <td>
                                     <span class="badge bg-success">Paid</span>
                                 </td>

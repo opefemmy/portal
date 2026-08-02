@@ -96,7 +96,7 @@
                         <tbody>
                             @forelse($recentReceipts as $receipt)
                             <tr>
-                                <td>{{ $receipt->payment_date->format('d M') }}</td>
+                                <td>{{ optional($receipt->payment_date)->format('d M') ?? 'N/A' }}</td>
                                 <td>{{ $receipt->student->name ?? 'N/A' }}</td>
                                 <td>₦{{ number_format($receipt->amount, 2) }}</td>
                                 <td>

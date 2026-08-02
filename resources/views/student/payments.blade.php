@@ -104,7 +104,7 @@
                         <td><small>{{ $payment->reference }}</small></td>
                         <td>{{ $payment->fee->name ?? 'N/A' }}</td>
                         <td>₦{{ number_format($payment->amount, 2) }}</td>
-                        <td>{{ $payment->created_at->format('d M Y, h:i A') }}</td>
+                        <td>{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                         <td>{{ ucfirst($payment->gateway) }}</td>
                         <td>
                             @if($payment->status === 'verified')

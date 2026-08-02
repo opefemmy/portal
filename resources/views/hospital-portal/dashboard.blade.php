@@ -215,6 +215,79 @@
                 </div>
             </div>
 
+            <!-- Pending Orders (doctor's prescriptions / tests awaiting payment) -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-prescription-bottle-alt me-2"></i>Prescribed Items Awaiting Payment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if(isset($pendingOrders) && $pendingOrders->count() > 0)
+                        <form method="POST" action="{{ route('patient-portal.pay-order-items') }}" id="payOrderItemsForm">
+                            @csrf
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Item</th>
+                                            <th>Type</th>
+                                            <th class="text-end">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($pendingOrders as $order)
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input order-item-cb"
+                                                        name="order_item_ids[]" value="{{ $order->id }}"
+                                                        data-amount="{{ (float) $order->amount }}" checked>
+                                                </td>
+                                                <td>{{ $order->item_name }}</td>
+                                                <td>
+                                                    @if($order->orderable_type === \App\Models\Hospital\HospitalPrescriptionItem::class)
+                                                        <span class="badge bg-primary">Prescription</span>
+                                                    @else
+                                                        <span class="badge bg-info">Lab / X-ray</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end">₦{{ number_format((float) $order->amount, 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Subtotal</td>
+                                            <td class="text-end fw-bold" id="orderSubtotal">₦0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-end text-muted">Portal charge (2%)</td>
+                                            <td class="text-end text-muted" id="orderPortalCharge">₦0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Total</td>
+                                            <td class="text-end fw-bold text-success" id="orderTotal">₦0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="submit" class="btn btn-success flex-grow-1"
+                                    onclick="return confirm('Proceed to pay for the selected items?')">
+                                    <i class="fas fa-credit-card me-2"></i>Pay Selected Items
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="selectAllOrderItems">
+                                    <i class="fas fa-check-double"></i> Toggle All
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <p class="text-muted text-center py-3 mb-0">No prescribed items awaiting payment.</p>
+                    @endif
+                </div>
+            </div>
+
             <!-- Payment History -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-success text-white py-3">
@@ -239,7 +312,7 @@
                                 <tbody>
                                     @foreach($payments as $payment)
                                         <tr>
-                                            <td>{{ $payment->created_at->format('d M Y') }}</td>
+                                            <td>{{ optional($payment->created_at)->format('d M Y') ?? 'N/A' }}</td>
                                             <td><code>{{ $payment->payment_ref }}</code></td>
                                             <td>{{ $payment->service_name }}</td>
                                             <td>₦{{ number_format($payment->total_amount) }}</td>
@@ -512,6 +585,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // Pending orders — recalculate total when checkboxes toggle
+    function recomputeOrderTotals() {
+        var total = 0;
+        document.querySelectorAll('.order-item-cb:checked').forEach(function(cb) {
+            total += parseFloat(cb.getAttribute('data-amount') || 0);
+        });
+        var charge = total * 0.02;
+        var grand = total + charge;
+        var fmt = function(n) { return '₦' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
+        var subEl = document.getElementById('orderSubtotal');
+        var pcEl  = document.getElementById('orderPortalCharge');
+        var totEl = document.getElementById('orderTotal');
+        if (subEl) subEl.textContent = fmt(total);
+        if (pcEl)  pcEl.textContent  = fmt(charge);
+        if (totEl) totEl.textContent = fmt(grand);
+    }
+    document.querySelectorAll('.order-item-cb').forEach(function(cb) {
+        cb.addEventListener('change', recomputeOrderTotals);
+    });
+    var selectAllBtn = document.getElementById('selectAllOrderItems');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            var boxes = document.querySelectorAll('.order-item-cb');
+            var anyUnchecked = Array.from(boxes).some(function(b) { return !b.checked; });
+            boxes.forEach(function(b) { b.checked = anyUnchecked; });
+            recomputeOrderTotals();
+        });
+    }
+    recomputeOrderTotals();
 
     // Handle Pay Now buttons
     var payNowBtns = document.querySelectorAll('.pay-now-btn');

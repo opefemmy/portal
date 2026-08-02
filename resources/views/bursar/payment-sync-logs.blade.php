@@ -37,7 +37,7 @@
                         <tbody>
                             @forelse($logs as $log)
                             <tr>
-                                <td>{{ $log->created_at->format('d M Y, h:i A') }}</td>
+                                <td>{{ optional($log->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                                 <td>{{ $log->user->name ?? 'System' }}</td>
                                 <td><span class="badge bg-info">{{ $log->action }}</span></td>
                                 <td>{{ $log->description }}</td>

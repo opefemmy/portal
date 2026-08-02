@@ -33,7 +33,7 @@
                     <td>{{ $receipt->student->name ?? 'N/A' }}</td>
                     <td>₦{{ number_format($receipt->amount, 2) }}</td>
                     <td>{{ ucfirst($receipt->payment_method) }}</td>
-                    <td>{{ $receipt->payment_date->format('d M Y') }}</td>
+                    <td>{{ optional($receipt->payment_date)->format('d M Y') ?? 'N/A' }}</td>
                     <td>
                         @if($receipt->is_verified)
                             <span class="badge bg-success">Verified</span>

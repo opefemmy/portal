@@ -14,8 +14,8 @@
         <div class="d-flex justify-content-between">
             <div>
                 <h5>{{ $payment->service_name }}</h5>
-                <p class="mb-1">Ref: <strong>{{ $payment->payment_ref }}</p>
-                <small class="text-muted">{{ $payment->created_at->format('d M Y, h:i A') }}</small>
+                <p class="mb-1">Ref: <strong>{{ $payment->payment_ref }}</strong></p>
+                <small class="text-muted">{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</small>
             </div>
             <div class="text-end">
                 <h4 class="text-{{ $payment->status == 'completed' ? 'success' : 'warning' }}">₦{{ number_format($payment->total_amount) }}</h4>

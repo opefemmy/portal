@@ -120,7 +120,7 @@
                                 <span class="badge bg-danger">Failed</span>
                             @endif
                         </td>
-                        <td>{{ $payment->created_at->format('d M Y') }}</td>
+                        <td>{{ optional($payment->created_at)->format('d M Y') ?? 'N/A' }}</td>
                         <td>
                             @if($payment->status !== 'completed')
                             <a href="{{ route('bursar.payments.verify', $payment) }}"

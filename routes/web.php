@@ -636,6 +636,8 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
 // Bursar Routes
 Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
+    Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');
     Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])->name('payments.receipt');

@@ -37,8 +37,8 @@
                             <i class="fas fa-file-excel me-2"></i>
                             File: {{ $filename }}
                         </h5>
-                        @if(isset($payment_type_name))
-                            <span class="badge bg-info">Payment Type: {{ $payment_type_name }}</span>
+                        @if(isset($fee_name))
+                            <span class="badge bg-info">Payment Type: {{ $fee_name }}</span>
                         @endif
                     </div>
                     <div class="col-auto">

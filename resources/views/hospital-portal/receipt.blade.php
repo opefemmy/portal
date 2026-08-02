@@ -77,7 +77,7 @@
                         </tr>
                         <tr>
                             <td class="text-muted">Payment Date</td>
-                            <td class="text-end">{{ $payment->created_at->format('d M Y, h:i A') }}</td>
+                            <td class="text-end">{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Payment Method</td>

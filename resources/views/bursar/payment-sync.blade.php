@@ -118,7 +118,7 @@
                                 <td>{{ $payment->applicant_name }}</td>
                                 <td>{{ $payment->email }}</td>
                                 <td>₦{{ number_format($payment->amount, 2) }}</td>
-                                <td>{{ $payment->payment_date->format('d M Y, h:i A') }}</td>
+                                <td>{{ $payment->payment_date ? $payment->payment_date->format('d M Y, h:i A') : 'N/A' }}</td>
                                 <td>
                                     @if($payment->payment_status === 'completed')
                                         <span class="badge bg-success">Completed</span>
@@ -136,7 +136,7 @@
                                         <span class="badge bg-secondary">No</span>
                                     @endif
                                 </td>
-                                <td>{{ $payment->created_at->format('d M Y') }}</td>
+                                <td>{{ optional($payment->created_at)->format('d M Y') ?? 'N/A' }}</td>
                             </tr>
                             @empty
                             <tr>
