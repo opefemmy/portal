@@ -8,7 +8,7 @@
         <div class="col-md-8">
             <h4>Enter Results: {{ $course->code }} - {{ $course->title }}</h4>
             <p class="text-muted mb-0">
-                Department: {{ $assignment->department->name ?? 'N/A' }} |
+                Department: {{ $course->department->name ?? 'N/A' }} |
                 Level: {{ $course->level }}
             </p>
         </div>

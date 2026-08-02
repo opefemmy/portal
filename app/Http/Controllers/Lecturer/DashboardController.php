@@ -66,9 +66,10 @@ class DashboardController extends Controller
         }
     }
 
-    public function courseStudents(Course $course)
+    public function courseStudents(\App\Models\Course $course)
     {
-        return view('lecturer.course-students');
+        // Delegate to LecturerResultController which provides the data needed by the view.
+        return app(\App\Http\Controllers\Lecturer\ResultController::class)->courseStudents($course);
     }
 
     public function timetable()

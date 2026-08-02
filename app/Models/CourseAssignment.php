@@ -32,7 +32,7 @@ class CourseAssignment extends Model
 
     public function studentCourses(): HasMany
     {
-        return $this->hasMany(StudentCourse::class);
+        return $this->hasMany(StudentCourse::class, 'course_id', 'course_id');
     }
 
     public function results(): HasMany

@@ -101,6 +101,7 @@ Route::prefix('patient-portal')->name('patient-portal.')->group(function () {
         Route::post('/request-service', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'requestServicePortal'])->name('request-service');
         Route::post('/initiate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'initiatePaymentPortal'])->name('initiate-payment');
         Route::post('/validate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'validatePaymentPortal'])->name('validate-payment-portal');
+        Route::post('/pay-order-items', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'payOrderItemsPortal'])->name('pay-order-items');
         Route::get('/receipt/{payment}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'viewReceiptPortal'])->name('receipt');
         Route::post('/regenerate-code', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'regenerateCodePortal'])->name('regenerate-code');
     });
@@ -209,6 +210,9 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
         Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');
         Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
+
+        // Admission letter (post-admit + post-acceptance-fee)
+        Route::get('/admission-letter', [ApplicationController::class, 'printAdmissionLetter'])->name('admission-letter');
     });
 });
 
@@ -328,6 +332,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports');
     Route::get('/reports/students', [ReportController::class, 'students'])->name('reports.students');
+    Route::get('/reports/applications', [ReportController::class, 'applications'])->name('reports.applications');
     Route::get('/reports/results', [ReportController::class, 'results'])->name('reports.results');
     Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
 
@@ -335,24 +340,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::resource('staff', StaffController::class);
     Route::post('/staff/{user}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.reset_password');
 
-    // Student Management
+    // Student Management (literal routes first to avoid conflict with wildcard)
+    Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
+    Route::post('/students/import', [StudentImportController::class, 'import'])->name('students.import.store');
+    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])->name('students.import.template');
+    Route::get('/students/measurements/export', [StudentController::class, 'exportMeasurements'])->name('students.measurements.export');
+    Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
+
     Route::resource('students', StudentController::class);
     Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
-    Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
 
     // Student Uniform Measurements
     Route::get('/students/{student}/measurements', [StudentController::class, 'showMeasurements'])->name('students.measurements');
     Route::get('/students/{student}/measurements/edit', [StudentController::class, 'editMeasurements'])->name('students.measurements.edit');
     Route::put('/students/{student}/measurements', [StudentController::class, 'updateMeasurements'])->name('students.measurements.update');
-    Route::get('/students/measurements/export', [StudentController::class, 'exportMeasurements'])->name('students.measurements.export');
-
-    // Student Import (NEW)
-    Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
-    Route::post('/students/import', [StudentImportController::class, 'import'])->name('students.import.store');
 
     // Complaints Management
     Route::resource('complaints', \App\Http\Controllers\Admin\ComplaintController::class);
-    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])->name('students.import.template');
 
     // Course Assignments (OnCourses)
     Route::resource('course-assignments', CourseAssignmentController::class);
@@ -542,7 +546,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
 Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer'])->group(function () {
     Route::get('/dashboard', [LecturerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/courses', [LecturerDashboardController::class, 'courses'])->name('courses');
-    Route::get('/courses/{course}/students', [LecturerDashboardController::class, 'courseStudents'])->name('courses.students');
+    Route::get('/courses/{course}/students', [LecturerResultController::class, 'courseStudents'])->name('courses.students');
     Route::get('/courses/{course}/results', [LecturerResultController::class, 'enter'])->name('courses.results');
     Route::post('/courses/{course}/results', [LecturerResultController::class, 'store'])->name('courses.results.store');
     Route::post('/courses/{course}/results/bulk', [LecturerResultController::class, 'bulkUpload'])->name('courses.bulk');
@@ -572,7 +576,7 @@ Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(func
     Route::put('/timetable/{timetable}/approve', [\App\Http\Controllers\HOD\TimetableController::class, 'approve'])->name('timetable.approve');
     Route::put('/timetable/{timetable}/reject', [\App\Http\Controllers\HOD\TimetableController::class, 'reject'])->name('timetable.reject');
 
-    Route::get('/results', [\App\Http\Controllers\HOD\ResultController::class, 'index'])->name('results');
+    Route::get('/results', [\App\Http\Controllers\HOD\ResultController::class, 'index'])->name('results.index');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\HOD\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\HOD\ResultController::class, 'reject'])->name('results.reject');
 });
@@ -603,28 +607,30 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/applicants/{applicant}/admit', [\App\Http\Controllers\Registrar\ApplicantController::class, 'admit'])->name('applicants.admit');
     Route::put('/applicants/{applicant}/reject', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reject'])->name('applicants.reject');
     Route::get('/admission-list', [\App\Http\Controllers\Registrar\AdmissionController::class, 'index'])->name('admission');
+
+    // Literal sub-paths FIRST so they don't get shadowed by /{applicant} wildcard.
+    Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])->name('admission.settings');
+    Route::put('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateSettings'])->name('admission.updateSettings');
+    Route::get('/admission-list/print', [\App\Http\Controllers\Registrar\AdmissionController::class, 'print'])->name('admission.print');
+    Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])->name('admission.upload');
+    Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])->name('admission.byDepartment');
+    Route::get('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showUploadByDepartment'])->name('admission.uploadByDepartment');
+    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList']);
+
+    // Wildcard /{applicant} routes AFTER the literal ones.
     Route::get('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'show'])->name('admission.show');
     Route::get('/admission-list/{applicant}/edit', [\App\Http\Controllers\Registrar\AdmissionController::class, 'edit'])->name('admission.edit');
     Route::put('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'update'])->name('admission.update');
     Route::delete('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'destroy'])->name('admission.destroy');
     Route::post('/admission-list/{applicant}/reset-password', [\App\Http\Controllers\Registrar\AdmissionController::class, 'resetPassword'])->name('admission.resetPassword');
     Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])->name('admission.updateStatus');
-    Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])->name('admission.upload');
-    Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])->name('admission.settings');
-    Route::put('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateSettings'])->name('admission.updateSettings');
-    Route::get('/admission-list/print', [\App\Http\Controllers\Registrar\AdmissionController::class, 'print'])->name('admission.print');
     Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])->name('admission.track');
 
-    // Admission Letters
+    // Admission Letters (literal /template and /generate before /{applicant} wildcard)
     Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
     Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate']);
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
     Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
-
-    // Admission List by Department
-    Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])->name('admission.byDepartment');
-    Route::get('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showUploadByDepartment'])->name('admission.uploadByDepartment');
-    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList']);
 });
 
 // Bursar Routes

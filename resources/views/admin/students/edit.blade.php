@@ -81,7 +81,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="session_id" class="form-label">Session</label>
-                        <select class="form-select @error('session_id') is-invalid @endre"
+                        <select class="form-select @error('session_id') is-invalid @enderror"
                                 id="session_id" name="session_id" required>
                             <option value="">Select Session</option>
                             @foreach($sessions as $session)
