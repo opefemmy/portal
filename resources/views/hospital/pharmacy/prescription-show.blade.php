@@ -46,7 +46,7 @@
                                 </tr>
                                 <tr>
                                     <th>Date:</th>
-                                    <td>{{ $prescription->created_at->format('d M Y, h:i A') }}</td>
+                                    <td>{{ optional($prescription->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                                 </tr>
                                 @if($prescription->dispensed_at)
                                 <tr>

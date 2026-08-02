@@ -94,7 +94,7 @@
                             <tr>
                                 <td>{{ $prescription->patient->name ?? 'N/A' }}</td>
                                 <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
-                                <td>{{ $prescription->created_at->format('d M Y') }}</td>
+                                <td>{{ optional($prescription->created_at)->format('d M Y') ?? 'N/A' }}</td>
                                 <td>
                                     <span class="badge bg-{{ $prescription->status === 'pending' ? 'warning' : 'success' }}">
                                         {{ ucfirst($prescription->status) }}

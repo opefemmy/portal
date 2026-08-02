@@ -49,7 +49,7 @@
                     </tr>
                     <tr>
                         <th>Date of Birth</th>
-                        <td>{{ $applicant->date_of_birth ? $applicant->date_of_birth->format('d M, Y') : 'N/A' }}</td>
+                        <td>{{ optional($applicant->date_of_birth)->format('d M, Y') ?? $applicant->date_of_birth ?: 'N/A' }}</td>
                     </tr>
                     <tr>
                         <th>Blood Group</th>

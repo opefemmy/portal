@@ -262,7 +262,20 @@
                 <tr>
                     <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? ($externalPayment->transaction_id ?? 'N/A') }}</td>
                     <td>₦{{ number_format($applicant->payment_amount ?? ($externalPayment->amount ?? 0), 2) }}</td>
-                    <td>{{ ($applicant->payment_date ?? ($externalPayment->payment_date ?? null)) ? \Carbon\Carbon::parse($applicant->payment_date ?? $externalPayment->payment_date)->format('d M Y') : 'N/A' }}</td>
+                    <td>
+                        @php
+                            $paymentDateRaw = $applicant->payment_date ?? ($externalPayment->payment_date ?? null);
+                        @endphp
+                        @if($paymentDateRaw)
+                            @try
+                                {{ \Carbon\Carbon::parse($paymentDateRaw)->format('d M Y') }}
+                            @catch(\Throwable $e)
+                                {{ $paymentDateRaw }}
+                            @endtry
+                        @else
+                            N/A
+                        @endif
+                    </td>
                     <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Verified</span></td>
                 </tr>
             </tbody>

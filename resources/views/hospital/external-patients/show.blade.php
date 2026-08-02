@@ -32,7 +32,7 @@
                     <tr><td><strong>Gender:</strong></td><td>{{ ucfirst($patient->gender ?? 'N/A') }}</td></tr>
                     <tr><td><strong>Age:</strong></td><td>{{ $patient->age ?? 'N/A' }}</td></tr>
                     <tr><td><strong>Address:</strong></td><td>{{ $patient->address ?? 'N/A' }}</td></tr>
-                    <tr><td><strong>Registered:</strong></td><td>{{ $patient->created_at->format('d M Y') }}</td></tr>
+                    <tr><td><strong>Registered:</strong></td><td>{{ optional($patient->created_at)->format('d M Y') ?? 'N/A' }}</td></tr>
                 </table>
             </div>
         </div>
@@ -183,7 +183,7 @@
                             <span class="badge bg-{{ $comm->type == 'sms' ? 'success' : ($comm->type == 'email' ? 'info' : 'secondary') }}">{{ strtoupper($comm->type) }}</span>
                             <strong>{{ $comm->subject }}</strong>
                         </div>
-                        <small class="text-muted">{{ $comm->created_at->format('d M Y, h:i A') }}</small>
+                        <small class="text-muted">{{ optional($comm->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</small>
                     </div>
                     <p class="mb-0 mt-2">{{ $comm->message }}</p>
                 </div>

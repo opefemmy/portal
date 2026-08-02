@@ -163,7 +163,7 @@
                                     <strong>{{ $prescription->patient->full_name ?? 'Unknown' }}</strong>
                                 </td>
                                 <td>Dr. {{ $prescription->doctor->last_name ?? 'TBA' }}</td>
-                                <td>{{ $prescription->created_at->format('d M, h:i A') }}</td>
+                                <td>{{ optional($prescription->created_at)->format('d M, h:i A') ?? 'N/A' }}</td>
                                 <td>
                                     <span class="badge bg-info">{{ $prescription->items->count() }} items</span>
                                 </td>

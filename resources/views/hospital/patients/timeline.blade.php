@@ -50,7 +50,7 @@
                                 <ul class="list-group">
                                     @foreach($patient->prescriptions as $prescription)
                                     <li class="list-group-item">
-                                        <strong>{{ $prescription->created_at->format('d M Y') }}</strong> -
+                                        <strong>{{ optional($prescription->created_at)->format('d M Y') ?? 'N/A' }}</strong> -
                                         Status: {{ ucfirst($prescription->status) }}
                                     </li>
                                     @endforeach
@@ -64,7 +64,7 @@
                                 <ul class="list-group">
                                     @foreach($patient->labRequests as $lab)
                                     <li class="list-group-item">
-                                        <strong>{{ $lab->created_at->format('d M Y') }}</strong> -
+                                        <strong>{{ optional($lab->created_at)->format('d M Y') ?? 'N/A' }}</strong> -
                                         {{ $lab->test_type }} - Status: {{ ucfirst($lab->status) }}
                                     </li>
                                     @endforeach

@@ -53,7 +53,7 @@
                     {{ ucfirst($prescription->payment_status ?? 'pending') }}
                 </span>
             </div>
-            <small>{{ $prescription->created_at->format('d M Y, h:i A') }}</small>
+            <small>{{ optional($prescription->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</small>
         </div>
         <div class="card-body">
             <!-- Visit Info -->

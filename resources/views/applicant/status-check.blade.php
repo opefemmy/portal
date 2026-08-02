@@ -39,7 +39,7 @@
                         <p class="mb-1"><strong>Programme:</strong> {{ $status->programme }}</p>
                     @endif
                     @if(isset($status->created_at))
-                        <p class="mb-0"><strong>Submitted:</strong> {{ $status->created_at->format('d M Y') }}</p>
+                        <p class="mb-0"><strong>Submitted:</strong> {{ $status->created_at ? \Carbon\Carbon::parse($status->created_at)->format('d M Y') : 'N/A' }}</p>
                     @endif
                 </div>
             @else

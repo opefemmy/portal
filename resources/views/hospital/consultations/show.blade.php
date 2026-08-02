@@ -241,7 +241,7 @@
                                                     <span class="badge bg-secondary">{{ ucfirst($o->status) }}</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $o->created_at->format('d M Y, h:i A') }}</td>
+                                            <td>{{ optional($o->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -262,7 +262,7 @@
                     <ul class="list-group list-group-flush">
                         @foreach($consultation->prescriptions as $rx)
                             <li class="list-group-item">
-                                <strong>{{ ucfirst($rx->status) }}</strong> — created {{ $rx->created_at->format('d M Y') }}
+                                <strong>{{ ucfirst($rx->status) }}</strong> — created {{ optional($rx->created_at)->format('d M Y') ?? 'N/A' }}
                                 <small class="text-muted d-block">{{ $rx->notes }}</small>
                                 @if($rx->items && $rx->items->count())
                                     <ul class="mb-0">

@@ -172,8 +172,8 @@
                         <tbody>
                             @forelse($recentApplicants as $applicant)
                             <tr>
-                                <td>{{ $applicant->user->name }}</td>
-                                <td>{{ $applicant->department->code }}</td>
+                                <td>{{ $applicant->user->name ?? 'N/A' }}</td>
+                                <td>{{ $applicant->department->code ?? 'N/A' }}</td>
                                 <td>
                                     <span class="badge badge-status bg-{{ $applicant->status === 'admitted' ? 'success' : ($applicant->status === 'rejected' ? 'danger' : 'warning') }}">
                                         {{ ucfirst($applicant->status) }}

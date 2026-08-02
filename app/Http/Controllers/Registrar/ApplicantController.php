@@ -40,14 +40,14 @@ class ApplicantController extends Controller
             $query->where('department_id', $request->department_id);
         }
 
-        $applicants = $query->whereIn('status', ['pending', 'screening', 'approved'])
+        $applications = $query->whereIn('status', ['pending', 'screening', 'approved'])
             ->latest()
             ->paginate(20);
         $schools = \App\Models\School::all();
         $departments = \App\Models\Department::all();
 
         // Reuse the existing applications.index view (statistics, filters, table already built).
-        return view('registrar.applications.index', compact('applicants', 'schools', 'departments'));
+        return view('registrar.applications.index', compact('applications', 'schools', 'departments'));
     }
 
     public function show(Applicant $applicant)

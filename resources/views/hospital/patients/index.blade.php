@@ -76,7 +76,7 @@
                                 {{ ucfirst($patient->patient_type) }}
                             </span>
                         </td>
-                        <td>{{ $patient->created_at->format('d M Y') }}</td>
+                        <td>{{ optional($patient->created_at)->format('d M Y') ?? 'N/A' }}</td>
                         <td>
                             <a href="{{ route('hospital.patients.show', $patient->id) }}" class="btn btn-sm btn-info" title="View patient details">
                                 <i class="fas fa-eye"></i>

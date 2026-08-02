@@ -10,7 +10,7 @@
                 <i class="fas fa-user-injured me-2"></i>{{ $patient->full_name }}
                 <span class="badge bg-primary ms-2">{{ $patient->patient_number }}</span>
             </h3>
-            <small class="text-muted">Registered {{ $patient->created_at->format('d M Y') }} &middot; {{ ucfirst($patient->patient_type ?? 'patient') }}</small>
+            <small class="text-muted">Registered {{ optional($patient->created_at)->format('d M Y') ?? 'N/A' }} &middot; {{ ucfirst($patient->patient_type ?? 'patient') }}</small>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('hospital.patients.timeline', $patient->id) }}" class="btn btn-outline-secondary" title="View full medical history timeline">
@@ -162,7 +162,7 @@
                         <div class="border-bottom pb-3 mb-3">
                             <h6 class="mb-1">
                                 <span class="badge bg-{{ $prescription->status === 'dispensed' ? 'success' : 'warning' }}">{{ ucfirst($prescription->status ?? 'pending') }}</span>
-                                <small class="text-muted">{{ $prescription->created_at->format('d M Y, h:i A') }}</small>
+                                <small class="text-muted">{{ optional($prescription->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</small>
                             </h6>
                             <p class="mb-0 small">{{ $prescription->notes ?? 'No notes' }}</p>
                             @if($prescription->doctor)
@@ -189,7 +189,7 @@
                             @if($lab->clinical_notes)
                                 <p class="mb-0 small">{{ $lab->clinical_notes }}</p>
                             @endif
-                            <small class="text-muted">{{ $lab->created_at->format('d M Y') }}</small>
+                            <small class="text-muted">{{ optional($lab->created_at)->format('d M Y') ?? 'N/A' }}</small>
                         </div>
                     @empty
                         <p class="text-muted text-center mb-0">No lab requests on record.</p>
@@ -230,7 +230,7 @@
                 <div class="card-body">
                     @forelse($patient->vitalSigns->sortByDesc('created_at') as $vital)
                         <div class="border-bottom pb-3 mb-3">
-                            <small class="text-muted">{{ $vital->created_at->format('d M Y, h:i A') }}</small>
+                            <small class="text-muted">{{ optional($vital->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</small>
                             <p class="mb-0 small">
                                 @if($vital->temperature) <strong>Temp:</strong> {{ $vital->temperature }}°C &nbsp; @endif
                                 @if($vital->blood_pressure_systolic) <strong>BP:</strong> {{ $vital->blood_pressure_systolic }}/{{ $vital->blood_pressure_diastolic ?? '?' }} &nbsp; @endif

@@ -549,7 +549,7 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
-    <a href="{{ route('hod.results') }}" class="nav-link {{ request()->is('hod/results*') ? 'active' : '' }}">
+    <a href="{{ route('hod.results.index') }}" class="nav-link {{ request()->is('hod/results*') ? 'active' : '' }}">
         <i class="fas fa-check-circle"></i> Results
     </a>
 </li>

@@ -94,7 +94,7 @@
                             <tbody>
                                 @forelse(\App\Models\Hospital\HospitalInventoryMovement::with('drug', 'user')->latest()->take(20)->get() as $movement)
                                 <tr>
-                                    <td>{{ $movement->created_at->format('d M Y') }}</td>
+                                    <td>{{ optional($movement->created_at)->format('d M Y') ?? 'N/A' }}</td>
                                     <td>{{ $movement->drug->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $movement->movement_type === 'sale' ? 'danger' : ($movement->movement_type === 'purchase' ? 'success' : 'info') }}">

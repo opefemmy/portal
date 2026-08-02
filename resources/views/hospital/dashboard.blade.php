@@ -170,7 +170,7 @@
                                 </td>
                                 <td>{{ $patient->phone }}</td>
                                 <td>{{ ucfirst($patient->gender) }}</td>
-                                <td>{{ $patient->created_at->format('d M, h:i A') }}</td>
+                                <td>{{ optional($patient->created_at)->format('d M, h:i A') ?? 'N/A' }}</td>
                             </tr>
                             @empty
                             <tr>

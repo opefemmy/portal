@@ -53,7 +53,7 @@
                             <td>#{{ $prescription->id }}</td>
                             <td>{{ $prescription->patient->name ?? 'N/A' }}</td>
                             <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
-                            <td>{{ $prescription->created_at->format('d M Y, h:i A') }}</td>
+                            <td>{{ optional($prescription->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                             <td>{{ $prescription->items->count() }} items</td>
                             <td>
                                 <span class="badge bg-{{ $prescription->status === 'pending' ? 'warning' : ($prescription->status === 'dispensed' ? 'success' : 'info') }}">
