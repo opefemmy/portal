@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('gpa', 3, 2)->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('status', 20)->default('pending');
             $table->text('remarks')->nullable();
             $table->timestamps();
         });

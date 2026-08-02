@@ -21,7 +21,7 @@ return new class extends Migration
 
         // Add centre_id to applicants table
         Schema::table('applicants', function (Blueprint $table) {
-            $table->unsignedBigInteger('centre_id')->nullable()->after('session_id');
+            $table->unsignedBigInteger('centre_id')->nullable();
             $table->foreign('centre_id')->references('id')->on('admission_centres')->onDelete('set null');
         });
     }

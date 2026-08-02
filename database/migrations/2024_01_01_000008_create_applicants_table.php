@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->date('date_of_birth')->nullable();
             $table->string('place_of_birth')->nullable();
-            $table->enum('gender', ['Male', 'Female', 'Other'])->nullable();
+            $table->string('gender', 10)->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->string('religion')->nullable();
@@ -73,7 +73,7 @@ return new class extends Migration
             $table->decimal('payment_amount', 12, 2)->nullable();
             $table->dateTime('payment_date')->nullable();
 
-            $table->enum('status', ['pending', 'reviewing', 'admitted', 'rejected'])->default('pending');
+            $table->string('status', 20)->default('pending');
             $table->string('matric_number')->nullable();
             $table->boolean('student_created')->default(false);
 

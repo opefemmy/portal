@@ -13,21 +13,21 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             // Uniform measurements
-            $table->string('uniform_shirt_size')->nullable()->after('nationality_id');
-            $table->string('uniform_pant_size')->nullable()->after('uniform_shirt_size');
-            $table->string('uniform_shoe_size')->nullable()->after('uniform_pant_size');
+            $table->string('uniform_shirt_size')->nullable();
+            $table->string('uniform_pant_size')->nullable();
+            $table->string('uniform_shoe_size')->nullable();
 
             // Scrub measurements
-            $table->string('scrub_size')->nullable()->after('uniform_shoe_size');
-            $table->string('scrub_color')->nullable()->after('scrub_size');
+            $table->string('scrub_size')->nullable();
+            $table->string('scrub_color')->nullable();
 
             // Lab coat measurements
-            $table->string('lab_coat_size')->nullable()->after('scrub_color');
-            $table->string('lab_coat_length')->nullable()->after('lab_coat_size');
+            $table->string('lab_coat_size')->nullable();
+            $table->string('lab_coat_length')->nullable();
 
             // Measurement timestamps
-            $table->timestamp('measurements_taken_at')->nullable()->after('lab_coat_length');
-            $table->unsignedBigInteger('measured_by')->nullable()->after('measurements_taken_at');
+            $table->timestamp('measurements_taken_at')->nullable();
+            $table->unsignedBigInteger('measured_by')->nullable();
         });
     }
 

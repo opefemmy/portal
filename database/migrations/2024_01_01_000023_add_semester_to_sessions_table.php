@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sessions', function (Blueprint $table) {
-            $table->enum('semester', ['First', 'Second'])->nullable()->after('name');
+            $table->string('semester', 20)->nullable();
         });
     }
 

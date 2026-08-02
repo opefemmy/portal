@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->foreignId('session_id')->constrained('sessions')->onDelete('cascade');
-            $table->enum('semester', ['first', 'second']);
-            $table->enum('status', ['registered', 'dropped', 'completed'])->default('registered');
+            $table->string('semester', 10);
+            $table->string('status', 20)->default('registered');
             $table->timestamps();
             $table->unique(['student_id', 'course_id', 'session_id'], 'student_course_unique');
         });

@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('regime_payments', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // e.g., "Indigene - First Installment"
-            $table->enum('student_type', ['Indigene', 'Non-Indigene']);
-            $table->enum('installment', ['First', 'Second', 'Full']);
+            $table->string('student_type', 20);
+            $table->string('installment', 20);
             $table->decimal('percentage', 5, 2)->default(100);
             $table->decimal('amount', 12, 2)->nullable();
             $table->boolean('is_active')->default(true);

@@ -10,25 +10,25 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'password_changed_at')) {
-                $table->timestamp('password_changed_at')->nullable()->after('password');
+                $table->timestamp('password_changed_at')->nullable();
             }
             if (!Schema::hasColumn('users', 'security_question')) {
-                $table->string('security_question')->nullable()->after('password_changed_at');
+                $table->string('security_question')->nullable();
             }
             if (!Schema::hasColumn('users', 'security_answer')) {
-                $table->string('security_answer')->nullable()->after('security_question');
+                $table->string('security_answer')->nullable();
             }
             if (!Schema::hasColumn('users', 'must_change_password')) {
-                $table->boolean('must_change_password')->default(false)->after('security_answer');
+                $table->boolean('must_change_password')->default(false);
             }
             if (!Schema::hasColumn('users', 'guidance_name')) {
-                $table->string('guidance_name')->nullable()->after('must_change_password');
+                $table->string('guidance_name')->nullable();
             }
             if (!Schema::hasColumn('users', 'guidance_phone')) {
-                $table->string('guidance_phone')->nullable()->after('guidance_name');
+                $table->string('guidance_phone')->nullable();
             }
             if (!Schema::hasColumn('users', 'guidance_address')) {
-                $table->text('guidance_address')->nullable()->after('guidance_phone');
+                $table->text('guidance_address')->nullable();
             }
         });
     }

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code')->unique();
-            $table->enum('type', ['ND', 'HND', 'Degree', 'PGD', 'Masters', 'PhD']);
+            $table->string('type', 30);
             $table->timestamps();
         });
     }

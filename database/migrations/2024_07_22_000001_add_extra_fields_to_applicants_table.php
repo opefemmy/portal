@@ -13,7 +13,7 @@ return new class extends Migration
             $olevel1Subjects = ['olevel1_subject1', 'olevel1_grade1', 'olevel1_subject2', 'olevel1_grade2', 'olevel1_subject3', 'olevel1_grade3', 'olevel1_subject4', 'olevel1_grade4', 'olevel1_subject5', 'olevel1_grade5'];
             foreach ($olevel1Subjects as $col) {
                 if (!Schema::hasColumn('applicants', $col)) {
-                    $table->string($col, 100)->nullable()->after('mode_of_study');
+                    $table->string($col, 100)->nullable();
                 }
             }
 

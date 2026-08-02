@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('regime_payments', function (Blueprint $table) {
             // Payment type (School Fee, Accommodation, etc.)
             if (!Schema::hasColumn('regime_payments', 'payment_type')) {
-                $table->string('payment_type')->default('school_fee')->after('name');
+                $table->string('payment_type')->default('school_fee');
             }
 
             // Scope - which students this applies to
@@ -30,28 +30,28 @@ return new class extends Migration
                 $table->foreignId('session_id')->nullable()->constrained('sessions')->onDelete('cascade');
             }
             if (!Schema::hasColumn('regime_payments', 'semester')) {
-                $table->string('semester')->nullable()->after('session_id'); // First, Second, Both
+                $table->string('semester')->nullable(); // First, Second, Both
             }
 
             // Level of entry (which level can pay this)
             if (!Schema::hasColumn('regime_payments', 'level')) {
-                $table->integer('level')->nullable()->after('semester'); // 1, 2, 3, 4, etc.
+                $table->integer('level')->nullable(); // 1, 2, 3, 4, etc.
             }
             if (!Schema::hasColumn('regime_payments', 'level_operator')) {
-                $table->string('level_operator')->default('exact')->after('level'); // exact, minimum, maximum
+                $table->string('level_operator')->default('exact'); // exact, minimum, maximum
             }
 
             // Portal charges
             if (!Schema::hasColumn('regime_payments', 'portal_charge')) {
-                $table->decimal('portal_charge', 10, 2)->default(0)->after('amount');
+                $table->decimal('portal_charge', 10, 2)->default(0);
             }
             if (!Schema::hasColumn('regime_payments', 'include_portal_charge')) {
-                $table->boolean('include_portal_charge')->default(false)->after('portal_charge');
+                $table->boolean('include_portal_charge')->default(false);
             }
 
             // Payment configuration
             if (!Schema::hasColumn('regime_payments', 'payment_config')) {
-                $table->string('payment_config')->default('full')->after('include_portal_charge'); // full, 60_40, 50_50
+                $table->string('payment_config')->default('full'); // full, 60_40, 50_50
             }
         });
     }

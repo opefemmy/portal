@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('release_name', 100)->nullable();
             $table->date('release_date')->nullable();
             $table->text('description')->nullable();
-            $table->enum('migration_status', ['pending', 'running', 'completed', 'failed'])->default('pending');
+            $table->string('migration_status', 20)->default('pending')->comment('pending, running, completed, failed');
             $table->string('installed_by', 100)->nullable();
             $table->timestamp('installed_at')->nullable();
             $table->boolean('is_current')->default(false);

@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code')->unique();
             $table->decimal('amount', 10, 2);
-            $table->enum('type', ['fixed', 'percentage']);
+            $table->string('type', 20)->comment('fixed, percentage');
             $table->boolean('is_taxable')->default(true);
             $table->boolean('is_active')->default(true);
             $table->text('description')->nullable();
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code')->unique();
             $table->decimal('amount', 10, 2);
-            $table->enum('type', ['fixed', 'percentage']);
+            $table->string('type', 20)->comment('fixed, percentage');
             $table->string('calculation_base')->nullable();
             $table->boolean('is_active')->default(true);
             $table->text('description')->nullable();
@@ -81,7 +81,7 @@ return new class extends Migration
             $table->decimal('balance', 12, 2)->default(0);
             $table->decimal('discount', 12, 2)->default(0);
             $table->decimal('penalty', 12, 2)->default(0);
-            $table->enum('status', ['pending', 'partial', 'paid', 'overdue', 'cancelled'])->default('pending');
+            $table->string('status', 30)->default('pending')->comment('pending, partial, paid, overdue, cancelled');
             $table->date('due_date')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
@@ -125,7 +125,7 @@ return new class extends Migration
             $table->string('reference_type')->nullable();
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->date('transaction_date');
-            $table->enum('status', ['pending', 'posted', 'cancelled'])->default('pending');
+            $table->string('status', 20)->default('pending')->comment('pending, posted, cancelled');
             $table->text('notes')->nullable();
             $table->timestamps();
         });
@@ -140,7 +140,7 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->decimal('amount', 12, 2);
             $table->text('reason');
-            $table->enum('status', ['pending', 'approved', 'rejected', 'processed'])->default('pending');
+            $table->string('status', 30)->default('pending')->comment('pending, approved, rejected, processed');
             $table->string('payment_method')->nullable();
             $table->string('reference_number')->nullable();
             $table->dateTime('approved_at')->nullable();
@@ -189,7 +189,7 @@ return new class extends Migration
             $table->decimal('balance', 12, 2)->default(0);
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('status', ['draft', 'approved', 'active', 'closed'])->default('draft');
+            $table->string('status', 20)->default('draft')->comment('draft, approved, active, closed');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->dateTime('approved_at')->nullable();
             $table->text('notes')->nullable();
@@ -220,7 +220,7 @@ return new class extends Migration
             $table->decimal('net_salary', 12, 2);
             $table->decimal('tax_deducted', 12, 2)->default(0);
             $table->decimal('pension_deducted', 12, 2)->default(0);
-            $table->enum('status', ['draft', 'calculated', 'approved', 'paid'])->default('draft');
+            $table->string('status', 30)->default('draft')->comment('draft, calculated, approved, paid');
             $table->foreignId('processed_by')->nullable()->constrained('users')->onDelete('set null');
             $table->dateTime('processed_at')->nullable();
             $table->timestamps();
@@ -257,7 +257,7 @@ return new class extends Migration
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->decimal('tax', 12, 2)->default(0);
             $table->decimal('total', 12, 2)->default(0);
-            $table->enum('status', ['draft', 'pending', 'approved', 'rejected', 'received', 'paid', 'cancelled'])->default('draft');
+            $table->string('status', 40)->default('draft')->comment('draft, pending, approved, rejected, received, paid, cancelled');
             $table->text('notes')->nullable();
             $table->timestamps();
         });
@@ -274,7 +274,7 @@ return new class extends Migration
             $table->string('reference_number')->nullable();
             $table->string('cheque_number')->nullable();
             $table->date('payment_date');
-            $table->enum('status', ['pending', 'approved', 'released', 'cancelled'])->default('pending');
+            $table->string('status', 30)->default('pending')->comment('pending, approved, released, cancelled');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

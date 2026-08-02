@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('programme_id')->constrained('programmes')->onDelete('cascade');
             $table->foreignId('session_id')->constrained('sessions')->onDelete('cascade');
             $table->integer('level');
-            $table->enum('status', ['active', 'graduated', 'suspended', 'withdrawn'])->default('active');
+            $table->string('status', 20)->default('active');
             $table->timestamps();
         });
     }

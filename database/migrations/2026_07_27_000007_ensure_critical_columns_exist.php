@@ -20,12 +20,12 @@ return new class extends Migration
 
             if (!Schema::hasColumn('applicants', 'email')) {
                 Schema::table('applicants', function (Blueprint $table) {
-                    $table->string('email')->nullable()->after('phone');
+                    $table->string('email')->nullable();
                 });
             }
             if (!Schema::hasColumn('applicants', 'phone')) {
                 Schema::table('applicants', function (Blueprint $table) {
-                    $table->string('phone')->nullable()->after('gender');
+                    $table->string('phone')->nullable();
                 });
             }
         }
@@ -34,8 +34,8 @@ return new class extends Migration
         if (Schema::hasTable('users')) {
             if (!Schema::hasColumn('users', 'state')) {
                 Schema::table('users', function (Blueprint $table) {
-                    $table->string('state')->nullable()->after('phone');
-                    $table->string('lga')->nullable()->after('state');
+                    $table->string('state')->nullable();
+                    $table->string('lga')->nullable();
                 });
             }
         }

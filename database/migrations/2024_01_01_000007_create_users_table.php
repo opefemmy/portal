@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('password');
             $table->foreignId('role_id')->constrained('roles')->onDelete('restrict');
             $table->string('passport')->nullable();
-            $table->enum('gender', ['male', 'female'])->nullable();
+            $table->string('gender', 10)->nullable();
             $table->date('date_of_birth')->nullable();
             $table->string('phone')->nullable();
             $table->text('address')->nullable();

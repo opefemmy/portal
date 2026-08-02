@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('grades', function (Blueprint $table) {
-            $table->string('classification')->nullable()->after('grade_point')->comment('first_class, second_class_upper, second_class_lower, third_class, pass, fail');
-            $table->integer('gpa_weight')->default(1)->after('classification');
+            $table->string('classification')->nullable()->comment('first_class, second_class_upper, second_class_lower, third_class, pass, fail');
+            $table->integer('gpa_weight')->default(1);
         });
 
         // Add course_classifications table
@@ -28,7 +28,7 @@ return new class extends Migration
 
         // Add classification config to sessions
         Schema::table('sessions', function (Blueprint $table) {
-            $table->boolean('use_classification')->default(false)->after('semester');
+            $table->boolean('use_classification')->default(false);
         });
     }
 

@@ -11,36 +11,36 @@ return new class extends Migration
         // Add library fee required field to students
         Schema::table('students', function (Blueprint $table) {
             if (!Schema::hasColumn('students', 'library_fee_paid')) {
-                $table->boolean('library_fee_paid')->default(false)->after('year_of_entry');
+                $table->boolean('library_fee_paid')->default(false);
             }
             if (!Schema::hasColumn('students', 'library_fee_paid_at')) {
-                $table->timestamp('library_fee_paid_at')->nullable()->after('library_fee_paid');
+                $table->timestamp('library_fee_paid_at')->nullable();
             }
         });
 
         // Add penalty fields to book_loans
         Schema::table('book_loans', function (Blueprint $table) {
             if (!Schema::hasColumn('book_loans', 'late_fee')) {
-                $table->decimal('late_fee', 10, 2)->default(0)->after('remarks');
+                $table->decimal('late_fee', 10, 2)->default(0);
             }
             if (!Schema::hasColumn('book_loans', 'late_fee_paid')) {
-                $table->boolean('late_fee_paid')->default(false)->after('late_fee');
+                $table->boolean('late_fee_paid')->default(false);
             }
             if (!Schema::hasColumn('book_loans', 'late_fee_paid_at')) {
-                $table->timestamp('late_fee_paid_at')->nullable()->after('late_fee_paid');
+                $table->timestamp('late_fee_paid_at')->nullable();
             }
             if (!Schema::hasColumn('book_loans', 'penalty_days')) {
-                $table->integer('penalty_days')->default(0)->after('late_fee_paid_at');
+                $table->integer('penalty_days')->default(0);
             }
         });
 
         // Add late fee per day to books table
         Schema::table('books', function (Blueprint $table) {
             if (!Schema::hasColumn('books', 'late_fee_per_day')) {
-                $table->decimal('late_fee_per_day', 10, 2)->default(100)->after('available');
+                $table->decimal('late_fee_per_day', 10, 2)->default(100);
             }
             if (!Schema::hasColumn('books', 'max_borrow_days')) {
-                $table->integer('max_borrow_days')->default(14)->after('late_fee_per_day');
+                $table->integer('max_borrow_days')->default(14);
             }
         });
     }

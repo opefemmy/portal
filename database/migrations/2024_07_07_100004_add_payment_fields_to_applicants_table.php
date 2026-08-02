@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('applicants', function (Blueprint $table) {
-            $table->enum('payment_status', ['pending', 'completed', 'failed'])
+            $table->string('payment_status', 20)
                 ->default('pending')
-                ->after('status');
-            $table->string('payment_ref', 100)->nullable()->after('payment_status');
-            $table->string('payment_transaction_id', 100)->nullable()->after('payment_ref');
-            $table->decimal('payment_amount', 10, 2)->nullable()->after('payment_transaction_id');
-            $table->datetime('payment_date')->nullable()->after('payment_amount');
-            $table->string('application_fee_id')->nullable()->after('payment_date');
+                ->comment('pending, completed, failed');
+            $table->string('payment_ref', 100)->nullable();
+            $table->string('payment_transaction_id', 100)->nullable();
+            $table->decimal('payment_amount', 10, 2)->nullable();
+            $table->datetime('payment_date')->nullable();
+            $table->string('application_fee_id')->nullable();
         });
     }
 

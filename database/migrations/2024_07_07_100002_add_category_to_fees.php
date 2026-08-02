@@ -29,9 +29,9 @@ return new class extends Migration
 
         // Create the column fresh
         Schema::table('fees', function (Blueprint $table) {
-            $table->enum('category', ['indigene', 'non_indigene', 'portal_charge', 'both'])
+            $table->string('category', 30)
                 ->default('both')
-                ->after('is_active');
+                ->comment('indigene, non_indigene, portal_charge, both');
         });
     }
 

@@ -11,37 +11,37 @@ return new class extends Migration
         // Guardian Information columns
         if (!Schema::hasColumn('applicants', 'guardian_name')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('guardian_name')->nullable()->after('nationality_id');
+                $table->string('guardian_name')->nullable();
             });
         }
 
         if (!Schema::hasColumn('applicants', 'guardian_relationship')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('guardian_relationship')->nullable()->after('guardian_name');
+                $table->string('guardian_relationship')->nullable();
             });
         }
 
         if (!Schema::hasColumn('applicants', 'guardian_phone')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('guardian_phone')->nullable()->after('guardian_relationship');
+                $table->string('guardian_phone')->nullable();
             });
         }
 
         if (!Schema::hasColumn('applicants', 'guardian_email')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('guardian_email')->nullable()->after('guardian_phone');
+                $table->string('guardian_email')->nullable();
             });
         }
 
         if (!Schema::hasColumn('applicants', 'guardian_occupation')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('guardian_occupation')->nullable()->after('guardian_email');
+                $table->string('guardian_occupation')->nullable();
             });
         }
 
         if (!Schema::hasColumn('applicants', 'guardian_address')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->text('guardian_address')->nullable()->after('guardian_occupation');
+                $table->text('guardian_address')->nullable();
             });
         }
     }

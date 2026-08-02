@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('type', 50); // database, files, storage, config
             $table->string('file_path', 255)->nullable();
             $table->string('file_size', 50)->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'completed', 'failed'])->default('pending');
+            $table->string('status', 30)->default('pending')->comment('pending, in_progress, completed, failed');
             $table->text('error_message')->nullable();
             $table->string('created_by', 100)->nullable();
             $table->timestamps();

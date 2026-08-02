@@ -7,13 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * The original migration altered a MySQL ENUM column in place. ENUMs are
+     * not portable across PostgreSQL, so this migration now replaces the column
+     * with a plain string wide enough to hold every allowed value. The
+     * application validates the value at the model layer.
      */
     public function up(): void
     {
-        // Drop and recreate the enum column to include new types
         Schema::table('programmes', function (Blueprint $table) {
-            $table->enum('type', ['ND', 'HND', 'Degree', 'PGD', 'Masters', 'PhD', 'Diploma', 'Pre-ND'])->change();
+            $table->dropColumn('type');
+        });
+
+        Schema::table('programmes', function (Blueprint $table) {
+            $table->string('type', 30)
+                ->default('ND')
+                ->comment('ND, HND, Degree, PGD, Masters, PhD, Diploma, Pre-ND');
         });
     }
 
@@ -23,7 +31,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('programmes', function (Blueprint $table) {
-            $table->enum('type', ['ND', 'HND', 'Degree', 'PGD', 'Masters', 'PhD'])->change();
+            $table->dropColumn('type');
         });
     }
 };

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('code');
             $table->string('title');
             $table->integer('units');
-            $table->enum('semester', ['first', 'second']);
+            $table->string('semester', 10);
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
             $table->foreignId('department_id')->constrained('departments')->onDelete('cascade');
             $table->foreignId('programme_id')->constrained('programmes')->onDelete('cascade');

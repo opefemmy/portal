@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             if (!Schema::hasColumn('students', 'year_of_entry')) {
-                $table->integer('year_of_entry')->nullable()->after('session_id');
+                $table->integer('year_of_entry')->nullable();
             }
         });
     }

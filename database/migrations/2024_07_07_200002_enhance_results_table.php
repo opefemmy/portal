@@ -11,47 +11,47 @@ return new class extends Migration
         Schema::table('results', function (Blueprint $table) {
             // Add computed fields for result computation
             if (!Schema::hasColumn('results', 'quality_point')) {
-                $table->decimal('quality_point', 10, 2)->nullable()->after('grade_point')
+                $table->decimal('quality_point', 10, 2)->nullable()
                     ->comment('Course Unit × Grade Point');
             }
 
             if (!Schema::hasColumn('results', 'pass_status')) {
-                $table->string('pass_status', 20)->nullable()->after('grade_point')
+                $table->string('pass_status', 20)->nullable()
                     ->comment('PASS, FAIL, REPEAT, CARRY_OVER, ABSENT, INCOMPLETE, MALPRACTICE');
             }
 
             if (!Schema::hasColumn('results', 'academic_remark')) {
-                $table->string('academic_remark', 50)->nullable()->after('status')
+                $table->string('academic_remark', 50)->nullable()
                     ->comment('DISTINCTION, UPPER_CREDIT, LOWER_CREDIT, PASS, PROBATION, WITHDRAWN, FAIL');
             }
 
             if (!Schema::hasColumn('results', 'carry_over_status')) {
-                $table->string('carry_over_status', 20)->nullable()->after('academic_remark')
+                $table->string('carry_over_status', 20)->nullable()
                     ->comment('pending, cleared, repeat');
             }
 
             if (!Schema::hasColumn('results', 'is_repeated')) {
-                $table->boolean('is_repeated')->default(false)->after('carry_over_status');
+                $table->boolean('is_repeated')->default(false);
             }
 
             if (!Schema::hasColumn('results', 'attempt_number')) {
-                $table->integer('attempt_number')->default(1)->after('is_repeated');
+                $table->integer('attempt_number')->default(1);
             }
 
             if (!Schema::hasColumn('results', 'computation_notes')) {
-                $table->text('computation_notes')->nullable()->after('attempt_number');
+                $table->text('computation_notes')->nullable();
             }
 
             if (!Schema::hasColumn('results', 'semester_id')) {
-                $table->foreignId('semester_id')->nullable()->constrained('semesters')->onDelete('set null')->after('exam');
+                $table->foreignId('semester_id')->nullable()->constrained('semesters')->onDelete('set null');
             }
 
             // Add legacy fields if missing
             if (!Schema::hasColumn('results', 'ca1')) {
-                $table->decimal('ca1', 5, 2)->nullable()->after('ca');
+                $table->decimal('ca1', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('results', 'ca2')) {
-                $table->decimal('ca2', 5, 2)->nullable()->after('ca1');
+                $table->decimal('ca2', 5, 2)->nullable();
             }
         });
     }

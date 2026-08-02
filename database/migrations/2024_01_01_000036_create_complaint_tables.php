@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('category'); // complaint, suggestion, inquiry
             $table->string('subject');
             $table->text('message');
-            $table->enum('status', ['pending', 'in_progress', 'resolved', 'closed'])->default('pending');
+            $table->string('status', 30)->default('pending');
             $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
             $table->text('response')->nullable();
             $table->timestamps();

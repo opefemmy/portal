@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->date('date_of_birth');
             $table->string('place_of_birth');
-            $table->enum('gender', ['Male', 'Female', 'Other']);
-            $table->enum('marital_status', ['Single', 'Married', 'Divorced', 'Widowed'])->default('Single');
+            $table->string('gender', 10);
+            $table->string('marital_status', 20)->default('Single');
             $table->string('nationality');
             $table->string('state_of_origin')->nullable();
             $table->string('lga')->nullable();
@@ -72,8 +72,7 @@ return new class extends Migration
             $table->string('jamb_result')->nullable();
 
             // Application Status
-            $table->enum('status', ['pending', 'screening', 'approved', 'rejected', 'admitted'])
-                  ->default('pending');
+            $table->string('status', 30)->default('pending');
             $table->text('rejection_reason')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();

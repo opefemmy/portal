@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->boolean('from_application')->default(false)->after('status');
-            $table->string('applicant_id')->nullable()->after('from_application');
+            $table->boolean('from_application')->default(false);
+            $table->string('applicant_id')->nullable();
         });
     }
 

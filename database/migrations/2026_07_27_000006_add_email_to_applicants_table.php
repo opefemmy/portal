@@ -11,7 +11,7 @@ return new class extends Migration
         // Check if email column doesn't exist and add it
         if (!Schema::hasColumn('applicants', 'email')) {
             Schema::table('applicants', function (Blueprint $table) {
-                $table->string('email')->nullable()->after('phone');
+                $table->string('email')->nullable();
             });
         }
 

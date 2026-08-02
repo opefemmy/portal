@@ -29,7 +29,7 @@ return new class extends Migration
         $isVerifiedColumns = \DB::select("SHOW COLUMNS FROM payments WHERE Field = 'is_verified'");
         if (empty($isVerifiedColumns)) {
             Schema::table('payments', function (Blueprint $table) {
-                $table->boolean('is_verified')->default(false)->after('student_type');
+                $table->boolean('is_verified')->default(false);
             });
         }
     }

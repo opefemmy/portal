@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('unlock_code')->nullable()->after('must_change_password');
-            $table->timestamp('unlock_code_expires_at')->nullable()->after('unlock_code');
-            $table->timestamp('password_changed_at')->nullable()->after('unlock_code_expires_at');
+            $table->string('unlock_code')->nullable();
+            $table->timestamp('unlock_code_expires_at')->nullable();
+            $table->timestamp('password_changed_at')->nullable();
         });
     }
 

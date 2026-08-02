@@ -80,66 +80,66 @@ return new class extends Migration
         // Student Course Registrations
         Schema::table('student_courses', function (Blueprint $table) {
             if (!Schema::hasColumn('student_courses', 'course_type')) {
-                $table->string('course_type')->default('main')->after('status');
+                $table->string('course_type')->default('main');
             }
             if (!Schema::hasColumn('student_courses', 'carry_over_from_id')) {
-                $table->foreignId('carry_over_from_id')->nullable()->after('course_type')->constrained('courses')->onDelete('set null');
+                $table->foreignId('carry_over_from_id')->nullable()->constrained('courses')->onDelete('set null');
             }
         });
 
         // Results table
         Schema::table('results', function (Blueprint $table) {
             if (!Schema::hasColumn('results', 'ca1')) {
-                $table->decimal('ca1', 5, 2)->nullable()->after('ca');
+                $table->decimal('ca1', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('results', 'ca2')) {
-                $table->decimal('ca2', 5, 2)->nullable()->after('ca1');
+                $table->decimal('ca2', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('results', 'tlu')) {
-                $table->integer('tlu')->nullable()->after('gpa');
+                $table->integer('tlu')->nullable();
             }
             if (!Schema::hasColumn('results', 'previous_cga')) {
-                $table->decimal('previous_cga', 5, 2)->nullable()->after('tlu');
+                $table->decimal('previous_cga', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('results', 'previous_tlu')) {
-                $table->decimal('previous_tlu', 5, 2)->nullable()->after('previous_cga');
+                $table->decimal('previous_tlu', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('results', 'carry_over_status')) {
-                $table->string('carry_over_status')->nullable()->after('remarks');
+                $table->string('carry_over_status')->nullable();
             }
             if (!Schema::hasColumn('results', 'course_id')) {
-                $table->foreignId('course_id')->nullable()->after('student_course_id')->constrained()->onDelete('set null');
+                $table->foreignId('course_id')->nullable()->constrained()->onDelete('set null');
             }
         });
 
         // Applications
         Schema::table('applications', function (Blueprint $table) {
             if (!Schema::hasColumn('applications', 'middle_name')) {
-                $table->string('middle_name')->nullable()->after('surname');
+                $table->string('middle_name')->nullable();
             }
             if (!Schema::hasColumn('applications', 'date_of_birth')) {
-                $table->date('date_of_birth')->nullable()->after('gender');
+                $table->date('date_of_birth')->nullable();
             }
             if (!Schema::hasColumn('applications', 'place_of_birth')) {
-                $table->string('place_of_birth')->nullable()->after('date_of_birth');
+                $table->string('place_of_birth')->nullable();
             }
             if (!Schema::hasColumn('applications', 'religion')) {
-                $table->string('religion')->nullable()->after('place_of_birth');
+                $table->string('religion')->nullable();
             }
             if (!Schema::hasColumn('applications', 'blood_group')) {
-                $table->string('blood_group')->nullable()->after('religion');
+                $table->string('blood_group')->nullable();
             }
             if (!Schema::hasColumn('applications', 'genotype')) {
-                $table->string('genotype')->nullable()->after('blood_group');
+                $table->string('genotype')->nullable();
             }
             if (!Schema::hasColumn('applications', 'disability')) {
-                $table->string('disability')->nullable()->after('genotype');
+                $table->string('disability')->nullable();
             }
             if (!Schema::hasColumn('applications', 'disability_details')) {
-                $table->string('disability_details')->nullable()->after('disability');
+                $table->string('disability_details')->nullable();
             }
             if (!Schema::hasColumn('applications', 'extra_curricular')) {
-                $table->text('extra_curricular')->nullable()->after('disability_details');
+                $table->text('extra_curricular')->nullable();
             }
         });
     }

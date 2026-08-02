@@ -13,19 +13,19 @@ return new class extends Migration
 
         if (!in_array('installment', $columns)) {
             Schema::table('payments', function (Blueprint $table) {
-                $table->enum('installment', ['First', 'Second', 'Full'])->nullable()->after('amount');
+                $table->string('installment', 20)->nullable();
             });
         }
 
         if (!in_array('student_type', $columns)) {
             Schema::table('payments', function (Blueprint $table) {
-                $table->enum('student_type', ['Indigene', 'Non-Indigene'])->nullable()->after('installment');
+                $table->string('student_type', 30)->nullable();
             });
         }
 
         if (!in_array('is_verified', $columns)) {
             Schema::table('payments', function (Blueprint $table) {
-                $table->boolean('is_verified')->default(false)->after('student_type');
+                $table->boolean('is_verified')->default(false);
             });
         }
     }

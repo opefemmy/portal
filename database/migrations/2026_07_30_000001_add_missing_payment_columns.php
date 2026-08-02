@@ -30,18 +30,18 @@ return new class extends Migration
             $table->bigInteger('fee_id')->nullable()->change();
 
             // Add missing columns that controllers are trying to use
-            $table->string('payment_ref')->nullable()->after('reference');
-            $table->string('payment_method')->nullable()->after('gateway');
-            $table->decimal('portal_charge', 12, 2)->default(0)->after('amount');
-            $table->decimal('total_amount', 12, 2)->nullable()->after('portal_charge');
-            $table->date('payment_date')->nullable()->after('payment_method');
-            $table->string('payer_name')->nullable()->after('payment_date');
-            $table->string('payer_email')->nullable()->after('payer_name');
-            $table->string('payer_phone')->nullable()->after('payer_email');
-            $table->string('payer_id')->nullable()->after('payer_phone');
-            $table->string('payment_purpose')->nullable()->after('payer_id');
-            $table->string('installment')->nullable()->after('payment_details');
-            $table->string('student_type')->nullable()->after('installment');
+            $table->string('payment_ref')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->decimal('portal_charge', 12, 2)->default(0);
+            $table->decimal('total_amount', 12, 2)->nullable();
+            $table->date('payment_date')->nullable();
+            $table->string('payer_name')->nullable();
+            $table->string('payer_email')->nullable();
+            $table->string('payer_phone')->nullable();
+            $table->string('payer_id')->nullable();
+            $table->string('payment_purpose')->nullable();
+            $table->string('installment')->nullable();
+            $table->string('student_type')->nullable();
         });
     }
 

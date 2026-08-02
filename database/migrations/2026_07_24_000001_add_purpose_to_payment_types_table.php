@@ -9,15 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payment_types', function (Blueprint $table) {
-            $table->enum('purpose', [
-                'application',
-                'school_fee',
-                'acceptance',
-                'hostel',
-                'registration',
-                'library',
-                'other'
-            ])->default('other')->after('priority')->nullable();
+            $table->string('purpose', 30)
+                ->default('other')
+                ->nullable()
+                ->comment('application, school_fee, acceptance, hostel, registration, library, other');
         });
     }
 

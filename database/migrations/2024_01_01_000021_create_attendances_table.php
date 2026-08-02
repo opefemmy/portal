@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_course_id')->constrained('student_courses')->onDelete('cascade');
             $table->date('date');
-            $table->enum('status', ['present', 'absent', 'late', 'excused'])->default('absent');
+            $table->string('status', 15)->default('absent');
             $table->foreignId('marked_by')->constrained('users')->onDelete('cascade');
             $table->text('remarks')->nullable();
             $table->timestamps();

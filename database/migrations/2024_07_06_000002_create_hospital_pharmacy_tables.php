@@ -70,7 +70,7 @@ return new class extends Migration
             $table->date('expiry_date');
             $table->date('received_date');
             $table->foreignId('supplier_id')->nullable()->constrained('hospital_suppliers')->nullOnDelete();
-            $table->enum('status', ['active', 'expired', 'depleted'])->default('active');
+            $table->string('status', 20)->default('active')->comment('active, expired, depleted');
             $table->timestamps();
         });
 
@@ -80,7 +80,7 @@ return new class extends Migration
             $table->foreignId('drug_id')->nullable()->constrained('hospital_drugs')->nullOnDelete();
             $table->foreignId('batch_id')->nullable()->constrained('hospital_drug_batches')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('movement_type', ['purchase', 'sale', 'adjustment', 'expired', 'returned', 'transfer']);
+            $table->string('movement_type', 30)->comment('purchase, sale, adjustment, expired, returned, transfer');
             $table->integer('quantity');
             $table->integer('quantity_before');
             $table->integer('quantity_after');
@@ -118,7 +118,7 @@ return new class extends Migration
             $table->date('expiry_date')->nullable();
             $table->date('received_date');
             $table->foreignId('supplier_id')->nullable()->constrained('hospital_suppliers')->nullOnDelete();
-            $table->enum('status', ['active', 'expired', 'depleted'])->default('active');
+            $table->string('status', 20)->default('active')->comment('active, expired, depleted');
             $table->timestamps();
         });
 
@@ -135,7 +135,7 @@ return new class extends Migration
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->decimal('tax', 12, 2)->default(0);
             $table->decimal('total', 12, 2)->default(0);
-            $table->enum('status', ['pending', 'approved', 'ordered', 'received', 'cancelled'])->default('pending');
+            $table->string('status', 30)->default('pending')->comment('pending, approved, ordered, received, cancelled');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

@@ -22,7 +22,7 @@ return new class extends Migration
         // Add level_id to students table
         Schema::table('students', function (Blueprint $table) {
             $table->foreignId('level_id')->nullable()->constrained('levels')->onDelete('set null');
-            $table->string('academic_status', 30)->nullable()->after('status')
+            $table->string('academic_status', 30)->nullable()
                 ->comment('active, graduated, withdrawn, expelled, suspended, transferred');
         });
     }

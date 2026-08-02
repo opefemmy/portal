@@ -10,12 +10,12 @@ return new class extends Migration
     {
         // Add is_active to schools
         Schema::table('schools', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('description');
+            $table->boolean('is_active')->default(true);
         });
 
         // Add is_active to departments
         Schema::table('departments', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('description');
+            $table->boolean('is_active')->default(true);
         });
     }
 

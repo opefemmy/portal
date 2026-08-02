@@ -68,7 +68,8 @@
       "WebFetch(domain:docs.xpresspayonline.com)",
       "Bash(node -e \"const fs = require\\('fs'\\); const html = fs.readFileSync\\('resources/views/applicant/apply.blade.php', 'utf8'\\); const scriptMatch = html.match\\(/<script>\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\); if\\(scriptMatch\\) { try { new Function\\(scriptMatch[1]\\); console.log\\('JavaScript syntax OK'\\); } catch\\(e\\) { console.log\\('Syntax error:', e.message\\); } }\")",
       "Bash(copy .env.production .env)",
-      "PowerShell(Copy-Item *)"
+      "PowerShell(Copy-Item *)",
+      "Bash(awk -F: '$1 > 9000')"
     ]
   }
 }

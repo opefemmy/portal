@@ -31,7 +31,7 @@ return new class extends Migration
             $table->date('issue_date');
             $table->date('due_date');
             $table->date('return_date')->nullable();
-            $table->enum('status', ['issued', 'returned', 'overdue'])->default('issued');
+            $table->string('status', 20)->default('issued');
             $table->text('remarks')->nullable();
             $table->timestamps();
         });

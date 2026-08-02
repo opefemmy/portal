@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('reference')->unique();
             $table->string('transaction_id')->nullable();
             $table->string('gateway'); // paystack, flutterwave, cash, bank_transfer
-            $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->string('status', 20)->default('pending');
             $table->text('payment_details')->nullable();
             $table->timestamps();
         });

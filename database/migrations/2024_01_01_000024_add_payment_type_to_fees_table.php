@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('fees', function (Blueprint $table) {
-            $table->enum('payment_type', ['Tuition Fee', 'Departmental Fee', 'Other'])->nullable()->after('name');
+            $table->string('payment_type', 50)->nullable();
         });
     }
 

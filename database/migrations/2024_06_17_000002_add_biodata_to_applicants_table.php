@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::table('applicants', function (Blueprint $table) {
             // Personal Information
-            $table->string('surname')->nullable()->after('user_id');
+            $table->string('surname')->nullable();
             $table->string('first_name')->nullable();
             $table->string('middle_name')->nullable();
             $table->date('date_of_birth')->nullable();
             $table->string('place_of_birth')->nullable();
-            $table->enum('gender', ['Male', 'Female', 'Other'])->nullable();
-            $table->enum('marital_status', ['Single', 'Married', 'Divorced', 'Widowed'])->nullable();
+            $table->string('gender', 20)->nullable();
+            $table->string('marital_status', 20)->nullable();
             $table->string('nationality')->nullable();
             $table->string('state_of_origin')->nullable();
             $table->string('lga')->nullable();

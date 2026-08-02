@@ -23,7 +23,7 @@ return new class extends Migration
 
         // Add payment_type_id to external_payments
         Schema::table('external_payments', function (Blueprint $table) {
-            $table->unsignedBigInteger('payment_type_id')->nullable()->after('payment_channel');
+            $table->unsignedBigInteger('payment_type_id')->nullable();
             $table->foreign('payment_type_id')->references('id')->on('payment_types')->onDelete('set null');
         });
     }

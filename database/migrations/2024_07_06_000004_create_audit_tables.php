@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('ip_address')->nullable();
             $table->string('user_agent')->nullable();
             $table->string('computer_name')->nullable();
-            $table->enum('status', ['success', 'failed'])->default('success');
+            $table->string('status', 20)->default('success')->comment('success, failed');
             $table->text('error_message')->nullable();
             $table->timestamps();
         });
@@ -64,7 +64,7 @@ return new class extends Migration
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->string('description');
             $table->decimal('amount', 12, 2)->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
+            $table->string('status', 20)->default('pending')->comment('pending, approved, rejected, cancelled');
             $table->text('remarks')->nullable();
             $table->text('rejection_reason')->nullable();
             $table->dateTime('requested_at');

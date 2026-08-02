@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('total_amount', 12, 2);
             $table->dateTime('appointment_date')->nullable();
             $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'paid', 'completed', 'cancelled'])->default('pending');
+            $table->string('status', 30)->default('pending');
             $table->foreignId('payment_id')->nullable()->constrained('hospital_payments')->onDelete('set null');
             $table->timestamps();
         });
