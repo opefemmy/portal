@@ -626,7 +626,10 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])->name('admission.updateStatus');
     Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])->name('admission.track');
 
-    // Admission Letters (literal /template and /generate before /{applicant} wildcard)
+    // Admission Letters (literal /settings, /template, /generate before /{applicant} wildcard)
+    Route::get('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterSettings'])->name('admission.letters');
+    Route::post('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterSettings'])->name('admission.saveLetterSettings');
+    Route::delete('/admission-letter/signature', [\App\Http\Controllers\Registrar\AdmissionController::class, 'deleteSignature'])->name('admission.deleteSignature');
     Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
     Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate']);
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');

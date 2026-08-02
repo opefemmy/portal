@@ -401,7 +401,7 @@ class AdmissionController extends Controller
     {
         $departmentId = $request->department_id;
 
-        $query = Applicant::where('status', 'admitted')->with(['user', 'department', 'school', 'programme']);
+        $query = Applicant::where('status', 'admitted')->with(['user', 'department', 'school', 'programme', 'session']);
 
         if ($departmentId) {
             $query->where('department_id', $departmentId);
@@ -410,10 +410,16 @@ class AdmissionController extends Controller
         $admitted = $query->get();
 
         if ($admitted->isEmpty()) {
-            return back()->with('info', 'No admitted students found.');
+            return back()->with('error', 'No admitted students found for the selected filter.');
         }
 
-        return view('registrar.admission.letters', compact('admitted'));
+        // If exactly one student, render the printable letter directly.
+        if ($admitted->count() === 1) {
+            return view('registrar.admission.letter', ['applicant' => $admitted->first()]);
+        }
+
+        // Otherwise show the batch index with links to each student's letter.
+        return view('registrar.admission.letters-batch', compact('admitted', 'departmentId'));
     }
 
     /**
@@ -515,5 +521,83 @@ class AdmissionController extends Controller
     {
         $departments = \App\Models\Department::with('school')->get();
         return view('registrar.admission.upload-list', compact('departments'));
+    }
+
+    /**
+     * Show the editable letter settings (body, fees, signature)
+     */
+    public function showLetterSettings()
+    {
+        return view('registrar.admission.letters');
+    }
+
+    /**
+     * Save admission letter settings (body, fees, institution details, registrar signature)
+     */
+    public function saveLetterSettings(Request $request)
+    {
+        try {
+            SystemSetting::set('admission_letter_body', $request->input('admission_letter_body', ''));
+
+            $fees = $request->input('fees', []);
+            $cleanFees = [];
+            foreach ($fees as $fee) {
+                $name = trim($fee['name'] ?? '');
+                $amount = isset($fee['amount']) ? (float)$fee['amount'] : 0;
+                if ($name !== '' && $amount > 0) {
+                    $cleanFees[] = ['name' => $name, 'amount' => $amount];
+                }
+            }
+            SystemSetting::set('admission_letter_fees', json_encode($cleanFees));
+
+            $letterheadFields = [
+                'institution_name', 'institution_address', 'institution_phone',
+                'institution_email', 'institution_website',
+            ];
+            foreach ($letterheadFields as $field) {
+                if ($request->has($field)) {
+                    SystemSetting::set($field, $request->input($field, ''));
+                }
+            }
+
+            // Handle signature upload
+            if ($request->hasFile('registrar_signature')) {
+                $file = $request->file('registrar_signature');
+                $destination = public_path('storage/signatures');
+                if (!is_dir($destination)) {
+                    @mkdir($destination, 0755, true);
+                }
+                $ext = $file->getClientOriginalExtension();
+                $filename = 'registrar_signature.' . $ext;
+                $file->move($destination, $filename);
+                SystemSetting::set('registrar_signature_path', 'signatures/' . $filename);
+            }
+
+            return back()->with('success', 'Letter settings saved successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('saveLetterSettings failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to save letter settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete the registrar signature
+     */
+    public function deleteSignature()
+    {
+        try {
+            $existing = SystemSetting::get('registrar_signature_path');
+            if ($existing) {
+                $fullPath = public_path('storage/' . $existing);
+                if (file_exists($fullPath)) {
+                    @unlink($fullPath);
+                }
+                SystemSetting::set('registrar_signature_path', '');
+            }
+            return back()->with('success', 'Signature removed.');
+        } catch (\Throwable $e) {
+            \Log::error('deleteSignature failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to remove signature: ' . $e->getMessage());
+        }
     }
 }
