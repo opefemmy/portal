@@ -102,7 +102,7 @@ CSC102,Data Structures,3,second,Science,Computer Science,Computer Engineering,10
                     <li>Existing courses will be updated if they match (same code, school, department, programme, level)</li>
                 </ul>
 
-                <a href="{{ asset('templates/courses_upload_template.csv') }}" class="btn btn-success btn-sm">
+                <a href="{{ asset('storage/templates/courses_upload_template.csv') }}" class="btn btn-success btn-sm">
                     <i class="fas fa-download me-1"></i> Download Template
                 </a>
             </div>

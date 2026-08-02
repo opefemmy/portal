@@ -4,11 +4,13 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h3>Patients Registry</h3>
-        <a href="{{ route('hospital.patients.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Register Patient
-        </a>
+        @permission('patients.create')
+            <a href="{{ route('hospital.patients.create') }}" class="btn btn-primary" title="Register a new patient">
+                <i class="fas fa-plus"></i> Register Patient
+            </a>
+        @endpermission
     </div>
 
     <!-- Search & Filter -->
@@ -76,11 +78,14 @@
                         </td>
                         <td>{{ $patient->created_at->format('d M Y') }}</td>
                         <td>
-                            <a href="{{ route('hospital.patients.show', $patient->id) }}" class="btn btn-sm btn-info">
+                            <a href="{{ route('hospital.patients.show', $patient->id) }}" class="btn btn-sm btn-info" title="View patient details">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{{ route('hospital.patients.timeline', $patient->id) }}" class="btn btn-sm btn-secondary">
+                            <a href="{{ route('hospital.patients.timeline', $patient->id) }}" class="btn btn-sm btn-secondary" title="View patient timeline">
                                 <i class="fas fa-history"></i>
+                            </a>
+                            <a href="{{ route('hospital.patients.edit', $patient->id) }}" class="btn btn-sm btn-warning" title="Edit patient details">
+                                <i class="fas fa-edit"></i>
                             </a>
                         </td>
                     </tr>

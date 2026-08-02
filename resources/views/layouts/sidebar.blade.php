@@ -645,40 +645,31 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 {{-- HOSPITAL MODULE --}}
-@elseif(in_array($role, ['cmd', 'doctor', 'nurse', 'hospital_receptionist', 'pharmacist', 'lab_scientist', 'store_keeper', 'super_admin']))
-<li class="nav-item">
-    <a href="{{ route('hospital.dashboard') }}" class="nav-link {{ request()->is('hospital*') ? 'active' : '' }}">
-        <i class="fas fa-hospital"></i> Hospital
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{{ route('hospital.external-patients.index') }}" class="nav-link {{ request()->is('hospital/external-patients*') ? 'active' : '' }}">
-        <i class="fas fa-user-friends"></i> External Patients
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{{ route('hospital.patients.index') }}" class="nav-link {{ request()->is('hospital/patients*') ? 'active' : '' }}">
-        <i class="fas fa-users"></i> Patients
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{{ route('hospital.appointments.index') }}" class="nav-link {{ request()->is('hospital/appointments*') ? 'active' : '' }}">
-        <i class="fas fa-calendar-check"></i> Appointments
-    </a>
-</li>
-@if(in_array($role, ['pharmacist', 'cmd', 'super_admin']))
-<li class="nav-item">
-    <a href="{{ route('hospital.pharmacy.drugs') }}" class="nav-link {{ request()->is('hospital/pharmacy*') ? 'active' : '' }}">
-        <i class="fas fa-pills"></i> Pharmacy
-    </a>
-</li>
-@endif
-@if(in_array($role, ['lab_scientist', 'cmd', 'super_admin']))
-<li class="nav-item">
-    <a href="{{ route('hospital.lab.index') }}" class="nav-link {{ request()->is('hospital/lab*') ? 'active' : '' }}">
-        <i class="fas fa-flask"></i> Laboratory
-    </a>
-</li>
+@if(\App\Services\Hospital\HospitalPermissions::isHospitalStaff())
+@php
+    $hospitalMenu = \App\Services\Hospital\HospitalPermissions::menuFor();
+    $currentPath = trim(request()->path(), '/');
+@endphp
+@foreach($hospitalMenu as $item)
+    @php
+        [$routeName, $icon, $label] = $item;
+        $url = '#';
+        try {
+            $url = route($routeName);
+        } catch (\Throwable $e) {
+            // Route not registered for the current app context — render disabled link.
+        }
+        $itemPath = ltrim(str_replace(url('/'), '', $url), '/');
+        $isActive = $url !== '#' && (
+            str_starts_with($currentPath, $itemPath)
+        );
+    @endphp
+    <li class="nav-item">
+        <a href="{{ $url }}" class="nav-link {{ $isActive ? 'active' : '' }}">
+            <i class="{{ $icon }}"></i> {{ $label }}
+        </a>
+    </li>
+@endforeach
 @endif
 {{-- FINANCE MODULE --}}
 @elseif(in_array($role, ['accountant', 'cashier', 'cmd', 'super_admin']))

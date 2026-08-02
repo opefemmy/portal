@@ -624,7 +624,14 @@
             }
         });
 
-        // Initialize Bootstrap tooltips
+        // Promote title attributes on buttons/links to Bootstrap tooltips
+        // and initialize all tooltip triggers (data-bs-toggle or auto-promoted).
+        document.querySelectorAll('button[title], a.btn[title]').forEach(function (el) {
+            if (!el.hasAttribute('data-bs-toggle') || el.getAttribute('data-bs-toggle') === 'tooltip') {
+                el.setAttribute('data-bs-toggle', 'tooltip');
+                el.setAttribute('data-bs-placement', 'top');
+            }
+        });
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);

@@ -3,14 +3,41 @@
 @section('title', 'Drug Inventory')
 
 @section('content')
+@php
+    /**
+     * Stock badge colour:
+     *  - red   : current_stock <= reorder_level (low / out)
+     *  - yellow: current_stock <= reorder_level * 2
+     *  - green : otherwise
+     */
+@endphp
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Drug Inventory</h2>
-                <a href="{{ route('hospital.pharmacy.drugs.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add New Drug
-                </a>
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h2 class="mb-0">Drug Inventory</h2>
+                <div class="d-flex gap-2 flex-wrap">
+                    @permission('pharmacy.receive')
+                        <a href="{{ route('hospital.pharmacy.receive') }}" class="btn btn-success" title="Record stock received from supplier">
+                            <i class="fas fa-truck-loading me-2"></i>Receive Stock
+                        </a>
+                    @endpermission
+                    @permission('pharmacy.adjust')
+                        <a href="{{ route('hospital.pharmacy.adjust') }}" class="btn btn-warning" title="Adjust stock (recount / correction)">
+                            <i class="fas fa-sliders-h me-2"></i>Adjust Stock
+                        </a>
+                    @endpermission
+                    @permission('pharmacy.expire')
+                        <a href="{{ route('hospital.pharmacy.expire') }}" class="btn btn-outline-danger" title="Write off expired stock">
+                            <i class="fas fa-calendar-times me-2"></i>Write Off Expired
+                        </a>
+                    @endpermission
+                    @permission('pharmacy.drugs')
+                        <a href="{{ route('hospital.pharmacy.drugs.create') }}" class="btn btn-primary" title="Add a new drug to inventory">
+                            <i class="fas fa-plus me-2"></i>Add New Drug
+                        </a>
+                    @endpermission
+                </div>
             </div>
         </div>
     </div>
@@ -70,28 +97,47 @@
                     </thead>
                     <tbody>
                         @forelse($drugs as $drug)
-                        <tr class="{{ $drug->current_stock <= $drug->reorder_level ? 'table-warning' : '' }}">
+                        @php
+                            $isLow = (int) $drug->current_stock <= (int) $drug->reorder_level;
+                            $isWarn = !$isLow && (int) $drug->current_stock <= ((int) $drug->reorder_level) * 2;
+                            $rowClass = $isLow ? 'table-danger' : ($isWarn ? 'table-warning' : '');
+                            $badgeClass = $isLow ? 'bg-danger' : ($isWarn ? 'bg-warning text-dark' : 'bg-success');
+                            $badgeLabel = $isLow ? 'Low' : ($isWarn ? 'Reorder soon' : 'OK');
+                        @endphp
+                        <tr class="{{ $rowClass }}">
                             <td>{{ $drug->code }}</td>
-                            <td>{{ $drug->name }}</td>
+                            <td>
+                                {{ $drug->name }}
+                                @if((int) $drug->current_stock <= 0)
+                                    <span class="badge bg-dark ms-1">Out</span>
+                                @endif
+                            </td>
                             <td>{{ $drug->generic_name ?? '-' }}</td>
                             <td>{{ $drug->category->name ?? '-' }}</td>
                             <td>{{ $drug->form }}</td>
                             <td>{{ $drug->strength ?? '-' }}</td>
                             <td>
-                                <span class="{{ $drug->current_stock <= $drug->reorder_level ? 'text-danger fw-bold' : '' }}">
-                                    {{ $drug->current_stock }}
+                                <span class="badge {{ $badgeClass }}" title="Reorder level: {{ (int) $drug->reorder_level }}">
+                                    {{ (int) $drug->current_stock }} {{ $badgeLabel }}
                                 </span>
                             </td>
                             <td>{{ $drug->unit }}</td>
                             <td>₦{{ number_format($drug->cost_price, 2) }}</td>
                             <td>₦{{ number_format($drug->selling_price, 2) }}</td>
                             <td>
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#drugModal{{ $drug->id }}">
+                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#drugModal{{ $drug->id }}" title="View drug details">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <a href="#" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i>
-                                </a>
+                                @permission('pharmacy.drugs')
+                                    <a href="{{ route('hospital.pharmacy.drugs.edit', $drug->id) }}" class="btn btn-sm btn-warning" title="Edit drug">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endpermission
+                                @permission('pharmacy.receive')
+                                    <a href="{{ route('hospital.pharmacy.receive') }}?drug_id={{ $drug->id }}" class="btn btn-sm btn-success" title="Receive stock for {{ $drug->name }}">
+                                        <i class="fas fa-truck-loading"></i>
+                                    </a>
+                                @endpermission
                             </td>
                         </tr>
 
@@ -127,8 +173,10 @@
                                             </tr>
                                             <tr>
                                                 <th>Current Stock:</th>
-                                                <td class="{{ $drug->current_stock <= $drug->reorder_level ? 'text-danger' : '' }}">
-                                                    {{ $drug->current_stock }} {{ $drug->unit }}
+                                                <td>
+                                                    <span class="badge {{ $badgeClass }}">
+                                                        {{ (int) $drug->current_stock }} {{ $drug->unit }}
+                                                    </span>
                                                 </td>
                                             </tr>
                                             <tr>

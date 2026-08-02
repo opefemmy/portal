@@ -61,9 +61,15 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('hospital.pharmacy.prescription.show', $prescription) }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> View & Dispense
-                                </a>
+                                @permission('prescriptions.dispense')
+                                    <a href="{{ route('hospital.pharmacy.prescriptions.show', $prescription) }}" class="btn btn-sm btn-primary" title="View prescription details and dispense drugs">
+                                        <i class="fas fa-eye"></i> View & Dispense
+                                    </a>
+                                @else
+                                    <a href="{{ route('hospital.pharmacy.prescriptions.show', $prescription) }}" class="btn btn-sm btn-outline-primary" title="View prescription details">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                @endpermission
                             </td>
                         </tr>
                         @empty

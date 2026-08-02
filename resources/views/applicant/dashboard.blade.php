@@ -186,8 +186,23 @@
                 <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
                 <h5>Accept Admission</h5>
                 <p class="text-muted">Pay acceptance fee to secure your admission</p>
-                <a href="{{ route('student.payments') }}" class="btn btn-success">
-                    <i class="fas fa-credit-card me-2"></i>Pay Now
+                <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success">
+                    <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                </a>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($applicant->status === 'admitted' && $applicant->payment_status === 'completed')
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-file-signature fa-3x text-success mb-3"></i>
+                <h5>Admission Letter</h5>
+                <p class="text-muted">Print your official admission letter</p>
+                <a href="{{ route('applicant.admission-letter') }}" class="btn btn-success" target="_blank">
+                    <i class="fas fa-print me-2"></i>Print Admission Letter
                 </a>
             </div>
         </div>

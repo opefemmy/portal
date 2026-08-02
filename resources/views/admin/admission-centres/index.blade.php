@@ -35,7 +35,7 @@
                         <td>{{ $centre->phone ?? 'N/A' }}</td>
                         <td>{{ $centre->email ?? 'N/A' }}</td>
                         <td>
-                            <span class="badge bg-primary">{{ $centre->applicants->count() }}</span>
+                            <span class="badge bg-primary">{{ $centre->applicants_count }}</span>
                         </td>
                         <td>
                             @if($centre->is_active)
@@ -57,7 +57,7 @@
                                 </form>
                                 <form action="{{ route('admin.admission-centres.destroy', $centre->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this centre?');">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" {{ $centre->applicants->count() > 0 ? 'disabled' : '' }}>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" {{ $centre->applicants_count > 0 ? 'disabled' : '' }}>
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
