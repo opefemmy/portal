@@ -313,13 +313,33 @@
 
                 {{-- Check if payment is required and redirect accordingly --}}
                 @if($requireFee && $feeAmount > 0)
-                    <a href="{{ route('applicant.apply.payment') }}" class="btn btn-warning btn-lg">
-                        <i class="fas fa-credit-card me-2"></i>Pay Application Fee First
-                    </a>
+                    @if($applicant && $applicant->status === 'admitted')
+                        <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success btn-lg">
+                            <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                        </a>
+                    @elseif($applicant && !in_array($applicant->status, ['draft', 'pending']))
+                        <a href="{{ route('applicant.application') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-eye me-2"></i>View Submitted Application
+                        </a>
+                    @else
+                        <a href="{{ route('applicant.apply.payment') }}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-credit-card me-2"></i>Pay Application Fee First
+                        </a>
+                    @endif
                 @else
-                    <a href="{{ route('applicant.apply') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-paper-plane me-2"></i>Apply Now
-                    </a>
+                    @if($applicant && $applicant->status === 'admitted')
+                        <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success btn-lg">
+                            <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                        </a>
+                    @elseif($applicant && !in_array($applicant->status, ['draft', 'pending']))
+                        <a href="{{ route('applicant.application') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-eye me-2"></i>View Submitted Application
+                        </a>
+                    @else
+                        <a href="{{ route('applicant.apply') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>Apply Now
+                        </a>
+                    @endif
                 @endif
             </div>
         </div>

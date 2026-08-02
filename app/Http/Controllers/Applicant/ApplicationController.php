@@ -49,12 +49,34 @@ class ApplicationController extends Controller
             ]);
         }
 
+        // Check if applicant has already submitted (any status beyond initial)
+        $applicant = Applicant::where('user_id', auth()->id())->first();
+
+        // If applicant has already submitted and is admitted, send them to pay acceptance fee
+        if ($applicant && $applicant->status === 'admitted') {
+            // If acceptance fee not yet paid, route to payment gateway
+            if ($applicant->payment_status !== 'completed') {
+                return redirect()->route('applicant.payment.gateway', ['purpose' => 'acceptance']);
+            }
+            // Already paid — go to dashboard to print letter
+            return redirect()->route('applicant.dashboard')
+                ->with('info', 'You have already been admitted and paid the acceptance fee.');
+        }
+
+        // If applicant has already submitted (but not admitted yet), show their existing application
+        if ($applicant && !in_array($applicant->status, ['draft', 'pending'])) {
+            return redirect()->route('applicant.application')
+                ->with('info', 'Your application has already been submitted. You cannot apply again.');
+        }
+
+        // If applicant has a pending/draft record, they can re-open the form to edit
+        // (but the Apply button on the dashboard will be disabled — see dashboard view)
+
         // Check if application fee is required
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
         $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
 
         // Check if applicant has already paid
-        $applicant = Applicant::where('user_id', auth()->id())->first();
         if ($requireFee && $feeAmount > 0 && (!$applicant || $applicant->payment_status !== 'completed')) {
             // Show payment required page
             return view('applicant.apply-payment', [
@@ -64,6 +86,7 @@ class ApplicationController extends Controller
         }
 
         $data = [
+            'applicant' => $applicant,
             'schools' => \Schema::hasTable('schools') ? School::all() : collect([]),
             'departments' => \Schema::hasTable('departments') ? Department::all() : collect([]),
             'programmes' => \Schema::hasTable('programmes') ? Programme::all() : collect([]),
