@@ -11,10 +11,10 @@
     <div class="col-md-6 col-xl-3 mb-3">
         <div class="card h-100">
             <div class="card-body text-center">
-                <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                <h5>Student Report</h5>
-                <p class="text-muted">View all students by department, level, status</p>
-                <a href="{{ route('admin.reports.students') }}" class="btn btn-primary">View Report</a>
+                <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                <h5>Application Report</h5>
+                <p class="text-muted">View applications by school, department, status</p>
+                <a href="{{ route('admin.reports.applications') }}" class="btn btn-primary">View Report</a>
             </div>
         </div>
     </div>
