@@ -175,7 +175,7 @@
                                         @break
                                 @endswitch
                             </td>
-                            <td>{{ $applicant->created_at->format('d/m/Y') }}</td>
+                            <td>{{ optional($applicant->created_at)->format('d/m/Y') ?? 'N/A' }}</td>
                             <td>
                                 <a href="{{ route('registrar.applications.show', $applicant) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye"></i>

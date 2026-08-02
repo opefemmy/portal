@@ -93,7 +93,7 @@
                             <span class="badge bg-danger">Rejected</span>
                         @endif
                     </td>
-                    <td>{{ $complaint->created_at->format('d M Y') }}</td>
+                    <td>{{ optional($complaint->created_at)->format('d M Y') ?? 'N/A' }}</td>
                     <td>
                         <a href="{{ route('admin.complaints.show', $complaint) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-eye"></i>

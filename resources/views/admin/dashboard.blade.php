@@ -179,7 +179,7 @@
                                         {{ ucfirst($applicant->status) }}
                                     </span>
                                 </td>
-                                <td>{{ $applicant->created_at->format('d M Y') }}</td>
+                                <td>{{ optional($applicant->created_at)->format('d M Y') ?? 'N/A' }}</td>
                             </tr>
                             @empty
                             <tr>

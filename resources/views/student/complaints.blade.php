@@ -86,7 +86,7 @@
                 <tbody>
                     @foreach($complaints as $complaint)
                     <tr>
-                        <td>{{ $complaint->created_at->format('d M Y') }}</td>
+                        <td>{{ optional($complaint->created_at)->format('d M Y') ?? 'N/A' }}</td>
                         <td>
                             <span class="badge bg-{{ $complaint->category == 'complaint' ? 'danger' : ($complaint->category == 'suggestion' ? 'info' : 'secondary') }}">
                                 {{ ucfirst($complaint->category) }}

@@ -42,7 +42,7 @@
             <tbody>
                 @forelse($records as $record)
                 <tr>
-                    <td>{{ $record->created_at->format('d M Y H:i') }}</td>
+                    <td>{{ optional($record->created_at)->format('d M Y H:i') ?? 'N/A' }}</td>
                     <td>{{ $record->user->name ?? 'Unknown' }}</td>
                     <td>{{ $record->table_name }}</td>
                     <td>{{ $record->record_id }}</td>

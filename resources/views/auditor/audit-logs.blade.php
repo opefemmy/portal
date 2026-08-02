@@ -91,8 +91,8 @@
                     @forelse($logs as $log)
                     <tr>
                         <td>
-                            <small class="text-muted">{{ $log->created_at->format('d M Y') }}</small><br>
-                            <span class="fw-semibold">{{ $log->created_at->format('H:i:s') }}</span>
+                            <small class="text-muted">{{ optional($log->created_at)->format('d M Y') ?? 'N/A' }}</small><br>
+                            <span class="fw-semibold">{{ optional($log->created_at)->format('H:i:s') ?? 'N/A' }}</span>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">

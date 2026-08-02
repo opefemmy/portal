@@ -178,7 +178,7 @@
                 @endswitch
 
                 <hr>
-                <p class="text-muted mb-2">Applied on: {{ $applicant->created_at->format('d F Y, h:i A') }}</p>
+                <p class="text-muted mb-2">Applied on: {{ optional($applicant->created_at)->format('d F Y, h:i A') ?? 'N/A' }}</p>
                 @if($applicant->reviewed_at)
                 <p class="text-muted">Reviewed on: {{ $applicant->reviewed_at->format('d F Y, h:i A') }}</p>
                 @endif

@@ -61,7 +61,7 @@
                         <tbody>
                             @forelse($recentLogs as $log)
                             <tr>
-                                <td>{{ $log->created_at->format('d M H:i') }}</td>
+                                <td>{{ optional($log->created_at)->format('d M H:i') ?? 'N/A' }}</td>
                                 <td>{{ $log->user->name ?? 'System' }}</td>
                                 <td>{{ $log->module }}</td>
                                 <td>{{ $log->action }}</td>
@@ -91,7 +91,7 @@
                         <tbody>
                             @forelse($failedActions as $action)
                             <tr>
-                                <td>{{ $action->created_at->format('d M H:i') }}</td>
+                                <td>{{ optional($action->created_at)->format('d M H:i') ?? 'N/A' }}</td>
                                 <td>{{ $action->user->name ?? 'Unknown' }}</td>
                                 <td>{{ Str::limit($action->error_message, 50) }}</td>
                             </tr>

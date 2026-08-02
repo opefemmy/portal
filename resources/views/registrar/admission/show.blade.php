@@ -158,7 +158,7 @@
                     </tr>
                     <tr>
                         <th>Application Date</th>
-                        <td>{{ $applicant->created_at->format('d M, Y') }}</td>
+                        <td>{{ optional($applicant->created_at)->format('d M, Y') ?? 'N/A' }}</td>
                     </tr>
                 </table>
 
@@ -167,7 +167,7 @@
                 <h6>Actions</h6>
                 <div class="d-flex gap-2 mb-3">
                     <!-- Update Status -->
-                    <form method="POST" action="{{ url('/admission-list/' . $applicant->id . '/status') }}" class="d-flex gap-2">
+                    <form method="POST" action="{{ route('registrar.admission.updateStatus', $applicant) }}" class="d-flex gap-2">
                         @csrf @method('PUT')
                         <select name="status" class="form-select">
                             <option value="pending" {{ $applicant->status == 'pending' ? 'selected' : '' }}>Pending</option>
@@ -192,7 +192,7 @@
                                 <h5 class="modal-title">Reset Applicant Password</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                            <form method="POST" action="{{ url('/admission-list/' . $applicant->id . '/reset-password') }}">
+                            <form method="POST" action="{{ route('registrar.admission.resetPassword', $applicant) }}">
                                 @csrf
                                 <div class="modal-body">
                                     <div class="mb-3">

@@ -20,7 +20,7 @@
                 <p><strong>Category:</strong> {{ ucfirst($complaint->category) }}</p>
                 <p><strong>Student:</strong> {{ $complaint->student->user->name ?? 'N/A' }}</p>
                 <p><strong>Matric Number:</strong> {{ $complaint->student->matric_number ?? 'N/A' }}</p>
-                <p><strong>Submitted:</strong> {{ $complaint->created_at->format('d M Y, h:i A') }}</p>
+                <p><strong>Submitted:</strong> {{ optional($complaint->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</p>
                 <hr>
                 <h6>Message:</h6>
                 <p>{{ $complaint->message }}</p>
