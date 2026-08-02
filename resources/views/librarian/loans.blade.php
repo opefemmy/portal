@@ -36,7 +36,7 @@
                         <td>{{ $loan->book->title ?? 'N/A' }}</td>
                         <td>{{ $loan->user->name ?? 'N/A' }}</td>
                         <td>{{ $loan->loan_date->format('d M Y') }}</td>
-                        <td>{{ $loan->due_date->format('d M Y') }}</td>
+                        <td>{{ optional($loan->due_date)->format('d M Y') ?? 'N/A' }}</td>
                         <td>{{ $loan->return_date ? $loan->return_date->format('d M Y') : '-' }}</td>
                         <td>
                             @if($loan->status === 'borrowed')

@@ -397,7 +397,7 @@
                     @if($patient->date_of_birth)
                         <div class="mb-3">
                             <small class="text-muted">Date of Birth</small>
-                            <div>{{ $patient->date_of_birth->format('d M Y') }} ({{ $patient->age }} years)</div>
+                            <div>{{ optional($patient->date_of_birth)->format('d M Y') ?? 'N/A' }} ({{ $patient->age ?? 'N/A' }} years)</div>
                         </div>
                     @endif
 

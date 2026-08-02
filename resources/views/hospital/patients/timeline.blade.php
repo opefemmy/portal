@@ -78,7 +78,7 @@
                                 <ul class="list-group">
                                     @foreach($patient->admissions as $admission)
                                     <li class="list-group-item">
-                                        <strong>{{ $admission->admission_date->format('d M Y') }}</strong> -
+                                        <strong>{{ optional($admission->admission_date)->format('d M Y') ?? 'N/A' }}</strong> -
                                         Status: {{ ucfirst($admission->status) }}
                                     </li>
                                     @endforeach

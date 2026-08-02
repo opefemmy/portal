@@ -235,7 +235,7 @@
                                 <td>{{ $admission->bed->ward->name ?? 'N/A' }}</td>
                                 <td>{{ $admission->bed->bed_number ?? 'N/A' }}</td>
                                 <td>Dr. {{ $admission->doctor->last_name ?? 'TBA' }}</td>
-                                <td>{{ $admission->admission_date->format('d M, Y') }}</td>
+                                <td>{{ optional($admission->admission_date)->format('d M, Y') ?? 'N/A' }}</td>
                                 <td>{{ $admission->admission_date->diffInDays(now()) }} days</td>
                                 <td>
                                     <a href="{{ route('hospital.patients.show', $admission->patient_id) }}" class="btn btn-sm btn-outline-primary">

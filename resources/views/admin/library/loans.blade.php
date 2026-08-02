@@ -62,7 +62,7 @@
                     <td>{{ $loan->student->matric_number ?? 'N/A' }}</td>
                     <td>{{ $loan->issuedBy->name ?? 'N/A' }}</td>
                     <td>{{ $loan->issue_date->format('d M Y') }}</td>
-                    <td>{{ $loan->due_date->format('d M Y') }}</td>
+                    <td>{{ optional($loan->due_date)->format('d M Y') ?? 'N/A' }}</td>
                     <td>{{ $loan->return_date?->format('d M Y') ?? '-' }}</td>
                     <td>
                         <span class="badge bg-{{ $loan->status === 'returned' ? 'success' : ($loan->isOverdue() ? 'danger' : 'warning') }}">
