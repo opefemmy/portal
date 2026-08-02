@@ -30,27 +30,23 @@ if (Schema::hasTable('system_settings')) {
 @endphp
 
 @section('content')
+<link rel="preload" as="image" href="{{ asset('uploads/backgrounds/login-bg.png') }}">
 <style>
     .login-page {
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: none !important;
+        /* Inline CSS background with placeholder gradient — page renders with
+           gradient immediately, image swaps in as soon as it is fetched. */
+        background:
+            linear-gradient(135deg, rgba(36, 125, 87, 0.85), rgba(30, 106, 74, 0.85)),
+            url("{{ asset('uploads/backgrounds/login-bg.png') }}") center/cover no-repeat,
+            linear-gradient(135deg, #247D57, #1E6A4A);
+        background-blend-mode: normal;
     }
-    .login-page::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url("{{ asset('uploads/backgrounds/login-bg.png') }}") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-repeat: no-repeat !important;
-        z-index: -1;
-    }
+    /* Hide the ::before pseudo (legacy fallback) since the background is now on .login-page itself. */
+    .login-page::before { content: none; }
 
     .login-card {
         background: white;
