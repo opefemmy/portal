@@ -63,7 +63,7 @@
                     </tr>
                     <tr>
                         <td><strong>Created:</strong></td>
-                        <td>{{ $staff->created_at->format('d M Y') }}</td>
+                        <td>{{ optional($staff->created_at)->format('d M Y') ?? 'N/A' }}</td>
                     </tr>
                 </table>
             </div>

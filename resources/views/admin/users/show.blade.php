@@ -79,7 +79,7 @@
                     </tr>
                     <tr>
                         <th>Created:</th>
-                        <td>{{ $user->created_at->format('d/m/Y h:i A') }}</td>
+                        <td>{{ optional($user->created_at)->format('d/m/Y h:i A') ?? 'N/A' }}</td>
                     </tr>
                 </table>
             </div>

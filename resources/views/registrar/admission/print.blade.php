@@ -47,7 +47,7 @@
                     <td>{{ $student->email ?? $student->user->email ?? 'N/A' }}</td>
                     <td>{{ $student->department->name ?? 'N/A' }}</td>
                     <td>{{ $student->programme->name ?? 'N/A' }}</td>
-                    <td>{{ $student->updated_at->format('d M Y') }}</td>
+                    <td>{{ optional($student->updated_at)->format('d M Y') ?? 'N/A' }}</td>
                 </tr>
                 @empty
                 <tr>
