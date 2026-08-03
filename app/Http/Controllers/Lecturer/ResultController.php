@@ -120,62 +120,67 @@ class ResultController extends Controller
      */
     public function store(Request $request, Course $course)
     {
-        $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('lecturer_id', auth()->id())
-            ->first();
+        try {
+            $assignment = CourseAssignment::where('course_id', $course->id)
+                ->where('lecturer_id', auth()->id())
+                ->first();
 
-        if (!$assignment) {
-            return back()->with('error', 'You are not assigned to this course.');
-        }
-
-        $request->validate([
-            'results' => 'required|array',
-            'results.*.student_course_id' => 'required|exists:student_courses,id',
-            'results.*.ca1' => 'nullable|numeric|min:0|max:40',
-            'results.*.ca2' => 'nullable|numeric|min:0|max:40',
-            'results.*.exam' => 'nullable|numeric|min:0|max:60',
-        ]);
-
-        $currentSession = Session::getCurrentSession();
-        $resultsSaved = 0;
-
-        foreach ($request->results as $resultData) {
-            $studentCourseId = $resultData['student_course_id'];
-            $ca1 = $resultData['ca1'] ?? 0;
-            $ca2 = $resultData['ca2'] ?? 0;
-            $exam = $resultData['exam'] ?? 0;
-            $total = $ca1 + $ca2 + $exam;
-
-            // Calculate grade
-            $grade = \App\Models\Grade::getGrade($total);
-
-            // SPIKE: Delete existing result first to avoid duplicates, then create new
-            Result::where('student_course_id', $studentCourseId)->delete();
-
-            // Create fresh result record
-            $result = Result::create([
-                'student_course_id' => $studentCourseId,
-                'course_id' => $course->id,
-                'ca1' => $ca1,
-                'ca2' => $ca2,
-                'exam' => $exam,
-                'total_score' => $total,
-                'grade' => $grade ? $grade->grade : null,
-                'grade_point' => $grade ? $grade->grade_point : 0,
-                'remarks' => $grade ? $grade->remark : null,
-                'status' => 'pending_approval',
-            ]);
-
-            // Calculate GPA/CGPA for the student
-            $studentCourse = StudentCourse::find($studentCourseId);
-            if ($studentCourse) {
-                $result->calculateAll($studentCourse->student_id);
+            if (!$assignment) {
+                return back()->with('error', 'You are not assigned to this course.');
             }
 
-            $resultsSaved++;
-        }
+            $request->validate([
+                'results' => 'required|array',
+                'results.*.student_course_id' => 'required|exists:student_courses,id',
+                'results.*.ca1' => 'nullable|numeric|min:0|max:40',
+                'results.*.ca2' => 'nullable|numeric|min:0|max:40',
+                'results.*.exam' => 'nullable|numeric|min:0|max:60',
+            ]);
 
-        return back()->with('success', "{$resultsSaved} results saved successfully! Previous records have been replaced.");
+            $currentSession = Session::getCurrentSession();
+            $resultsSaved = 0;
+
+            foreach ($request->results as $resultData) {
+                $studentCourseId = $resultData['student_course_id'];
+                $ca1 = $resultData['ca1'] ?? 0;
+                $ca2 = $resultData['ca2'] ?? 0;
+                $exam = $resultData['exam'] ?? 0;
+                $total = $ca1 + $ca2 + $exam;
+
+                // Calculate grade
+                $grade = \App\Models\Grade::getGrade($total);
+
+                // SPIKE: Delete existing result first to avoid duplicates, then create new
+                Result::where('student_course_id', $studentCourseId)->delete();
+
+                // Create fresh result record
+                $result = Result::create([
+                    'student_course_id' => $studentCourseId,
+                    'course_id' => $course->id,
+                    'ca1' => $ca1,
+                    'ca2' => $ca2,
+                    'exam' => $exam,
+                    'total_score' => $total,
+                    'grade' => $grade ? $grade->grade : null,
+                    'grade_point' => $grade ? $grade->grade_point : 0,
+                    'remarks' => $grade ? $grade->remark : null,
+                    'status' => 'pending_approval',
+                ]);
+
+                // Calculate GPA/CGPA for the student
+                $studentCourse = StudentCourse::find($studentCourseId);
+                if ($studentCourse) {
+                    $result->calculateAll($studentCourse->student_id);
+                }
+
+                $resultsSaved++;
+            }
+
+            return back()->with('success', "{$resultsSaved} results saved successfully! Previous records have been replaced.");
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer store 500 for course ' . $course->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            return back()->with('error', 'Unable to save results: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -206,45 +211,50 @@ class ResultController extends Controller
      */
     public function update(Request $request, Result $result)
     {
-        $studentCourse = $result->studentCourse;
-        $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
-            ->where('lecturer_id', auth()->id())
-            ->first();
+        try {
+            $studentCourse = $result->studentCourse;
+            $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
+                ->where('lecturer_id', auth()->id())
+                ->first();
 
-        if (!$assignment) {
-            return back()->with('error', 'You are not assigned to this course.');
+            if (!$assignment) {
+                return back()->with('error', 'You are not assigned to this course.');
+            }
+
+            if ($result->status === 'approved') {
+                return back()->with('error', 'Cannot edit approved results.');
+            }
+
+            $request->validate([
+                'ca1' => 'nullable|numeric|min:0|max:40',
+                'ca2' => 'nullable|numeric|min:0|max:40',
+                'exam' => 'nullable|numeric|min:0|max:60',
+            ]);
+
+            $ca1 = $request->ca1 ?? 0;
+            $ca2 = $request->ca2 ?? 0;
+            $exam = $request->exam ?? 0;
+            $total = $ca1 + $ca2 + $exam;
+
+            $grade = \App\Models\Grade::getGrade($total);
+
+            $result->update([
+                'ca1' => $ca1,
+                'ca2' => $ca2,
+                'exam' => $exam,
+                'total_score' => $total,
+                'grade' => $grade ? $grade->grade : null,
+                'grade_point' => $grade ? $grade->grade_point : 0,
+                'remarks' => $grade ? $grade->remark : null,
+                'status' => 'pending_approval',
+            ]);
+
+            return redirect()->route('lecturer.courses.results', $studentCourse->course_id)
+                ->with('success', 'Result updated successfully!');
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer update 500 for result ' . $result->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            return back()->with('error', 'Unable to update result: ' . $e->getMessage());
         }
-
-        if ($result->status === 'approved') {
-            return back()->with('error', 'Cannot edit approved results.');
-        }
-
-        $request->validate([
-            'ca1' => 'nullable|numeric|min:0|max:40',
-            'ca2' => 'nullable|numeric|min:0|max:40',
-            'exam' => 'nullable|numeric|min:0|max:60',
-        ]);
-
-        $ca1 = $request->ca1 ?? 0;
-        $ca2 = $request->ca2 ?? 0;
-        $exam = $request->exam ?? 0;
-        $total = $ca1 + $ca2 + $exam;
-
-        $grade = \App\Models\Grade::getGrade($total);
-
-        $result->update([
-            'ca1' => $ca1,
-            'ca2' => $ca2,
-            'exam' => $exam,
-            'total_score' => $total,
-            'grade' => $grade ? $grade->grade : null,
-            'grade_point' => $grade ? $grade->grade_point : 0,
-            'remarks' => $grade ? $grade->remark : null,
-            'status' => 'pending_approval',
-        ]);
-
-        return redirect()->route('lecturer.courses.results', $studentCourse->course_id)
-            ->with('success', 'Result updated successfully!');
     }
 
     /**
