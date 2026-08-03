@@ -23,7 +23,7 @@ class AdmissionCentre extends Model
 
     public function applicants(): HasMany
     {
-        return $this->hasMany(Applicant::class);
+        return $this->hasMany(Applicant::class, 'admission_centre_id');
     }
 
     public function scopeActive($query)

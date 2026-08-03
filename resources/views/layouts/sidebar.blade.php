@@ -253,7 +253,7 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.reports.students') }}" class="nav-link">
+                <a href="{{ route('admin.reports.applications') }}" class="nav-link">
                     <i class="fas fa-file-alt me-2"></i>Application Report
                 </a>
             </li>
