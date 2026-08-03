@@ -95,7 +95,7 @@
                             @endif
                         </td>
                         <td>
-                            @if(!$result || $result->status !== 'approved')
+                            @if($result && $result->status !== 'approved')
                             <a href="{{ route('lecturer.result.edit', $result) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-edit"></i>
                             </a>

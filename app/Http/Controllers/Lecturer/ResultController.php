@@ -20,19 +20,19 @@ class ResultController extends Controller
      */
     public function courseStudents(Course $course)
     {
-        // Verify lecturer is assigned to this course
-        $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('lecturer_id', auth()->id())
-            ->first();
-
-        if (!$assignment) {
-            return back()->with('error', 'You are not assigned to this course.');
-        }
-
-        $studentCourses = collect();
-        $results = collect();
-
         try {
+            // Verify lecturer is assigned to this course
+            $assignment = CourseAssignment::where('course_id', $course->id)
+                ->where('lecturer_id', auth()->id())
+                ->first();
+
+            if (!$assignment) {
+                return back()->with('error', 'You are not assigned to this course.');
+            }
+
+            $studentCourses = collect();
+            $results = collect();
+
             $currentSession = Session::getCurrentSession();
             $sessionId = $currentSession->id ?? null;
 
@@ -53,12 +53,17 @@ class ResultController extends Controller
                     ->get()
                     ->keyBy('student_course_id');
             }
-        } catch (\Throwable $e) {
-            \Log::error('Lecturer courseStudents failed for course ' . $course->id . ': ' . $e->getMessage());
-            return back()->with('error', 'Unable to load student list. Please contact the administrator.');
-        }
 
-        return view('lecturer.course-students', compact('course', 'studentCourses', 'results', 'assignment'));
+            // Eager-load the course's department and assignment's session so the
+            // view doesn't hit lazy-load exceptions if those rows are missing.
+            $course->loadMissing('department');
+            $assignment->loadMissing('session');
+
+            return view('lecturer.course-students', compact('course', 'studentCourses', 'results', 'assignment'));
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer courseStudents 500 for course ' . $course->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            return back()->with('error', 'Unable to load student list: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -66,19 +71,19 @@ class ResultController extends Controller
      */
     public function enter(Course $course)
     {
-        // Verify lecturer is assigned to this course
-        $assignment = CourseAssignment::where('course_id', $course->id)
-            ->where('lecturer_id', auth()->id())
-            ->first();
-
-        if (!$assignment) {
-            return back()->with('error', 'You are not assigned to this course.');
-        }
-
-        $studentCourses = collect();
-        $existingResults = collect();
-
         try {
+            // Verify lecturer is assigned to this course
+            $assignment = CourseAssignment::where('course_id', $course->id)
+                ->where('lecturer_id', auth()->id())
+                ->first();
+
+            if (!$assignment) {
+                return back()->with('error', 'You are not assigned to this course.');
+            }
+
+            $studentCourses = collect();
+            $existingResults = collect();
+
             $currentSession = Session::getCurrentSession();
             $sessionId = $currentSession->id ?? null;
 
@@ -99,12 +104,15 @@ class ResultController extends Controller
                     ->get()
                     ->keyBy('student_course_id');
             }
-        } catch (\Throwable $e) {
-            \Log::error('Lecturer enter failed for course ' . $course->id . ': ' . $e->getMessage());
-            return back()->with('error', 'Unable to load results form. Please contact the administrator.');
-        }
 
-        return view('lecturer.results-enter', compact('course', 'studentCourses', 'existingResults', 'assignment'));
+            // Eager-load the course's department to avoid lazy load in view.
+            $course->loadMissing('department');
+
+            return view('lecturer.results-enter', compact('course', 'studentCourses', 'existingResults', 'assignment'));
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer enter 500 for course ' . $course->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            return back()->with('error', 'Unable to load results form: ' . $e->getMessage());
+        }
     }
 
     /**
