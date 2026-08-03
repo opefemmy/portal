@@ -21,14 +21,15 @@
 </div>
 
 {{-- Scope picker: restricts the page to the lecturer's assigned
-     School / Department / Programme triples. Selecting a different
-     combination and clicking Apply re-renders the page with the
-     picker's selection driving the hidden inputs that the server-side
-     enforceScope() guard verifies. The existing upload / manual entry
-     forms below are NOT modified — these hidden inputs are additive. --}}
+     School / Department / Programme / Session / Level tuples.
+     Selecting a combination and clicking Apply re-renders the page
+     with the picker's selection driving the hidden inputs that the
+     server-side enforceScope() guard verifies. The existing upload /
+     manual entry forms below are NOT modified — these hidden inputs
+     are additive. --}}
 <div class="card mb-4 border-info">
     <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Upload Scope (School / Department / Programme)</h5>
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Upload Scope (School / Department / Programme / Session / Level)</h5>
     </div>
     <div class="card-body">
         <form method="GET" action="{{ url()->current() }}" class="row g-3 align-items-end">
@@ -62,14 +63,36 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-info text-white">
+            <div class="col-md-4">
+                <label class="form-label">Session</label>
+                <select name="session_id" id="scope_session_id" class="form-select" required>
+                    @foreach($allowedSessions as $sess)
+                        <option value="{{ $sess->id }}" @selected((int) $selectedSessionId === (int) $sess->id)>
+                            {{ $sess->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Level</label>
+                <select name="level" id="scope_level" class="form-select" required>
+                    @foreach($allowedLevels as $lvl)
+                        <option value="{{ $lvl['value'] }}" @selected((int) $selectedLevel === (int) $lvl['value'])>
+                            {{ $lvl['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-info text-white w-100">
                     <i class="fas fa-check me-2"></i>Apply Scope
                 </button>
+            </div>
+            <div class="col-12 d-flex gap-2 align-items-center">
                 <a href="{{ url()->current() }}" class="btn btn-outline-secondary">
                     <i class="fas fa-undo me-2"></i>Reset to Course Default
                 </a>
-                <small class="text-muted ms-auto align-self-center">
+                <small class="text-muted ms-auto">
                     Only combinations you are assigned to are listed.
                 </small>
             </div>
@@ -88,6 +111,8 @@
             <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
             <input type="hidden" name="department_id" value="{{ $selectedDepartmentId }}">
             <input type="hidden" name="programme_id" value="{{ $selectedProgrammeId }}">
+            <input type="hidden" name="session_id" value="{{ $selectedSessionId }}">
+            <input type="hidden" name="level" value="{{ $selectedLevel }}">
             <div class="col-md-8">
                 <label class="form-label">Select Excel File</label>
                 <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls,.csv" required>
@@ -114,6 +139,8 @@
             <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
             <input type="hidden" name="department_id" value="{{ $selectedDepartmentId }}">
             <input type="hidden" name="programme_id" value="{{ $selectedProgrammeId }}">
+            <input type="hidden" name="session_id" value="{{ $selectedSessionId }}">
+            <input type="hidden" name="level" value="{{ $selectedLevel }}">
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead class="table-primary">

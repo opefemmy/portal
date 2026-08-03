@@ -19,15 +19,21 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class ResultController extends Controller
 {
     /**
-     * The unique (school_id, department_id, programme_id) triples the
-     * currently-authenticated lecturer is actually assigned to via
-     * CourseAssignment. Inferred from assignments rather than the
+     * The unique (school_id, department_id, programme_id, level, session_id)
+     * tuples the currently-authenticated lecturer is actually assigned to
+     * via CourseAssignment. Inferred from assignments rather than the
      * lecturer's user profile so a lecturer assigned to courses across
-     * multiple departments / programmes keeps the union of those scopes.
+     * multiple departments / programmes / levels / sessions keeps the
+     * union of those scopes.
      *
-     * Returned shape: [['school_id' => 1, 'department_id' => 2, 'programme_id' => 3], ...]
+     * Returned shape:
+     *   [
+     *     ['school_id' => 1, 'department_id' => 2, 'programme_id' => 3,
+     *      'level' => 1, 'session_id' => 4],
+     *     ...
+     *   ]
      *
-     * @return array<int, array{school_id: int|null, department_id: int|null, programme_id: int|null}>
+     * @return array<int, array{school_id: int|null, department_id: int|null, programme_id: int|null, level: int|null, session_id: int|null}>
      */
     protected function lecturerScope(): array
     {
@@ -36,7 +42,15 @@ class ResultController extends Controller
             ->whereNotNull('courses.school_id')
             ->whereNotNull('courses.department_id')
             ->whereNotNull('courses.programme_id')
-            ->select('courses.school_id', 'courses.department_id', 'courses.programme_id')
+            ->whereNotNull('courses.level')
+            ->whereNotNull('course_assignments.session_id')
+            ->select(
+                'courses.school_id',
+                'courses.department_id',
+                'courses.programme_id',
+                'courses.level',
+                'course_assignments.session_id'
+            )
             ->distinct()
             ->get();
 
@@ -45,26 +59,36 @@ class ResultController extends Controller
                 'school_id' => (int) $r->school_id,
                 'department_id' => (int) $r->department_id,
                 'programme_id' => (int) $r->programme_id,
+                'level' => (int) $r->level,
+                'session_id' => (int) $r->session_id,
             ])
             ->values()
             ->all();
     }
 
     /**
-     * True if the given course's (school, department, programme) triple
-     * matches one of the triples in the lecturer's inferred scope.
+     * True if the given course's (school, department, programme, level, session)
+     * tuple matches one of the tuples in the lecturer's inferred scope.
      * A course with any of those columns null can never match (safe default).
      */
-    protected function isCourseInLecturerScope(Course $course): bool
+    protected function isCourseInLecturerScope(Course $course, ?int $sessionId = null): bool
     {
-        if (empty($course->school_id) || empty($course->department_id) || empty($course->programme_id)) {
+        if (empty($course->school_id) || empty($course->department_id) || empty($course->programme_id) || empty($course->level)) {
+            return false;
+        }
+
+        $courseSessionId = $sessionId ?? $this->resolveCourseSessionId($course);
+
+        if (empty($courseSessionId)) {
             return false;
         }
 
         foreach ($this->lecturerScope() as $row) {
             if ($row['school_id'] === (int) $course->school_id
                 && $row['department_id'] === (int) $course->department_id
-                && $row['programme_id'] === (int) $course->programme_id) {
+                && $row['programme_id'] === (int) $course->programme_id
+                && $row['level'] === (int) $course->level
+                && $row['session_id'] === (int) $courseSessionId) {
                 return true;
             }
         }
@@ -72,33 +96,59 @@ class ResultController extends Controller
     }
 
     /**
+     * Best-effort resolution of the session this course is being
+     * uploaded for. A CourseAssignment carries the session, so we look
+     * up the lecturer's own assignment for this course first; if none,
+     * fall back to the current session.
+     */
+    protected function resolveCourseSessionId(Course $course): ?int
+    {
+        $assignment = CourseAssignment::where('course_id', $course->id)
+            ->where('lecturer_id', auth()->id())
+            ->first();
+
+        if ($assignment && !empty($assignment->session_id)) {
+            return (int) $assignment->session_id;
+        }
+
+        $current = Session::getCurrentSession();
+        return $current?->id !== null ? (int) $current->id : null;
+    }
+
+    /**
      * Defensive server-side guard for write paths. Returns null when the
      * request is allowed, or a redirect Response when it must be blocked.
      * The lecturer's inferred scope (from CourseAssignment) must contain a
-     * triple matching the course, AND the request must carry matching
-     * school_id / department_id / programme_id hidden inputs set by the
-     * upload-page picker.
+     * tuple matching the course, AND the request must carry matching
+     * school_id / department_id / programme_id / level / session_id
+     * hidden inputs set by the upload-page picker.
      */
     protected function enforceScope(Request $request, Course $course)
     {
-        if (!$this->isCourseInLecturerScope($course)) {
+        $courseSessionId = $this->resolveCourseSessionId($course);
+
+        if (!$this->isCourseInLecturerScope($course, $courseSessionId)) {
             return back()->with(
                 'error',
-                'You cannot upload results for this course — it belongs to a different school, department, or programme than your assigned scope.'
+                'You cannot upload results for this course — it belongs to a different school, department, programme, level, or session than your assigned scope.'
             );
         }
 
         $rSchool = $request->input('school_id');
         $rDept = $request->input('department_id');
         $rProg = $request->input('programme_id');
+        $rLevel = $request->input('level');
+        $rSess = $request->input('session_id');
 
-        if ($rSchool === null || $rDept === null || $rProg === null
+        if ($rSchool === null || $rDept === null || $rProg === null || $rLevel === null || $rSess === null
             || (int) $rSchool !== (int) $course->school_id
             || (int) $rDept !== (int) $course->department_id
-            || (int) $rProg !== (int) $course->programme_id) {
+            || (int) $rProg !== (int) $course->programme_id
+            || (int) $rLevel !== (int) $course->level
+            || (int) $rSess !== (int) $courseSessionId) {
             return back()->with(
                 'error',
-                'Please select the matching School, Department and Programme before uploading results for this course.'
+                'Please select the matching School, Department, Programme, Session and Level before uploading results for this course.'
             );
         }
 
@@ -177,12 +227,13 @@ class ResultController extends Controller
 
             // Infer the lecturer's allowed scope from their assignments.
             $scope = $this->lecturerScope();
+            $courseSessionId = $this->resolveCourseSessionId($course);
 
-            // Picker choices: only schools / departments / programmes the
-            // lecturer is actually assigned to. Cascading is handled in
-            // the view via JS — the controller sends every distinct value
-            // in scope and the view filters departments by selected
-            // school, etc.
+            // Picker choices: only schools / departments / programmes /
+            // levels / sessions the lecturer is actually assigned to.
+            // Cascading is handled in the view via JS — the controller
+            // sends every distinct value in scope and the view filters
+            // departments by selected school, etc.
             $allowedSchools = School::whereIn('id', collect($scope)->pluck('school_id')->unique())
                 ->orderBy('name')
                 ->get(['id', 'name']);
@@ -192,12 +243,19 @@ class ResultController extends Controller
             $allowedProgrammes = Programme::whereIn('id', collect($scope)->pluck('programme_id')->unique())
                 ->orderBy('name')
                 ->get(['id', 'name', 'department_id']);
+            $allowedLevels = collect($scope)->pluck('level')->unique()->sort()->values()
+                ->map(fn ($l) => ['value' => (int) $l, 'name' => Course::LEVEL_NAMES[(int) $l] ?? (string) $l]);
+            $allowedSessions = Session::whereIn('id', collect($scope)->pluck('session_id')->unique())
+                ->orderBy('name')
+                ->get(['id', 'name']);
 
             // Selected scope: prefer query string (picker Apply), fall back
             // to the course's own scope, fall back to the first allowed row.
-            $selectedSchoolId = (int) (request('school_id') ?: ($course->school_id ?: ($allowedSchools->first()->id ?? null)));
-            $selectedDepartmentId = (int) (request('department_id') ?: ($course->department_id ?: ($allowedDepartments->first()->id ?? null)));
-            $selectedProgrammeId = (int) (request('programme_id') ?: ($course->programme_id ?: ($allowedProgrammes->first()->id ?? null)));
+            $selectedSchoolId = (int) (request('school_id') ?: ($course->school_id ?: ($allowedSchools->first()->id ?? 0)));
+            $selectedDepartmentId = (int) (request('department_id') ?: ($course->department_id ?: ($allowedDepartments->first()->id ?? 0)));
+            $selectedProgrammeId = (int) (request('programme_id') ?: ($course->programme_id ?: ($allowedProgrammes->first()->id ?? 0)));
+            $selectedLevel = (int) (request('level') ?: ($course->level ?: ($allowedLevels->first()['value'] ?? 0)));
+            $selectedSessionId = (int) (request('session_id') ?: ($courseSessionId ?: ($allowedSessions->first()->id ?? 0)));
 
             $studentCourses = collect();
             $existingResults = collect();
@@ -231,9 +289,13 @@ class ResultController extends Controller
                 'allowedSchools',
                 'allowedDepartments',
                 'allowedProgrammes',
+                'allowedLevels',
+                'allowedSessions',
                 'selectedSchoolId',
                 'selectedDepartmentId',
-                'selectedProgrammeId'
+                'selectedProgrammeId',
+                'selectedLevel',
+                'selectedSessionId'
             ));
         } catch (\Throwable $e) {
             \Log::error('Lecturer enter 500 for course ' . $course->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
