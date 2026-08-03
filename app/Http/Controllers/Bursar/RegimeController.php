@@ -61,6 +61,7 @@ class RegimeController extends Controller
 
     public function edit(RegimePayment $regime)
     {
+        $this->assertSameSchool($regime);
         $schools = School::all();
         $departments = Department::all();
         $programmes = Programme::all();
@@ -71,6 +72,7 @@ class RegimeController extends Controller
 
     public function update(Request $request, RegimePayment $regime)
     {
+        $this->assertSameSchool($regime);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'student_type' => 'required|in:Indigene,Non-Indigene',
@@ -100,7 +102,22 @@ class RegimeController extends Controller
 
     public function destroy(RegimePayment $regime)
     {
+        $this->assertSameSchool($regime);
         $regime->delete();
         return back()->with('success', 'Regime deleted successfully');
+    }
+
+    private function assertSameSchool(RegimePayment $regime): void
+    {
+        $authUser = auth()->user();
+        if (!$authUser) {
+            abort(401);
+        }
+        // Super admins bypass the school check; everyone else must match.
+        if ($authUser->school_id
+            && $regime->school_id
+            && (int) $regime->school_id !== (int) $authUser->school_id) {
+            abort(403, 'You are not allowed to access this regime.');
+        }
     }
 }

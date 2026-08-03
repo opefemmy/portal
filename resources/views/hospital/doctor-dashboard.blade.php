@@ -242,11 +242,7 @@
                                     <br><small class="text-muted">{{ $consultation->patient->patient_number ?? '' }}</small>
                                 </td>
                                 <td>
-                                    @if($consultation->appointment)
-                                    {{ $consultation->appointment->created_at->diffForHumans() }}
-                                    @else
-                                    --
-                                    @endif
+                                    {{ optional($consultation->created_at)->diffForHumans() ?? '—' }}
                                 </td>
                                 <td>
                                     <a href="{{ route('hospital.patients.show', $consultation->patient_id) }}" class="btn btn-sm btn-primary">

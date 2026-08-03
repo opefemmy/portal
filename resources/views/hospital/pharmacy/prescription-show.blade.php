@@ -21,11 +21,11 @@
                             <table class="table table-sm">
                                 <tr>
                                     <th>Name:</th>
-                                    <td>{{ $prescription->patient->name ?? 'N/A' }}</td>
+                                    <td>{{ $prescription->patient->full_name ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <th>Gender:</th>
-                                    <td>{{ $prescription->patient->gender ?? 'N/A' }}</td>
+                                    <td>{{ ucfirst($prescription->patient->gender ?? '') ?: 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <th>Age:</th>
@@ -42,7 +42,7 @@
                             <table class="table table-sm">
                                 <tr>
                                     <th>Doctor:</th>
-                                    <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
+                                    <td>Dr. {{ $prescription->doctor->full_name ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <th>Date:</th>
@@ -55,7 +55,7 @@
                                 </tr>
                                 <tr>
                                     <th>Dispensed By:</th>
-                                    <td>{{ $prescription->dispensedBy->name ?? 'N/A' }}</td>
+                                    <td>{{ $prescription->dispensedBy->full_name ?? 'N/A' }}</td>
                                 </tr>
                                 @endif
                             </table>
@@ -200,6 +200,7 @@
         </div>
     </div>
 </div>
+@endsection
 
 @section('scripts')
 <script>

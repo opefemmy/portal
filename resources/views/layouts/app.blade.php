@@ -626,12 +626,93 @@
 
         // Promote title attributes on buttons/links to Bootstrap tooltips
         // and initialize all tooltip triggers (data-bs-toggle or auto-promoted).
-        document.querySelectorAll('button[title], a.btn[title]').forEach(function (el) {
+        // For icon-only buttons (those that contain only an <i> icon and no
+        // visible text), we infer a sensible tooltip from the FontAwesome
+        // class so every action button hints what it does.
+        var iconTitles = {
+            'fa-edit':          'Edit',
+            'fa-pen':           'Edit',
+            'fa-pencil-alt':    'Edit',
+            'fa-trash':         'Delete',
+            'fa-trash-alt':     'Delete',
+            'fa-eye':           'View',
+            'fa-eye-slash':     'Hide',
+            'fa-download':      'Download',
+            'fa-file-download': 'Download',
+            'fa-print':         'Print',
+            'fa-plus':          'Add new',
+            'fa-plus-circle':   'Add new',
+            'fa-check':         'Approve',
+            'fa-check-circle':  'Approve',
+            'fa-times':         'Cancel',
+            'fa-times-circle':  'Cancel',
+            'fa-ban':           'Disable',
+            'fa-undo':          'Restore',
+            'fa-redo':          'Re-apply',
+            'fa-sync':          'Refresh',
+            'fa-sync-alt':      'Refresh',
+            'fa-upload':        'Upload',
+            'fa-file-upload':   'Upload',
+            'fa-file-import':   'Import',
+            'fa-file-export':   'Export',
+            'fa-paper-plane':   'Submit',
+            'fa-save':          'Save',
+            'fa-search':        'Search',
+            'fa-filter':        'Filter',
+            'fa-cog':           'Settings',
+            'fa-cogs':          'Settings',
+            'fa-wrench':        'Configure',
+            'fa-key':           'Reset password',
+            'fa-lock':          'Lock',
+            'fa-unlock':        'Unlock',
+            'fa-sign-in-alt':   'Sign in',
+            'fa-sign-out-alt':  'Sign out',
+            'fa-user-plus':     'Add user',
+            'fa-graduation-cap':'View transcript',
+            'fa-id-card':       'ID card',
+            'fa-credit-card':   'Pay',
+            'fa-dollar-sign':   'Pay fees',
+            'fa-book':          'Courses',
+            'fa-chart-line':    'Results',
+            'fa-chart-bar':     'Statistics',
+            'fa-arrow-left':    'Back',
+            'fa-arrow-right':   'Next',
+            'fa-broom':         'Reset',
+        };
+
+        function inferTitle(el) {
+            // 1. If the element already has a title, use it.
+            if (el.hasAttribute('title') && el.getAttribute('title').trim() !== '') {
+                return el.getAttribute('title');
+            }
+            // 2. If the element has visible text content, use it.
+            var text = (el.textContent || '').trim();
+            if (text.length > 0 && text.length < 60) {
+                return text;
+            }
+            // 3. Icon-only? Map from FontAwesome class to a default tooltip.
+            var icon = el.querySelector('i[class*="fa-"]');
+            if (icon) {
+                var classes = (icon.className || '').split(/\s+/);
+                for (var i = 0; i < classes.length; i++) {
+                    if (iconTitles[classes[i]]) {
+                        return iconTitles[classes[i]];
+                    }
+                }
+            }
+            return null;
+        }
+
+        document.querySelectorAll('button, a.btn, a.nav-link').forEach(function (el) {
+            var title = inferTitle(el);
+            if (!title) return;
+            el.setAttribute('title', title);
             if (!el.hasAttribute('data-bs-toggle') || el.getAttribute('data-bs-toggle') === 'tooltip') {
                 el.setAttribute('data-bs-toggle', 'tooltip');
                 el.setAttribute('data-bs-placement', 'top');
             }
         });
+
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);

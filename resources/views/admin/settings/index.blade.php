@@ -164,7 +164,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Admission Form Status</label>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="admission_form_open" name="admission_form_open"
+                            <input class="form-check-input" type="checkbox" id="admission_form_open" name="admission_form_open" data-setting-key="admission_form_open"
                                 {{ SystemSetting::isOpen('admission_form_open') ? 'checked' : '' }}>
                             <label class="form-check-label" for="admission_form_open">Open for Applications</label>
                         </div>
@@ -175,7 +175,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Late Application Penalty</label>
                         <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" id="admission_form_penalty" name="admission_form_penalty"
+                            <input class="form-check-input" type="checkbox" id="admission_form_penalty" name="admission_form_penalty" data-setting-key="admission_form_penalty"
                                 {{ SystemSetting::get('admission_form_penalty', 'false') === 'true' ? 'checked' : '' }}>
                             <label class="form-check-label" for="admission_form_penalty">Enable Penalty</label>
                         </div>
@@ -199,7 +199,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Course Registration Status</label>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="course_registration_open" name="course_registration_open"
+                            <input class="form-check-input" type="checkbox" id="course_registration_open" name="course_registration_open" data-setting-key="course_registration_open"
                                 {{ SystemSetting::isOpen('course_registration_open') ? 'checked' : '' }}>
                             <label class="form-check-label" for="course_registration_open">Open for Registration</label>
                         </div>
@@ -210,7 +210,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Late Registration Penalty</label>
                         <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" id="course_registration_penalty" name="course_registration_penalty"
+                            <input class="form-check-input" type="checkbox" id="course_registration_penalty" name="course_registration_penalty" data-setting-key="course_registration_penalty"
                                 {{ SystemSetting::get('course_registration_penalty', 'false') === 'true' ? 'checked' : '' }}>
                             <label class="form-check-label" for="course_registration_penalty">Enable Penalty</label>
                         </div>
@@ -234,7 +234,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Payment Status</label>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="payment_open" name="payment_open"
+                            <input class="form-check-input" type="checkbox" id="payment_open" name="payment_open" data-setting-key="payment_open"
                                 {{ SystemSetting::isOpen('payment_open') ? 'checked' : '' }}>
                             <label class="form-check-label" for="payment_open">Allow Payments</label>
                         </div>
@@ -245,7 +245,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                     <div class="mb-3">
                         <label class="form-label">Late Payment Penalty</label>
                         <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" id="payment_penalty" name="payment_penalty"
+                            <input class="form-check-input" type="checkbox" id="payment_penalty" name="payment_penalty" data-setting-key="payment_penalty"
                                 {{ SystemSetting::get('payment_penalty', 'false') === 'true' ? 'checked' : '' }}>
                             <label class="form-check-label" for="payment_penalty">Enable Penalty</label>
                         </div>
@@ -271,7 +271,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                         <div class="card-body">
                             <h6><i class="fas fa-school me-2"></i>School Fee</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="late_school_fee_enabled" name="late_school_fee_enabled"
+                                <input class="form-check-input" type="checkbox" id="late_school_fee_enabled" name="late_school_fee_enabled" data-setting-key="late_school_fee_enabled"
                                     {{ SystemSetting::get('late_school_fee_enabled', 'false') === 'true' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="late_school_fee_enabled">Enable Late Payment</label>
                             </div>
@@ -287,7 +287,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                         <div class="card-body">
                             <h6><i class="fas fa-book me-2"></i>Course Reg Fee</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="late_course_reg_enabled" name="late_course_reg_enabled"
+                                <input class="form-check-input" type="checkbox" id="late_course_reg_enabled" name="late_course_reg_enabled" data-setting-key="late_course_reg_enabled"
                                     {{ SystemSetting::get('late_course_reg_enabled', 'false') === 'true' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="late_course_reg_enabled">Enable Late Payment</label>
                             </div>
@@ -303,7 +303,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                         <div class="card-body">
                             <h6><i class="fas fa-money-bill-wave me-2"></i>Other Fees</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="late_other_fee_enabled" name="late_other_fee_enabled"
+                                <input class="form-check-input" type="checkbox" id="late_other_fee_enabled" name="late_other_fee_enabled" data-setting-key="late_other_fee_enabled"
                                     {{ SystemSetting::get('late_other_fee_enabled', 'false') === 'true' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="late_other_fee_enabled">Enable Late Payment</label>
                             </div>
@@ -347,7 +347,7 @@ $houseIconExists = file_exists(public_path($houseIconPath));
                         <div class="card-body">
                             <h6><i class="fas fa-money-bill me-2"></i>Library Fee</h6>
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="library_fee_required" name="library_fee_required"
+                                <input class="form-check-input" type="checkbox" id="library_fee_required" name="library_fee_required" data-setting-key="library_fee_required"
                                     {{ SystemSetting::get('library_fee_required', 'false') === 'true' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="library_fee_required">Require Library Fee</label>
                             </div>
@@ -448,3 +448,101 @@ $houseIconExists = file_exists(public_path($houseIconPath));
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+/**
+ * Settings consent + activation.
+ *
+ * Every toggle switch on this page is now intercepted. When the user clicks a
+ * switch, we must receive explicit consent via a confirmation prompt before
+ * the change is activated. The consent message describes what the toggle does
+ * so the admin knows exactly what they are enabling or disabling.
+ *
+ * After consent, the change is sent to /admin/settings/toggle and the switch
+ * reflects the new state. If the user declines, the switch is reverted.
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleUrl = @json(route('admin.settings.toggle'));
+    const csrf      = @json(csrf_token());
+
+    // Build a human-readable label for each known setting key
+    const labels = {
+        'admission_form_open'         : 'Open admission form for new applications',
+        'admission_form_penalty'      : 'Enable late-application penalty',
+        'course_registration_open'    : 'Open course registration',
+        'course_registration_penalty' : 'Enable late course-registration penalty',
+        'payment_open'                : 'Allow student payments',
+        'payment_penalty'             : 'Enable late-payment penalty',
+        'late_school_fee_enabled'     : 'Enable late school fee',
+        'late_course_reg_enabled'     : 'Enable late course registration fee',
+        'late_other_fee_enabled'      : 'Enable late other fees',
+        'result_upload_open'          : 'Allow lecturers to upload results',
+        'library_fee_required'        : 'Require library fee',
+    };
+
+    document.querySelectorAll('input[type="checkbox"][data-setting-key]').forEach(function (input) {
+        // capture stage: stop the default toggle so we can validate consent first
+        input.addEventListener('click', function (event) {
+            event.preventDefault();
+            const key      = input.dataset.settingKey;
+            const label    = labels[key] || ('Update setting "' + key + '"');
+            const next     = input.checked ? 'ON' : 'OFF';
+            const previous = input.checked ? 'OFF' : 'ON';
+
+            const confirmMsg =
+                'Are you sure you want to ' + (input.checked ? 'ACTIVATE' : 'DEACTIVATE') + ' this setting?\n\n' +
+                'Setting: ' + label + '\n' +
+                'New state: ' + next + '\n' +
+                'Previous state: ' + previous + '\n\n' +
+                'Click OK to consent and activate, or Cancel to abort.';
+
+            if (!window.confirm(confirmMsg)) {
+                // User declined — leave the switch in its previous state
+                return;
+            }
+
+            // User consented — submit the new state via AJAX
+            const value = input.checked ? 'true' : 'false';
+            const originalDisabled = input.disabled;
+            input.disabled = true;
+
+            fetch(toggleUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ key: key, value: value })
+            })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || ('HTTP ' + response.status));
+                    }
+                    return data;
+                });
+            })
+            .then(function (data) {
+                // Show a brief inline confirmation
+                const note = document.createElement('small');
+                note.className = 'text-success ms-2';
+                note.textContent = '✓ Activated';
+                input.parentElement.appendChild(note);
+                setTimeout(function () { note.remove(); }, 2500);
+            })
+            .catch(function (err) {
+                // Revert switch on failure
+                input.checked = !input.checked;
+                window.alert('Failed to activate setting: ' + err.message);
+            })
+            .finally(function () {
+                input.disabled = originalDisabled;
+            });
+        });
+    });
+});
+</script>
+@endpush

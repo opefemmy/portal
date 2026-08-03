@@ -149,7 +149,8 @@
                 <div class="border-bottom pb-2 mb-2">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <strong>{{ $appointment->appointment_number }}</strong> - {{ $appointment->purpose }}
+                            <strong>#{{ $appointment->id }}</strong> -
+                            {{ $appointment->complaint ?? $appointment->notes ?? 'Appointment' }}
                         </div>
                         <div>
                             <span class="badge bg-{{ $appointment->status == 'completed' ? 'success' : ($appointment->status == 'cancelled' ? 'danger' : 'warning') }}">

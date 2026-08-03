@@ -11,6 +11,7 @@ use App\Http\Controllers\Hospital\PharmacyController;
 use App\Http\Controllers\Hospital\LaboratoryController;
 use App\Http\Controllers\Hospital\ConsultationController;
 use App\Http\Controllers\Hospital\InventoryController;
+use App\Http\Controllers\Hospital\DutyRosterController;
 
 // Public Patient Portal Routes (for outsiders)
 Route::prefix('patient')->name('patient.')->group(function () {
@@ -150,5 +151,25 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
             ->name('prescriptions.store');
         Route::post('/{consultation}/lab-requests', [ConsultationController::class, 'addLabRequest'])
             ->name('lab-requests.store');
+    });
+
+    // Clinical SOAP / progress notes (doctor / cmd)
+    Route::prefix('patients')->name('patients.')->group(function () {
+        Route::post('/{patient}/soap-notes', [ConsultationController::class, 'storeSoapNote'])
+            ->middleware('role:cmd,doctor,super_admin,admin')
+            ->name('soap.store');
+        Route::post('/clinical-notes/{note}/sign', [ConsultationController::class, 'signClinicalNote'])
+            ->middleware('role:cmd,doctor,super_admin,admin')
+            ->name('soap.sign');
+        Route::get('/{patient}/clinical-notes', [ConsultationController::class, 'clinicalNotes'])
+            ->middleware('role:cmd,doctor,nurse,super_admin,admin')
+            ->name('soap.index');
+    });
+
+    // Duty roster (cmd / nurse / doctor)
+    Route::prefix('roster')->name('roster.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,super_admin,admin,matron,ward_manager')->group(function () {
+        Route::get('/', [DutyRosterController::class, 'index'])->name('index');
+        Route::post('/', [DutyRosterController::class, 'store'])->name('store');
+        Route::delete('/{entry}', [DutyRosterController::class, 'destroy'])->name('destroy');
     });
 });

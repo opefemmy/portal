@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Result;
+use App\Models\PreviousResult;
 use App\Models\Session;
 use Illuminate\Http\Request;
 
@@ -34,16 +35,21 @@ class TranscriptController extends Controller
                 $q->where('student_id', $student->id);
             })->with(['studentCourse.course'])->get();
 
+            // Merge historical rows so the transcript covers everything
+            // we've ingested for this student, including pre-portal data.
+            $previousResults = PreviousResult::where('student_id', $student->id)->get();
+
             $sessions = Session::all();
             $cgpa = $student->calculateCGPA();
         } catch (\Throwable $e) {
             \Log::error('Transcript show failed: ' . $e->getMessage());
             $results = collect();
+            $previousResults = collect();
             $sessions = collect();
             $cgpa = 0.0;
         }
 
-        return view('admin.transcripts.show', compact('student', 'results', 'sessions', 'cgpa'));
+        return view('admin.transcripts.show', compact('student', 'results', 'previousResults', 'sessions', 'cgpa'));
     }
 
     public function print(Student $student)
@@ -53,13 +59,19 @@ class TranscriptController extends Controller
                 $q->where('student_id', $student->id);
             })->with(['studentCourse.course', 'studentCourse.session'])->get();
 
+            $previousResults = PreviousResult::where('student_id', $student->id)
+                ->orderBy('session_name')
+                ->orderBy('semester')
+                ->get();
+
             $cgpa = $student->calculateCGPA();
         } catch (\Throwable $e) {
             \Log::error('Transcript print failed: ' . $e->getMessage());
             $results = collect();
+            $previousResults = collect();
             $cgpa = 0.0;
         }
 
-        return view('admin.transcripts.print', compact('student', 'results', 'cgpa'));
+        return view('admin.transcripts.print', compact('student', 'results', 'previousResults', 'cgpa'));
     }
 }

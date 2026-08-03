@@ -11,6 +11,8 @@ class Payment extends Model
         'student_id',
         'fee_id',
         'amount',
+        'percent_paid',
+        'installment_label',
         'reference',
         'payment_ref',
         'transaction_id',
@@ -36,6 +38,7 @@ class Payment extends Model
         'amount' => 'decimal:2',
         'portal_charge' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'percent_paid' => 'integer',
         'is_verified' => 'boolean',
     ];
 
@@ -47,6 +50,11 @@ class Payment extends Model
     public function fee(): BelongsTo
     {
         return $this->belongsTo(Fee::class);
+    }
+
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(Applicant::class, 'payer_id');
     }
 
     public static function generateReference()

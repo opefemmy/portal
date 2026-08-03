@@ -43,4 +43,16 @@ class HospitalPrescription extends Model
     {
         return $this->hasMany(HospitalPrescriptionItem::class, 'prescription_id');
     }
+
+    /**
+     * Derived status used by views and badges.
+     * Falls back to is_dispensed when the legacy `status` column is missing.
+     */
+    public function getStatusAttribute(): string
+    {
+        if (array_key_exists('status', $this->attributes) && $this->attributes['status'] !== null) {
+            return (string) $this->attributes['status'];
+        }
+        return $this->is_dispensed ? 'dispensed' : 'pending';
+    }
 }

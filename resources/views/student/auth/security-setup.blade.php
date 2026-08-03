@@ -25,7 +25,7 @@
                     @csrf
                     <div class="mb-3">
                         <label for="security_question" class="form-label">Security Question</label>
-                        <select name="security_question" id="security_question" class="form-select @error('security_question') is-invalid @endif" required>
+                        <select name="security_question" id="security_question" class="form-select @error('security_question') is-invalid @enderror" required>
                             <option value="">Select a question</option>
                             <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
                             <option value="What is the name of your first pet?">What is the name of your first pet?</option>
@@ -37,7 +37,7 @@
                         </select>
                         @error('security_question')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
 
                     <div class="mb-3" id="custom_question_div" style="display: none;">
@@ -48,20 +48,20 @@
                     <div class="mb-3">
                         <label for="security_answer" class="form-label">Your Answer</label>
                         <input type="text" name="security_answer" id="security_answer"
-                            class="form-control @error('security_answer') is-invalid @endif" required>
+                            class="form-control @error('security_answer') is-invalid @enderror" required>
                         <small class="text-muted">Remember this answer - you will need it to reset your password.</small>
                         @error('security_answer')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
 
                     <div class="mb-3">
                         <label for="confirm_answer" class="form-label">Confirm Answer</label>
                         <input type="text" name="confirm_answer" id="confirm_answer"
-                            class="form-control @error('confirm_answer') is-invalid @endif" required>
+                            class="form-control @error('confirm_answer') is-invalid @enderror" required>
                         @error('confirm_answer')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
 
                     <button type="submit" class="btn btn-success w-100">

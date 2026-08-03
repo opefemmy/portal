@@ -157,30 +157,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Determine if user is an indigene (from Ekiti state)
+     * Determine if user is an indigene (from Ekiti state).
+     * Delegated to IndigeneResolver so the keyword list stays in one place.
      */
     public function getCategoryAttribute(): string
     {
-        // Ekiti state is considered indigene, all other states are non-indigene
-        $ekitiKeywords = ['ekiti', 'ekiti state'];
-
-        $state = strtolower($this->state ?? '');
-
-        foreach ($ekitiKeywords as $keyword) {
-            if (str_contains($state, $keyword)) {
-                return 'indigene';
-            }
-        }
-
-        return 'non_indigene';
+        return \App\Services\IndigeneResolver::categoryFor($this);
     }
 
     /**
-     * Check if user is an indigene
+     * Check if user is an indigene.
      */
     public function isIndigene(): bool
     {
-        return $this->category === 'indigene';
+        return \App\Services\IndigeneResolver::isIndigene($this);
     }
 
     /**

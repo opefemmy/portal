@@ -72,4 +72,41 @@
         </table>
     </div>
 </div>
+
+@if(isset($previousResults) && $previousResults->count())
+<div class="card mt-3">
+    <div class="card-body">
+        <h5>Previous / Historical Results</h5>
+        <p class="text-muted small">Ingested from previous institutions — included in the transcript.</p>
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>Session / Sem / Level</th>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Units</th>
+                    <th>Total</th>
+                    <th>Grade</th>
+                    <th>Point</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($previousResults as $pr)
+                <tr>
+                    <td>{{ $pr->session_name }} · {{ ucfirst($pr->semester) }} · L{{ $pr->level ?? '—' }}</td>
+                    <td>{{ $pr->course_code }}</td>
+                    <td>{{ $pr->course_title ?? '—' }}</td>
+                    <td>{{ $pr->units }}</td>
+                    <td>{{ number_format($pr->total_score, 1) }}</td>
+                    <td><strong>{{ $pr->grade ?? '—' }}</strong></td>
+                    <td>{{ $pr->grade_point ?? '—' }}</td>
+                    <td><small>{{ $pr->source_institution ?? '—' }}</small></td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 @endsection

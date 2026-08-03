@@ -148,7 +148,7 @@
                         <tbody>
                             @forelse($pendingRequests as $request)
                             <tr>
-                                <td><code>{{ $request->lab_number }}</code></td>
+                                <td><code>#{{ $request->id }}</code></td>
                                 <td>
                                     <strong>{{ $request->patient->full_name ?? 'Unknown' }}</strong>
                                     <br><small class="text-muted">{{ $request->patient->patient_number ?? '' }}</small>

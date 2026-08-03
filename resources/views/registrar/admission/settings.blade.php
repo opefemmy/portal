@@ -96,7 +96,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="admission_form_penalty_amount" class="form-label">Penalty Amount (₦)</label>
-                        <input type="number" class="form-control @error('admission_form_penalty_amount') is-invalid @endif"
+                        <input type="number" class="form-control @error('admission_form_penalty_amount') is-invalid @enderror"
                                id="admission_form_penalty_amount" name="admission_form_penalty_amount"
                                value="{{ old('admission_form_penalty_amount', $admission_form_penalty_amount ?? 0) }}" min="0">
                     </div>

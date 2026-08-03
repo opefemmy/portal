@@ -88,7 +88,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="user_id" class="form-label">User *</label>
-                        <select class="form-select @error('user_id') is-invalid @endif" id="user_id" name="user_id" required>
+                        <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id" required>
                             <option value="">Select User</option>
                             @foreach(\App\Models\User::where('is_active', true)->get() as $user)
                                 <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
@@ -96,11 +96,11 @@
                         </select>
                         @error('user_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                     <div class="mb-3">
                         <label for="book_id" class="form-label">Book *</label>
-                        <select class="form-select @error('book_id') is-invalid @endif" id="book_id" name="book_id" required>
+                        <select class="form-select @error('book_id') is-invalid @enderror" id="book_id" name="book_id" required>
                             <option value="">Select Book</option>
                             @foreach(\App\Models\Book::where('status', 'available')->get() as $book)
                                 <option value="{{ $book->id }}">{{ $book->title }} - {{ $book->author }}</option>
@@ -108,15 +108,15 @@
                         </select>
                         @error('book_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                     <div class="mb-3">
                         <label for="due_date" class="form-label">Due Date *</label>
-                        <input type="date" class="form-control @error('due_date') is-invalid @endif"
+                        <input type="date" class="form-control @error('due_date') is-invalid @enderror"
                                id="due_date" name="due_date" value="{{ old('due_date', now()->addDays(14)->format('Y-m-d')) }}" required>
                         @error('due_date')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="modal-footer">

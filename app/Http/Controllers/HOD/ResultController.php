@@ -44,6 +44,7 @@ class ResultController extends Controller
 
     public function approve(Result $result, Request $request)
     {
+        $this->assertInHodDepartment($result);
         $result->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -55,6 +56,7 @@ class ResultController extends Controller
 
     public function reject(Result $result, Request $request)
     {
+        $this->assertInHodDepartment($result);
         $result->update([
             'status' => 'rejected',
             'approved_by' => auth()->id(),
@@ -62,5 +64,17 @@ class ResultController extends Controller
             'remarks' => $request->remarks,
         ]);
         return back()->with('success', 'Result rejected');
+    }
+
+    private function assertInHodDepartment(Result $result): void
+    {
+        $user = auth()->user();
+        if (!$user || !$user->department_id) {
+            abort(403, 'You are not assigned to a department.');
+        }
+        $course = $result->course ?? Course::find($result->course_id);
+        if (!$course || (int) $course->department_id !== (int) $user->department_id) {
+            abort(403, 'You are not allowed to act on this result.');
+        }
     }
 }

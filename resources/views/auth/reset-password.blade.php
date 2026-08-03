@@ -72,13 +72,13 @@
 
                 <div class="mb-4">
                     <label for="password" class="form-label">New Password</label>
-                    <input type="password" class="form-control @error('password') is-invalid @endif"
+                    <input type="password" class="form-control @error('password') is-invalid @enderror"
                            id="password" name="password" required minlength="8" autofocus>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @else
                         <small class="text-muted">Minimum 8 characters</small>
-                    @endif
+                    @enderror
                 </div>
 
                 <div class="mb-4">

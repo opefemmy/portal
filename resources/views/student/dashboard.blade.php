@@ -170,6 +170,34 @@ $user = auth()->user();
 </div>
 @endif
 
+@php
+    $studentRow = \App\Models\Student::where('user_id', auth()->id())->first();
+    $paidPercent = $studentRow ? \App\Services\SchoolFeeCalculator::maxPercentPaidAcrossRequiredFees($studentRow) : 0;
+    $paymentBadge = match(true) {
+        $paidPercent >= 100 => ['success', '100% paid', 'Both semesters + exam clearance enabled.'],
+        $paidPercent >= 60  => ['warning', '60% paid', 'First semester enabled. Pay the 40% balance to unlock second semester.'],
+        default             => ['danger',  'School fee unpaid', 'Course registration is locked until you pay.'],
+    };
+@endphp
+<div class="card mt-4 border-{{ $paymentBadge[0] }}">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <span class="badge bg-{{ $paymentBadge[0] }} mb-2">{{ $paymentBadge[1] }}</span>
+            <div class="text-muted small">{{ $paymentBadge[2] }}</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('student.payments') }}" class="btn btn-outline-{{ $paymentBadge[0] }}">
+                <i class="fas fa-dollar-sign me-1"></i>Pay Fees
+            </a>
+            @if($paidPercent >= 100)
+                <a href="{{ route('student.exam-clearance') }}" class="btn btn-{{ $paymentBadge[0] }}">
+                    <i class="fas fa-file-alt me-1"></i>Exam Clearance
+                </a>
+            @endif
+        </div>
+    </div>
+</div>
+
 <div class="card mt-4">
     <div class="card-header">
         <h5>Quick Actions</h5>

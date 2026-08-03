@@ -8,6 +8,29 @@
     <p class="text-muted">Select courses for {{ $student->level_display ?? 'Level ' . $student->level }}</p>
 </div>
 
+@php
+    // Banner config. Matches SchoolFeeCalculator::canRegisterSemester() so
+    // the messaging here is the source of truth.
+    $fullyPaid = $canRegisterFirstSem && $canRegisterSecondSem;
+@endphp
+@if($fullyPaid)
+    <div class="alert alert-success mb-4">
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>100% school fees paid.</strong> Both first and second semester courses are open for registration.
+    </div>
+@elseif($canRegisterFirstSem)
+    <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        You have paid the <strong>60% first installment</strong>. First-semester courses are open;
+        second-semester courses unlock once you pay the remaining 40%.
+    </div>
+@else
+    <div class="alert alert-danger mb-4">
+        <i class="fas fa-lock me-2"></i>
+        School fees are unpaid. Course registration is locked.
+    </div>
+@endif
+
 <form method="POST" action="{{ route('student.courses.register') }}">
     @csrf
 
@@ -71,15 +94,24 @@
                     </thead>
                     <tbody>
                         @foreach($mainCourses as $course)
-                        <tr>
+                        @php $locked = !$fullyPaid && $course->semester === 'second'; @endphp
+                        <tr class="{{ $locked ? 'table-secondary text-muted' : '' }}">
                             <td>
-                                <input type="checkbox" name="courses[]" value="{{ $course->id }}" class="form-check-input course-checkbox" data-units="{{ $course->units }}">
+                                <input type="checkbox" name="courses[]" value="{{ $course->id }}"
+                                       class="form-check-input course-checkbox"
+                                       data-units="{{ $course->units }}"
+                                       {{ $locked ? 'disabled' : '' }}>
                                 <input type="hidden" name="course_types[{{ $course->id }}]" value="main">
                             </td>
                             <td>{{ $course->code }}</td>
                             <td>{{ $course->title }}</td>
                             <td>{{ $course->units }}</td>
-                            <td>{{ ucfirst($course->semester) }}</td>
+                            <td>
+                                {{ ucfirst($course->semester) }}
+                                @if($locked)
+                                    <span class="badge bg-secondary">Locked — pay 40%</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-primary">Main</span></td>
                         </tr>
                         @endforeach
@@ -111,15 +143,24 @@
                     </thead>
                     <tbody>
                         @foreach($electiveCourses as $course)
-                        <tr>
+                        @php $locked = !$fullyPaid && $course->semester === 'second'; @endphp
+                        <tr class="{{ $locked ? 'table-secondary text-muted' : '' }}">
                             <td>
-                                <input type="checkbox" name="courses[]" value="{{ $course->id }}" class="form-check-input course-checkbox" data-units="{{ $course->units }}">
+                                <input type="checkbox" name="courses[]" value="{{ $course->id }}"
+                                       class="form-check-input course-checkbox"
+                                       data-units="{{ $course->units }}"
+                                       {{ $locked ? 'disabled' : '' }}>
                                 <input type="hidden" name="course_types[{{ $course->id }}]" value="elective">
                             </td>
                             <td>{{ $course->code }}</td>
                             <td>{{ $course->title }}</td>
                             <td>{{ $course->units }}</td>
-                            <td>{{ ucfirst($course->semester) }}</td>
+                            <td>
+                                {{ ucfirst($course->semester) }}
+                                @if($locked)
+                                    <span class="badge bg-secondary">Locked — pay 40%</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-info">Elective</span></td>
                         </tr>
                         @endforeach

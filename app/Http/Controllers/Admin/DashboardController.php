@@ -62,7 +62,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $recentPayments = Payment::with(['student.user', 'fee'])
+        $recentPayments = Payment::with(['student.user', 'fee', 'feeType'])
             ->latest()
             ->take(5)
             ->get();

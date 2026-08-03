@@ -52,6 +52,7 @@ class ApplicantController extends Controller
 
     public function show(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $applicant->load('user', 'department', 'programme', 'school', 'session', 'state', 'lga');
         // Reuse the existing admission.show view (same Applicant model).
         return view('registrar.admission.show', compact('applicant'));
@@ -59,12 +60,13 @@ class ApplicantController extends Controller
 
     public function admit(Applicant $applicant, Request $request)
     {
+        $this->assertSameSchool($applicant);
         // Start a database transaction
         DB::beginTransaction();
 
         try {
             // Generate matric number
-            $matricNumber = $this->generateMatricNumber($applicant);
+            $matricNumber = \App\Services\MatricNumberService::generate($applicant);
 
             // Update applicant status
             $applicant->update([
@@ -113,6 +115,7 @@ class ApplicantController extends Controller
 
     public function reject(Applicant $applicant, Request $request)
     {
+        $this->assertSameSchool($applicant);
         $applicant->update([
             'status' => 'rejected',
             'rejection_reason' => $request->reason,
@@ -122,20 +125,16 @@ class ApplicantController extends Controller
         return back()->with('success', 'Applicant rejected');
     }
 
-    /**
-     * Generate a unique matric number
-     */
-    private function generateMatricNumber(Applicant $applicant): string
+    private function assertSameSchool(Applicant $applicant): void
     {
-        $year = date('Y');
-        $departmentCode = strtoupper(substr($applicant->department?->name ?? 'XX', 0, 2));
-
-        // Check for existing matric numbers with similar prefix
-        $existingCount = Student::where('matric_number', 'like', $departmentCode . $year . '%')
-            ->count();
-
-        $sequence = str_pad($existingCount + 1, 4, '0', STR_PAD_LEFT);
-
-        return $departmentCode . $year . $sequence;
+        $authUser = auth()->user();
+        if (!$authUser) {
+            abort(401);
+        }
+        if ($authUser->school_id
+            && $applicant->school_id
+            && (int) $applicant->school_id !== (int) $authUser->school_id) {
+            abort(403, 'You are not allowed to access this applicant.');
+        }
     }
 }

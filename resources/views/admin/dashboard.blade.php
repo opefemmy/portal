@@ -215,8 +215,26 @@
                         <tbody>
                             @forelse($recentPayments as $payment)
                             <tr>
-                                <td>{{ $payment->student->user->name ?? 'N/A' }}</td>
-                                <td>{{ $payment->fee->name ?? 'N/A' }}</td>
+                                <td>
+                                    @if($payment->student && $payment->student->user)
+                                        {{ $payment->student->user->name }}
+                                    @elseif($payment->student_type === 'applicant')
+                                        {{ $payment->payer_name ?? 'Applicant' }}
+                                    @else
+                                        {{ $payment->payer_name ?? 'N/A' }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($payment->fee)
+                                        {{ $payment->fee->name }}
+                                    @elseif($payment->fee_type)
+                                        {{ $payment->fee_type }}
+                                    @elseif($payment->payment_purpose)
+                                        {{ $payment->payment_purpose }}
+                                    @else
+                                        {{ $payment->payer_id ? 'Payment' : 'N/A' }}
+                                    @endif
+                                </td>
                                 <td>₦{{ number_format($payment->amount, 2) }}</td>
                                 <td>
                                     <span class="badge badge-status bg-{{ $payment->status === 'completed' ? 'success' : ($payment->status === 'failed' ? 'danger' : 'warning') }}">

@@ -32,7 +32,7 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="course_id" class="form-label">Course *</label>
-                        <select class="form-select @error('course_id') is-invalid @endif" id="course_id" name="course_id" required>
+                        <select class="form-select @error('course_id') is-invalid @enderror" id="course_id" name="course_id" required>
                             <option value="">Select Course</option>
                             @foreach(\App\Models\Course::all() as $course)
                                 <option value="{{ $course->id }}">{{ $course->code }} - {{ $course->title }}</option>
@@ -40,13 +40,13 @@
                         </select>
                         @error('course_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="session_id" class="form-label">Session *</label>
-                        <select class="form-select @error('session_id') is-invalid @endif" id="session_id" name="session_id" required>
+                        <select class="form-select @error('session_id') is-invalid @enderror" id="session_id" name="session_id" required>
                             <option value="">Select Session</option>
                             @foreach(\App\Models\Session::all() as $session)
                                 <option value="{{ $session->id }}">{{ $session->name }}</option>
@@ -54,31 +54,31 @@
                         </select>
                         @error('session_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="semester" class="form-label">Semester *</label>
-                        <select class="form-select @error('semester') is-invalid @endif" id="semester" name="semester" required>
+                        <select class="form-select @error('semester') is-invalid @enderror" id="semester" name="semester" required>
                             <option value="">Select Semester</option>
                             <option value="first">First Semester</option>
                             <option value="second">Second Semester</option>
                         </select>
                         @error('semester')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
 
             <div class="mb-3">
                 <label for="file" class="form-label">CSV File *</label>
-                <input type="file" class="form-control @error('file') is-invalid @endif"
+                <input type="file" class="form-control @error('file') is-invalid @enderror"
                        id="file" name="file" accept=".csv,.xlsx,.xls" required>
                 @error('file')
                     <div class="invalid-feedback">{{ $message }}</div>
-                @endif
+                @enderror
                 <small class="text-muted">Accepted formats: CSV, XLSX, XLS</small>
             </div>
 

@@ -429,6 +429,11 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('admin.previous-results.index') }}" class="nav-link {{ request()->is('admin/previous-results*') ? 'active' : '' }}">
+        <i class="fas fa-history"></i> Previous Results
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('admin.library.books') }}" class="nav-link {{ request()->is('admin/library*') ? 'active' : '' }}">
         <i class="fas fa-book"></i> Library
     </a>
@@ -481,6 +486,11 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('student.payments') }}" class="nav-link {{ request()->is('student/payments*') ? 'active' : '' }}">
         <i class="fas fa-dollar-sign"></i> Payments
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('student.exam-clearance') }}" class="nav-link {{ request()->is('student/exam-clearance*') ? 'active' : '' }}">
+        <i class="fas fa-file-alt"></i> Exam Clearance
     </a>
 </li>
 <li class="nav-item dropdown">

@@ -15,21 +15,21 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="title" class="form-label">Title *</label>
-                        <input type="text" class="form-control @error('title') is-invalid @endif"
+                        <input type="text" class="form-control @error('title') is-invalid @enderror"
                                id="title" name="title" value="{{ old('title') }}" required>
                         @error('title')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="author" class="form-label">Author *</label>
-                        <input type="text" class="form-control @error('author') is-invalid @endif"
+                        <input type="text" class="form-control @error('author') is-invalid @enderror"
                                id="author" name="author" value="{{ old('author') }}" required>
                         @error('author')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -38,21 +38,21 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="isbn" class="form-label">ISBN</label>
-                        <input type="text" class="form-control @error('isbn') is-invalid @endif"
+                        <input type="text" class="form-control @error('isbn') is-invalid @enderror"
                                id="isbn" name="isbn" value="{{ old('isbn') }}">
                         @error('isbn')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="publisher" class="form-label">Publisher</label>
-                        <input type="text" class="form-control @error('publisher') is-invalid @endif"
+                        <input type="text" class="form-control @error('publisher') is-invalid @enderror"
                                id="publisher" name="publisher" value="{{ old('publisher') }}">
                         @error('publisher')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -61,31 +61,31 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="year" class="form-label">Year</label>
-                        <input type="number" class="form-control @error('year') is-invalid @endif"
+                        <input type="number" class="form-control @error('year') is-invalid @enderror"
                                id="year" name="year" value="{{ old('year') }}" min="1900" max="{{ date('Y') }}">
                         @error('year')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="edition" class="form-label">Edition</label>
-                        <input type="text" class="form-control @error('edition') is-invalid @endif"
+                        <input type="text" class="form-control @error('edition') is-invalid @enderror"
                                id="edition" name="edition" value="{{ old('edition') }}">
                         @error('edition')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Quantity *</label>
-                        <input type="number" class="form-control @error('quantity') is-invalid @endif"
+                        <input type="number" class="form-control @error('quantity') is-invalid @enderror"
                                id="quantity" name="quantity" value="{{ old('quantity', 1) }}" min="1" required>
                         @error('quantity')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -94,21 +94,21 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="category" class="form-label">Category</label>
-                        <input type="text" class="form-control @error('category') is-invalid @endif"
+                        <input type="text" class="form-control @error('category') is-invalid @enderror"
                                id="category" name="category" value="{{ old('category') }}">
                         @error('category')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="shelf_location" class="form-label">Shelf Location</label>
-                        <input type="text" class="form-control @error('shelf_location') is-invalid @endif"
+                        <input type="text" class="form-control @error('shelf_location') is-invalid @enderror"
                                id="shelf_location" name="shelf_location" value="{{ old('shelf_location') }}">
                         @error('shelf_location')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>

@@ -10,7 +10,7 @@ use App\Http\Controllers\Finance\PayrollController;
 use App\Http\Controllers\Finance\VendorController;
 
 // Finance Module - Protected by roles
-Route::prefix('finance')->name('finance.')->middleware(['auth'])->group(function () {
+Route::prefix('finance')->name('finance.')->middleware(['auth', 'role:super_admin,admin,finance,finance_officer,accountant,account_officer,auditor'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

@@ -5,7 +5,7 @@
 @section('content')
 @php
 $user = auth()->user();
-$student = $user->students()->first();
+$student = ($user && method_exists($user, 'students')) ? $user->students()->first() : null;
 @endphp
 
 <div class="page-header">

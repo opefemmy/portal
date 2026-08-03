@@ -80,6 +80,7 @@ class CourseController extends Controller
 
     public function reassign(CourseAssignment $assignment, Request $request)
     {
+        $this->assertInHodDepartment($assignment);
         $request->validate([
             'lecturer_id' => 'required|exists:users,id',
         ]);
@@ -90,7 +91,20 @@ class CourseController extends Controller
 
     public function removeAssignment(CourseAssignment $assignment)
     {
+        $this->assertInHodDepartment($assignment);
         $assignment->delete();
         return back()->with('success', 'Assignment removed successfully');
+    }
+
+    private function assertInHodDepartment(CourseAssignment $assignment): void
+    {
+        $user = auth()->user();
+        if (!$user || !$user->department_id) {
+            abort(403, 'You are not assigned to a department.');
+        }
+        $course = Course::find($assignment->course_id);
+        if (!$course || (int) $course->department_id !== (int) $user->department_id) {
+            abort(403, 'You are not allowed to act on this assignment.');
+        }
     }
 }

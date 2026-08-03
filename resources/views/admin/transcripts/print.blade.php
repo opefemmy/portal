@@ -73,6 +73,38 @@
             </tbody>
         </table>
 
+        @if(isset($previousResults) && $previousResults->count())
+            <h5 class="mt-4">Previous / Historical Results</h5>
+            <table class="table table-bordered table-sm">
+                <thead>
+                    <tr>
+                        <th>Session / Sem / Level</th>
+                        <th>Course Code</th>
+                        <th>Course Title</th>
+                        <th>Units</th>
+                        <th>Total</th>
+                        <th>Grade</th>
+                        <th>Point</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($previousResults as $pr)
+                    <tr>
+                        <td>{{ $pr->session_name }} · {{ ucfirst($pr->semester) }} · L{{ $pr->level ?? '—' }}</td>
+                        <td>{{ $pr->course_code }}</td>
+                        <td>{{ $pr->course_title ?? '—' }}</td>
+                        <td>{{ $pr->units }}</td>
+                        <td>{{ number_format($pr->total_score, 1) }}</td>
+                        <td><strong>{{ $pr->grade ?? '—' }}</strong></td>
+                        <td>{{ $pr->grade_point ?? '—' }}</td>
+                        <td><small>{{ $pr->source_institution ?? '—' }}</small></td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
         <div class="row mt-4">
             <div class="col-md-6">
                 <p><strong>CGPA:</strong> {{ $cgpa }}</p>

@@ -48,6 +48,7 @@ class ResultController extends Controller
 
     public function approve(Result $result, Request $request)
     {
+        $this->assertInDeansSchool($result);
         $result->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -55,5 +56,20 @@ class ResultController extends Controller
             'remarks' => $request->remarks,
         ]);
         return back()->with('success', 'Result approved');
+    }
+
+    private function assertInDeansSchool(Result $result): void
+    {
+        $user = auth()->user();
+        if (!$user || !$user->school_id) {
+            abort(403, 'You are not assigned to a school.');
+        }
+        $course = $result->course ?? Course::with('department')->find($result->course_id);
+        $departmentSchoolId = $course && $course->department
+            ? $course->department->school_id
+            : null;
+        if (!$departmentSchoolId || (int) $departmentSchoolId !== (int) $user->school_id) {
+            abort(403, 'You are not allowed to act on this result.');
+        }
     }
 }

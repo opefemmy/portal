@@ -15,7 +15,7 @@ class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Payment::with('student.user', 'fee');
+        $query = Payment::with(['student.user', 'fee', 'applicant']);
 
         // Filter by status
         if ($request->status && $request->status !== 'all') {
@@ -35,28 +35,70 @@ class PaymentController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        // Filter by student
+        // Filter by student / matric / application number
         if ($request->matric_number) {
-            $student = Student::where('matric_number', 'like', '%' . $request->matric_number . '%')->first();
+            $term = '%' . $request->matric_number . '%';
+            $student = Student::where('matric_number', 'like', $term)->first();
             if ($student) {
                 $query->where('student_id', $student->id);
+            } else {
+                // No matching student — also try applicant application number
+                $applicant = Applicant::where('application_number', 'like', $term)->first();
+                if ($applicant) {
+                    $query->where('payer_id', $applicant->id)
+                          ->orWhere('reference', 'like', $term);
+                } else {
+                    $query->whereRaw('0 = 1');
+                }
             }
         }
 
-        $payments = $query->latest()->get();
+        $payments = $query->latest()->paginate(25)->withQueryString();
         $fees = Fee::where('is_active', true)->orderBy('name')->get();
 
-        return view('bursar.payments', compact('payments', 'fees'));
+        // Summary stats (computed from a fresh query against the same filters, no pagination)
+        $statsQuery = Payment::query();
+        if ($request->status && $request->status !== 'all') {
+            $statsQuery->where('status', $request->status);
+        }
+        if ($request->fee_id) {
+            $statsQuery->where('fee_id', $request->fee_id);
+        }
+        if ($request->start_date) {
+            $statsQuery->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $statsQuery->whereDate('created_at', '<=', $request->end_date);
+        }
+        $stats = [
+            'verified' => (clone $statsQuery)->where('status', 'completed')->count(),
+            'pending'  => (clone $statsQuery)->where('status', 'pending')->count(),
+            'total'    => (float) (clone $statsQuery)->sum('amount'),
+        ];
+
+        return view('bursar.payments', compact('payments', 'fees', 'stats'));
     }
 
     public function verify(Payment $payment)
     {
+        // Cross-school guard: bursars from school A must not verify/receipt a
+        // payment for a student at school B.
+        $authUser = auth()->user();
+        if ($authUser && $authUser->school_id && $payment->student
+            && $payment->student->school_id !== $authUser->school_id) {
+            abort(403, 'You are not allowed to access this payment.');
+        }
         $payment->update(['status' => 'completed']);
         return back()->with('success', 'Payment verified');
     }
 
     public function receipt(Payment $payment)
     {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->school_id && $payment->student
+            && $payment->student->school_id !== $authUser->school_id) {
+            abort(403, 'You are not allowed to access this payment.');
+        }
         return view('bursar.receipt', compact('payment'));
     }
 

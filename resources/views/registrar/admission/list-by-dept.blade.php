@@ -9,7 +9,7 @@
         <p class="text-muted mb-0">Filter and review admitted applicants by department</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('registrar.admission.index') }}" class="btn btn-secondary">
+        <a href="{{ route('registrar.admission') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left me-2"></i>Back to Admission List
         </a>
         <a href="{{ route('registrar.admission.print') }}" class="btn btn-success" target="_blank">
@@ -98,7 +98,14 @@
                         <td>{{ $applicant->school->name ?? 'N/A' }}</td>
                         <td>
                             @if($applicant->admission_date)
-                                <span class="badge bg-success">{{ optional($applicant->admission_date)->format('d M Y') }}</span>
+                                @php
+                                    try {
+                                        $admissionDate = \Carbon\Carbon::parse($applicant->admission_date)->format('d M Y');
+                                    } catch (\Throwable $e) {
+                                        $admissionDate = (string) $applicant->admission_date;
+                                    }
+                                @endphp
+                                <span class="badge bg-success">{{ $admissionDate }}</span>
                             @else
                                 <span class="badge bg-secondary">Pending</span>
                             @endif

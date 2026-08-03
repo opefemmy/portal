@@ -34,13 +34,13 @@
                                placeholder="e.g., Indigene School Fee - First Installment">
                         @error('name')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="payment_type" class="form-label">Payment Type *</label>
-                        <select class="form-select @error('payment_type') is-invalid @endif"
+                        <select class="form-select @error('payment_type') is-invalid @enderror"
                                 id="payment_type" name="payment_type" required>
                             <option value="">Select Type</option>
                             <option value="school_fee">School Fee</option>
@@ -50,7 +50,7 @@
                         </select>
                         @error('payment_type')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="student_type" class="form-label">Student Type *</label>
-                        <select class="form-select @error('student_type') is-invalid @endif"
+                        <select class="form-select @error('student_type') is-invalid @enderror"
                                 id="student_type" name="student_type" required>
                             <option value="">Select Type</option>
                             <option value="Indigene">Indigene</option>
@@ -67,13 +67,13 @@
                         </select>
                         @error('student_type')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="payment_config" class="form-label">Payment Configuration *</label>
-                        <select class="form-select @error('payment_config') is-invalid @endif"
+                        <select class="form-select @error('payment_config') is-invalid @enderror"
                                 id="payment_config" name="payment_config" required>
                             <option value="">Select Config</option>
                             <option value="full">Full Payment (100%)</option>
@@ -84,7 +84,7 @@
                         <small class="text-muted">Defines how payment is split into installments</small>
                         @error('payment_config')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -95,11 +95,11 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="portal_charge" class="form-label">Portal Charge (₦)</label>
-                        <input type="number" class="form-control @error('portal_charge') is-invalid @endif"
+                        <input type="number" class="form-control @error('portal_charge') is-invalid @enderror"
                                id="portal_charge" name="portal_charge" value="{{ old('portal_charge', 0) }}" min="0" step="0.01">
                         @error('portal_charge')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -119,7 +119,7 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="installment" class="form-label">Installment *</label>
-                        <select class="form-select @error('installment') is-invalid @endif"
+                        <select class="form-select @error('installment') is-invalid @enderror"
                                 id="installment" name="installment" required>
                             <option value="">Select</option>
                             <option value="Full">Full Payment</option>
@@ -128,29 +128,29 @@
                         </select>
                         @error('installment')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="percentage" class="form-label">Percentage (%) *</label>
-                        <input type="number" class="form-control @error('percentage') is-invalid @endif"
+                        <input type="number" class="form-control @error('percentage') is-invalid @enderror"
                                id="percentage" name="percentage" value="{{ old('percentage') }}" required min="1" max="100">
                         @error('percentage')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="amount" class="form-label">Fixed Amount (Optional)</label>
-                        <input type="number" class="form-control @error('amount') is-invalid @endif"
+                        <input type="number" class="form-control @error('amount') is-invalid @enderror"
                                id="amount" name="amount" value="{{ old('amount') }}" min="0" step="0.01"
                                placeholder="Leave empty to calculate">
                         <small class="text-muted">Leave empty to use percentage</small>
                         @error('amount')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>

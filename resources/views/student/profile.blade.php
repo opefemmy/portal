@@ -70,21 +70,21 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="guidance_name" class="form-label">Guidance Name</label>
-                        <input type="text" class="form-control @error('guidance_name') is-invalid @endif"
+                        <input type="text" class="form-control @error('guidance_name') is-invalid @enderror"
                                id="guidance_name" name="guidance_name" value="{{ old('guidance_name', $user->guidance_name) }}">
                         @error('guidance_name')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="guidance_phone" class="form-label">Guidance Phone</label>
-                        <input type="text" class="form-control @error('guidance_phone') is-invalid @endif"
+                        <input type="text" class="form-control @error('guidance_phone') is-invalid @enderror"
                                id="guidance_phone" name="guidance_phone" value="{{ old('guidance_phone', $user->guidance_phone) }}">
                         @error('guidance_phone')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -92,11 +92,11 @@
                 <div class="col-md-12">
                     <div class="mb-3">
                         <label for="guidance_address" class="form-label">Guidance Address</label>
-                        <textarea class="form-control @error('guidance_address') is-invalid @endif"
+                        <textarea class="form-control @error('guidance_address') is-invalid @enderror"
                                   id="guidance_address" name="guidance_address" rows="2">{{ old('guidance_address', $user->guidance_address) }}</textarea>
                         @error('guidance_address')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>

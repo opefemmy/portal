@@ -36,19 +36,19 @@
                     <div class="mb-3">
                         <label for="current_password" class="form-label">Current Password</label>
                         <input type="password" name="current_password" id="current_password"
-                            class="form-control @error('current_password') is-invalid @endif" required>
+                            class="form-control @error('current_password') is-invalid @enderror" required>
                         @error('current_password')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
 
                     <div class="mb-3">
                         <label for="new_password" class="form-label">New Password</label>
                         <input type="password" name="new_password" id="new_password"
-                            class="form-control @error('new_password') is-invalid @endif" required>
+                            class="form-control @error('new_password') is-invalid @enderror" required>
                         @error('new_password')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                         <small class="text-muted">Minimum 6 characters. Do not use your matric number.</small>
                     </div>
 

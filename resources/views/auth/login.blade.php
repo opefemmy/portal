@@ -37,13 +37,8 @@ if (Schema::hasTable('system_settings')) {
         display: flex;
         align-items: center;
         justify-content: center;
-        /* Inline CSS background with placeholder gradient — page renders with
-           gradient immediately, image swaps in as soon as it is fetched. */
-        background:
-            linear-gradient(135deg, rgba(36, 125, 87, 0.85), rgba(30, 106, 74, 0.85)),
-            url("{{ asset('uploads/backgrounds/login-bg.png') }}") center/cover no-repeat,
-            linear-gradient(135deg, #247D57, #1E6A4A);
-        background-blend-mode: normal;
+        /* Image only — no colour overlay. If image fails to load, the body fallback remains transparent. */
+        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") center/cover no-repeat;
     }
     /* Hide the ::before pseudo (legacy fallback) since the background is now on .login-page itself. */
     .login-page::before { content: none; }
@@ -925,3 +920,4 @@ $(document).ready(function() {
 });
 </script>
 @endpush
+@endsection

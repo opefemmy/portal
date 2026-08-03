@@ -127,7 +127,7 @@
                 {{-- Pay Now Button - Only show if payment not completed --}}
                 @if($applicant->payment_status !== 'completed')
                     @if($applicant->status === 'admitted')
-                        <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
+                        <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success mb-2 w-100">
                             <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
                         </a>
                     @else
@@ -186,8 +186,33 @@
                 <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
                 <h5>Accept Admission</h5>
                 <p class="text-muted">Pay acceptance fee to secure your admission</p>
-                <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success">
-                    <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                @if($applicant->payment_status === 'completed')
+                    <button class="btn btn-success w-100" disabled>
+                        <i class="fas fa-check-circle me-2"></i>Acceptance Fee Paid
+                    </button>
+                    <a href="{{ route('applicant.admission-letter') }}" class="btn btn-outline-success mt-2 w-100" target="_blank">
+                        <i class="fas fa-print me-2"></i>Print Admission Letter
+                    </a>
+                @else
+                    <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success w-100">
+                        <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
+                    </a>
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Compulsory Fee — only after acceptance paid, triggers migration to student portal --}}
+    @if($applicant->status === 'admitted' && $applicant->payment_status === 'completed' && empty($applicant->student_id))
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+                <h5>Pay Compulsory Fee</h5>
+                <p class="text-muted">Complete your migration to the student portal and receive your matric number.</p>
+                <a href="{{ route('applicant.payment.gateway') }}?purpose=compulsory" class="btn btn-primary w-100">
+                    <i class="fas fa-credit-card me-2"></i>Pay Compulsory Fee
                 </a>
             </div>
         </div>

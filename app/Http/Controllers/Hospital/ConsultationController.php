@@ -16,7 +16,10 @@ use App\Models\Hospital\HospitalVitalSign;
 use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalStaff;
+use App\Models\Hospital\HospitalClinicalNote;
 use App\Models\AuditLog;
+use App\Services\Hospital\AuditTrail;
+use App\Services\Hospital\PatientTimelineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -343,5 +346,91 @@ class ConsultationController extends Controller
             ->when($patient->phone, fn ($q) => $q->orWhere('phone', $patient->phone))
             ->when($patient->email, fn ($q) => $q->orWhere('email', $patient->email))
             ->value('id');
+    }
+
+    /**
+     * Store a SOAP / clinical note for a patient.
+     *
+     * Adds (does NOT replace) the existing consultations flow.
+     * The note is stored in the new hospital_clinical_notes table
+     * and may be electronically signed by the doctor.
+     */
+    public function storeSoapNote(Request $request, HospitalPatient $patient)
+    {
+        $this->requirePermission('consultations.soap');
+
+        $data = $request->validate([
+            'appointment_id'      => 'nullable|exists:hospital_appointments,id',
+            'medical_record_id'   => 'nullable|integer',
+            'note_type'           => 'required|in:soap,progress,nursing,discharge',
+            'subjective'          => 'nullable|string',
+            'objective'           => 'nullable|string',
+            'assessment'          => 'nullable|string',
+            'plan'                => 'nullable|string',
+            'free_text'           => 'nullable|string',
+            'sign'                => 'sometimes|boolean',
+        ]);
+
+        $note = HospitalClinicalNote::create([
+            'patient_id'        => $patient->id,
+            'staff_id'          => optional(auth()->user()?->hospitalStaff)->id,
+            'appointment_id'    => $data['appointment_id'] ?? null,
+            'medical_record_id' => $data['medical_record_id'] ?? null,
+            'note_type'         => $data['note_type'],
+            'subjective'        => $data['subjective'] ?? null,
+            'objective'         => $data['objective'] ?? null,
+            'assessment'        => $data['assessment'] ?? null,
+            'plan'              => $data['plan'] ?? null,
+            'free_text'         => $data['free_text'] ?? null,
+        ]);
+
+        if (!empty($data['sign'])) {
+            $note->sign(optional(auth()->user())->name ?? 'Unknown');
+            $note->save();
+        }
+
+        AuditTrail::record('clinical.note.create', $note, $patient->id, [], $note->toArray());
+
+        return back()->with('success', 'Clinical note saved' . (!empty($data['sign']) ? ' and signed' : ''));
+    }
+
+    /**
+     * Sign a previously-saved clinical note (addendum support).
+     */
+    public function signClinicalNote(Request $request, HospitalClinicalNote $note)
+    {
+        $this->requirePermission('consultations.sign');
+
+        if ($note->signed_at) {
+            return back()->with('info', 'Note is already signed.');
+        }
+
+        $note->sign(optional(auth()->user())->name ?? 'Unknown');
+        $note->save();
+
+        AuditTrail::record('clinical.note.sign', $note, $note->patient_id, [], [
+            'signed_by' => $note->signed_by_name,
+            'hash'      => $note->signature_hash,
+        ]);
+
+        return back()->with('success', 'Note signed electronically.');
+    }
+
+    /**
+     * List clinical notes for a patient.
+     */
+    public function clinicalNotes(HospitalPatient $patient)
+    {
+        $this->requirePermission('consultations.view');
+
+        $notes = HospitalClinicalNote::with('staff')
+            ->where('patient_id', $patient->id)
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return view('hospital.consultations.notes', [
+            'patient' => $patient,
+            'notes'   => $notes,
+        ]);
     }
 }

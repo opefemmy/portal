@@ -55,6 +55,9 @@ class Applicant extends Model
         'payment_status', 'payment_ref', 'payment_transaction_id',
         'payment_amount', 'payment_date', 'application_fee_id',
 
+        // Migration (filled when compulsory fee is paid and applicant becomes a Student)
+        'student_id',
+
         // Status
         'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'matric_number'
     ];
@@ -152,29 +155,19 @@ class Applicant extends Model
     }
 
     /**
-     * Determine if applicant is an indigene (from Ekiti state)
+     * Determine if applicant is an indigene (from Ekiti state).
+     * Delegated to IndigeneResolver so the keyword list stays in one place.
      */
     public function getCategoryAttribute(): string
     {
-        // Ekiti state is considered indigene, all other states are non-indigene
-        $ekitiKeywords = ['ekiti', 'ekiti state'];
-
-        $state = strtolower($this->state_of_origin ?? '');
-
-        foreach ($ekitiKeywords as $keyword) {
-            if (str_contains($state, $keyword)) {
-                return 'indigene';
-            }
-        }
-
-        return 'non_indigene';
+        return \App\Services\IndigeneResolver::categoryFor($this);
     }
 
     /**
-     * Check if applicant is an indigene
+     * Check if applicant is an indigene.
      */
     public function isIndigene(): bool
     {
-        return $this->category === 'indigene';
+        return \App\Services\IndigeneResolver::isIndigene($this);
     }
 }

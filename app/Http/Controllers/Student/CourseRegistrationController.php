@@ -9,6 +9,7 @@ use App\Models\StudentCourse;
 use App\Models\Session;
 use App\Models\CarryOverCourse;
 use App\Models\CourseClassification;
+use App\Services\SchoolFeeCalculator;
 use Illuminate\Http\Request;
 
 class CourseRegistrationController extends Controller
@@ -37,6 +38,17 @@ class CourseRegistrationController extends Controller
         }
 
         $currentSession = Session::getCurrentSession();
+
+        // Payment gate: the student must have paid at least the 60%
+        // first-semester slice before any course registration is allowed.
+        $canRegisterFirstSem  = SchoolFeeCalculator::canRegisterSemester($student, 'first');
+        $canRegisterSecondSem = SchoolFeeCalculator::canRegisterSemester($student, 'second');
+        $paidPercent = SchoolFeeCalculator::maxPercentPaidAcrossRequiredFees($student);
+
+        if (!$canRegisterFirstSem && !$canRegisterSecondSem) {
+            return redirect()->route('student.payments')
+                ->with('error', 'You must pay your school fees before registering for courses.');
+        }
 
         // Get carry over courses from previous semesters
         $carryOverCourses = CarryOverCourse::where('student_id', $student->id)
@@ -80,7 +92,8 @@ class CourseRegistrationController extends Controller
             ->get();
 
         return view('student.courses-register', compact(
-            'mainCourses', 'electiveCourses', 'carryOverCourses', 'registeredCourses', 'student'
+            'mainCourses', 'electiveCourses', 'carryOverCourses', 'registeredCourses', 'student',
+            'canRegisterFirstSem', 'canRegisterSecondSem', 'paidPercent'
         ));
     }
 
@@ -94,7 +107,38 @@ class CourseRegistrationController extends Controller
             'courses.*' => 'exists:courses,id',
         ]);
 
+        // Re-check the gate at write-time too — students could submit a
+        // form they queued before paying.
+        $canRegisterFirstSem  = SchoolFeeCalculator::canRegisterSemester($student, 'first');
+        $canRegisterSecondSem = SchoolFeeCalculator::canRegisterSemester($student, 'second');
+        $fullyPaid = $canRegisterFirstSem && $canRegisterSecondSem;
+
+        if (!$canRegisterFirstSem && !$canRegisterSecondSem) {
+            return redirect()->route('student.payments')
+                ->with('error', 'You must pay your school fees before registering for courses.');
+        }
+
         $courseTypes = $request->input('course_types', []);
+
+        // If the student is only 60% paid, reject any second-semester
+        // course silently rather than letting it land with the wrong
+        // semester tag.
+        if (!$fullyPaid) {
+            $blocked = Course::whereIn('id', $request->courses)
+                ->where('semester', 'second')
+                ->pluck('code')
+                ->all();
+            if (!empty($blocked)) {
+                return back()->with(
+                    'error',
+                    'Second-semester courses are locked until you pay the remaining 40%: ' . implode(', ', $blocked)
+                );
+            }
+        }
+
+        // All cleared courses get the same semester tag, since fees
+        // cover either 'first' (60% paid) or 'both' (100% paid).
+        $registrationSemester = $fullyPaid ? 'both' : 'first';
 
         foreach ($request->courses as $courseId) {
             $type = $courseTypes[$courseId] ?? 'main';
@@ -104,7 +148,7 @@ class CourseRegistrationController extends Controller
                 'course_id' => $courseId,
                 'session_id' => $currentSession->id,
             ], [
-                'semester' => 'first',
+                'semester' => $registrationSemester,
                 'status' => 'registered',
                 'course_type' => $type,
             ]);
@@ -122,6 +166,11 @@ class CourseRegistrationController extends Controller
 
     public function dropCourse(StudentCourse $studentCourse)
     {
+        // Ownership check: a student can only drop their own registered courses.
+        $student = Student::where('user_id', auth()->id())->first();
+        if (!$student || $studentCourse->student_id !== $student->id) {
+            abort(403, 'You are not allowed to drop this course.');
+        }
         $studentCourse->update(['status' => 'dropped']);
         return back()->with('success', 'Course dropped successfully!');
     }

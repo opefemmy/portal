@@ -6,6 +6,8 @@ use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\AuditLog;
+use App\Services\Hospital\AuditTrail;
+use App\Services\Hospital\PatientTimelineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -100,6 +102,8 @@ class PatientController extends Controller
             'entity_id' => $patient->id,
         ]);
 
+        AuditTrail::record('patient.create', $patient, $patient->id, [], $patient->toArray());
+
         return redirect()->route('hospital.patients.show', $patient->id)
             ->with('success', 'Patient registered successfully. Patient Number: ' . $patientNumber);
     }
@@ -177,11 +181,14 @@ class PatientController extends Controller
     {
         $this->requirePermission('patients.search');
 
-        $term = $request->term;
-        $patients = HospitalPatient::where('patient_number', 'like', "%{$term}%")
-            ->orWhere('first_name', 'like', "%{$term}%")
-            ->orWhere('last_name', 'like', "%{$term}%")
-            ->orWhere('phone', 'like', "%{$term}%")
+        $term = (string) $request->term;
+        $patients = HospitalPatient::where(function ($q) use ($term) {
+                $q->where('patient_number', 'like', "%{$term}%")
+                  ->orWhere('first_name', 'like', "%{$term}%")
+                  ->orWhere('last_name', 'like', "%{$term}%")
+                  ->orWhere('phone', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%");
+            })
             ->limit(10)
             ->get(['id', 'patient_number', 'first_name', 'last_name', 'phone', 'patient_type']);
 
@@ -207,21 +214,20 @@ class PatientController extends Controller
 
     /**
      * Display patient timeline.
+     *
+     * Aggregates appointments, vitals, prescriptions, lab requests,
+     * medical records, clinical notes, referrals, visits and admissions
+     * into a single chronological feed via PatientTimelineService.
      */
     public function timeline(HospitalPatient $patient)
     {
         $this->requirePermission('patients.view');
 
-        $patient->load([
-            'appointments',
-            'medicalRecords',
-            'prescriptions',
-            'labRequests',
-            'admissions',
-            'vitalSigns',
-            'referrals',
-        ]);
+        $events = app(PatientTimelineService::class)->for($patient, 50);
 
-        return view('hospital.patients.timeline', compact('patient'));
+        return view('hospital.patients.timeline', [
+            'patient' => $patient,
+            'events'  => $events,
+        ]);
     }
 }

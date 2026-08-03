@@ -24,14 +24,19 @@ class PatientPortalController extends Controller
         if (!$patient) {
             // Create patient record from user data
             $patient = HospitalPatient::create([
-                'user_id' => $user->id,
-                'first_name' => explode(' ', $user->name)[0],
-                'last_name' => implode(' ', array_slice(explode(' ', $user->name), 1)),
-                'gender' => $user->gender ?? 'male',
-                'date_of_birth' => $user->date_of_birth ?? now()->subYears(18),
-                'phone' => $user->phone ?? 'N/A',
-                'address' => $user->address ?? 'N/A',
-                'is_active' => true,
+                'user_id'         => $user->id,
+                'patient_number'  => $this->generatePatientNumber(),
+                'registered_by'   => $user->id,
+                'first_name'      => explode(' ', $user->name)[0] ?? 'Unknown',
+                'last_name'       => implode(' ', array_slice(explode(' ', $user->name ?? ''), 1)) ?: 'Patient',
+                'gender'          => $user->gender ?? 'male',
+                'date_of_birth'   => $user->date_of_birth ?? now()->subYears(18)->format('Y-m-d'),
+                'phone'           => $user->phone ?? 'N/A',
+                'address'         => $user->address ?? 'N/A',
+                'next_of_kin_name'         => 'Self',
+                'next_of_kin_phone'        => $user->phone ?? 'N/A',
+                'next_of_kin_relationship' => 'self',
+                'is_active'       => true,
             ]);
         }
 
@@ -55,14 +60,19 @@ class PatientPortalController extends Controller
         if (!$patient) {
             // Create patient record
             $patient = HospitalPatient::create([
-                'user_id' => $user->id,
-                'first_name' => explode(' ', $user->name)[0],
-                'last_name' => implode(' ', array_slice(explode(' ', $user->name), 1)),
-                'gender' => $user->gender ?? 'male',
-                'date_of_birth' => $user->date_of_birth ?? now()->subYears(18),
-                'phone' => $user->phone ?? 'N/A',
-                'address' => $user->address ?? 'N/A',
-                'is_active' => true,
+                'user_id'                => $user->id,
+                'patient_number'         => $this->generatePatientNumber(),
+                'registered_by'          => $user->id,
+                'first_name'             => explode(' ', $user->name)[0] ?? 'Unknown',
+                'last_name'              => implode(' ', array_slice(explode(' ', $user->name ?? ''), 1)) ?: 'Patient',
+                'gender'                 => $user->gender ?? 'male',
+                'date_of_birth'          => $user->date_of_birth ?? now()->subYears(18)->format('Y-m-d'),
+                'phone'                  => $user->phone ?? 'N/A',
+                'address'                => $user->address ?? 'N/A',
+                'next_of_kin_name'       => 'Self',
+                'next_of_kin_phone'      => $user->phone ?? 'N/A',
+                'next_of_kin_relationship' => 'self',
+                'is_active'              => true,
             ]);
         }
 
@@ -197,5 +207,25 @@ class PatientPortalController extends Controller
         }
 
         return view('student.medical.admissions', compact('appointments'));
+    }
+
+    /**
+     * Generate a unique patient number
+     */
+    private function generatePatientNumber(): string
+    {
+        // Format: P-YYYYMMDD-XXXXX
+        $prefix = 'P-' . now()->format('Ymd') . '-';
+        $lastPatient = HospitalPatient::where('patient_number', 'like', $prefix . '%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $sequence = 1;
+        if ($lastPatient) {
+            $numericPart = (int) substr($lastPatient->patient_number, strlen($prefix));
+            $sequence = $numericPart + 1;
+        }
+
+        return $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
     }
 }

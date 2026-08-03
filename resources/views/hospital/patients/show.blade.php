@@ -118,6 +118,11 @@
                 <span class="badge bg-secondary">{{ $patient->vitalSigns->count() }}</span>
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#clinical-notes" type="button">
+                <i class="fas fa-notes-medical me-1"></i>Clinical Notes
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -240,6 +245,96 @@
                         </div>
                     @empty
                         <p class="text-muted text-center mb-0">No vital signs recorded.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinical Notes (SOAP) -->
+        <div class="tab-pane fade" id="clinical-notes">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Add SOAP / Clinical Note</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('hospital.patients.soap.store', $patient->id) }}">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label class="form-label">Note Type</label>
+                                <select name="note_type" class="form-select" required>
+                                    <option value="soap">SOAP</option>
+                                    <option value="progress">Progress</option>
+                                    <option value="nursing">Nursing</option>
+                                    <option value="discharge">Discharge</option>
+                                </select>
+                            </div>
+                            <div class="col-md-10">
+                                <label class="form-label">Subjective</label>
+                                <textarea name="subjective" class="form-control" rows="2" placeholder="Patient's reported symptoms, history, concerns"></textarea>
+                            </div>
+                            <div class="col-md-6 mt-2">
+                                <label class="form-label">Objective</label>
+                                <textarea name="objective" class="form-control" rows="2" placeholder="Vitals, examination findings, lab results"></textarea>
+                            </div>
+                            <div class="col-md-6 mt-2">
+                                <label class="form-label">Assessment</label>
+                                <textarea name="assessment" class="form-control" rows="2" placeholder="Diagnosis, differential"></textarea>
+                            </div>
+                            <div class="col-md-12 mt-2">
+                                <label class="form-label">Plan</label>
+                                <textarea name="plan" class="form-control" rows="2" placeholder="Treatment, prescriptions, referrals, follow-up"></textarea>
+                            </div>
+                            <div class="col-md-12 mt-3 d-flex justify-content-between align-items-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="sign" value="1" id="signNote">
+                                    <label class="form-check-label" for="signNote">Electronically sign this note on save</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Note
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Previous Notes</h5>
+                </div>
+                <div class="card-body">
+                    @php
+                        $notes = \App\Models\Hospital\HospitalClinicalNote::with('staff')
+                            ->where('patient_id', $patient->id)
+                            ->orderByDesc('created_at')
+                            ->limit(20)
+                            ->get();
+                    @endphp
+                    @forelse($notes as $n)
+                        <div class="border-start border-3 border-secondary ps-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ strtoupper($n->note_type) }} note</strong>
+                                <small class="text-muted">{{ optional($n->created_at)->format('d M Y H:i') }}</small>
+                            </div>
+                            <small class="text-muted">{{ $n->staff?->full_name ?? '—' }}</small>
+                            @if($n->signed_at)
+                                <span class="badge bg-success ms-2">
+                                    <i class="fas fa-signature"></i> Signed by {{ $n->signed_by_name }}
+                                </span>
+                                <small class="text-muted ms-2">Hash: {{ substr($n->signature_hash, 0, 12) }}…</small>
+                            @else
+                                <span class="badge bg-warning text-dark ms-2">Draft</span>
+                            @endif
+                            <div class="mt-1 small">
+                                @if($n->subjective)<div><strong>S:</strong> {{ $n->subjective }}</div>@endif
+                                @if($n->objective)<div><strong>O:</strong> {{ $n->objective }}</div>@endif
+                                @if($n->assessment)<div><strong>A:</strong> {{ $n->assessment }}</div>@endif
+                                @if($n->plan)<div><strong>P:</strong> {{ $n->plan }}</div>@endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-muted mb-0">No clinical notes yet.</p>
                     @endforelse
                 </div>
             </div>

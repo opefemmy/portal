@@ -17,7 +17,7 @@
                     <a class="nav-link {{ !request('status') || request('status') === 'pending' ? 'active' : '' }}"
                        href="{{ route('hospital.pharmacy.prescriptions', ['status' => 'pending']) }}">
                         Pending
-                        <span class="badge bg-warning">{{ \App\Models\Hospital\HospitalPrescription::where('status', 'pending')->count() }}</span>
+                        <span class="badge bg-warning">{{ \App\Models\Hospital\HospitalPrescription::where('is_dispensed', false)->count() }}</span>
                     </a>
                 </li>
                 <li class="nav-item">

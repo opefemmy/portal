@@ -8,6 +8,7 @@ use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
 use App\Models\SystemSetting;
+use App\Services\SchoolFeeCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -59,21 +60,26 @@ class PaymentController extends Controller
         }
 
         $student = Student::where('user_id', auth()->id())->firstOrFail();
+        $category = $student->user?->isIndigene() ? 'indigene' : 'non_indigene';
 
-        // Check if already paid
-        $existingPayment = Payment::where('student_id', $student->id)
-            ->where('fee_id', $fee->id)
-            ->where('status', 'verified')
-            ->first();
-
-        if ($existingPayment) {
+        // Already fully paid? Send them back to the payments list with a
+        // friendly message rather than rendering a useless form.
+        if (SchoolFeeCalculator::totalPercentPaid($student, $fee) >= SchoolFeeCalculator::PERCENT_FULL) {
             return redirect()->route('student.payments')
-                ->with('info', 'This fee has already been paid.');
+                ->with('info', 'You have completed payment for this fee.');
         }
 
         $gateway = PaymentGateway::getActiveGateway();
 
-        return view('student.payment-pay', compact('fee', 'gateway'));
+        // Calculate pricing for each available percent option (100% / 60%
+        // by default; just 40% if first installment is already paid).
+        $percents = SchoolFeeCalculator::availablePercents($student, $fee);
+        $pricing = [];
+        foreach ($percents as $p) {
+            $pricing[$p] = SchoolFeeCalculator::payable($student, $fee, $p);
+        }
+
+        return view('student.payment-pay', compact('fee', 'gateway', 'category', 'percents', 'pricing'));
     }
 
     public function initiatePayment(Request $request, Fee $fee)
@@ -90,22 +96,41 @@ class PaymentController extends Controller
             return back()->with('error', 'No payment gateway configured.');
         }
 
-        // Check for penalty
-        $penaltyAmount = 0;
-        if (SystemSetting::get('payment_penalty', 'false') === 'true') {
-            $penaltyAmount = SystemSetting::get('payment_penalty_amount', 0);
+        $request->validate([
+            'percent' => 'required|integer|in:100,60,40',
+        ]);
+
+        $percent = (int) $request->input('percent');
+
+        // Hard-gate: reject any percent that is not on the calculator's
+        // available list (e.g. user tries to pay 40% before 60%).
+        $allowed = SchoolFeeCalculator::availablePercents($student, $fee);
+        if (!in_array($percent, $allowed, true)) {
+            return back()->with('error', 'That payment option is not available right now.');
         }
 
-        $totalAmount = $fee->amount + $penaltyAmount;
+        $amount = SchoolFeeCalculator::payable($student, $fee, $percent);
+        $penaltyAmount = 0;
+        if (SystemSetting::get('payment_penalty', 'false') === 'true') {
+            $penaltyAmount = (float) SystemSetting::get('payment_penalty_amount', 0);
+        }
+
+        $totalAmount = $amount + $penaltyAmount;
+        $label = SchoolFeeCalculator::installmentLabel($percent);
 
         // Create payment record
         $payment = Payment::create([
-            'student_id' => $student->id,
-            'fee_id' => $fee->id,
-            'amount' => $totalAmount,
-            'reference' => Payment::generateReference(),
-            'gateway' => $gateway->provider,
-            'status' => 'pending',
+            'student_id'        => $student->id,
+            'fee_id'            => $fee->id,
+            'amount'            => $amount,
+            'portal_charge'     => (float) $fee->portal_charge,
+            'total_amount'      => $totalAmount,
+            'percent_paid'      => $percent,
+            'installment_label' => $label,
+            'installment'       => $label,
+            'reference'         => Payment::generateReference(),
+            'gateway'           => $gateway->provider,
+            'status'            => 'pending',
         ]);
 
         // Initialize payment based on gateway
@@ -309,6 +334,11 @@ class PaymentController extends Controller
 
     public function printReceipt(Payment $payment)
     {
+        // Ownership check: a student must only view their own receipts.
+        $student = Student::where('user_id', auth()->id())->first();
+        if (!$student || $payment->student_id !== $student->id) {
+            abort(403, 'You are not allowed to view this receipt.');
+        }
         return view('student.payment-receipt', compact('payment'));
     }
 }

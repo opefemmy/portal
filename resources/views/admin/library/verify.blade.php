@@ -12,7 +12,7 @@
             <div class="card-body">
                 <p class="text-center">Please enter the library access code to continue.</p>
 
-                <form method="POST" action="{{ route('library.verify.post') }}">
+                <form method="POST" action="{{ route('admin.library.verify.post') }}">
                     @csrf
 
                     <div class="mb-3">

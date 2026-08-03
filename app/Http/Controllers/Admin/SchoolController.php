@@ -55,6 +55,28 @@ class SchoolController extends Controller
 
     public function destroy(School $school)
     {
+        // Block the delete if any related row still references this school.
+        // We surface the first blocker in the error message so the admin
+        // knows what to clean up first. Cascading would silently destroy
+        // student records, which is never the right default.
+        foreach ([
+            'departments'   => fn () => $school->departments()->count(),
+            'students'      => fn () => $school->students()->count(),
+            'applicants'    => fn () => \App\Models\Applicant::where('school_id', $school->id)->count(),
+            'applications'  => fn () => \App\Models\Application::where('school_id', $school->id)->count(),
+            'users'         => fn () => \App\Models\User::where('school_id', $school->id)->count(),
+            'courses'       => fn () => \App\Models\Course::where('school_id', $school->id)->count(),
+            'fees'          => fn () => \App\Models\Fee::where('school_id', $school->id)->count(),
+        ] as $label => $countFn) {
+            $count = $countFn();
+            if ($count > 0) {
+                return back()->with(
+                    'error',
+                    "Cannot delete {$school->name}: {$count} related {$label} record(s) still exist. Remove or reassign them first."
+                );
+            }
+        }
+
         $school->delete();
         return back()->with('success', 'School deleted');
     }

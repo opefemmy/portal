@@ -11,7 +11,7 @@
                     <h4>Add New Drug</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('hospital.pharmacy.drug.store') }}">
+                    <form method="POST" action="{{ route('hospital.pharmacy.drugs.store') }}">
                         @csrf
 
                         <div class="row mb-3">

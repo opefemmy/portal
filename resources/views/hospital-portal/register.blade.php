@@ -42,7 +42,10 @@
                         track appointments, view medical records, and make payments.
                     </p>
 
-                    <form method="POST" action="{{ route('patient-portal.register.store') }}">
+                    <form method="POST" action="{{ route('patient-portal.register.store') }}"
+                          autocomplete="off"
+                          data-lpignore="true"
+                          data-1p-ignore="true">
                         @csrf
 
                         <h6 class="fw-bold text-danger mb-3">Personal Information</h6>
@@ -50,16 +53,32 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="form-control @error('first_name') is-invalid @enderror"
-                                       value="{{ old('first_name') }}" required>
+                                <input type="text" name="first_name"
+                                       class="form-control @error('first_name') is-invalid @enderror"
+                                       value="{{ old('first_name') }}"
+                                       autocomplete="off"
+                                       autocapitalize="words"
+                                       autocorrect="off"
+                                       spellcheck="false"
+                                       data-lpignore="true"
+                                       data-1p-ignore="true"
+                                       required>
                                 @error('first_name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" name="last_name" class="form-control @error('last_name') is-invalid @enderror"
-                                       value="{{ old('last_name') }}" required>
+                                <input type="text" name="last_name"
+                                       class="form-control @error('last_name') is-invalid @enderror"
+                                       value="{{ old('last_name') }}"
+                                       autocomplete="off"
+                                       autocapitalize="words"
+                                       autocorrect="off"
+                                       spellcheck="false"
+                                       data-lpignore="true"
+                                       data-1p-ignore="true"
+                                       required>
                                 @error('last_name')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -69,16 +88,32 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="phone" class="form-control @error('phone') is-invalid @enderror"
-                                       value="{{ old('phone') }}" required>
+                                <input type="tel" name="phone"
+                                       class="form-control @error('phone') is-invalid @enderror"
+                                       value="{{ old('phone') }}"
+                                       autocomplete="off"
+                                       autocapitalize="off"
+                                       autocorrect="off"
+                                       spellcheck="false"
+                                       inputmode="tel"
+                                       data-lpignore="true"
+                                       data-1p-ignore="true"
+                                       required>
                                 @error('phone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Email Address</label>
-                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                                       value="{{ old('email') }}">
+                                <input type="email" name="email"
+                                       class="form-control @error('email') is-invalid @enderror"
+                                       value="{{ old('email') }}"
+                                       autocomplete="off"
+                                       autocapitalize="off"
+                                       autocorrect="off"
+                                       spellcheck="false"
+                                       data-lpignore="true"
+                                       data-1p-ignore="true">
                                 @error('email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -88,21 +123,25 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Gender</label>
-                                <select name="gender" class="form-select @error('gender') is-invalid @enderror">
+                                <select name="gender" class="form-select @error('gender') is-invalid @enderror"
+                                        autocomplete="off">
                                     <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
                                     <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Date of Birth</label>
-                                <input type="date" name="date_of_birth" class="form-control @error('date_of_birth') is-invalid @enderror"
-                                       value="{{ old('date_of_birth') }}">
+                                <input type="date" name="date_of_birth"
+                                       class="form-control @error('date_of_birth') is-invalid @enderror"
+                                       value="{{ old('date_of_birth') }}"
+                                       autocomplete="off">
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Address</label>
-                            <textarea name="address" class="form-control" rows="2">{{ old('address') }}</textarea>
+                            <textarea name="address" class="form-control" rows="2"
+                                      autocomplete="off" autocorrect="off" spellcheck="false">{{ old('address') }}</textarea>
                         </div>
 
                         <h6 class="fw-bold text-danger mb-3 mt-4">Medical Information</h6>

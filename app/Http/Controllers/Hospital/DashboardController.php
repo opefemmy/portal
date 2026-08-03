@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalStaff;
+use App\Models\Hospital\HospitalAdmission;
+use App\Models\Hospital\HospitalPrescription;
+use App\Models\Hospital\HospitalDrug;
+use App\Models\Hospital\HospitalLabRequest;
 
 class DashboardController extends Controller
 {
@@ -96,7 +100,13 @@ class DashboardController extends Controller
             'active_patients' => HospitalPatient::where('is_active', true)->count(),
         ];
 
-        return view('hospital.nurse-dashboard', compact('stats', 'todayAppointments'));
+        $admittedPatients = HospitalAdmission::with(['patient', 'bed.ward', 'doctor'])
+            ->where('status', 'admitted')
+            ->latest('admission_date')
+            ->limit(10)
+            ->get();
+
+        return view('hospital.nurse-dashboard', compact('stats', 'todayAppointments', 'admittedPatients'));
     }
 
     /**
@@ -132,9 +142,25 @@ class DashboardController extends Controller
         $stats = [
             'active_patients' => HospitalPatient::where('is_active', true)->count(),
             'total_staff' => HospitalStaff::count(),
+            'pending_prescriptions' => HospitalPrescription::where('status', 'pending')->count(),
+            'dispensed_today' => HospitalPrescription::where('status', 'dispensed')
+                ->whereDate('dispensed_at', today())->count(),
+            'low_stock_items' => HospitalDrug::where('quantity', '<=', 10)->count(),
+            'total_drugs' => HospitalDrug::count(),
         ];
 
-        return view('hospital.pharmacy-dashboard', compact('stats'));
+        $pendingPrescriptions = HospitalPrescription::with(['patient', 'doctor', 'items'])
+            ->where('status', 'pending')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $lowStockDrugs = HospitalDrug::where('quantity', '<=', 10)
+            ->orderBy('quantity')
+            ->limit(10)
+            ->get();
+
+        return view('hospital.pharmacy-dashboard', compact('stats', 'pendingPrescriptions', 'lowStockDrugs'));
     }
 
     /**
@@ -145,8 +171,19 @@ class DashboardController extends Controller
         $stats = [
             'today_appointments' => HospitalAppointment::whereDate('appointment_date', today())->count(),
             'total_patients' => HospitalPatient::count(),
+            'pending_requests' => HospitalLabRequest::where('status', 'pending')->count(),
+            'in_progress' => HospitalLabRequest::where('status', 'in_progress')->count(),
+            'completed_today' => HospitalLabRequest::where('status', 'completed')
+                ->whereDate('completed_at', today())->count(),
+            'total_tests' => HospitalLabRequest::count(),
         ];
 
-        return view('hospital.lab-dashboard', compact('stats'));
+        $pendingRequests = HospitalLabRequest::with(['patient', 'doctor'])
+            ->whereIn('status', ['pending', 'sample_collected'])
+            ->latest('requested_at')
+            ->limit(10)
+            ->get();
+
+        return view('hospital.lab-dashboard', compact('stats', 'pendingRequests'));
     }
 }

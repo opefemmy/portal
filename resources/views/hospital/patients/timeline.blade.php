@@ -7,11 +7,15 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-stream me-2"></i>
                         Patient Timeline: {{ $patient->first_name }} {{ $patient->last_name }}
-                        <span class="badge bg-primary">{{ $patient->patient_number }}</span>
+                        <span class="badge bg-light text-primary ms-2">{{ $patient->patient_number }}</span>
                     </h3>
+                    <a href="{{ route('hospital.patients.show', $patient->id) }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -19,83 +23,45 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h5>Patient Info</h5>
-                                    <p><strong>Name:</strong> {{ $patient->first_name }} {{ $patient->last_name }}</p>
-                                    <p><strong>Number:</strong> {{ $patient->patient_number }}</p>
-                                    <p><strong>Type:</strong> {{ ucfirst($patient->patient_type) }}</p>
-                                    <p><strong>Gender:</strong> {{ ucfirst($patient->gender) }}</p>
-                                    <p><strong>Phone:</strong> {{ $patient->phone }}</p>
+                                    <p class="mb-1"><strong>Name:</strong> {{ $patient->full_name }}</p>
+                                    <p class="mb-1"><strong>Number:</strong> {{ $patient->patient_number }}</p>
+                                    <p class="mb-1"><strong>Type:</strong> {{ ucfirst($patient->patient_type) }}</p>
+                                    <p class="mb-1"><strong>Gender:</strong> {{ ucfirst($patient->gender) }}</p>
+                                    <p class="mb-1"><strong>Phone:</strong> {{ $patient->phone }}</p>
+                                    <p class="mb-1"><strong>Age:</strong> {{ optional($patient->date_of_birth)->age ?? '—' }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-9">
-                            <h4>Medical History Timeline</h4>
+                            <h4 class="mb-3"><i class="fas fa-history me-1"></i> Unified Medical Timeline</h4>
 
-                            @if($patient->appointments->count() > 0)
-                            <div class="timeline-item mb-3">
-                                <h6><i class="fas fa-calendar"></i> Appointments</h6>
-                                <ul class="list-group">
-                                    @foreach($patient->appointments as $appointment)
-                                    <li class="list-group-item">
-                                        <strong>{{ optional($appointment->appointment_date)->format('d M Y') ?? 'N/A' }}</strong> -
-                                        Status: {{ ucfirst($appointment->status) }}
-                                    </li>
+                            @if(empty($events) || count($events) === 0)
+                                <div class="alert alert-info">No medical history found for this patient.</div>
+                            @else
+                                <div class="timeline">
+                                    @foreach($events as $e)
+                                        <div class="timeline-item mb-3 ps-4 border-start border-{{ $e['color'] }} border-3 position-relative">
+                                            <span class="position-absolute top-0 start-0 translate-middle bg-{{ $e['color'] }} text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                  style="width:32px;height:32px;margin-left:-16px;">
+                                                <i class="{{ $e['icon'] }}"></i>
+                                            </span>
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <strong>{{ $e['label'] }}</strong>
+                                                    <span class="text-muted ms-2">by {{ $e['actor'] }}</span>
+                                                </div>
+                                                <small class="text-muted">{{ optional($e['when'])->format('d M Y H:i') }}</small>
+                                            </div>
+                                            <div>{{ $e['summary'] }}</div>
+                                            @if(!empty($e['detail_url']))
+                                                <a href="{{ $e['detail_url'] }}" class="btn btn-sm btn-link p-0">View →</a>
+                                            @endif
+                                        </div>
                                     @endforeach
-                                </ul>
-                            </div>
-                            @endif
-
-                            @if($patient->prescriptions->count() > 0)
-                            <div class="timeline-item mb-3">
-                                <h6><i class="fas fa-prescription"></i> Prescriptions</h6>
-                                <ul class="list-group">
-                                    @foreach($patient->prescriptions as $prescription)
-                                    <li class="list-group-item">
-                                        <strong>{{ optional($prescription->created_at)->format('d M Y') ?? 'N/A' }}</strong> -
-                                        Status: {{ ucfirst($prescription->status) }}
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                            @endif
-
-                            @if($patient->labRequests->count() > 0)
-                            <div class="timeline-item mb-3">
-                                <h6><i class="fas fa-flask"></i> Lab Requests</h6>
-                                <ul class="list-group">
-                                    @foreach($patient->labRequests as $lab)
-                                    <li class="list-group-item">
-                                        <strong>{{ optional($lab->created_at)->format('d M Y') ?? 'N/A' }}</strong> -
-                                        {{ $lab->test_type }} - Status: {{ ucfirst($lab->status) }}
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                            @endif
-
-                            @if($patient->admissions->count() > 0)
-                            <div class="timeline-item mb-3">
-                                <h6><i class="fas fa-procedures"></i> Admissions</h6>
-                                <ul class="list-group">
-                                    @foreach($patient->admissions as $admission)
-                                    <li class="list-group-item">
-                                        <strong>{{ optional($admission->admission_date)->format('d M Y') ?? 'N/A' }}</strong> -
-                                        Status: {{ ucfirst($admission->status) }}
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                            @endif
-
-                            @if($patient->appointments->count() == 0 && $patient->prescriptions->count() == 0 && $patient->labRequests->count() == 0 && $patient->admissions->count() == 0)
-                            <div class="alert alert-info">
-                                No medical history found for this patient.
-                            </div>
+                                </div>
                             @endif
                         </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <a href="{{ route('hospital.patients.show', $patient->id) }}" class="btn btn-secondary">Back to Patient</a>
                 </div>
             </div>
         </div>

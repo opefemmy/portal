@@ -16,29 +16,65 @@ use Carbon\Carbon;
 class PaymentGatewayController extends Controller
 {
     /**
-     * Show payment page with Pay Now button
+     * Show payment page with Pay Now button.
+     * Supports ?purpose=application|acceptance|compulsory|school_fee
      */
-    public function showPaymentPage()
+    public function showPaymentPage(Request $request)
     {
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
+        $purpose = $request->get('purpose', 'application');
 
-        // Get payment type info
-        $paymentType = PaymentType::where('code', 'APP_FORM')->first();
+        // Map purpose → payment-type code
+        $purposeCodeMap = [
+            'application' => 'APP_FORM',
+            'acceptance'  => 'ACCEPT_FEE',
+            'compulsory'  => 'SCHOOL_FEE',
+            'school_fee'  => 'SCHOOL_FEE',
+        ];
+        $typeCode = $purposeCodeMap[$purpose] ?? 'APP_FORM';
 
-        if (!$paymentType) {
-            return back()->with('error', 'Application fee payment type not found.');
+        // Resolve the payment type by code first
+        $paymentType = PaymentType::where('code', $typeCode)->first();
+
+        // Fallback: try the purpose column (e.g. PURPOSE_ACCEPTANCE / PURPOSE_SCHOOL_FEE)
+        if (!$paymentType && $purpose !== 'application') {
+            $purposeValue = $purpose === 'acceptance'
+                ? PaymentType::PURPOSE_ACCEPTANCE
+                : PaymentType::PURPOSE_SCHOOL_FEE;
+            $paymentType = PaymentType::where('purpose', $purposeValue)
+                ->where('is_active', true)
+                ->orderBy('priority')
+                ->first();
         }
 
-        // Check if already paid
-        if ($applicant && $applicant->payment_status === 'completed') {
-            return redirect()->route('applicant.apply')
-                ->with('info', 'You have already paid the application fee.');
+        // Final fallback
+        if (!$paymentType) {
+            $paymentType = PaymentType::where('code', 'APP_FORM')->first();
+        }
+
+        if (!$paymentType) {
+            return back()->with('error', 'Payment type not configured. Please contact the admissions office.');
+        }
+
+        // Guard: acceptance / compulsory fees require admission
+        if (in_array($purpose, ['acceptance', 'compulsory'])) {
+            if (!$applicant || $applicant->status !== 'admitted') {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'You must be admitted before paying this fee.');
+            }
+            if ($purpose === 'compulsory') {
+                $existingStudent = \App\Models\Student::where('user_id', $user->id)->first();
+                if ($existingStudent) {
+                    return redirect()->route('applicant.dashboard')
+                        ->with('info', 'You have already been migrated to the student portal.');
+                }
+            }
         }
 
         $feeAmount = $paymentType->amount ?? 5000;
 
-        return view('applicant.payment-gateway', compact('applicant', 'paymentType', 'feeAmount'));
+        return view('applicant.payment-gateway', compact('applicant', 'paymentType', 'feeAmount', 'purpose'));
     }
 
     /**
@@ -48,12 +84,21 @@ class PaymentGatewayController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
+            'purpose' => 'nullable|string|in:application,acceptance,compulsory,school_fee',
         ]);
 
         $user = Auth::user();
+        $purpose = $request->input('purpose', 'application');
 
-        // Get payment type
-        $paymentType = PaymentType::where('code', 'APP_FORM')->first();
+        // Pick the payment type for the purpose
+        $typeCode = match ($purpose) {
+            'acceptance'  => 'ACCEPT_FEE',
+            'compulsory'  => 'SCHOOL_FEE',
+            'school_fee'  => 'SCHOOL_FEE',
+            default       => 'APP_FORM',
+        };
+        $paymentType = PaymentType::where('code', $typeCode)->first()
+            ?? PaymentType::where('code', 'APP_FORM')->first();
 
         if (!$paymentType) {
             return back()->with('error', 'Payment type not found.');
@@ -61,36 +106,39 @@ class PaymentGatewayController extends Controller
 
         $amount = $request->amount * 100; // Paystack uses kobo
         $email = $user->email;
-        $reference = 'APPFEE-' . Str::upper(Str::random(10));
+        $reference = strtoupper($purpose) . '-' . Str::upper(Str::random(10));
 
         // Get student ID if user has a student record
         $student = \App\Models\Student::where('user_id', $user->id)->first();
 
-        // Create payment record
+        // Create payment record — capture the fee_type for downstream filtering
         $payment = Payment::create([
-            'student_id' => $student?->id,
-            'fee_id' => $paymentType->id ?? null,
-            'amount' => $request->amount,
-            'reference' => $reference,
-            'transaction_id' => $reference,
-            'gateway' => 'paystack',
-            'status' => 'pending',
-            'student_type' => 'applicant',
+            'student_id'      => $student?->id,
+            'fee_id'          => $paymentType->id ?? null,
+            'amount'          => $request->amount,
+            'reference'       => $reference,
+            'transaction_id'  => $reference,
+            'gateway'         => 'paystack',
+            'status'          => 'pending',
+            'student_type'    => 'applicant',
+            'payment_purpose' => $purpose,
+            'fee_type'        => $paymentType->name,
         ]);
 
-        // Store payment ID in session
+        // Store payment ID and purpose in session so callback can resolve them
         session()->put('pending_payment_id', $payment->id);
         session()->put('pending_payment_ref', $reference);
+        session()->put('pending_payment_purpose', $purpose);
 
         // Initialize Paystack payment
         $paystackPublicKey = config('services.paystack.public_key', 'pk_test_xxxxxxxxxxxxxxxx');
 
         return view('applicant.payment-initiate', [
-            'reference' => $reference,
-            'amount' => $request->amount,
-            'email' => $email,
+            'reference'       => $reference,
+            'amount'          => $request->amount,
+            'email'           => $email,
             'paystackPublicKey' => $paystackPublicKey,
-            'callbackUrl' => route('applicant.payment.callback'),
+            'callbackUrl'     => route('applicant.payment.callback'),
         ]);
     }
 
@@ -157,12 +205,32 @@ class PaymentGatewayController extends Controller
                 $applicant->update($applicantData);
             }
 
+            // Determine the purpose of this payment
+            $purpose = session()->get('pending_payment_purpose')
+                ?: ($payment->payment_purpose ?: 'application');
+
+            // Run purpose-specific post-payment logic
+            $redirectRoute = 'applicant.apply';
+            $successMessage = 'Payment successful! You can now complete your application.';
+
+            if ($purpose === 'acceptance') {
+                // Acceptance: enable admission letter printing
+                $redirectRoute = 'applicant.dashboard';
+                $successMessage = 'Acceptance fee payment verified. You can now print your admission letter.';
+            } elseif (in_array($purpose, ['compulsory', 'school_fee'])) {
+                // Compulsory fee: auto-migrate applicant → student with matric number
+                $migrationResult = $this->migrateApplicantToStudent($applicant);
+                $redirectRoute = $migrationResult['redirect_route'] ?? 'applicant.dashboard';
+                $successMessage = $migrationResult['message'];
+            }
+
             // Clear session
             session()->forget('pending_payment_id');
             session()->forget('pending_payment_ref');
+            session()->forget('pending_payment_purpose');
 
-            return redirect()->route('applicant.apply')
-                ->with('success', 'Payment successful! You can now complete your application.');
+            return redirect()->route($redirectRoute)
+                ->with('success', $successMessage);
         }
 
         // Payment failed
@@ -173,6 +241,84 @@ class PaymentGatewayController extends Controller
 
         return redirect()->route('applicant.payment')
             ->with('error', 'Payment verification failed. Please try again.');
+    }
+
+    /**
+     * Auto-migrate an admitted applicant into a Student record with a matric
+     * number derived from the applicant's admitted department.
+     *
+     * Idempotent: if the applicant is already linked to a Student row, no new
+     * Student record is created.
+     */
+    protected function migrateApplicantToStudent(Applicant $applicant): array
+    {
+        if (!$applicant) {
+            return [
+                'redirect_route' => 'applicant.dashboard',
+                'message'        => 'Applicant record missing — cannot migrate.',
+            ];
+        }
+
+        // Already migrated? Reuse existing record.
+        $existing = \App\Models\Student::where('user_id', $applicant->user_id)->first();
+        if ($existing) {
+            $applicant->update([
+                'student_id'   => $existing->id,
+                'matric_number' => $existing->matric_number,
+                'status'       => 'admitted',
+            ]);
+
+            return [
+                'redirect_route' => 'student.dashboard',
+                'message'        => 'You already have a student record. Redirecting to the student portal.',
+            ];
+        }
+
+        $matricNumber = \App\Services\MatricNumberService::generate($applicant);
+        if (!$matricNumber) {
+            return [
+                'redirect_route' => 'applicant.dashboard',
+                'message'        => 'Matric number generation failed. Please contact the admissions office.',
+            ];
+        }
+
+        DB::transaction(function () use ($applicant, $matricNumber) {
+            $student = \App\Models\Student::create([
+                'user_id'        => $applicant->user_id,
+                'matric_number'  => $matricNumber,
+                'school_id'      => $applicant->school_id,
+                'department_id'  => $applicant->department_id,
+                'programme_id'   => $applicant->programme_id,
+                'session_id'     => $applicant->session_id,
+                'level'          => $applicant->entry_level ?: 1,
+                'status'         => 'active',
+                'state_id'       => $applicant->state_id,
+                'lga_id'         => $applicant->lga_id,
+                'nationality_id' => $applicant->nationality_id,
+                'from_application' => true,
+                'applicant_id'     => $applicant->id,
+            ]);
+
+            // Promote user to student role if a student role exists
+            $studentRole = \App\Models\Role::where('slug', 'student')->first();
+            if ($studentRole) {
+                $applicant->user?->update([
+                    'role_id'  => $studentRole->id,
+                    'is_active' => true,
+                ]);
+            }
+
+            $applicant->update([
+                'student_id'   => $student->id,
+                'matric_number' => $matricNumber,
+                'status'       => 'admitted',
+            ]);
+        });
+
+        return [
+            'redirect_route' => 'student.dashboard',
+            'message'        => 'Compulsory fee verified. Your matric number is ' . $matricNumber . '. Redirecting to the student portal.',
+        ];
     }
 
     /**
@@ -221,16 +367,25 @@ class PaymentGatewayController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:100',
+            'purpose' => 'nullable|string|in:application,acceptance,compulsory,school_fee',
         ]);
 
         $user = Auth::user();
+        $purpose = $request->input('purpose', 'application');
 
         // Get payment type
-        $paymentType = PaymentType::where('code', 'APP_FORM')->first();
+        $typeCode = match ($purpose) {
+            'acceptance'  => 'ACCEPT_FEE',
+            'compulsory'  => 'SCHOOL_FEE',
+            'school_fee'  => 'SCHOOL_FEE',
+            default       => 'APP_FORM',
+        };
+        $paymentType = PaymentType::where('code', $typeCode)->first()
+            ?? PaymentType::where('code', 'APP_FORM')->first();
         $feeAmount = $paymentType ? $paymentType->amount : 5000;
 
         // Create payment record
-        $reference = 'TEST-' . Str::upper(Str::random(10));
+        $reference = 'TEST-' . strtoupper(substr($purpose, 0, 3)) . '-' . Str::upper(Str::random(10));
 
         // Get student_id if user has a student record, otherwise use a placeholder
         $student = \App\Models\Student::where('user_id', $user->id)->first();
@@ -248,11 +403,14 @@ class PaymentGatewayController extends Controller
             'status' => 'completed',
             'is_verified' => true,
             'student_type' => 'applicant',
+            'payment_purpose' => $purpose,
+            'fee_type' => $paymentType?->name,
             'payment_details' => json_encode([
                 'test_mode' => true,
                 'simulated' => true,
                 'user_id' => $user->id,
                 'applicant_mode' => true,
+                'purpose' => $purpose,
             ]),
         ]);
 
@@ -287,6 +445,20 @@ class PaymentGatewayController extends Controller
                 'session_id' => $firstSession?->id,
                 'status' => 'pending',
             ]));
+        }
+
+        // Purpose-specific post-payment action
+        if ($purpose === 'acceptance') {
+            return redirect()->route('applicant.dashboard')
+                ->with('success', 'Acceptance fee verified. You can now print your admission letter. (Ref: ' . $reference . ')');
+        }
+
+        if (in_array($purpose, ['compulsory', 'school_fee'])) {
+            // Refresh applicant to ensure latest payment data is loaded
+            $applicant->refresh();
+            $result = $this->migrateApplicantToStudent($applicant);
+            return redirect()->route($result['redirect_route'])
+                ->with('success', $result['message'] . ' (Ref: ' . $reference . ')');
         }
 
         return redirect()->route('applicant.apply')

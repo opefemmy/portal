@@ -12,7 +12,6 @@ use App\Models\State;
 use App\Models\LocalGovernment;
 use App\Models\SystemSetting;
 use App\Models\Student;
-use App\Models\User;
 use App\Models\ExternalPayment;
 use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
@@ -623,58 +621,5 @@ class ApplicationController extends Controller
         $student = Student::where('matric_number', $applicant->matric_number)->first();
 
         return view('applicant.admission-letter', compact('applicant', 'student'));
-    }
-
-    /**
-     * Auto-create student after admission and payment
-     */
-    public static function createStudentFromApplicant(Applicant $applicant)
-    {
-        $role = Role::where('slug', 'student')->first();
-
-        // Create user account
-        $user = User::create([
-            'name' => $applicant->full_name,
-            'email' => $applicant->email,
-            'password' => Hash::make($applicant->application_number),
-            'role_id' => $role ? $role->id : 9,
-            'is_active' => true,
-        ]);
-
-        // Generate matric number
-        $matricNumber = self::generateMatricNumber($applicant);
-
-        // Create student record
-        $student = Student::create([
-            'user_id' => $user->id,
-            'matric_number' => $matricNumber,
-            'school_id' => $applicant->school_id,
-            'department_id' => $applicant->department_id,
-            'programme_id' => $applicant->programme_id,
-            'session_id' => $applicant->session_id,
-            'level' => 1,
-            'status' => 'active',
-            'state_id' => $applicant->state_id,
-            'lga_id' => $applicant->lga_id,
-            'nationality_id' => $applicant->nationality_id,
-        ]);
-
-        // Update applicant
-        $applicant->update([
-            'status' => 'admitted',
-            'student_created' => true,
-            'matric_number' => $matricNumber,
-        ]);
-
-        return ['user' => $user, 'student' => $student, 'matric_number' => $matricNumber];
-    }
-
-    protected static function generateMatricNumber(Applicant $applicant)
-    {
-        $year = date('Y');
-        $department = $applicant->department;
-        $prefix = $department ? strtoupper(substr($department->name, 0, 3)) : 'APP';
-        $count = Applicant::whereYear('created_at', $year)->where('id', '<=', $applicant->id)->count();
-        return $year . '/' . $prefix . '/' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 }

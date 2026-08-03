@@ -18,7 +18,29 @@
                 <h5>{{ $school->name }}</h5>
                 <p class="text-muted">{{ $school->code }}</p>
                 <p>{{ $school->departments->count() }} Departments</p>
-                <a href="{{ route('admin.schools.edit', $school) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit this school">Edit</a>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.schools.show', $school) }}"
+                       class="btn btn-sm btn-outline-info"
+                       title="View school details">
+                        <i class="fas fa-eye me-1"></i>View
+                    </a>
+                    <a href="{{ route('admin.schools.edit', $school) }}"
+                       class="btn btn-sm btn-outline-primary"
+                       title="Edit this school's name, code, or description">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    <form method="POST" action="{{ route('admin.schools.destroy', $school) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Delete school {{ addslashes($school->name) }}? This cannot be undone.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="btn btn-sm btn-outline-danger"
+                                title="Delete this school. Blocked if any departments, students, courses, or fees still reference it.">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

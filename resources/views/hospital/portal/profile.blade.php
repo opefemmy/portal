@@ -16,7 +16,7 @@
                 <p><strong>Email:</strong> {{ $patient->email ?? 'Not provided' }}</p>
             </div>
             <div class="col-md-6">
-                <p><strong>Gender:</strong> {{ ucfirst($patient->gender ?? 'Not set' }}</p>
+                <p><strong>Gender:</strong> {{ ucfirst($patient->gender ?? 'Not set') }}</p>
                 <p><strong>Age:</strong> {{ $patient->age ?? 'Not set' }}</p>
                 <p><strong>Address:</strong> {{ $patient->address ?? 'Not provided' }}</p>
                 <p><strong>Last Login:</strong> {{ $patient->last_login_at ? $patient->last_login_at->format('d M Y, h:i A') : 'First time' }}</p>

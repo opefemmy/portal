@@ -104,6 +104,10 @@ Route::prefix('patient-portal')->name('patient-portal.')->group(function () {
         Route::post('/pay-order-items', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'payOrderItemsPortal'])->name('pay-order-items');
         Route::get('/receipt/{payment}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'viewReceiptPortal'])->name('receipt');
         Route::post('/regenerate-code', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'regenerateCodePortal'])->name('regenerate-code');
+        Route::get('/prescriptions', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'prescriptionsPortal'])->name('prescriptions');
+        Route::get('/prescriptions/{prescription}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'prescriptionShowPortal'])->name('prescription');
+        Route::post('/prescriptions/{prescription}/pay', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'prescriptionPayPortal'])->name('prescription.pay');
+        Route::get('/payments', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'paymentsPortal'])->name('payments');
     });
 });
 
@@ -174,6 +178,10 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     // Payment Validation (External Payment System)
     Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('validate-payment');
     Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('payment.validate');
+
+    // Public status check (no auth required)
+    Route::get('/status', [ApplicationController::class, 'checkStatus'])->name('status');
+    Route::post('/status-check', [ApplicationController::class, 'checkStatus'])->name('status.check');
 
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'showApplicantForm'])->name('register');
@@ -437,6 +445,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/results/recompute', [\App\Http\Controllers\Admin\ResultController::class, 'recompute'])->name('results.recompute');
     Route::post('/results/bulk-approve', [\App\Http\Controllers\Admin\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
 
+    // Previous-results upload (historical / pre-portal rows for transcripts).
+    Route::get('/previous-results', [\App\Http\Controllers\Admin\PreviousResultController::class, 'index'])->name('previous-results.index');
+    Route::get('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'create'])->name('previous-results.create');
+    Route::post('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'upload'])->name('previous-results.upload');
+    Route::get('/previous-results/template', [\App\Http\Controllers\Admin\PreviousResultController::class, 'downloadTemplate'])->name('previous-results.template');
+    Route::delete('/previous-results/{previousResult}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'destroy'])->name('previous-results.destroy');
+    Route::post('/previous-results/purge-student/{student}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'purgeForStudent'])->name('previous-results.purge-student');
+
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 
@@ -486,6 +502,10 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::post('/payments/{fee}/initiate', [PaymentController::class, 'initiatePayment'])->name('payments.initiate');
     Route::get('/payments/verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
+
+    // Exam clearance
+    Route::get('/exam-clearance', [\App\Http\Controllers\Student\ExamClearanceController::class, 'index'])->name('exam-clearance');
+    Route::get('/exam-clearance/print', [\App\Http\Controllers\Student\ExamClearanceController::class, 'print'])->name('exam-clearance.print');
 
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable');
 
@@ -631,7 +651,7 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::post('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterSettings'])->name('admission.saveLetterSettings');
     Route::delete('/admission-letter/signature', [\App\Http\Controllers\Registrar\AdmissionController::class, 'deleteSignature'])->name('admission.deleteSignature');
     Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
-    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate']);
+    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate.store');
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
     Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
 });

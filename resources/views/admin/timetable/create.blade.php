@@ -16,7 +16,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="course_id" class="form-label">Course</label>
-                        <select class="form-select @error('course_id') is-invalid @endif" id="course_id" name="course_id" required>
+                        <select class="form-select @error('course_id') is-invalid @enderror" id="course_id" name="course_id" required>
                             <option value="">Select Course</option>
                             @foreach($courses as $course)
                                 <option value="{{ $course->id }}">{{ $course->code }} - {{ $course->title }} ({{ $course->department->name ?? 'N/A' }})</option>
@@ -24,13 +24,13 @@
                         </select>
                         @error('course_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="session_id" class="form-label">Session</label>
-                        <select class="form-select @error('session_id') is-invalid @endif" id="session_id" name="session_id" required>
+                        <select class="form-select @error('session_id') is-invalid @enderror" id="session_id" name="session_id" required>
                             <option value="">Select Session</option>
                             @foreach($sessions as $session)
                                 <option value="{{ $session->id }}">{{ $session->name }}</option>
@@ -38,7 +38,7 @@
                         </select>
                         @error('session_id')
                             <div class="invalid-feedback">{{ $message }}</div>
-                        @endif
+                        @enderror
                     </div>
                 </div>
             </div>

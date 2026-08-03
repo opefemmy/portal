@@ -32,7 +32,7 @@
             <div class="card bg-info text-white">
                 <div class="card-body">
                     <h5>Pending Prescriptions</h5>
-                    <h3>{{ \App\Models\Hospital\HospitalPrescription::where('status', 'pending')->count() }}</h3>
+                    <h3>{{ \App\Models\Hospital\HospitalPrescription::where('is_dispensed', false)->count() }}</h3>
                 </div>
             </div>
         </div>

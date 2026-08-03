@@ -29,7 +29,7 @@
             <h3><i class="fas fa-user me-2"></i>Welcome, {{ session('external_patient_name') }}</h3>
             <p class="mb-0">Patient Number: {{ session('external_patient_number') }}</p>
         </div>
-        <form method="POST" action="{{ route('patient.logout') }}" class="d-inline">
+        <form method="POST" action="{{ route('patient-portal.logout') }}" class="d-inline">
             @csrf
             <button type="submit" class="btn btn-outline-light">
                 <i class="fas fa-sign-out-alt me-2"></i>Logout
@@ -41,7 +41,7 @@
 <!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <a href="{{ route('patient.history') }}" class="quick-link text-decoration-none">
+        <a href="{{ route('patient-portal.dashboard') }}#history" class="quick-link text-decoration-none">
             <div class="card h-100 text-center p-4" style="background: linear-gradient(135deg, #dc3545, #b21f3d); color: white; border: none;">
                 <i class="fas fa-file-medical-alt fa-3x mb-3"></i>
                 <h5>Medical History</h5>
@@ -50,7 +50,7 @@
         </a>
     </div>
     <div class="col-md-3">
-        <a href="{{ route('patient.payments') }}" class="quick-link text-decoration-none">
+        <a href="{{ route('patient-portal.payments') }}" class="quick-link text-decoration-none">
             <div class="card h-100 text-center p-4" style="background: #28a745; color: white; border: none;">
                 <i class="fas fa-credit-card fa-3x mb-3"></i>
                 <h5>Payments</h5>
@@ -59,16 +59,16 @@
         </a>
     </div>
     <div class="col-md-3">
-        <a href="{{ route('patient.appointments') }}" class="quick-link text-decoration-none">
+        <a href="{{ route('patient-portal.prescriptions') }}" class="quick-link text-decoration-none">
             <div class="card h-100 text-center p-4" style="background: #17a2b8; color: white; border: none;">
                 <i class="fas fa-calendar-check fa-3x mb-3"></i>
-                <h5>Appointments</h5>
-                <small>View scheduled visits</small>
+                <h5>Prescriptions</h5>
+                <small>View your prescriptions</small>
             </div>
         </a>
     </div>
     <div class="col-md-3">
-        <a href="{{ route('patient.profile') }}" class="quick-link text-decoration-none">
+        <a href="{{ route('patient-portal.profile') }}" class="quick-link text-decoration-none">
             <div class="card h-100 text-center p-4" style="background: #6c757d; color: white; border: none;">
                 <i class="fas fa-user-cog fa-3x mb-3"></i>
                 <h5>My Profile</h5>
@@ -83,7 +83,7 @@
 <div class="alert alert-warning">
     <h5><i class="fas fa-exclamation-triangle me-2"></i>Pending Payments</h5>
     <p class="mb-0">You have {{ $pendingPayments->count() }} pending payment(s). Please pay to access services.</p>
-    <a href="{{ route('patient.payments') }}" class="btn btn-warning mt-2">View Pending Payments</a>
+    <a href="{{ route('patient-portal.payments') }}" class="btn btn-warning mt-2">View Pending Payments</a>
 </div>
 @endif
 
@@ -118,7 +118,7 @@
             <div class="d-flex justify-content-between">
                 <div>
                     <strong>{{ $visit->visit_number }}</strong> - {{ optional($visit->visit_date)->format('d M Y') ?? 'N/A' }}
-                    <p class="mb-0 text-muted">{{ Str::limit($visit->chief_complaint ?? 'No complaint recorded', 50 }}</p>
+                    <p class="mb-0 text-muted">{{ Str::limit($visit->chief_complaint ?? 'No complaint recorded', 50) }}</p>
                 </div>
                 <span class="badge bg-{{ $visit->status == 'completed' ? 'success' : 'warning' }}">{{ ucfirst($visit->status) }}</span>
             </div>

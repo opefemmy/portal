@@ -25,6 +25,7 @@ class ResultController extends Controller
 
     public function approve(Request $request, Result $result)
     {
+        $this->assertInSameSchool($result);
         $result->update([
             'status' => 'approved_by_business',
             'approved_by' => auth()->id(),
@@ -36,11 +37,24 @@ class ResultController extends Controller
 
     public function reject(Request $request, Result $result)
     {
+        $this->assertInSameSchool($result);
         $result->update([
             'status' => 'rejected_by_business',
             'remarks' => $request->remarks,
         ]);
 
         return back()->with('success', 'Result rejected by Business Committee');
+    }
+
+    private function assertInSameSchool(Result $result): void
+    {
+        $user = auth()->user();
+        // If the user has a school_id, the result's student must belong to that school.
+        if ($user && $user->school_id) {
+            $student = $result->studentCourse->student ?? null;
+            if (!$student || (int) $student->school_id !== (int) $user->school_id) {
+                abort(403, 'You are not allowed to act on this result.');
+            }
+        }
     }
 }

@@ -47,12 +47,14 @@ class ApplicationController extends Controller
 
     public function show(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $applicant->load(['school', 'department', 'programme', 'session', 'user']);
         return view('registrar.applications.show', compact('applicant'));
     }
 
     public function updateStatus(Request $request, Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $request->validate([
             'status' => 'required|in:pending,screening,approved,rejected,admitted',
             'rejection_reason' => 'required_if:status,rejected|nullable|string',
@@ -66,6 +68,19 @@ class ApplicationController extends Controller
         ]);
 
         return back()->with('success', 'Application status updated successfully!');
+    }
+
+    private function assertSameSchool(Applicant $applicant): void
+    {
+        $authUser = auth()->user();
+        if (!$authUser) {
+            abort(401);
+        }
+        if ($authUser->school_id
+            && $applicant->school_id
+            && (int) $applicant->school_id !== (int) $authUser->school_id) {
+            abort(403, 'You are not allowed to access this application.');
+        }
     }
 
     public function bulkAction(Request $request)

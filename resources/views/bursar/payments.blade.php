@@ -65,7 +65,7 @@
         <div class="card stat-card success">
             <div class="card-body">
                 <h6 class="text-muted">Verified Payments</h6>
-                <h3>{{ $payments->where('status', 'completed')->count() }}</h3>
+                <h3>{{ $stats['verified'] }}</h3>
             </div>
         </div>
     </div>
@@ -73,7 +73,7 @@
         <div class="card stat-card warning">
             <div class="card-body">
                 <h6 class="text-muted">Pending Payments</h6>
-                <h3>{{ $payments->where('status', 'pending')->count() }}</h3>
+                <h3>{{ $stats['pending'] }}</h3>
             </div>
         </div>
     </div>
@@ -81,11 +81,17 @@
         <div class="card stat-card danger">
             <div class="card-body">
                 <h6 class="text-muted">Total Amount</h6>
-                <h3>₦{{ number_format($payments->sum('amount'), 2) }}</h3>
+                <h3>₦{{ number_format($stats['total'], 2) }}</h3>
             </div>
         </div>
     </div>
 </div>
+
+@if(method_exists($payments, 'links'))
+<div class="d-flex justify-content-end mb-3">
+    {{ $payments->links() }}
+</div>
+@endif
 
 <div class="card">
     <div class="card-body">
@@ -105,12 +111,36 @@
                 </thead>
                 <tbody>
                     @forelse($payments as $payment)
+                    @php
+                        // Resolve display values with fallbacks so we don't show N/A for
+                        // payments that have a student or applicant but no fee/Student link.
+                        $matric = $payment->student?->matric_number
+                            ?? ($payment->applicant?->matric_number
+                                ?? ($payment->applicant?->application_number
+                                    ?? ($payment->payer_id
+                                        ? null
+                                        : null)));
+                        $studentName = $payment->student?->user?->name
+                            ?? ($payment->applicant?->full_name
+                                ?? ($payment->applicant
+                                    ? trim(($payment->applicant->surname ?? '') . ' ' . ($payment->applicant->first_name ?? ''))
+                                    : ($payment->payer_name ?? null)));
+                        $feeName = $payment->fee?->name
+                            ?? ($payment->fee_type
+                                ?? ($payment->payment_purpose
+                                    ?? ($payment->applicant
+                                        ? 'Application Fee'
+                                        : 'Payment')));
+                        $paymentRef = $payment->reference
+                            ?? ($payment->payment_ref
+                                ?? ($payment->transaction_id ?? 'N/A'));
+                    @endphp
                     <tr>
-                        <td>{{ $payment->student->matric_number ?? 'N/A' }}</td>
-                        <td>{{ $payment->student->user->name ?? 'N/A' }}</td>
-                        <td>{{ $payment->fee->name ?? 'N/A' }}</td>
-                        <td>{{ number_format($payment->amount, 2) }}</td>
-                        <td>{{ $payment->reference ?? 'N/A' }}</td>
+                        <td>{{ $matric ?: ($payment->applicant?->application_number ?? 'N/A') }}</td>
+                        <td>{{ $studentName ?: ($payment->payer_name ?? 'N/A') }}</td>
+                        <td>{{ $feeName }}</td>
+                        <td>{{ number_format((float) $payment->amount, 2) }}</td>
+                        <td><code>{{ $paymentRef }}</code></td>
                         <td>
                             @if($payment->status === 'completed')
                                 <span class="badge bg-success">Verified</span>
@@ -120,7 +150,17 @@
                                 <span class="badge bg-danger">Failed</span>
                             @endif
                         </td>
-                        <td>{{ optional($payment->created_at)->format('d M Y') ?? 'N/A' }}</td>
+                        <td>
+                            @php
+                                $paymentDate = $payment->created_at;
+                                try {
+                                    $paymentDateStr = $paymentDate ? \Carbon\Carbon::parse($paymentDate)->format('d M Y') : 'N/A';
+                                } catch (\Throwable $e) {
+                                    $paymentDateStr = $paymentDate ? (string) $paymentDate : 'N/A';
+                                }
+                            @endphp
+                            {{ $paymentDateStr }}
+                        </td>
                         <td>
                             @if($payment->status !== 'completed')
                             <a href="{{ route('bursar.payments.verify', $payment) }}"

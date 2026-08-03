@@ -49,6 +49,7 @@ class AdmissionController extends Controller
      */
     public function show(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $applicant->load(['user', 'department', 'programme', 'school', 'session', 'state', 'lga', 'nationality']);
         return view('registrar.admission.show', compact('applicant'));
     }
@@ -58,6 +59,7 @@ class AdmissionController extends Controller
      */
     public function edit(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $applicant->load(['user', 'department', 'programme', 'school', 'session', 'centre', 'state', 'lga', 'nationality']);
         $data = [
             'applicant' => $applicant,
@@ -77,6 +79,7 @@ class AdmissionController extends Controller
      */
     public function update(Request $request, Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
@@ -100,6 +103,7 @@ class AdmissionController extends Controller
      */
     public function destroy(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $applicant->delete();
         return redirect()->route('registrar.admission')->with('success', 'Applicant deleted successfully');
     }
@@ -109,6 +113,7 @@ class AdmissionController extends Controller
      */
     public function resetPassword(Request $request, Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $request->validate([
             'new_password' => 'required|min:8|confirmed',
         ]);
@@ -126,6 +131,7 @@ class AdmissionController extends Controller
 
     public function updateStatus(Request $request, Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         $request->validate([
             'status' => 'required|in:pending,reviewed,admitted,rejected',
         ]);
@@ -155,7 +161,7 @@ class AdmissionController extends Controller
             ]);
 
             // Generate matric number
-            $matricNumber = $this->generateMatricNumber($applicant);
+            $matricNumber = \App\Services\MatricNumberService::generate($applicant);
 
             // Create student record
             $student = Student::create([
@@ -242,15 +248,6 @@ class AdmissionController extends Controller
                 ]);
             }
         }
-    }
-
-    protected function generateMatricNumber(Applicant $applicant)
-    {
-        $year = date('Y');
-        $department = $applicant->department;
-        $prefix = $department ? strtoupper(substr($department->name, 0, 3)) : 'ADM';
-        $count = Applicant::whereYear('created_at', $year)->where('id', '<=', $applicant->id)->count();
-        return $year . '/' . $prefix . '/' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     public function upload(Request $request)
@@ -350,7 +347,7 @@ class AdmissionController extends Controller
     }
 
     /**
-     * Show admission letter template upload page
+     * Show admission letter template editor
      */
     public function showLetterTemplate()
     {
@@ -366,31 +363,18 @@ class AdmissionController extends Controller
     }
 
     /**
-     * Upload admission letter template
+     * Save the editable admission letter template body.
      */
     public function uploadLetterTemplate(Request $request)
     {
-        $request->validate([
-            'template' => 'required|file|mimes:pdf,doc,docx|max:5120',
-        ]);
-
         try {
-            // Create templates directory if it doesn't exist
-            $destination = public_path('templates');
-            if (!is_dir($destination)) {
-                @mkdir($destination, 0755, true);
-            }
+            $body = (string) $request->input('template_body', '');
+            SystemSetting::set('admission_letter_template', $body);
 
-            $file = $request->file('template');
-            $filename = 'admission_letter_template.' . $file->getClientOriginalExtension();
-            $file->move($destination, $filename);
-
-            SystemSetting::set('admission_letter_template', $filename);
-
-            return back()->with('success', 'Admission letter template uploaded successfully');
+            return back()->with('success', 'Admission letter template saved successfully');
         } catch (\Throwable $e) {
-            \Log::error('Template upload failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to upload template: ' . $e->getMessage());
+            \Log::error('Template save failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to save template: ' . $e->getMessage());
         }
     }
 
@@ -427,6 +411,7 @@ class AdmissionController extends Controller
      */
     public function generateLetter(Applicant $applicant)
     {
+        $this->assertSameSchool($applicant);
         if ($applicant->status !== 'admitted') {
             return back()->with('error', 'Applicant is not admitted.');
         }
@@ -598,6 +583,19 @@ class AdmissionController extends Controller
         } catch (\Throwable $e) {
             \Log::error('deleteSignature failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to remove signature: ' . $e->getMessage());
+        }
+    }
+
+    private function assertSameSchool(Applicant $applicant): void
+    {
+        $authUser = auth()->user();
+        if (!$authUser) {
+            abort(401);
+        }
+        if ($authUser->school_id
+            && $applicant->school_id
+            && (int) $applicant->school_id !== (int) $authUser->school_id) {
+            abort(403, 'You are not allowed to access this applicant.');
         }
     }
 }
