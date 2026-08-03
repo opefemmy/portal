@@ -20,6 +20,63 @@
     </div>
 </div>
 
+{{-- Scope picker: restricts the page to the lecturer's assigned
+     School / Department / Programme triples. Selecting a different
+     combination and clicking Apply re-renders the page with the
+     picker's selection driving the hidden inputs that the server-side
+     enforceScope() guard verifies. The existing upload / manual entry
+     forms below are NOT modified — these hidden inputs are additive. --}}
+<div class="card mb-4 border-info">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Upload Scope (School / Department / Programme)</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url()->current() }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">School</label>
+                <select name="school_id" id="scope_school_id" class="form-select" required>
+                    @foreach($allowedSchools as $s)
+                        <option value="{{ $s->id }}" data-id="{{ $s->id }}" @selected((int) $selectedSchoolId === (int) $s->id)>
+                            {{ $s->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Department</label>
+                <select name="department_id" id="scope_department_id" class="form-select" required>
+                    @foreach($allowedDepartments as $d)
+                        <option value="{{ $d->id }}" data-school-id="{{ $d->school_id }}" data-id="{{ $d->id }}" @selected((int) $selectedDepartmentId === (int) $d->id)>
+                            {{ $d->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Programme</label>
+                <select name="programme_id" id="scope_programme_id" class="form-select" required>
+                    @foreach($allowedProgrammes as $p)
+                        <option value="{{ $p->id }}" data-department-id="{{ $p->department_id }}" data-id="{{ $p->id }}" @selected((int) $selectedProgrammeId === (int) $p->id)>
+                            {{ $p->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-info text-white">
+                    <i class="fas fa-check me-2"></i>Apply Scope
+                </button>
+                <a href="{{ url()->current() }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-undo me-2"></i>Reset to Course Default
+                </a>
+                <small class="text-muted ms-auto align-self-center">
+                    Only combinations you are assigned to are listed.
+                </small>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- Bulk Upload Form --}}
 <div class="card mb-4">
     <div class="card-header bg-dark text-white">
@@ -28,6 +85,9 @@
     <div class="card-body">
         <form method="POST" action="{{ route('lecturer.courses.bulk', $course) }}" enctype="multipart/form-data" class="row g-3">
             @csrf
+            <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
+            <input type="hidden" name="department_id" value="{{ $selectedDepartmentId }}">
+            <input type="hidden" name="programme_id" value="{{ $selectedProgrammeId }}">
             <div class="col-md-8">
                 <label class="form-label">Select Excel File</label>
                 <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls,.csv" required>
@@ -51,6 +111,9 @@
     <div class="card-body">
         <form method="POST" action="{{ route('lecturer.courses.results.store', $course) }}">
             @csrf
+            <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
+            <input type="hidden" name="department_id" value="{{ $selectedDepartmentId }}">
+            <input type="hidden" name="programme_id" value="{{ $selectedProgrammeId }}">
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead class="table-primary">
@@ -138,6 +201,56 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ---- Scope picker: cascade school -> department -> programme ----
+    const schoolSel = document.getElementById('scope_school_id');
+    const deptSel = document.getElementById('scope_department_id');
+    const progSel = document.getElementById('scope_programme_id');
+
+    if (schoolSel && deptSel && progSel) {
+        // Snapshot original option lists so we can re-filter on change.
+        const deptOptions = Array.from(deptSel.options).map(o => ({ value: o.value, text: o.text, schoolId: o.dataset.schoolId }));
+        const progOptions = Array.from(progSel.options).map(o => ({ value: o.value, text: o.text, departmentId: o.dataset.departmentId }));
+
+        function rebuildDeptOptions(schoolId) {
+            const current = deptSel.value;
+            deptSel.innerHTML = '';
+            deptOptions
+                .filter(o => !schoolId || o.schoolId === String(schoolId))
+                .forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value;
+                    opt.text = o.text;
+                    opt.dataset.schoolId = o.schoolId;
+                    if (o.value === current) opt.selected = true;
+                    deptSel.appendChild(opt);
+                });
+        }
+
+        function rebuildProgOptions(deptId) {
+            const current = progSel.value;
+            progSel.innerHTML = '';
+            progOptions
+                .filter(o => !deptId || o.departmentId === String(deptId))
+                .forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value;
+                    opt.text = o.text;
+                    opt.dataset.departmentId = o.departmentId;
+                    if (o.value === current) opt.selected = true;
+                    progSel.appendChild(opt);
+                });
+        }
+
+        schoolSel.addEventListener('change', function() {
+            rebuildDeptOptions(this.value);
+            rebuildProgOptions(deptSel.value);
+        });
+        deptSel.addEventListener('change', function() {
+            rebuildProgOptions(this.value);
+        });
+    }
+
+    // ---- Existing score / grade live-update logic (untouched) ----
     const scoreInputs = document.querySelectorAll('.score-input');
 
     scoreInputs.forEach(input => {

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Lecturer;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseAssignment;
+use App\Models\Department;
+use App\Models\Programme;
+use App\Models\School;
 use App\Models\StudentCourse;
 use App\Models\Result;
 use App\Models\Student;
@@ -15,6 +18,93 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ResultController extends Controller
 {
+    /**
+     * The unique (school_id, department_id, programme_id) triples the
+     * currently-authenticated lecturer is actually assigned to via
+     * CourseAssignment. Inferred from assignments rather than the
+     * lecturer's user profile so a lecturer assigned to courses across
+     * multiple departments / programmes keeps the union of those scopes.
+     *
+     * Returned shape: [['school_id' => 1, 'department_id' => 2, 'programme_id' => 3], ...]
+     *
+     * @return array<int, array{school_id: int|null, department_id: int|null, programme_id: int|null}>
+     */
+    protected function lecturerScope(): array
+    {
+        $rows = CourseAssignment::where('lecturer_id', auth()->id())
+            ->join('courses', 'courses.id', '=', 'course_assignments.course_id')
+            ->whereNotNull('courses.school_id')
+            ->whereNotNull('courses.department_id')
+            ->whereNotNull('courses.programme_id')
+            ->select('courses.school_id', 'courses.department_id', 'courses.programme_id')
+            ->distinct()
+            ->get();
+
+        return $rows
+            ->map(fn ($r) => [
+                'school_id' => (int) $r->school_id,
+                'department_id' => (int) $r->department_id,
+                'programme_id' => (int) $r->programme_id,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * True if the given course's (school, department, programme) triple
+     * matches one of the triples in the lecturer's inferred scope.
+     * A course with any of those columns null can never match (safe default).
+     */
+    protected function isCourseInLecturerScope(Course $course): bool
+    {
+        if (empty($course->school_id) || empty($course->department_id) || empty($course->programme_id)) {
+            return false;
+        }
+
+        foreach ($this->lecturerScope() as $row) {
+            if ($row['school_id'] === (int) $course->school_id
+                && $row['department_id'] === (int) $course->department_id
+                && $row['programme_id'] === (int) $course->programme_id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Defensive server-side guard for write paths. Returns null when the
+     * request is allowed, or a redirect Response when it must be blocked.
+     * The lecturer's inferred scope (from CourseAssignment) must contain a
+     * triple matching the course, AND the request must carry matching
+     * school_id / department_id / programme_id hidden inputs set by the
+     * upload-page picker.
+     */
+    protected function enforceScope(Request $request, Course $course)
+    {
+        if (!$this->isCourseInLecturerScope($course)) {
+            return back()->with(
+                'error',
+                'You cannot upload results for this course — it belongs to a different school, department, or programme than your assigned scope.'
+            );
+        }
+
+        $rSchool = $request->input('school_id');
+        $rDept = $request->input('department_id');
+        $rProg = $request->input('programme_id');
+
+        if ($rSchool === null || $rDept === null || $rProg === null
+            || (int) $rSchool !== (int) $course->school_id
+            || (int) $rDept !== (int) $course->department_id
+            || (int) $rProg !== (int) $course->programme_id) {
+            return back()->with(
+                'error',
+                'Please select the matching School, Department and Programme before uploading results for this course.'
+            );
+        }
+
+        return null;
+    }
+
     /**
      * Show students registered for lecturer's assigned course
      */
@@ -81,6 +171,34 @@ class ResultController extends Controller
                 return back()->with('error', 'You are not assigned to this course.');
             }
 
+            // Eager-load the course's school/dept/programme so the
+            // upload-page picker can pre-select the right scope.
+            $course->loadMissing(['department', 'programme', 'school']);
+
+            // Infer the lecturer's allowed scope from their assignments.
+            $scope = $this->lecturerScope();
+
+            // Picker choices: only schools / departments / programmes the
+            // lecturer is actually assigned to. Cascading is handled in
+            // the view via JS — the controller sends every distinct value
+            // in scope and the view filters departments by selected
+            // school, etc.
+            $allowedSchools = School::whereIn('id', collect($scope)->pluck('school_id')->unique())
+                ->orderBy('name')
+                ->get(['id', 'name']);
+            $allowedDepartments = Department::whereIn('id', collect($scope)->pluck('department_id')->unique())
+                ->orderBy('name')
+                ->get(['id', 'name', 'school_id']);
+            $allowedProgrammes = Programme::whereIn('id', collect($scope)->pluck('programme_id')->unique())
+                ->orderBy('name')
+                ->get(['id', 'name', 'department_id']);
+
+            // Selected scope: prefer query string (picker Apply), fall back
+            // to the course's own scope, fall back to the first allowed row.
+            $selectedSchoolId = (int) (request('school_id') ?: ($course->school_id ?: ($allowedSchools->first()->id ?? null)));
+            $selectedDepartmentId = (int) (request('department_id') ?: ($course->department_id ?: ($allowedDepartments->first()->id ?? null)));
+            $selectedProgrammeId = (int) (request('programme_id') ?: ($course->programme_id ?: ($allowedProgrammes->first()->id ?? null)));
+
             $studentCourses = collect();
             $existingResults = collect();
 
@@ -105,10 +223,18 @@ class ResultController extends Controller
                     ->keyBy('student_course_id');
             }
 
-            // Eager-load the course's department to avoid lazy load in view.
-            $course->loadMissing('department');
-
-            return view('lecturer.results-enter', compact('course', 'studentCourses', 'existingResults', 'assignment'));
+            return view('lecturer.results-enter', compact(
+                'course',
+                'studentCourses',
+                'existingResults',
+                'assignment',
+                'allowedSchools',
+                'allowedDepartments',
+                'allowedProgrammes',
+                'selectedSchoolId',
+                'selectedDepartmentId',
+                'selectedProgrammeId'
+            ));
         } catch (\Throwable $e) {
             \Log::error('Lecturer enter 500 for course ' . $course->id . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
             return back()->with('error', 'Unable to load results form: ' . $e->getMessage());
@@ -127,6 +253,11 @@ class ResultController extends Controller
 
             if (!$assignment) {
                 return back()->with('error', 'You are not assigned to this course.');
+            }
+
+            // Restrict by School / Department / Programme scope.
+            if ($blocked = $this->enforceScope($request, $course)) {
+                return $blocked;
             }
 
             $request->validate([
@@ -225,6 +356,12 @@ class ResultController extends Controller
                 return back()->with('error', 'Cannot edit approved results.');
             }
 
+            // Restrict by School / Department / Programme scope.
+            $resultCourse = Course::find($studentCourse->course_id);
+            if ($resultCourse && ($blocked = $this->enforceScope($request, $resultCourse))) {
+                return $blocked;
+            }
+
             $request->validate([
                 'ca1' => 'nullable|numeric|min:0|max:40',
                 'ca2' => 'nullable|numeric|min:0|max:40',
@@ -268,6 +405,11 @@ class ResultController extends Controller
 
         if (!$assignment) {
             return back()->with('error', 'You are not assigned to this course.');
+        }
+
+        // Restrict by School / Department / Programme scope.
+        if ($blocked = $this->enforceScope($request, $course)) {
+            return $blocked;
         }
 
         $request->validate([
