@@ -10,6 +10,19 @@
     $institutionEmail = SystemSetting::get('institution_email', '');
     $institutionWebsite = SystemSetting::get('institution_website', '');
     $registrarSignature = SystemSetting::get('registrar_signature_path', null);
+    $registrarName = SystemSetting::get('registrar_name');
+    if (! $registrarName) {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('users') && \Illuminate\Support\Facades\Schema::hasTable('roles')) {
+                $registrar = \App\Models\User::whereHas('role', function ($q) {
+                    $q->where('slug', 'registrar');
+                })->first();
+                $registrarName = $registrar?->name;
+            }
+        } catch (\Throwable $e) {
+            $registrarName = null;
+        }
+    }
     $letterBody = SystemSetting::get('admission_letter_body', "We are pleased to inform you that you have been offered provisional admission into the {programme} programme of the {department}, {school}, for the {session} academic session.\n\nPlease complete the acceptance process by paying the required fees listed below before the deadline. On behalf of the institution, we congratulate you and look forward to welcoming you on campus.");
     $letterFeesRaw = SystemSetting::get('admission_letter_fees', '[]');
     $letterFees = json_decode($letterFeesRaw, true);
@@ -154,8 +167,21 @@
                     <h5 class="mb-0"><i class="fas fa-signature me-2"></i>Registrar Signature</h5>
                 </div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label for="registrar_name" class="form-label">Registrar Name</label>
+                        <input type="text" id="registrar_name" name="registrar_name"
+                               class="form-control @error('registrar_name') is-invalid @enderror"
+                               value="{{ old('registrar_name', $registrarName) }}"
+                               placeholder="e.g. Dr. A. B. Registrar">
+                        <small class="text-muted">
+                            This is the name shown under the signature on every printed admission letter. If left blank, the system falls back to the user account with the <code>registrar</code> role.
+                        </small>
+                    </div>
+
+                    <hr>
+
                     <p class="text-muted small mb-3">
-                        Upload your signature (PNG/JPG with transparent background recommended). It will appear as the signee at the bottom of every letter.
+                        Upload your signature image (PNG/JPG with transparent background recommended). It will appear as the signee at the bottom of every letter.
                     </p>
                     @if($registrarSignature && file_exists(public_path('storage/' . $registrarSignature)))
                         <div class="text-center mb-3 p-3 border rounded bg-white">

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class Applicant extends Model
@@ -55,6 +58,10 @@ class Applicant extends Model
         'payment_status', 'payment_ref', 'payment_transaction_id',
         'payment_amount', 'payment_date', 'application_fee_id',
 
+        // Per-purpose payment timestamps (filled by ApplicantPaymentService)
+        'application_paid_at', 'acceptance_paid_at', 'compulsory_paid_at',
+        'migrated_to_student_at',
+
         // Migration (filled when compulsory fee is paid and applicant becomes a Student)
         'student_id',
 
@@ -66,6 +73,10 @@ class Applicant extends Model
         'date_of_birth' => 'date',
         'jamb_score' => 'integer',
         'reviewed_at' => 'datetime',
+        'application_paid_at' => 'datetime',
+        'acceptance_paid_at' => 'datetime',
+        'compulsory_paid_at' => 'datetime',
+        'migrated_to_student_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -127,6 +138,173 @@ class Applicant extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function payments(): HasMany
+    {
+        // Online Payment rows (Paystack/Flutterwave/Xpress) link to the applicant
+        // via payments.payer_id. This was made nullable to support the new flow.
+        return $this->hasMany(Payment::class, 'payer_id');
+    }
+
+    public function externalPayments(): HasMany
+    {
+        return $this->hasMany(ExternalPayment::class);
+    }
+
+    /* -----------------------------------------------------------------
+     | Per-purpose payment state (used by gates, dashboard, history view)
+     * -----------------------------------------------------------------*/
+
+    /**
+     * Whether the applicant has paid the given purpose.
+     * purpose: application | acceptance | compulsory
+     */
+    public function hasPaid(string $purpose): bool
+    {
+        return match ($purpose) {
+            PaymentType::PURPOSE_APPLICATION => ! is_null($this->application_paid_at),
+            PaymentType::PURPOSE_ACCEPTANCE => ! is_null($this->acceptance_paid_at),
+            PaymentType::PURPOSE_SCHOOL_FEE => ! is_null($this->compulsory_paid_at),
+            default => false,
+        };
+    }
+
+    /**
+     * The next fee the applicant should pay, in canonical order.
+     * Returns null once all three have been paid.
+     */
+    public function nextPayablePurpose(): ?string
+    {
+        if (! $this->hasPaid(PaymentType::PURPOSE_APPLICATION)) {
+            return PaymentType::PURPOSE_APPLICATION;
+        }
+
+        // Acceptance only matters once the registrar has admitted the applicant.
+        if ($this->status === 'admitted' && ! $this->hasPaid(PaymentType::PURPOSE_ACCEPTANCE)) {
+            return PaymentType::PURPOSE_ACCEPTANCE;
+        }
+
+        if ($this->status === 'admitted'
+            && $this->hasPaid(PaymentType::PURPOSE_ACCEPTANCE)
+            && ! $this->hasPaid(PaymentType::PURPOSE_SCHOOL_FEE)) {
+            return PaymentType::PURPOSE_SCHOOL_FEE;
+        }
+
+        return null;
+    }
+
+    /**
+     * Human-friendly label for the next fee (used on the dashboard button).
+     */
+    public function nextPayableLabel(): ?string
+    {
+        $purpose = $this->nextPayablePurpose();
+
+        return match ($purpose) {
+            PaymentType::PURPOSE_APPLICATION => 'Pay Application Fee',
+            PaymentType::PURPOSE_ACCEPTANCE => 'Pay Acceptance Fee',
+            PaymentType::PURPOSE_SCHOOL_FEE => 'Pay Compulsory Fee',
+            default => null,
+        };
+    }
+
+    /**
+     * Whether the applicant has been migrated into the Student table.
+     */
+    public function isMigrated(): bool
+    {
+        return ! is_null($this->student_id) || ! is_null($this->migrated_to_student_at);
+    }
+
+    /**
+     * Unified transaction history.
+     *
+     * Combines online payments (`payments.payer_id = $this->id`) and bank
+     * transfers (`external_payments.applicant_id = $this->id`) into a single
+     * normalised shape, sorted by paid_at desc.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function transactionHistory(): Collection
+    {
+        $online = $this->payments()
+            ->where('status', 'completed')
+            ->get()
+            ->map(function (Payment $p): array {
+                return [
+                    'reference' => $p->reference ?: $p->payment_ref ?: $p->transaction_id,
+                    'amount' => (float) ($p->total_amount ?: $p->amount),
+                    'purpose' => $p->payment_purpose ?: $p->fee_type,
+                    'channel' => $p->payment_method ?: $p->gateway ?: 'online',
+                    'status' => $p->status,
+                    'paid_at' => $p->payment_date ?: $p->updated_at,
+                    'payer_name' => $p->payer_name,
+                    'payer_email' => $p->payer_email,
+                    'source' => 'online',
+                    'receipt_url' => $p->reference
+                        ? route('online-payment.receipt', ['payment' => $p->reference], false)
+                        : null,
+                ];
+            });
+
+        $manual = $this->externalPayments()
+            ->where('payment_status', 'completed')
+            ->get()
+            ->map(function (ExternalPayment $e): array {
+                $purpose = $e->paymentType?->purpose ?: 'other';
+                // External payments are validated by the applicant, so they may
+                // carry any purpose. Try to resolve from description if missing.
+                if ($purpose === 'other' && $e->description) {
+                    $purpose = $this->guessPurposeFromDescription($e->description);
+                }
+
+                return [
+                    'reference' => $e->transaction_id,
+                    'amount' => (float) $e->amount,
+                    'purpose' => $purpose,
+                    'channel' => $e->payment_channel ?: 'bank_transfer',
+                    'status' => $e->payment_status,
+                    'paid_at' => $e->payment_date ?: $e->validated_at,
+                    'payer_name' => $e->applicant_name,
+                    'payer_email' => $e->email,
+                    'source' => 'manual',
+                    'receipt_url' => null,
+                ];
+            });
+
+        return $online
+            ->merge($manual)
+            ->sortByDesc(fn (array $row) => $row['paid_at'] instanceof Carbon
+                ? $row['paid_at']->timestamp
+                : strtotime((string) $row['paid_at']))
+            ->values();
+    }
+
+    /**
+     * Fallback when an external payment has no linked PaymentType row —
+     * match on the description string the cashier typed when uploading.
+     */
+    private function guessPurposeFromDescription(string $description): string
+    {
+        $d = strtolower($description);
+
+        if (str_contains($d, 'application')) {
+            return PaymentType::PURPOSE_APPLICATION;
+        }
+        if (str_contains($d, 'acceptance') || str_contains($d, 'accept')) {
+            return PaymentType::PURPOSE_ACCEPTANCE;
+        }
+        if (str_contains($d, 'compulsory') || str_contains($d, 'school')) {
+            return PaymentType::PURPOSE_SCHOOL_FEE;
+        }
+
+        return PaymentType::PURPOSE_OTHER;
     }
 
     public static function generateApplicationNumber()

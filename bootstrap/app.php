@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'library.access' => \App\Http\Middleware\LibraryAccessMiddleware::class,
             'student.onboarding' => \App\Http\Middleware\StudentOnboardingComplete::class,
             'patient-portal' => \App\Http\Middleware\PatientPortalAuth::class,
+            'applicant.paid' => \App\Http\Middleware\EnsureApplicantHasPaid::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -4,9 +4,6 @@ namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
-use App\Models\Student;
-use App\Models\User;
-use App\Models\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -61,14 +58,15 @@ class ApplicantController extends Controller
     public function admit(Applicant $applicant, Request $request)
     {
         $this->assertSameSchool($applicant);
-        // Start a database transaction
         DB::beginTransaction();
 
         try {
-            // Generate matric number
             $matricNumber = \App\Services\MatricNumberService::generate($applicant);
 
-            // Update applicant status
+            // Reserve the matric number on the applicant row but DO NOT
+            // create the Student row yet, and DO NOT promote the user to
+            // the student role. Both happen when the applicant pays the
+            // compulsory fee (see ApplicantPaymentService::migrateApplicantToStudent).
             $applicant->update([
                 'status' => 'admitted',
                 'matric_number' => $matricNumber,
@@ -76,36 +74,9 @@ class ApplicantController extends Controller
                 'remarks' => $request->remarks,
             ]);
 
-            // Check if user exists and update role to student
-            if ($applicant->user) {
-                // Find student role
-                $studentRole = \App\Models\Role::where('slug', 'student')->first();
-
-                if ($studentRole) {
-                    $applicant->user->update([
-                        'role_id' => $studentRole->id,
-                        'matric_number' => $matricNumber,
-                    ]);
-                }
-            }
-
-            // Create student record
-            $currentSession = Session::where('is_current', true)->first();
-
-            Student::create([
-                'user_id' => $applicant->user_id,
-                'matric_number' => $matricNumber,
-                'school_id' => $applicant->school_id,
-                'department_id' => $applicant->department_id,
-                'programme_id' => $applicant->programme_id,
-                'session_id' => $currentSession?->id,
-                'level' => 1,
-                'status' => 'active',
-            ]);
-
             DB::commit();
 
-            return back()->with('success', 'Applicant admitted successfully! Matric Number: ' . $matricNumber);
+            return back()->with('success', 'Applicant admitted. Matric number reserved: ' . $matricNumber . '. Student record will be created when the compulsory fee is paid.');
         } catch (\Exception $e) {
             DB::rollback();
 

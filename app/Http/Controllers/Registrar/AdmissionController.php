@@ -146,43 +146,36 @@ class AdmissionController extends Controller
         return back()->with('success', 'Admission status updated');
     }
 
+    /**
+     * Reserved-matric-number + user-creation helper called when the
+     * registrar sets an applicant's status to `admitted`.
+     *
+     * NOTE: This method does NOT create the Student row any more.
+     * The Student record (and the user→student role promotion) is created
+     * lazily by ApplicantPaymentService::migrateApplicantToStudent when the
+     * applicant pays the compulsory fee. See:
+     * https://docs/... for the full flow.
+     */
     protected function createStudentFromApplicant(Applicant $applicant)
     {
         DB::transaction(function () use ($applicant) {
-            $role = Role::where('slug', 'student')->first();
+            // Some bulk-uploaded admission-list rows may not have a User yet.
+            // (Applicants who registered through /applicant/register already
+            // have one, so we skip them.)
+            if (! $applicant->user) {
+                $role = Role::where('slug', 'student')->first();
+                User::create([
+                    'name' => $applicant->full_name,
+                    'email' => $applicant->email,
+                    'password' => Hash::make($applicant->application_number),
+                    'role_id' => $role ? $role->id : 9,
+                    'is_active' => false, // activated after compulsory fee
+                ]);
+            }
 
-            // Create user account with application number as initial password
-            $user = User::create([
-                'name' => $applicant->full_name,
-                'email' => $applicant->email,
-                'password' => Hash::make($applicant->application_number),
-                'role_id' => $role ? $role->id : 9,
-                'is_active' => false, // Will be activated after payment
-            ]);
-
-            // Generate matric number
+            // Reserve the matric. Migration to a real Student record happens
+            // when the applicant pays the compulsory fee.
             $matricNumber = \App\Services\MatricNumberService::generate($applicant);
-
-            // Create student record
-            $student = Student::create([
-                'user_id' => $user->id,
-                'matric_number' => $matricNumber,
-                'school_id' => $applicant->school_id,
-                'department_id' => $applicant->department_id,
-                'programme_id' => $applicant->programme_id,
-                'session_id' => Setting::get('session_id'),
-                'level' => 1,
-                'status' => 'pending', // Pending until payment
-                'state_id' => $applicant->state_id ?? null,
-                'lga_id' => $applicant->lga_id ?? null,
-                'nationality_id' => $applicant->nationality_id ?? null,
-                // Track that this student came from an application
-                'from_application' => true,
-                'applicant_id' => $applicant->id,
-            ]);
-
-            // Copy application payments to student payments
-            $this->copyApplicationPaymentsToStudent($applicant, $student);
 
             $applicant->update([
                 'student_created' => true,
@@ -517,10 +510,23 @@ class AdmissionController extends Controller
     }
 
     /**
-     * Save admission letter settings (body, fees, institution details, registrar signature)
+     * Save admission letter settings (body, fees, institution details, registrar name + signature)
      */
     public function saveLetterSettings(Request $request)
     {
+        $request->validate([
+            'registrar_name'      => 'nullable|string|max:255',
+            'registrar_signature' => 'nullable|file|image|max:2048',
+            'admission_letter_body' => 'nullable|string',
+            'institution_name'    => 'nullable|string|max:255',
+            'institution_address' => 'nullable|string|max:255',
+            'institution_phone'   => 'nullable|string|max:50',
+            'institution_email'   => 'nullable|email|max:255',
+            'institution_website' => 'nullable|string|max:255',
+            'fees.*.name'         => 'nullable|string|max:255',
+            'fees.*.amount'       => 'nullable|numeric|min:0',
+        ]);
+
         try {
             SystemSetting::set('admission_letter_body', $request->input('admission_letter_body', ''));
 
@@ -544,6 +550,10 @@ class AdmissionController extends Controller
                     SystemSetting::set($field, $request->input($field, ''));
                 }
             }
+
+            // Registrar name — explicit setting preferred over the user-role lookup.
+            $registrarName = trim((string) $request->input('registrar_name', ''));
+            SystemSetting::set('registrar_name', $registrarName);
 
             // Handle signature upload
             if ($request->hasFile('registrar_signature')) {

@@ -220,7 +220,14 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
 
         // Admission letter (post-admit + post-acceptance-fee)
-        Route::get('/admission-letter', [ApplicationController::class, 'printAdmissionLetter'])->name('admission-letter');
+        Route::get('/admission-letter', [ApplicationController::class, 'printAdmissionLetter'])
+            ->middleware('applicant.paid:application')
+            ->name('admission-letter');
+
+        // Transaction history — any paid applicant can view their history.
+        Route::get('/payments/history', [ApplicationController::class, 'transactionHistory'])
+            ->middleware('applicant.paid:application')
+            ->name('payments.history');
     });
 });
 
@@ -306,6 +313,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // Payment Types Management
     Route::resource('payment-types', PaymentTypeController::class);
     Route::post('/payment-types/{paymentType}/toggle', [PaymentTypeController::class, 'toggle'])->name('payment-types.toggle');
+
+    // Admission Payment Flow — combined config screen (amounts + live overrides + gates)
+    Route::get('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'edit'])->name('admission.payment-flow');
+    Route::put('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'update'])->name('admission.payment-flow.update');
 
     // Grade Configuration
     Route::resource('grades', GradeController::class);

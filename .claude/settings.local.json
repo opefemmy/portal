@@ -69,7 +69,22 @@
       "Bash(node -e \"const fs = require\\('fs'\\); const html = fs.readFileSync\\('resources/views/applicant/apply.blade.php', 'utf8'\\); const scriptMatch = html.match\\(/<script>\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\); if\\(scriptMatch\\) { try { new Function\\(scriptMatch[1]\\); console.log\\('JavaScript syntax OK'\\); } catch\\(e\\) { console.log\\('Syntax error:', e.message\\); } }\")",
       "Bash(copy .env.production .env)",
       "PowerShell(Copy-Item *)",
-      "Bash(awk -F: '$1 > 9000')"
+      "Bash(awk -F: '$1 > 9000')",
+      "Bash(Sort-Object)",
+      "Bash(Select-String \"applicant\")",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; if \\(-not \\(Test-Path database/database.sqlite\\)\\) { New-Item -ItemType File database/database.sqlite | Out-Null }; $env:DB_CONNECTION='sqlite'; php artisan migrate --force --database=sqlite 2>&1 | Select-Object -Last 40)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php -r \"require 'vendor/autoload.php'; \\\\$app = require 'bootstrap/app.php'; \\\\$app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); \\\\$cols = collect\\(Illuminate\\\\Support\\\\Facades\\\\Schema::getColumns\\('applicants'\\)\\)->pluck\\('name'\\); foreach \\(['application_paid_at','acceptance_paid_at','compulsory_paid_at','migrated_to_student_at'] as \\\\$c\\) { echo \\\\$c . ': ' . \\(\\\\$cols->contains\\(\\\\$c\\) ? 'YES' : 'NO'\\) . PHP_EOL; }\" 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php -l app/Http/Middleware/EnsureApplicantHasPaid.php; php -l bootstrap/app.php; php -l routes/web.php)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan list 2>&1 | Select-String \"payments:rebuild\")",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan payments:rebuild-transaction-history --dry-run 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php -l app/Console/Commands/RebuildTransactionHistory.php; php artisan payments:rebuild-transaction-history --dry-run 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 80)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 40)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 60)",
+      "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 25)",
+      "Bash(.\\\\vendor\\\\bin\\\\phpunit --filter ApplicantPaymentFlowTest)",
+      "Bash(\"vendor/bin/phpunit\" --filter ApplicantPaymentFlowTest)"
     ]
   }
 }

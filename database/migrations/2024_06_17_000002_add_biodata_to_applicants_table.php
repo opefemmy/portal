@@ -8,67 +8,84 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('applicants', function (Blueprint $table) {
+        // Defensive: skip columns that already exist. The original create
+        // migration already declares some of these (surname, first_name,
+        // etc.) and re-adding them on a fresh DB raises a SQL error.
+        $existing = collect(Schema::getColumns('applicants'))->pluck('name')->all();
+
+        Schema::table('applicants', function (Blueprint $table) use ($existing) {
+            $addIfMissing = function (string $col, callable $callback) use ($existing) {
+                if (! in_array($col, $existing, true)) {
+                    $callback();
+                }
+            };
+
             // Personal Information
-            $table->string('surname')->nullable();
-            $table->string('first_name')->nullable();
-            $table->string('middle_name')->nullable();
-            $table->date('date_of_birth')->nullable();
-            $table->string('place_of_birth')->nullable();
-            $table->string('gender', 20)->nullable();
-            $table->string('marital_status', 20)->nullable();
-            $table->string('nationality')->nullable();
-            $table->string('state_of_origin')->nullable();
-            $table->string('lga')->nullable();
-            $table->text('permanent_address')->nullable();
-            $table->text('contact_address')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('passport')->nullable();
+            $addIfMissing('surname', fn () => $table->string('surname')->nullable());
+            $addIfMissing('first_name', fn () => $table->string('first_name')->nullable());
+            $addIfMissing('middle_name', fn () => $table->string('middle_name')->nullable());
+            $addIfMissing('date_of_birth', fn () => $table->date('date_of_birth')->nullable());
+            $addIfMissing('place_of_birth', fn () => $table->string('place_of_birth')->nullable());
+            $addIfMissing('gender', fn () => $table->string('gender', 20)->nullable());
+            $addIfMissing('marital_status', fn () => $table->string('marital_status', 20)->nullable());
+            $addIfMissing('nationality', fn () => $table->string('nationality')->nullable());
+            $addIfMissing('state_of_origin', fn () => $table->string('state_of_origin')->nullable());
+            $addIfMissing('lga', fn () => $table->string('lga')->nullable());
+            $addIfMissing('permanent_address', fn () => $table->text('permanent_address')->nullable());
+            $addIfMissing('contact_address', fn () => $table->text('contact_address')->nullable());
+            $addIfMissing('phone', fn () => $table->string('phone')->nullable());
+            $addIfMissing('passport', fn () => $table->string('passport')->nullable());
 
             // Guardian Information
-            $table->string('guardian_name')->nullable();
-            $table->string('guardian_relationship')->nullable();
-            $table->string('guardian_phone')->nullable();
-            $table->string('guardian_email')->nullable();
-            $table->string('guardian_occupation')->nullable();
-            $table->text('guardian_address')->nullable();
+            $addIfMissing('guardian_name', fn () => $table->string('guardian_name')->nullable());
+            $addIfMissing('guardian_relationship', fn () => $table->string('guardian_relationship')->nullable());
+            $addIfMissing('guardian_phone', fn () => $table->string('guardian_phone')->nullable());
+            $addIfMissing('guardian_email', fn () => $table->string('guardian_email')->nullable());
+            $addIfMissing('guardian_occupation', fn () => $table->string('guardian_occupation')->nullable());
+            $addIfMissing('guardian_address', fn () => $table->text('guardian_address')->nullable());
 
             // Educational Background
-            $table->string('primary_school')->nullable();
-            $table->string('primary_school_start')->nullable();
-            $table->string('primary_school_end')->nullable();
-            $table->string('secondary_school')->nullable();
-            $table->string('secondary_school_start')->nullable();
-            $table->string('secondary_school_end')->nullable();
-            $table->string('tertiary_institution')->nullable();
-            $table->string('tertiary_qualification')->nullable();
-            $table->string('tertiary_start')->nullable();
-            $table->string('tertiary_end')->nullable();
+            $addIfMissing('primary_school', fn () => $table->string('primary_school')->nullable());
+            $addIfMissing('primary_school_start', fn () => $table->string('primary_school_start')->nullable());
+            $addIfMissing('primary_school_end', fn () => $table->string('primary_school_end')->nullable());
+            $addIfMissing('secondary_school', fn () => $table->string('secondary_school')->nullable());
+            $addIfMissing('secondary_school_start', fn () => $table->string('secondary_school_start')->nullable());
+            $addIfMissing('secondary_school_end', fn () => $table->string('secondary_school_end')->nullable());
+            $addIfMissing('tertiary_institution', fn () => $table->string('tertiary_institution')->nullable());
+            $addIfMissing('tertiary_qualification', fn () => $table->string('tertiary_qualification')->nullable());
+            $addIfMissing('tertiary_start', fn () => $table->string('tertiary_start')->nullable());
+            $addIfMissing('tertiary_end', fn () => $table->string('tertiary_end')->nullable());
 
             // Programme Selection
-            $table->string('mode_of_study')->nullable()->default('Full Time');
-            $table->string('entry_level')->nullable()->default('UTME');
+            $addIfMissing('mode_of_study', fn () => $table->string('mode_of_study')->nullable()->default('Full Time'));
+            $addIfMissing('entry_level', fn () => $table->string('entry_level')->nullable()->default('UTME'));
 
             // JAMB Details
-            $table->string('jamb_registration_number')->nullable();
-            $table->string('jamb_year')->nullable();
-            $table->integer('jamb_score')->nullable();
-            $table->string('jamb_subject1')->nullable();
-            $table->string('jamb_subject2')->nullable();
-            $table->string('jamb_subject3')->nullable();
-            $table->string('jamb_subject4')->nullable();
+            $addIfMissing('jamb_registration_number', fn () => $table->string('jamb_registration_number')->nullable());
+            $addIfMissing('jamb_year', fn () => $table->string('jamb_year')->nullable());
+            $addIfMissing('jamb_score', fn () => $table->integer('jamb_score')->nullable());
+            $addIfMissing('jamb_subject1', fn () => $table->string('jamb_subject1')->nullable());
+            $addIfMissing('jamb_subject2', fn () => $table->string('jamb_subject2')->nullable());
+            $addIfMissing('jamb_subject3', fn () => $table->string('jamb_subject3')->nullable());
+            $addIfMissing('jamb_subject4', fn () => $table->string('jamb_subject4')->nullable());
 
             // Documents
-            $table->string('olevel_certificate')->nullable();
-            $table->string('tertiary_certificate')->nullable();
-            $table->string('birth_certificate')->nullable();
-            $table->string('lga_id')->nullable();
-            $table->string('jamb_result')->nullable();
+            $addIfMissing('olevel_certificate', fn () => $table->string('olevel_certificate')->nullable());
+            $addIfMissing('tertiary_certificate', fn () => $table->string('tertiary_certificate')->nullable());
+            $addIfMissing('birth_certificate', fn () => $table->string('birth_certificate')->nullable());
+            $addIfMissing('lga_id', fn () => $table->string('lga_id')->nullable());
+            $addIfMissing('jamb_result', fn () => $table->string('jamb_result')->nullable());
 
             // Review
-            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
-            $table->text('rejection_reason')->nullable();
+            if (! in_array('reviewed_by', $existing, true)) {
+                $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            }
+            if (! in_array('reviewed_at', $existing, true)) {
+                $table->timestamp('reviewed_at')->nullable();
+            }
+            if (! in_array('rejection_reason', $existing, true)) {
+                $table->text('rejection_reason')->nullable();
+            }
         });
     }
 

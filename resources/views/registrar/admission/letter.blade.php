@@ -9,6 +9,21 @@
     $signatureUrl = $registrarSignature && file_exists(public_path('storage/' . $registrarSignature))
         ? asset('storage/' . $registrarSignature)
         : null;
+    $registrarName = SystemSetting::get('registrar_name');
+    if (! $registrarName) {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('users') && \Illuminate\Support\Facades\Schema::hasTable('roles')) {
+                $registrar = \App\Models\User::whereHas('role', function ($q) {
+                    $q->where('slug', 'registrar');
+                })->first();
+                $registrarName = $registrar?->name ?: 'Registrar';
+            } else {
+                $registrarName = 'Registrar';
+            }
+        } catch (\Throwable $e) {
+            $registrarName = 'Registrar';
+        }
+    }
     $letterBody = SystemSetting::get('admission_letter_body', "We are pleased to inform you that you have been offered provisional admission into the {programme} programme of the {department}, {school}, for the {session} academic session.\n\nPlease complete the acceptance process by paying the required fees before the deadline.");
     $letterFeesRaw = SystemSetting::get('admission_letter_fees', '[]');
     $letterFees = json_decode($letterFeesRaw, true);
@@ -185,8 +200,8 @@
                         <div style="height: 70px;"></div>
                     @endif
                     <div class="sign-line">
-                        <strong>Registrar</strong><br>
-                        {{ $institutionName }}
+                        <strong>{{ $registrarName }}</strong><br>
+                        <span class="small">Registrar, {{ $institutionName }}</span>
                     </div>
                 </div>
             </div>

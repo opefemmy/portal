@@ -603,7 +603,7 @@ class ApplicationController extends Controller
     /**
      * Print admission letter for the authenticated applicant.
      * Available only after the applicant has been admitted AND has paid
-     * the acceptance fee (payment_status === 'completed').
+     * the acceptance fee.
      */
     public function printAdmissionLetter()
     {
@@ -613,7 +613,7 @@ class ApplicationController extends Controller
             return back()->with('error', 'You have not been admitted yet.');
         }
 
-        if ($applicant->payment_status !== 'completed') {
+        if (! $applicant->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE)) {
             return back()->with('error', 'Please pay the acceptance fee before printing your admission letter.');
         }
 
@@ -621,5 +621,19 @@ class ApplicationController extends Controller
         $student = Student::where('matric_number', $applicant->matric_number)->first();
 
         return view('applicant.admission-letter', compact('applicant', 'student'));
+    }
+
+    /**
+     * Show the unified transaction history for the authenticated applicant.
+     */
+    public function transactionHistory()
+    {
+        $applicant = Applicant::where('user_id', auth()->id())->firstOrFail();
+        $history = $applicant->transactionHistory();
+
+        return view('applicant.payments.history', [
+            'applicant' => $applicant,
+            'history' => $history,
+        ]);
     }
 }

@@ -109,42 +109,49 @@
     {{-- Payment / Requery --}}
     <div class="col-md-4 mb-3">
         <div class="card h-100">
-            <div class="card-header bg-{{ $applicant->payment_status === 'completed' ? 'success' : 'warning' }} text-white">
-                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment</h5>
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Progress</h5>
             </div>
-            <div class="card-body text-center">
-                <i class="fas fa-credit-card fa-3x text-{{ $applicant->payment_status === 'completed' ? 'success' : 'warning' }} mb-3"></i>
+            <div class="card-body">
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-file-alt me-2 text-primary"></i>Application Fee</span>
+                        @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_APPLICATION))
+                            <span class="badge bg-success rounded-pill"><i class="fas fa-check"></i> Paid</span>
+                        @else
+                            <span class="badge bg-warning text-dark rounded-pill">Pending</span>
+                        @endif
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-graduation-cap me-2 text-success"></i>Acceptance Fee</span>
+                        @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE))
+                            <span class="badge bg-success rounded-pill"><i class="fas fa-check"></i> Paid</span>
+                        @else
+                            <span class="badge bg-secondary rounded-pill">Locked</span>
+                        @endif
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-user-graduate me-2 text-primary"></i>Compulsory Fee</span>
+                        @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_SCHOOL_FEE))
+                            <span class="badge bg-success rounded-pill"><i class="fas fa-check"></i> Paid</span>
+                        @else
+                            <span class="badge bg-secondary rounded-pill">Locked</span>
+                        @endif
+                    </li>
+                </ul>
 
-                {{-- Payment Status --}}
-                <div class="mb-3">
-                    @if($applicant->payment_status === 'completed')
-                        <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i> Payment Verified</span>
-                    @else
-                        <span class="badge bg-warning fs-6"><i class="fas fa-clock me-1"></i> Payment Required</span>
-                    @endif
-                </div>
-
-                {{-- Pay Now Button - Only show if payment not completed --}}
-                @if($applicant->payment_status !== 'completed')
-                    @if($applicant->status === 'admitted')
-                        <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success mb-2 w-100">
-                            <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
-                        </a>
-                    @else
-                        <a href="{{ route('applicant.payment.gateway') }}" class="btn btn-success mb-2 w-100">
-                            <i class="fas fa-credit-card me-2"></i>Pay Now
-                        </a>
-                    @endif
-
-                    {{-- Validate Button - For verifying uploaded payments --}}
-                    <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-check-circle me-1"></i>Validate Payment
+                @php $nextPurpose = $applicant->nextPayablePurpose(); @endphp
+                @if($nextPurpose)
+                    <a href="{{ route('applicant.payment.gateway') }}?purpose={{ $nextPurpose }}" class="btn btn-success w-100">
+                        <i class="fas fa-credit-card me-2"></i>{{ $applicant->nextPayableLabel() }}
                     </a>
-                @endif
-
-                @if($applicant->payment_ref)
-                <hr>
-                <small class="text-muted">Ref: {{ $applicant->payment_ref }}</small>
+                    <a href="{{ url('/applicant/validate-payment') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                        <i class="fas fa-check-circle me-1"></i>Validate Bank Transfer
+                    </a>
+                @else
+                    <div class="alert alert-success mb-0 py-2 text-center">
+                        <i class="fas fa-check-circle me-1"></i> All fees paid
+                    </div>
                 @endif
             </div>
         </div>
@@ -186,7 +193,7 @@
                 <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
                 <h5>Accept Admission</h5>
                 <p class="text-muted">Pay acceptance fee to secure your admission</p>
-                @if($applicant->payment_status === 'completed')
+                @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE))
                     <button class="btn btn-success w-100" disabled>
                         <i class="fas fa-check-circle me-2"></i>Acceptance Fee Paid
                     </button>
@@ -204,7 +211,7 @@
     @endif
 
     {{-- Compulsory Fee — only after acceptance paid, triggers migration to student portal --}}
-    @if($applicant->status === 'admitted' && $applicant->payment_status === 'completed' && empty($applicant->student_id))
+    @if($applicant->status === 'admitted' && $applicant->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE) && !$applicant->isMigrated())
     <div class="col-md-4 mb-3">
         <div class="card h-100 border-primary">
             <div class="card-body text-center">
@@ -219,7 +226,7 @@
     </div>
     @endif
 
-    @if($applicant->status === 'admitted' && $applicant->payment_status === 'completed')
+    @if($applicant->status === 'admitted' && $applicant->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE))
     <div class="col-md-4 mb-3">
         <div class="card h-100 border-success">
             <div class="card-body text-center">
@@ -228,6 +235,21 @@
                 <p class="text-muted">Print your official admission letter</p>
                 <a href="{{ route('applicant.admission-letter') }}" class="btn btn-success" target="_blank">
                     <i class="fas fa-print me-2"></i>Print Admission Letter
+                </a>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($applicant->isMigrated())
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-id-badge fa-3x text-success mb-3"></i>
+                <h5>Student Portal</h5>
+                <p class="text-muted">You are now a student. Continue to the student portal.</p>
+                <a href="{{ route('student.dashboard') }}" class="btn btn-success w-100">
+                    <i class="fas fa-arrow-right me-2"></i>Go to Student Portal
                 </a>
             </div>
         </div>
@@ -269,50 +291,56 @@
 
 {{-- Payment History --}}
 <div class="card mt-4">
-    <div class="card-header bg-info text-white">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="fas fa-history me-2"></i>Payment History</h5>
+        <a href="{{ route('applicant.payments.history') }}" class="btn btn-sm btn-light">
+            View all <i class="fas fa-arrow-right ms-1"></i>
+        </a>
     </div>
     <div class="card-body">
-        @if($applicant && $applicant->payment_status === 'completed')
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Amount</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>{{ $applicant->payment_ref ?? $applicant->payment_transaction_id ?? ($externalPayment->transaction_id ?? 'N/A') }}</td>
-                    <td>₦{{ number_format($applicant->payment_amount ?? ($externalPayment->amount ?? 0), 2) }}</td>
-                    <td>
-                        @php
-                            $paymentDateRaw = $applicant->payment_date ?? ($externalPayment->payment_date ?? null);
-                            $paymentDateFormatted = 'N/A';
-                            if ($paymentDateRaw) {
-                                try {
-                                    $paymentDateFormatted = \Carbon\Carbon::parse($paymentDateRaw)->format('d M Y');
-                                } catch (\Throwable $e) {
-                                    $paymentDateFormatted = (string) $paymentDateRaw;
-                                }
-                            }
-                        @endphp
-                        {{ $paymentDateFormatted }}
-                    </td>
-                    <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Verified</span></td>
-                </tr>
-            </tbody>
-        </table>
+        @php $history = $applicant->transactionHistory(); @endphp
+        @if($history->isEmpty())
+            <div class="text-center py-3">
+                <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">No payment history yet.</p>
+            </div>
         @else
-        <div class="text-center py-3">
-            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
-            <p class="text-muted">No payment history yet.</p>
-            <a href="{{ route('applicant.payment') }}" class="btn btn-primary">
-                <i class="fas fa-credit-card me-2"></i>Make Payment
-            </a>
-        </div>
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Purpose</th>
+                            <th>Amount</th>
+                            <th>Channel</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($history->take(5) as $row)
+                            <tr>
+                                <td><code>{{ $row['reference'] }}</code></td>
+                                <td><span class="badge bg-light text-dark">{{ ucfirst(str_replace('_', ' ', $row['purpose'])) }}</span></td>
+                                <td>₦{{ number_format((float) $row['amount'], 2) }}</td>
+                                <td>{{ ucfirst(str_replace('_', ' ', $row['channel'])) }}</td>
+                                <td>
+                                    @if($row['paid_at'])
+                                        {{ $row['paid_at'] instanceof \Illuminate\Support\Carbon ? $row['paid_at']->format('d M Y') : \Illuminate\Support\Carbon::parse($row['paid_at'])->format('d M Y') }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $row['status'] === 'completed' ? 'success' : 'warning' }}">
+                                        {{ ucfirst($row['status']) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @endif
     </div>
 </div>

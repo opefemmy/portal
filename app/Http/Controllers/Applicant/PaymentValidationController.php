@@ -5,48 +5,51 @@ namespace App\Http\Controllers\Applicant;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\ExternalPayment;
+use App\Models\PaymentType;
 use App\Models\SystemSetting;
+use App\Services\ApplicantPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class PaymentValidationController extends Controller
 {
+    public function __construct(private readonly ApplicantPaymentService $payments)
+    {
+    }
+
     /**
-     * Show payment validation page
+     * Show payment validation page (the bank-transfer entry point).
      */
     public function showValidatePayment()
     {
-        // Check if admission form is open
-        if (!SystemSetting::isOpen('admission_form_open')) {
+        if (! SystemSetting::isOpen('admission_form_open')) {
             return view('applicant.payment-closed', [
-                'message' => 'Admission form is currently closed. Please check back later.'
+                'message' => 'Admission form is currently closed. Please check back later.',
             ]);
         }
 
-        // Check if applicant already has valid payment
         $applicant = Applicant::where('user_id', auth()->id())->first();
-        if ($applicant && $applicant->payment_status === 'completed') {
+        if ($applicant && $applicant->hasPaid(PaymentType::PURPOSE_APPLICATION)) {
             return redirect()->route('applicant.apply')
                 ->with('info', 'Your payment has already been verified. You can proceed with your application.');
         }
 
-        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
-        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
-
-        // Get payment type amount if available
-        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
-        if ($paymentType && $paymentType->amount > 0) {
-            $feeAmount = $paymentType->amount;
-        }
-
+        $feeAmount = $this->payments->resolveAmount(PaymentType::PURPOSE_APPLICATION);
         $paymentPortalUrl = SystemSetting::getPaymentPortalUrl();
 
-        return view('applicant.validate-payment', compact('requireFee', 'feeAmount', 'paymentPortalUrl'));
+        return view('applicant.validate-payment', [
+            'feeAmount' => $feeAmount,
+            'paymentPortalUrl' => $paymentPortalUrl,
+        ]);
     }
 
     /**
-     * Validate payment transaction ID
+     * Validate a bank-transfer transaction ID entered by the applicant.
+     *
+     * Always validates against the application fee. Acceptance and
+     * compulsory fees are validated through the same gateway page's
+     * bank-transfer tab, not here — this entry point is the public
+     * pre-login flow that already exists.
      */
     public function validatePayment(Request $request)
     {
@@ -56,85 +59,49 @@ class PaymentValidationController extends Controller
 
         $transactionId = strtoupper(trim($request->transaction_id));
 
-        // Check if transaction ID exists
-        $payment = ExternalPayment::where('transaction_id', $transactionId)->first();
-
-        // If not found in external payments, check if it's in applicants table (legacy)
-        if (!$payment) {
-            $legacyPayment = Applicant::where('payment_ref', $transactionId)
+        $external = ExternalPayment::getValidPayment($transactionId);
+        if (! $external) {
+            // Friendly check for legacy applicants that recorded the ref on their own row.
+            $legacy = Applicant::where('payment_ref', $transactionId)
                 ->where('payment_status', 'completed')
                 ->first();
 
-            if ($legacyPayment) {
-                // Legacy payment found - activate it
-                return back()->with('error', 'This is a legacy payment record. Please contact the admissions office for assistance.');
+            if ($legacy) {
+                return back()->with('error', 'This is a legacy payment record. Please contact the admissions office for assistance.')
+                    ->withInput();
             }
 
             return back()->with('error', 'Invalid Transaction ID. Kindly confirm your payment.')
                 ->withInput();
         }
 
-        // Check if already used
-        if ($payment->is_used) {
-            return back()->with('error', 'This payment reference has already been used.')
+        $purpose = PaymentType::PURPOSE_APPLICATION;
+        $expected = $this->payments->resolveAmount($purpose);
+        if ($expected > 0 && $external->amount < $expected) {
+            return back()->with('error', 'Payment amount is less than the required application fee of ₦' . number_format($expected))
                 ->withInput();
         }
 
-        // Check payment status
-        if ($payment->payment_status !== 'completed') {
-            return back()->with('error', 'This payment is not completed. Status: ' . ucfirst($payment->payment_status))
-                ->withInput();
-        }
-
-        // Check amount (if required fee is configured)
-        $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
-        $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
-
-        // Get payment type amount if available (overrides system setting)
-        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
-        if ($paymentType && $paymentType->amount > 0) {
-            $feeAmount = $paymentType->amount;
-        }
-
-        if ($requireFee && $feeAmount > 0) {
-            if ($payment->amount < $feeAmount) {
-                return back()->with('error', 'Payment amount is less than the required application fee of ₦' . number_format($feeAmount))
-                    ->withInput();
-            }
-        }
-
-        // Get or create applicant
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
 
-        if (!$applicant) {
-            // Create new applicant record
+        if (! $applicant) {
             $applicant = Applicant::create([
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'application_number' => Applicant::generateApplicationNumber(),
-                'payment_status' => 'completed',
-                'payment_ref' => $transactionId,
-                'payment_transaction_id' => 'EXT-' . Str::random(12),
-                'payment_amount' => $payment->amount,
-                'payment_date' => $payment->payment_date,
                 'status' => 'pending',
-            ]);
-        } else {
-            // Update existing applicant
-            $applicant->update([
-                'payment_status' => 'completed',
-                'payment_ref' => $transactionId,
-                'payment_transaction_id' => 'EXT-' . Str::random(12),
-                'payment_amount' => $payment->amount,
-                'payment_date' => $payment->payment_date,
+                'school_id' => \App\Models\School::first()?->id,
+                'department_id' => \App\Models\Department::first()?->id,
+                'programme_id' => \App\Models\Programme::first()?->id,
+                'session_id' => \App\Models\Session::where('is_current', true)->first()?->id,
             ]);
         }
 
-        // Mark external payment as used
-        $payment->markAsUsed($applicant->id, $user->id);
+        $this->payments->recordManual($applicant, $external, $purpose);
 
-        // Log the validation
+        $external->markAsUsed($applicant->id, $user->id);
+
         \App\Models\ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'payment_validated',
@@ -142,7 +109,8 @@ class PaymentValidationController extends Controller
             'metadata' => json_encode([
                 'transaction_id' => $transactionId,
                 'applicant_id' => $applicant->id,
-                'amount' => $payment->amount,
+                'amount' => $external->amount,
+                'purpose' => $purpose,
             ]),
         ]);
 
