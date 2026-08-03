@@ -26,6 +26,7 @@ class ResultController extends Controller
     public function approve(Request $request, Result $result)
     {
         $this->assertInSameSchool($result);
+        $this->assertCanActOn($result, 'approved_by_dean');
         $result->update([
             'status' => 'approved_by_business',
             'approved_by' => auth()->id(),
@@ -38,12 +39,74 @@ class ResultController extends Controller
     public function reject(Request $request, Result $result)
     {
         $this->assertInSameSchool($result);
+        $this->assertCanActOn($result, 'approved_by_dean');
         $result->update([
             'status' => 'rejected_by_business',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
             'remarks' => $request->remarks,
         ]);
 
         return back()->with('success', 'Result rejected by Business Committee');
+    }
+
+    /**
+     * Bulk approve results at the Business Committee stage.
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+        ]);
+
+        $user = auth()->user();
+        $updated = $this->bulkUpdateStatus($request->result_ids, $user, 'approved_by_dean', 'approved_by_business', null);
+
+        return back()->with('success', "{$updated} result(s) approved at Business Committee stage.");
+    }
+
+    /**
+     * Bulk reject results at the Business Committee stage.
+     */
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+            'remarks' => 'required|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $updated = $this->bulkUpdateStatus($request->result_ids, $user, 'approved_by_dean', 'rejected_by_business', $request->remarks);
+
+        return back()->with('success', "{$updated} result(s) rejected at Business Committee stage.");
+    }
+
+    private function bulkUpdateStatus(array $ids, $user, string $fromStatus, string $toStatus, ?string $remarks): int
+    {
+        $query = Result::whereIn('id', $ids)
+            ->where('status', $fromStatus);
+
+        if ($user && $user->school_id) {
+            $query->whereHas('studentCourse.student', function ($q) use ($user) {
+                $q->where('school_id', $user->school_id);
+            });
+        }
+
+        return $query->update(array_filter([
+            'status' => $toStatus,
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+            'remarks' => $remarks,
+        ], fn ($v) => $v !== null));
+    }
+
+    private function assertCanActOn(Result $result, string $expectedStatus): void
+    {
+        if ($result->status !== $expectedStatus) {
+            abort(409, "This result is no longer in the {$expectedStatus} state and cannot be acted on at the Business Committee stage.");
+        }
     }
 
     private function assertInSameSchool(Result $result): void

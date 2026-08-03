@@ -45,25 +45,95 @@ class ResultController extends Controller
     public function approve(Result $result, Request $request)
     {
         $this->assertInHodDepartment($result);
+        $this->assertCanActOn($result, 'pending_approval');
         $result->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'remarks' => $request->remarks,
         ]);
-        return back()->with('success', 'Result approved');
+        return back()->with('success', 'Result approved at HOD stage');
     }
 
     public function reject(Result $result, Request $request)
     {
         $this->assertInHodDepartment($result);
+        $this->assertCanActOn($result, 'pending_approval');
         $result->update([
             'status' => 'rejected',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'remarks' => $request->remarks,
         ]);
-        return back()->with('success', 'Result rejected');
+        return back()->with('success', 'Result rejected at HOD stage');
+    }
+
+    /**
+     * Bulk approve results at the HOD stage. HOD sees every level in
+     * their department (ND1/100L through HND2/400L) at once and can
+     * tick the rows they want to push forward to the Dean.
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+            'remarks' => 'nullable|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $courseIds = Course::where('department_id', $user->department_id)->pluck('id');
+
+        $updated = Result::whereIn('id', $request->result_ids)
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'pending_approval')
+            ->update([
+                'status' => 'approved',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'remarks' => $request->remarks,
+            ]);
+
+        return back()->with('success', "{$updated} result(s) approved at HOD stage.");
+    }
+
+    /**
+     * Bulk reject results at the HOD stage.
+     */
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+            'remarks' => 'required|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $courseIds = Course::where('department_id', $user->department_id)->pluck('id');
+
+        $updated = Result::whereIn('id', $request->result_ids)
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'pending_approval')
+            ->update([
+                'status' => 'rejected',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'remarks' => $request->remarks,
+            ]);
+
+        return back()->with('success', "{$updated} result(s) rejected at HOD stage.");
+    }
+
+    /**
+     * Reject per-row action against a result that has already been
+     * pushed to the next stage — Dean and beyond shouldn't be able
+     * to silently undo HOD approval.
+     */
+    private function assertCanActOn(Result $result, string $expectedStatus): void
+    {
+        if ($result->status !== $expectedStatus) {
+            abort(409, "This result is no longer in the {$expectedStatus} state and cannot be acted on at the HOD stage.");
+        }
     }
 
     private function assertInHodDepartment(Result $result): void

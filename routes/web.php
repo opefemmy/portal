@@ -599,6 +599,8 @@ Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(func
     Route::get('/results', [\App\Http\Controllers\HOD\ResultController::class, 'index'])->name('results.index');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\HOD\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\HOD\ResultController::class, 'reject'])->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\HOD\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\HOD\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
 // Dean Routes
@@ -607,6 +609,8 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
     Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])->name('departments');
     Route::get('/results', [\App\Http\Controllers\Dean\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])->name('results.approve');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\Dean\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\Dean\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
 // Registrar Routes - accessible by both registrar and admin/super_admin
@@ -693,6 +697,8 @@ Route::prefix('business-committee')->name('business-committee.')->middleware(['a
     Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'reject'])->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
 // Academic Board Routes
@@ -701,6 +707,8 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
     Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'reject'])->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
 // Librarian Routes

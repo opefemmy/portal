@@ -28,16 +28,19 @@ class ResultController extends Controller
         // Get all courses in these departments
         $courseIds = Course::whereIn('department_id', $departmentIds)->pluck('id');
 
-        // Get results pending approval for these courses
+        // Get results pending approval for these courses.
+        // The HOD writes 'approved' (not 'pending_approval') when they
+        // sign off, so the Dean's queue reads 'approved' rows from the
+        // HOD stage of the pipeline.
         $results = Result::whereIn('course_id', $courseIds)
-            ->where('status', 'pending_approval')
+            ->where('status', 'approved')
             ->with(['course', 'course.department', 'studentCourse.student.user', 'approvedBy'])
             ->latest()
             ->get();
 
         // Get recently approved results
         $approvedResults = Result::whereIn('course_id', $courseIds)
-            ->where('status', 'approved')
+            ->where('status', 'approved_by_dean')
             ->with(['course', 'course.department', 'studentCourse.student.user', 'approvedBy'])
             ->latest()
             ->limit(20)
@@ -50,12 +53,68 @@ class ResultController extends Controller
     {
         $this->assertInDeansSchool($result);
         $result->update([
-            'status' => 'approved',
+            'status' => 'approved_by_dean',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'remarks' => $request->remarks,
         ]);
-        return back()->with('success', 'Result approved');
+        return back()->with('success', 'Result approved at Dean stage');
+    }
+
+    /**
+     * Bulk approve results at the Dean stage.
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+            'remarks' => 'nullable|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $departmentIds = Department::where('school_id', $user->school_id)->pluck('id');
+        $courseIds = Course::whereIn('department_id', $departmentIds)->pluck('id');
+
+        $updated = Result::whereIn('id', $request->result_ids)
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'approved')
+            ->update([
+                'status' => 'approved_by_dean',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'remarks' => $request->remarks,
+            ]);
+
+        return back()->with('success', "{$updated} result(s) approved at Dean stage.");
+    }
+
+    /**
+     * Bulk reject results at the Dean stage.
+     */
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'result_ids' => 'required|array|min:1',
+            'result_ids.*' => 'integer|exists:results,id',
+            'remarks' => 'required|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $departmentIds = Department::where('school_id', $user->school_id)->pluck('id');
+        $courseIds = Course::whereIn('department_id', $departmentIds)->pluck('id');
+
+        $updated = Result::whereIn('id', $request->result_ids)
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'approved')
+            ->update([
+                'status' => 'rejected',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'remarks' => $request->remarks,
+            ]);
+
+        return back()->with('success', "{$updated} result(s) rejected at Dean stage.");
     }
 
     private function assertInDeansSchool(Result $result): void
