@@ -54,7 +54,8 @@ class ResultController extends Controller
                     ->keyBy('student_course_id');
             }
         } catch (\Throwable $e) {
-            \Log::error('Lecturer courseStudents failed: ' . $e->getMessage());
+            \Log::error('Lecturer courseStudents failed for course ' . $course->id . ': ' . $e->getMessage());
+            return back()->with('error', 'Unable to load student list. Please contact the administrator.');
         }
 
         return view('lecturer.course-students', compact('course', 'studentCourses', 'results', 'assignment'));
@@ -99,7 +100,8 @@ class ResultController extends Controller
                     ->keyBy('student_course_id');
             }
         } catch (\Throwable $e) {
-            \Log::error('Lecturer enter failed: ' . $e->getMessage());
+            \Log::error('Lecturer enter failed for course ' . $course->id . ': ' . $e->getMessage());
+            return back()->with('error', 'Unable to load results form. Please contact the administrator.');
         }
 
         return view('lecturer.results-enter', compact('course', 'studentCourses', 'existingResults', 'assignment'));
@@ -254,76 +256,81 @@ class ResultController extends Controller
             'excel_file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 
-        $file = $request->file('excel_file');
-        $spreadsheet = IOFactory::load($file->getRealPath());
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray();
+        try {
+            $file = $request->file('excel_file');
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray();
 
-        // Skip header row
-        array_shift($rows);
+            // Skip header row
+            array_shift($rows);
 
-        $currentSession = Session::getCurrentSession();
-        $errors = [];
-        $successCount = 0;
+            $currentSession = Session::getCurrentSession();
+            $errors = [];
+            $successCount = 0;
 
-        foreach ($rows as $index => $row) {
-            if (empty($row[0])) continue;
+            foreach ($rows as $index => $row) {
+                if (empty($row[0])) continue;
 
-            // Expected format: Matric No, Fullname, CA1, CA2, Total (optional)
-            $matricNo = trim($row[0]);
-            $fullname = trim($row[1]) ?? '';
-            $ca1 = floatval($row[2]) ?? 0;
-            $ca2 = floatval($row[3]) ?? 0;
-            $exam = floatval($row[4]) ?? 0;
+                // Expected format: Matric No, Fullname, CA1, CA2, Exam, Total
+                $matricNo = trim($row[0]);
+                $fullname = trim($row[1] ?? '');
+                $ca1 = is_numeric($row[2] ?? null) ? floatval($row[2]) : 0;
+                $ca2 = is_numeric($row[3] ?? null) ? floatval($row[3]) : 0;
+                $exam = is_numeric($row[4] ?? null) ? floatval($row[4]) : 0;
 
-            // Find student by matric number
-            $student = Student::where('matric_number', $matricNo)->first();
+                // Find student by matric number
+                $student = Student::where('matric_number', $matricNo)->first();
 
-            if (!$student) {
-                $errors[] = "Row " . ($index + 2) . ": Student with matric number {$matricNo} not found.";
-                continue;
+                if (!$student) {
+                    $errors[] = "Row " . ($index + 2) . ": Student with matric number {$matricNo} not found.";
+                    continue;
+                }
+
+                // Find student's course registration
+                $studentCourse = StudentCourse::where('student_id', $student->id)
+                    ->where('course_id', $course->id)
+                    ->where('session_id', $currentSession->id ?? 0)
+                    ->where('status', 'registered')
+                    ->first();
+
+                if (!$studentCourse) {
+                    $errors[] = "Row " . ($index + 2) . ": {$matricNo} is not registered for this course.";
+                    continue;
+                }
+
+                $total = $ca1 + $ca2 + $exam;
+                $grade = \App\Models\Grade::getGrade($total);
+
+                // SPIKE: Delete existing result first to avoid duplicates
+                Result::where('student_course_id', $studentCourse->id)->delete();
+
+                // Create fresh result record
+                Result::create([
+                    'student_course_id' => $studentCourse->id,
+                    'course_id' => $course->id,
+                    'ca1' => $ca1,
+                    'ca2' => $ca2,
+                    'exam' => $exam,
+                    'total_score' => $total,
+                    'grade' => $grade ? $grade->grade : null,
+                    'grade_point' => $grade ? $grade->grade_point : 0,
+                    'remarks' => $grade ? $grade->remark : null,
+                    'status' => 'pending_approval',
+                ]);
+
+                $successCount++;
             }
 
-            // Find student's course registration
-            $studentCourse = StudentCourse::where('student_id', $student->id)
-                ->where('course_id', $course->id)
-                ->where('session_id', $currentSession->id ?? 0)
-                ->where('status', 'registered')
-                ->first();
-
-            if (!$studentCourse) {
-                $errors[] = "Row " . ($index + 2) . ": {$matricNo} is not registered for this course.";
-                continue;
+            if (count($errors) > 0) {
+                return back()->with('warning', "Uploaded {$successCount} results. " . count($errors) . " errors: " . implode(', ', array_slice($errors, 0, 5)));
             }
 
-            $total = $ca1 + $ca2 + $exam;
-            $grade = \App\Models\Grade::getGrade($total);
-
-            // SPIKE: Delete existing result first to avoid duplicates
-            Result::where('student_course_id', $studentCourse->id)->delete();
-
-            // Create fresh result record
-            Result::create([
-                'student_course_id' => $studentCourse->id,
-                'course_id' => $course->id,
-                'ca1' => $ca1,
-                'ca2' => $ca2,
-                'exam' => $exam,
-                'total_score' => $total,
-                'grade' => $grade ? $grade->grade : null,
-                'grade_point' => $grade ? $grade->grade_point : 0,
-                'remarks' => $grade ? $grade->remark : null,
-                'status' => 'pending_approval',
-            ]);
-
-            $successCount++;
+            return back()->with('success', "Successfully uploaded {$successCount} results!");
+        } catch (\Throwable $e) {
+            \Log::error('Lecturer bulkUpload failed for course ' . $course->id . ': ' . $e->getMessage());
+            return back()->with('error', 'Bulk upload failed: ' . $e->getMessage());
         }
-
-        if (count($errors) > 0) {
-            return back()->with('warning', "Uploaded {$successCount} results. " . count($errors) . " errors: " . implode(', ', array_slice($errors, 0, 5)));
-        }
-
-        return back()->with('success', "Successfully uploaded {$successCount} results!");
     }
 
     /**
@@ -360,7 +367,8 @@ class ResultController extends Controller
             $sheet->setCellValue('C' . $row, '');
             $sheet->setCellValue('D' . $row, '');
             $sheet->setCellValue('E' . $row, '');
-            $sheet->setCellValue('F' . $row, '');
+            // Total is a live formula so Excel auto-sums C+D+E as scores are typed.
+            $sheet->setCellValue('F' . $row, '=IF(SUM(C' . $row . ':E' . $row . ')=0,"",SUM(C' . $row . ':E' . $row . '))');
             $row++;
         }
 

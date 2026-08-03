@@ -73,7 +73,7 @@
                         <tr>
                             <td>
                                 <input type="hidden" name="results[{{ $index }}][student_course_id]" value="{{ $sc->id }}">
-                                <strong>{{ $sc->student->matric_number }}</strong>
+                                <strong>{{ $sc->student->matric_number ?? 'N/A' }}</strong>
                             </td>
                             <td>{{ $sc->student->user->name ?? 'N/A' }}</td>
                             <td>

@@ -60,10 +60,10 @@
                         $result = $results[$sc->id] ?? null;
                     @endphp
                     <tr>
-                        <td><strong>{{ $sc->student->matric_number }}</strong></td>
+                        <td><strong>{{ $sc->student->matric_number ?? 'N/A' }}</strong></td>
                         <td>{{ $sc->student->user->name ?? 'N/A' }}</td>
                         <td>{{ $sc->student->programme->name ?? 'N/A' }}</td>
-                        <td>{{ $sc->student->level }}</td>
+                        <td>{{ $sc->student->level ?? 'N/A' }}</td>
                         <td>
                             @if($sc->course_type === 'carry_over')
                                 <span class="badge bg-warning">Carry Over</span>
