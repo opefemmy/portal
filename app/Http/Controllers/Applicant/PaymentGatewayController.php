@@ -233,6 +233,37 @@ class PaymentGatewayController extends Controller
             ]);
         }
 
+        // The test handler is a demo simulator, but it must NEVER record a
+        // second payment for a purpose the applicant has already paid for.
+        // Otherwise it overwrites applicant.payment_ref with a fake reference,
+        // and the second "Test payment" row shows up in /payments/history
+        // alongside the real Paystack payment.
+        //
+        // Source of truth is the payments table — applicant.payment_status and
+        // applicant.application_paid_at can drift if a column is missing on
+        // a particular deployment.
+        $existingPaidPayment = $applicant->payments()
+            ->where('payment_purpose', $purpose)
+            ->where('status', 'completed')
+            ->latest('payment_date')
+            ->first();
+
+        if ($existingPaidPayment) {
+            $redirectRoute = match ($purpose) {
+                'acceptance' => 'applicant.dashboard',
+                'compulsory', 'school_fee' => 'student.dashboard',
+                default => 'applicant.apply',
+            };
+
+            return redirect()
+                ->route($redirectRoute)
+                ->with(
+                    'info',
+                    "You have already paid the {$purpose} fee. No new test payment was recorded. "
+                        . "Existing reference: {$existingPaidPayment->reference}."
+                );
+        }
+
         try {
             $initiated = $this->payments->initiate($applicant, $purpose, 'test');
         } catch (\Throwable $e) {
