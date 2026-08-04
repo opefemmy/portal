@@ -59,14 +59,20 @@ class ApplicantPaymentService
      * audience is 'both' or matches $audience. Pass AUDIENCE_APPLICANT from
      * the applicant flow so an admin can't serve an applicant-only type to
      * a student, and vice versa.
+     *
+     * The audience filter is skipped when payment_types.audience does not
+     * exist on this DB (i.e. the 2026_08_04 migration is unrun) so the
+     * payment flow keeps working on legacy deployments. Once the migration
+     * is applied, the filter kicks in automatically — no code change.
      */
     public function resolvePaymentType(string $purpose, ?string $audience = null): ?PaymentType
     {
         $code = self::PURPOSE_CODES[$purpose] ?? null;
+        $audienceColumnExists = \Illuminate\Support\Facades\Schema::hasColumn('payment_types', 'audience');
 
         if ($code) {
             $query = PaymentType::where('code', $code);
-            if ($audience) {
+            if ($audience && $audienceColumnExists) {
                 $query->where(function ($q) use ($audience) {
                     $q->where('audience', PaymentType::AUDIENCE_BOTH)
                         ->orWhere('audience', $audience);
@@ -82,7 +88,7 @@ class ApplicantPaymentService
             ->where('is_active', true)
             ->orderBy('priority');
 
-        if ($audience) {
+        if ($audience && $audienceColumnExists) {
             $fallback->where(function ($q) use ($audience) {
                 $q->where('audience', PaymentType::AUDIENCE_BOTH)
                     ->orWhere('audience', $audience);

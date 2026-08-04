@@ -34,6 +34,7 @@ class PaymentGatewayController extends Controller
             \Illuminate\Support\Facades\Log::error('payment gateway page: uncaught error', [
                 'user_id' => optional(Auth::user())->id,
                 'purpose' => $request->get('purpose'),
+                'exception_class' => get_class($e),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -88,6 +89,7 @@ class PaymentGatewayController extends Controller
                 'user_id' => optional(Auth::user())->id,
                 'amount' => $request->input('amount'),
                 'purpose' => $request->input('purpose'),
+                'exception_class' => get_class($e),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
