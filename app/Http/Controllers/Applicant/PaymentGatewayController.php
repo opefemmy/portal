@@ -187,6 +187,7 @@ class PaymentGatewayController extends Controller
 
         $user = Auth::user();
         $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
+        $amount = (float) $request->input('amount');
 
         $applicant = Applicant::where('user_id', $user->id)->first();
 
@@ -204,15 +205,54 @@ class PaymentGatewayController extends Controller
             ]);
         }
 
-        $initiated = $this->payments->initiate($applicant, $purpose, 'test');
+        try {
+            $initiated = $this->payments->initiate($applicant, $purpose, 'test');
+        } catch (\RuntimeException $e) {
+            // The service throws when no PaymentType / SystemSetting has an amount
+            // configured for this purpose. For the test handler, fall back to the
+            // user-submitted amount rather than 500-ing the demo flow.
+            $reference = 'TEST-' . strtoupper(Str::random(10)) . '-' . date('Ymd');
 
-        $payment = $initiated['payment'];
-        $this->payments->markCompleted($payment, [
-            'test_mode' => true,
-            'simulated' => true,
-            'user_id' => $user->id,
-            'purpose' => $purpose,
-        ]);
+            $payment = Payment::create([
+                'student_id'      => null,
+                'fee_id'          => null,
+                'amount'          => $amount,
+                'total_amount'    => $amount,
+                'reference'       => $reference,
+                'payment_ref'     => $reference,
+                'transaction_id'  => $reference,
+                'gateway'         => 'test',
+                'payment_method'  => 'test',
+                'status'          => 'completed',
+                'is_verified'     => true,
+                'student_type'    => 'applicant',
+                'payment_purpose' => $purpose,
+                'fee_type'        => null,
+                'payer_id'        => $applicant->id,
+                'payer_name'      => $applicant->full_name,
+                'payer_email'     => $applicant->email ?: $applicant->user?->email,
+                'payer_phone'     => $applicant->phone,
+                'payment_date'    => now(),
+                'payment_details' => json_encode([
+                    'test_mode' => true,
+                    'simulated' => true,
+                    'user_id' => $user->id,
+                    'purpose' => $purpose,
+                    'fallback' => true,
+                    'reason' => $e->getMessage(),
+                ]),
+            ]);
+        }
+
+        $payment = $payment ?? $initiated['payment'];
+        if (isset($initiated)) {
+            $this->payments->markCompleted($payment, [
+                'test_mode' => true,
+                'simulated' => true,
+                'user_id' => $user->id,
+                'purpose' => $purpose,
+            ]);
+        }
 
         $redirectRoute = match ($purpose) {
             'acceptance' => 'applicant.dashboard',
