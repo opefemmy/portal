@@ -301,6 +301,8 @@ class ApplicantPaymentFlowTest extends TestCase
             $t->boolean('requires_payment')->default(true);
             $t->string('payment_channel')->nullable();
             $t->integer('priority')->default(0);
+            // Mirrors the 2026_08_04 migration: audience column with enum values.
+            $t->enum('audience', ['applicant', 'student', 'both'])->default('both');
             $t->timestamps();
         });
         Schema::create('payments', function ($t) {

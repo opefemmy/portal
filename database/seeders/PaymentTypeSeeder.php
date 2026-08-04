@@ -20,6 +20,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 1,
                 'purpose' => 'application',
+                'audience' => PaymentType::AUDIENCE_APPLICANT,
             ],
             [
                 'name' => 'Acceptance Fee',
@@ -31,6 +32,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 2,
                 'purpose' => 'acceptance',
+                'audience' => PaymentType::AUDIENCE_APPLICANT,
             ],
             [
                 'name' => 'School Fees',
@@ -42,6 +44,9 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 3,
                 'purpose' => 'school_fee',
+                // School fee is charged to applicants (compulsory, to migrate to
+                // the student portal) AND to returning students each session.
+                'audience' => PaymentType::AUDIENCE_BOTH,
             ],
             [
                 'name' => 'Hostel Fee',
@@ -53,6 +58,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 4,
                 'purpose' => 'hostel',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Convocation Fee',
@@ -64,6 +70,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 5,
                 'purpose' => 'other',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Indexing Fee',
@@ -75,6 +82,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 6,
                 'purpose' => 'registration',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Registration Fee',
@@ -86,6 +94,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 7,
                 'purpose' => 'registration',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Result Verification Fee',
@@ -97,6 +106,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 8,
                 'purpose' => 'other',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Certificate Fee',
@@ -108,6 +118,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 9,
                 'purpose' => 'other',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Library Fee',
@@ -119,6 +130,7 @@ class PaymentTypeSeeder extends Seeder
                 'payment_channel' => 'external',
                 'priority' => 10,
                 'purpose' => 'library',
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
         ];
 

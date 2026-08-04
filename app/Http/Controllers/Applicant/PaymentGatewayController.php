@@ -29,7 +29,9 @@ class PaymentGatewayController extends Controller
         $applicant = Applicant::where('user_id', $user->id)->first();
         $purpose = $request->get('purpose', PaymentType::PURPOSE_APPLICATION);
 
-        $paymentType = $this->payments->resolvePaymentType($purpose);
+        // Locked to the applicant audience so an admin can't accidentally
+        // route a student-only type into the applicant flow.
+        $paymentType = $this->payments->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
         if (! $paymentType) {
             return back()->with('error', 'Payment type not configured. Please contact the admissions office.');
         }
@@ -65,7 +67,7 @@ class PaymentGatewayController extends Controller
             return back()->with('error', $block);
         }
 
-        $initiated = $this->payments->initiate($applicant, $purpose, 'paystack');
+        $initiated = $this->payments->initiate($applicant, $purpose, 'paystack', PaymentType::AUDIENCE_APPLICANT);
 
         session()->put('pending_payment_id', $initiated['payment']->id);
         session()->put('pending_payment_ref', $initiated['reference']);
@@ -265,7 +267,7 @@ class PaymentGatewayController extends Controller
         }
 
         try {
-            $initiated = $this->payments->initiate($applicant, $purpose, 'test');
+            $initiated = $this->payments->initiate($applicant, $purpose, 'test', PaymentType::AUDIENCE_APPLICANT);
         } catch (\Throwable $e) {
             // Service may throw RuntimeException (no amount configured) or any
             // other DB-level error. For the test handler we always want to

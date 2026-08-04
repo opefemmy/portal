@@ -25,6 +25,8 @@
                         <th>Code</th>
                         <th>Amount</th>
                         <th>Channel</th>
+                        <th>Purpose</th>
+                        <th>Audience</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -37,6 +39,27 @@
                         <td><code>{{ $type->code }}</code></td>
                         <td>₦{{ number_format($type->amount, 2) }}</td>
                         <td>{{ ucfirst($type->payment_channel) }}</td>
+                        <td>
+                            @if($type->purpose)
+                                <span class="badge bg-light text-dark">
+                                    {{ \App\Models\PaymentType::getPurposes()[$type->purpose] ?? ucfirst($type->purpose) }}
+                                </span>
+                            @else
+                                —
+                            @endif
+                        </td>
+                        <td>
+                            @php
+                                $audienceClass = match($type->audience ?? 'both') {
+                                    'applicant' => 'bg-warning text-dark',
+                                    'student'   => 'bg-info text-dark',
+                                    'both'      => 'bg-secondary',
+                                    default     => 'bg-secondary',
+                                };
+                                $audienceLabel = \App\Models\PaymentType::getAudiences()[$type->audience ?? 'both'] ?? ucfirst($type->audience ?? 'both');
+                            @endphp
+                            <span class="badge {{ $audienceClass }}">{{ $audienceLabel }}</span>
+                        </td>
                         <td>
                             @if($type->is_active)
                             <span class="badge bg-success">Active</span>
@@ -95,6 +118,27 @@
                                             </select>
                                         </div>
                                         <div class="mb-3">
+                                            <label class="form-label">Purpose</label>
+                                            <select name="purpose" class="form-select">
+                                                <option value="">— None —</option>
+                                                @foreach(\App\Models\PaymentType::getPurposes() as $value => $label)
+                                                    <option value="{{ $value }}" {{ $type->purpose === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Audience <span class="text-danger">*</span></label>
+                                            <select name="audience" class="form-select" required>
+                                                @foreach(\App\Models\PaymentType::getAudiences() as $value => $label)
+                                                    <option value="{{ $value }}" {{ ($type->audience ?? 'both') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                            <small class="text-muted">
+                                                <strong>Applicant only</strong> hides this type from the public online-payment selector and from any student-facing page.
+                                                <strong>Student only</strong> hides it from applicants.
+                                            </small>
+                                        </div>
+                                        <div class="mb-3">
                                             <label class="form-label">Priority</label>
                                             <input type="number" name="priority" class="form-control" value="{{ $type->priority }}" min="1">
                                         </div>
@@ -121,7 +165,7 @@
                     </div>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4">No payment types configured.</td>
+                        <td colspan="9" class="text-center py-4">No payment types configured.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -164,6 +208,27 @@
                             <option value="internal">Internal (Manual)</option>
                             <option value="both">Both</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Purpose</label>
+                        <select name="purpose" class="form-select">
+                            <option value="">— None —</option>
+                            @foreach(\App\Models\PaymentType::getPurposes() as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Audience <span class="text-danger">*</span></label>
+                        <select name="audience" class="form-select" required>
+                            @foreach(\App\Models\PaymentType::getAudiences() as $value => $label)
+                                <option value="{{ $value }}" {{ $value === 'both' ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">
+                            <strong>Applicant only</strong> hides this type from the public online-payment selector and from any student-facing page.
+                            <strong>Student only</strong> hides it from applicants.
+                        </small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Priority</label>

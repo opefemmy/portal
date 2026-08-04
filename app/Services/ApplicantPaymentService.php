@@ -54,22 +54,42 @@ class ApplicantPaymentService
     /**
      * Resolve the PaymentType row for a purpose, falling back to matching on
      * the purpose column if the canonical code is missing.
+     *
+     * When $audience is supplied, the result is constrained to rows whose
+     * audience is 'both' or matches $audience. Pass AUDIENCE_APPLICANT from
+     * the applicant flow so an admin can't serve an applicant-only type to
+     * a student, and vice versa.
      */
-    public function resolvePaymentType(string $purpose): ?PaymentType
+    public function resolvePaymentType(string $purpose, ?string $audience = null): ?PaymentType
     {
         $code = self::PURPOSE_CODES[$purpose] ?? null;
 
         if ($code) {
-            $byCode = PaymentType::where('code', $code)->first();
+            $query = PaymentType::where('code', $code);
+            if ($audience) {
+                $query->where(function ($q) use ($audience) {
+                    $q->where('audience', PaymentType::AUDIENCE_BOTH)
+                        ->orWhere('audience', $audience);
+                });
+            }
+            $byCode = $query->first();
             if ($byCode) {
                 return $byCode;
             }
         }
 
-        return PaymentType::where('purpose', $purpose)
+        $fallback = PaymentType::where('purpose', $purpose)
             ->where('is_active', true)
-            ->orderBy('priority')
-            ->first();
+            ->orderBy('priority');
+
+        if ($audience) {
+            $fallback->where(function ($q) use ($audience) {
+                $q->where('audience', PaymentType::AUDIENCE_BOTH)
+                    ->orWhere('audience', $audience);
+            });
+        }
+
+        return $fallback->first();
     }
 
     /**
@@ -92,7 +112,10 @@ class ApplicantPaymentService
             }
         }
 
-        $type = $this->resolvePaymentType($purpose);
+        // Locked to applicant audience. Amount resolution runs on every
+        // applicant-side payment page load, so we must not pick a
+        // student-only row even if its purpose matches.
+        $type = $this->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
 
         return (float) ($type?->amount ?? 0);
     }
@@ -183,11 +206,15 @@ class ApplicantPaymentService
      * (Paystack/Flutterwave/Xpress) and then calling markCompleted()
      * when the gateway returns success.
      *
+     * @param  string|null  $audience  Pass PaymentType::AUDIENCE_APPLICANT
+     *         (or _STUDENT) to ensure the resolved type is meant for that
+     *         audience. Null = no audience restriction (admin/backfill paths).
+     *
      * @return array{payment: Payment, reference: string, amount: float}
      */
-    public function initiate(Applicant $applicant, string $purpose, string $channel = 'paystack'): array
+    public function initiate(Applicant $applicant, string $purpose, string $channel = 'paystack', ?string $audience = null): array
     {
-        $type = $this->resolvePaymentType($purpose);
+        $type = $this->resolvePaymentType($purpose, $audience);
         $amount = $this->resolveAmount($purpose);
 
         if ($amount <= 0) {
@@ -235,7 +262,7 @@ class ApplicantPaymentService
     public function recordManual(Applicant $applicant, ExternalPayment $external, string $purpose): Payment
     {
         return DB::transaction(function () use ($applicant, $external, $purpose) {
-            $type = $this->resolvePaymentType($purpose);
+            $type = $this->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
 
             $payment = Payment::create([
                 'student_id'      => null,

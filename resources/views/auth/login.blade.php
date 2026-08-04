@@ -342,10 +342,16 @@ if (Schema::hasTable('system_settings')) {
                         <select name="payment_type_id" id="payment_type_id" class="form-select" required>
                             <option value="">Select Payment Type</option>
                             @php
-                            // Show active payment types from payment_types table, excluding application fees
-                            // Application fees should be paid through the applicant portal
+                            // Show active payment types from the public online-payment
+                            // selector. This is a general/student surface, so:
+                            //   - Application fees are excluded (paid through the applicant portal)
+                            //   - Applicant-only types are excluded (audience != applicant-or-both)
                             $paymentTypes = \App\Models\PaymentType::where('is_active', true)
                                 ->where('purpose', '!=', \App\Models\PaymentType::PURPOSE_APPLICATION)
+                                ->where(function ($q) {
+                                    $q->where('audience', \App\Models\PaymentType::AUDIENCE_BOTH)
+                                      ->orWhere('audience', \App\Models\PaymentType::AUDIENCE_STUDENT);
+                                })
                                 ->orderBy('priority')
                                 ->orderBy('name')
                                 ->get();

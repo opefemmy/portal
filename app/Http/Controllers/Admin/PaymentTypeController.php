@@ -37,14 +37,15 @@ class PaymentTypeController extends Controller
             'description' => 'nullable|string|max:500',
             'amount' => 'required|numeric|min:0',
             'purpose' => 'nullable|string',
+            'audience' => 'required|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
             'is_active' => 'boolean',
             'requires_payment' => 'boolean',
             'payment_channel' => 'nullable|in:external,internal,both',
             'priority' => 'nullable|integer|min:1',
         ]);
 
-        $validated['is_active'] = $request->has('is_active') ? true : true;
-        $validated['requires_payment'] = $request->has('requires_payment') ? true : true;
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['requires_payment'] = $request->boolean('requires_payment');
 
         PaymentType::create($validated);
         return redirect()->route('admin.payment-types.index')->with('success', 'Payment type created successfully');
@@ -68,14 +69,15 @@ class PaymentTypeController extends Controller
             'description' => 'nullable|string|max:500',
             'amount' => 'required|numeric|min:0',
             'purpose' => 'nullable|string',
+            'audience' => 'required|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
             'is_active' => 'boolean',
             'requires_payment' => 'boolean',
             'payment_channel' => 'nullable|in:external,internal,both',
             'priority' => 'nullable|integer|min:1',
         ]);
 
-        $validated['is_active'] = $request->has('is_active') ? true : true;
-        $validated['requires_payment'] = $request->has('requires_payment') ? true : true;
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['requires_payment'] = $request->boolean('requires_payment');
 
         $paymentType->update($validated);
         return redirect()->route('admin.payment-types.index')->with('success', 'Payment type updated successfully');
