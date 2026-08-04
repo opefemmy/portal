@@ -105,7 +105,24 @@ class PaymentGatewayController extends Controller
         $verified = $this->verifyPaystackPayment($reference);
 
         if ($verified && ($verified['status'] ?? null) === 'success') {
-            $this->payments->markCompleted($payment, $verified);
+            // markCompleted stamps applicant.application_paid_at (etc.) and
+            // triggers applicant→student migration for school_fee. wrap in
+            // try/catch so a downstream failure (e.g. unrun migration, FK drift)
+            // still redirects the user with a success-flash instead of 500-ing;
+            // the verifyPayment side of the contract (the Paystack row) is
+            // already saved as 'pending' so nothing is lost.
+            try {
+                $this->payments->markCompleted($payment, $verified);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('payment callback: markCompleted failed', [
+                    'payment_id' => $payment->id,
+                    'reference' => $reference,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'Payment verified but applicant record could not be updated. Please contact the admissions office.');
+            }
 
             session()->forget('pending_payment_id');
             session()->forget('pending_payment_ref');
@@ -311,10 +328,35 @@ class PaymentGatewayController extends Controller
                     'reason' => $e->getMessage(),
                 ]),
             ]);
+
+            // Run markCompleted against the fallback row so the applicant-side
+            // columns get stamped (application_paid_at etc.). Without this the
+            // Payment row is "completed" but the dashboard still shows
+            // Payment Progress as Pending — because Applicant::hasPaid()
+            // reads the per-purpose *_paid_at timestamp on the applicants
+            // table. markCompleted is idempotent for status='completed', so
+            // it will skip the redundant update and go straight to
+            // applyApplicantSideEffects(). Wrap in try/catch because we are
+            // still in the demo "always succeed" path.
+            try {
+                $this->payments->markCompleted($payment, [
+                    'test_mode' => true,
+                    'simulated' => true,
+                    'user_id' => $user->id,
+                    'purpose' => $purpose,
+                    'via' => 'test_fallback',
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('test payment fallback: markCompleted failed', [
+                    'payment_id' => $payment->id,
+                    'purpose' => $purpose,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
-        // If the service succeeded, $initiated is set and the payment lives there;
-        // otherwise the catch branch above already created one and $initiated is undefined.
+        // If the service succeeded, $initiated is set; markCompleted wasn't
+        // called in the try-branch above so do it here.
         if (isset($initiated)) {
             $payment = $initiated['payment'];
             // markCompleted writes applicant-side columns (e.g. application_paid_at)

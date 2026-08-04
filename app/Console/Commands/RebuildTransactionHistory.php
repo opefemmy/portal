@@ -49,6 +49,7 @@ class RebuildTransactionHistory extends Command
 
         $this->info("Found {$applicants->count()} applicants with legacy payment data.");
 
+        // Legacy backfill from applicants.payment_*.
         $stamped = 0;
         $created = 0;
         $skipped = 0;
@@ -168,14 +169,71 @@ class RebuildTransactionHistory extends Command
             }
         }
 
+        // 5. Reconcile applicants who paid through the new pipeline but whose
+        // applicant.{application,acceptance,compulsory}_paid_at columns were
+        // never stamped (e.g. they hit the test-handler fallback or a callback
+        // before this fix). Their Payment rows are 'completed' but the
+        // dashboard's Payment Progress card still shows Pending.
+        //
+        // For each completed Payment row whose purpose is one of the three
+        // applicant fees and whose applicant-side timestamp is null, stamp it.
+        $reconciledStamps = 0;
+        $reconcileQuery = Payment::query()
+            ->where('status', 'completed')
+            ->whereIn('payment_purpose', [
+                PaymentType::PURPOSE_APPLICATION,
+                PaymentType::PURPOSE_ACCEPTANCE,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+            ])
+            ->whereNotNull('payer_id')
+            ->with('payer'); // eager-load applicant so we don't N+1
+
+        if ($applicantId) {
+            $reconcileQuery->where('payer_id', $applicantId);
+        }
+
+        $columnForPurpose = [
+            PaymentType::PURPOSE_APPLICATION => 'application_paid_at',
+            PaymentType::PURPOSE_ACCEPTANCE  => 'acceptance_paid_at',
+            PaymentType::PURPOSE_SCHOOL_FEE => 'compulsory_paid_at',
+        ];
+
+        foreach ($reconcileQuery->cursor() as $row) {
+            $applicant = $row->payer;
+            if (! $applicant) {
+                continue;
+            }
+
+            $column = $columnForPurpose[$row->payment_purpose] ?? null;
+            if (! $column || $applicant->{$column}) {
+                continue; // already stamped, nothing to do
+            }
+
+            if (! $dryRun) {
+                $applicant->update([
+                    $column => $row->payment_date ?: now(),
+                    // Keep legacy columns in sync so older views don't break.
+                    'payment_status' => 'completed',
+                    'payment_ref' => $applicant->payment_ref ?: $row->reference,
+                    'payment_transaction_id' => $applicant->payment_transaction_id ?: $row->transaction_id,
+                    'payment_amount' => $applicant->payment_amount ?: $row->amount,
+                    'payment_date' => $applicant->payment_date ?: ($row->payment_date ?: now()),
+                ]);
+            }
+
+            $reconciledStamps++;
+            $this->line("  [payment {$row->id} → applicant {$applicant->id}] stamped {$column}");
+        }
+
         $this->info("Done.");
         $this->table(
             ['metric', 'count'],
             [
-                ['applicants stamped', $stamped],
+                ['applicants stamped (legacy)', $stamped],
                 ['Payment rows created from applicant columns', $created],
                 ['applicants skipped (already had Payment)', $skipped],
                 ['Payment rows created from external_payments', $externalCreated],
+                ['applicants reconciled from existing Payment rows', $reconciledStamps],
                 ['dry-run', $dryRun ? 'yes' : 'no'],
             ]
         );
