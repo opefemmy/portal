@@ -262,7 +262,8 @@ class PaymentGatewayController extends Controller
                 'is_verified'     => true,
                 'student_type'    => 'applicant',
                 'payment_purpose' => $purpose,
-                'fee_type'        => null,
+                // payments.fee_type is NOT NULL with default 'other' — never null.
+                'fee_type'        => 'test',
                 'payer_id'        => $applicant->id,
                 'payer_name'      => $applicant->full_name,
                 'payer_email'     => $applicant->email ?: $applicant->user?->email,

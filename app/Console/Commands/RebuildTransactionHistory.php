@@ -95,7 +95,7 @@ class RebuildTransactionHistory extends Command
                     'is_verified'     => true,
                     'student_type'    => 'applicant',
                     'payment_purpose' => PaymentType::PURPOSE_APPLICATION,
-                    'fee_type'        => $type?->name,
+                    'fee_type'        => $type?->code ?? 'other',
                     'payer_id'        => $applicant->id,
                     'payer_name'      => $applicant->full_name,
                     'payer_email'     => $applicant->email,

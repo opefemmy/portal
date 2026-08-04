@@ -209,7 +209,11 @@ class ApplicantPaymentService
             'status'          => 'pending',
             'student_type'    => 'applicant',
             'payment_purpose' => $purpose,
-            'fee_type'        => $type?->name,
+            // Use the short code (APP_FORM, ACCEPT_FEE, SCHOOL_FEE) instead of
+            // the human name (e.g. "Application Form Fee"). The code always
+            // fits the payments.fee_type column, the name may not if the
+            // column was redefined shorter on a given deployment.
+            'fee_type'        => $type?->code ?? 'other',
             'payer_id'        => $applicant->id,
             'payer_name'      => $applicant->full_name,
             'payer_email'     => $applicant->email ?: $applicant->user?->email,
@@ -247,7 +251,8 @@ class ApplicantPaymentService
                 'is_verified'     => true,
                 'student_type'    => 'applicant',
                 'payment_purpose' => $purpose,
-                'fee_type'        => $type?->name,
+                // Short code — same reasoning as in initiate().
+                'fee_type'        => $type?->code ?? 'other',
                 'payer_id'        => $applicant->id,
                 'payer_name'      => $external->applicant_name ?: $applicant->full_name,
                 'payer_email'     => $external->email ?: $applicant->email,
