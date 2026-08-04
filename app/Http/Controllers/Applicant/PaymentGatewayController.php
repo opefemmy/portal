@@ -180,6 +180,34 @@ class PaymentGatewayController extends Controller
      */
     public function processTestPayment(Request $request)
     {
+        // The test handler is a demo simulator — it MUST always end in a success
+        // redirect. Wrap the whole body so any uncaught DB / model / redirect
+        // exception cannot 500 the endpoint. The error is logged and the user
+        // still sees a confirmation so the demo flow isn't blocked by config
+        // drift (e.g. unrun migrations, missing columns, FK issues).
+        try {
+            return $this->processTestPaymentInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('test payment: uncaught error, falling back to generic success redirect', [
+                'user_id' => optional(Auth::user())->id,
+                'amount' => $request->input('amount'),
+                'purpose' => $request->input('purpose'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('applicant.dashboard')
+                ->with('success', 'Test payment simulated (handler recovered from an internal error). Please check the application logs.');
+        }
+    }
+
+    /**
+     * Real implementation of processTestPayment — split out so the public
+     * entry point can wrap it in a top-level Throwable catch and never 500.
+     */
+    private function processTestPaymentInner(Request $request)
+    {
         $request->validate([
             'amount' => 'required|numeric|min:100',
             'purpose' => 'nullable|string|in:application,acceptance,compulsory,school_fee',
