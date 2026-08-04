@@ -244,8 +244,10 @@ class PaymentGatewayController extends Controller
             ]);
         }
 
-        $payment = $payment ?? $initiated['payment'];
+        // If the service succeeded, $initiated is set and the payment lives there;
+        // otherwise the catch branch above already created one and $initiated is undefined.
         if (isset($initiated)) {
+            $payment = $initiated['payment'];
             $this->payments->markCompleted($payment, [
                 'test_mode' => true,
                 'simulated' => true,
