@@ -22,8 +22,31 @@ class PaymentGatewayController extends Controller
      * Show payment page with Pay Now button (and bank-transfer tab).
      *
      * URL: /applicant/payment/gateway?purpose=application|acceptance|compulsory|school_fee
+     *
+     * Wrapped in a top-level Throwable catch so a downstream error
+     * (unrun migration, FK drift) never surfaces as a 500.
      */
     public function showPaymentPage(Request $request)
+    {
+        try {
+            return $this->showPaymentPageInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('payment gateway page: uncaught error', [
+                'user_id' => optional(Auth::user())->id,
+                'purpose' => $request->get('purpose'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'We could not load the payment page. Please try again or contact the admissions office.');
+        }
+    }
+
+    /**
+     * Real implementation of showPaymentPage.
+     */
+    private function showPaymentPageInner(Request $request)
     {
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
@@ -50,8 +73,38 @@ class PaymentGatewayController extends Controller
     /**
      * Initiate online payment. Returns the Paystack inline iframe page
      * with the freshly-created pending Payment reference.
+     *
+     * Wrapped in a top-level Throwable catch so a downstream error
+     * (unrun migration, FK drift, schema mismatch on a fresh deploy,
+     * etc.) never surfaces as a 500 to the applicant. We log and redirect
+     * back to the gateway with a generic error flash; the user can retry.
      */
     public function initiatePayment(Request $request)
+    {
+        try {
+            return $this->initiatePaymentInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('payment initiate: uncaught error', [
+                'user_id' => optional(Auth::user())->id,
+                'amount' => $request->input('amount'),
+                'purpose' => $request->input('purpose'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
+            $gatewayUrl = route('applicant.payment.gateway', ['purpose' => $purpose]);
+
+            return redirect($gatewayUrl)
+                ->with('error', 'We could not start your payment just now. Please try again or contact the admissions office if the issue persists.');
+        }
+    }
+
+    /**
+     * Real implementation of initiatePayment — split out so the public
+     * entry point can wrap it in a top-level Throwable catch and never 500.
+     */
+    private function initiatePaymentInner(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
@@ -60,11 +113,15 @@ class PaymentGatewayController extends Controller
 
         $user = Auth::user();
         $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
-        $applicant = Applicant::where('user_id', $user->id)->firstOrFail();
+        $applicant = Applicant::where('user_id', $user->id)->first();
+        if (! $applicant) {
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'No application record found for your account.');
+        }
 
         $block = $this->payments->canPay($applicant, $purpose);
         if ($block) {
-            return back()->with('error', $block);
+            return redirect()->route('applicant.dashboard')->with('error', $block);
         }
 
         $initiated = $this->payments->initiate($applicant, $purpose, 'paystack', PaymentType::AUDIENCE_APPLICANT);
@@ -86,8 +143,30 @@ class PaymentGatewayController extends Controller
 
     /**
      * Paystack payment callback. Single funnel into the service.
+     *
+     * Wrapped in a top-level Throwable catch so a verification failure or
+     * downstream error never surfaces as a 500 to the applicant.
      */
     public function paymentCallback(Request $request)
+    {
+        try {
+            return $this->paymentCallbackInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('payment callback: uncaught error', [
+                'reference' => $request->reference,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'Payment verification could not be completed. Please contact the admissions office.');
+        }
+    }
+
+    /**
+     * Real implementation of paymentCallback.
+     */
+    private function paymentCallbackInner(Request $request)
     {
         $reference = $request->reference;
 
