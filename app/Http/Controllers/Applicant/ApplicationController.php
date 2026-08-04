@@ -127,20 +127,44 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Show apply payment page - for making application fee payment
+     * Show apply payment page - for making application fee payment.
+     *
+     * Wrapped in a top-level Throwable catch so a downstream error
+     * (unrun migration, FK drift) never surfaces as a 500.
      */
     public function showApplyPayment(Request $request)
     {
+        try {
+            return $this->showApplyPaymentInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('apply payment page: uncaught error', [
+                'user_id' => optional(auth()->user())->id,
+                'exception_class' => get_class($e),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'We could not load the payment page. Please try again or contact the admissions office.');
+        }
+    }
+
+    private function showApplyPaymentInner(Request $request)
+    {
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
-        // Get application fee payment type
+        // Get application fee payment type. The audience filter would have
+        // been a problem here too on a DB missing the audience column, but
+        // the service's resolvePaymentType() is now schema-tolerant.
         $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
 
         if (!$paymentType) {
             return back()->with('error', 'Application fee payment type not found.');
         }
 
-        // Check if already paid
+        // Check if already paid — payment_status column may not exist on a
+        // legacy deployment; Eloquent magic getter returns null in that
+        // case, which is a safe 'not paid' state.
         if ($applicant && $applicant->payment_status === 'completed') {
             return redirect()->route('applicant.dashboard')->with('info', 'You have already paid the application fee.');
         }
@@ -149,9 +173,28 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Process application fee payment
+     * Process application fee payment.
+     *
+     * Wrapped in a top-level Throwable catch, mirror of showApplyPayment.
      */
     public function processApplyPayment(Request $request)
+    {
+        try {
+            return $this->processApplyPaymentInner($request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('apply payment process: uncaught error', [
+                'user_id' => optional(auth()->user())->id,
+                'exception_class' => get_class($e),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'We could not process your payment just now. Please try again or contact the admissions office.');
+        }
+    }
+
+    private function processApplyPaymentInner(Request $request)
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
 

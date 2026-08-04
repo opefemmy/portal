@@ -25,5 +25,41 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Any exception that bubbles up out of an /applicant/* route is
+        // caught by Laravel's exception handler. For applicant routes
+        // specifically we want to redirect to the applicant dashboard
+        // with a friendly error flash instead of showing the generic
+        // exception page — the audience / per-purpose migrations or other
+        // schema drift would otherwise produce a 500 that confuses the
+        // applicant. The full trace is logged at the same time.
+        $exceptions->render(function (\Throwable $e, $request) {
+            if (! $request->is('applicant/*')) {
+                return null;
+            }
+
+            \Illuminate\Support\Facades\Log::error('applicant route: uncaught exception', [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'exception_class' => get_class($e),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $flash = 'Something went wrong while processing your request. Please try again or contact the admissions office.';
+
+            // Drive the message: for in-progress payment flows the user
+            // just clicked Pay Now, so a payment-specific message reads
+            // better.
+            if ($request->is('applicant/payment/*') || $request->is('applicant/apply/payment*')) {
+                $flash = 'We could not load the payment page. Please try again or contact the admissions office.';
+            }
+
+            try {
+                return redirect()->route('applicant.dashboard')->with('error', $flash);
+            } catch (\Throwable $inner) {
+                // Routes aren't always named in test env or during early
+                // boot. Fall back to a hard-coded dashboard URL.
+                return redirect('/applicant/dashboard')->with('error', $flash);
+            }
+        });
     })->create();
