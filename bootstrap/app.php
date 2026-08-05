@@ -37,6 +37,25 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            // Authentication / authorization failures must propagate so
+            // Laravel can redirect to the login page. Catching them here
+            // and bouncing the user to /applicant/dashboard creates an
+            // ERR_TOO_MANY_REDIRECTS loop, because the dashboard itself
+            // requires auth — every hop is another AuthenticationException
+            // that the handler re-redirects.
+            if ($e instanceof \Illuminate\Auth\AuthenticationException
+                || $e instanceof \Illuminate\Auth\Access\AuthorizationException) {
+                return null;
+            }
+
+            // 404s and validation failures should be handled by their own
+            // dedicated renderers. Don't shadow them with our friendly
+            // flash message.
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                return null;
+            }
+
             \Illuminate\Support\Facades\Log::error('applicant route: uncaught exception', [
                 'path' => $request->path(),
                 'method' => $request->method(),
@@ -54,11 +73,24 @@ return Application::configure(basePath: dirname(__DIR__))
                 $flash = 'We could not load the payment page. Please try again or contact the admissions office.';
             }
 
+            // Redirecting to the dashboard when the failing route IS the
+            // dashboard creates ERR_TOO_MANY_REDIRECTS — the handler fires
+            // on every hop. If the request is for /applicant/dashboard
+            // itself, render an error page instead of looping.
+            $currentPath = trim($request->path(), '/');
+            if ($currentPath === 'applicant/dashboard') {
+                return response()->view('errors.500', ['exception' => $e], 500);
+            }
+
             try {
                 return redirect()->route('applicant.dashboard')->with('error', $flash);
             } catch (\Throwable $inner) {
                 // Routes aren't always named in test env or during early
-                // boot. Fall back to a hard-coded dashboard URL.
+                // boot. Fall back to a hard-coded dashboard URL — guarded
+                // against the same loop as above.
+                if ($currentPath === 'applicant/dashboard') {
+                    return response()->view('errors.500', ['exception' => $e], 500);
+                }
                 return redirect('/applicant/dashboard')->with('error', $flash);
             }
         });
