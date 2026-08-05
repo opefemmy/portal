@@ -92,14 +92,14 @@ class ApplicationController extends Controller
                 ->with('info', 'You have already been admitted and paid the acceptance fee.');
         }
 
-        // If applicant has already submitted (but not admitted yet), show their existing application
-        if ($applicant && !in_array($applicant->status, ['draft', 'pending'])) {
+        // Once the form has been submitted (status='pending', 'admitted',
+        // 'rejected', …) the applicant must not be able to re-open it.
+        // Only the no-row / status='draft' state permits (re-)entry into
+        // the apply form. Anything else is sent to the read-only view.
+        if ($applicant && $applicant->status !== 'draft') {
             return redirect()->route('applicant.application')
-                ->with('info', 'Your application has already been submitted. You cannot apply again.');
+                ->with('info', 'You have already submitted your application. You cannot apply again.');
         }
-
-        // If applicant has a pending/draft record, they can re-open the form to edit
-        // (but the Apply button on the dashboard will be disabled — see dashboard view)
 
         // Check if application fee is required
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
@@ -379,10 +379,25 @@ class ApplicationController extends Controller
         // Set email from authenticated user
         $validated['email'] = Auth::user()->email;
         $validated['user_id'] = Auth::id();
-        $validated['application_number'] = Applicant::generateApplicationNumber();
         $validated['status'] = 'pending';
 
-        $applicant = Applicant::create($validated);
+        // Reuse the Applicant row seeded at signup instead of creating a
+        // duplicate. updateOrCreate on user_id is the canonical
+        // upsert key here — the signup-time seed used the same key in
+        // firstOrCreate. Only generate an application_number when we
+        // actually created the row (it is unique, so don't trample one
+        // that already exists on resubmission paths).
+        $existing = Applicant::where('user_id', Auth::id())->first();
+        if ($existing && empty($existing->application_number)) {
+            $validated['application_number'] = Applicant::generateApplicationNumber();
+        } elseif (!$existing) {
+            $validated['application_number'] = Applicant::generateApplicationNumber();
+        }
+
+        $applicant = Applicant::updateOrCreate(
+            ['user_id' => Auth::id()],
+            $validated
+        );
 
         return redirect()->route('applicant.application')
             ->with('success', 'Application submitted successfully! Your Application Number is: ' . $applicant->application_number);
@@ -513,9 +528,14 @@ class ApplicationController extends Controller
             return redirect()->route('applicant.apply')->with('error', 'No application found.');
         }
 
-        // Only allow editing if status is pending or draft
-        if (!in_array($applicant->status, ['pending', 'draft'])) {
-            return back()->with('error', 'You cannot edit your application at this stage.');
+        // Only allow editing while the application is still a draft.
+        // Once submitted (status='pending', 'admitted', or 'rejected')
+        // the applicant is sent to the read-only view — the form cannot
+        // be reopened. This matches the same status check on the apply
+        // route so re-apply and re-edit are blocked together.
+        if ($applicant->status !== 'draft') {
+            return redirect()->route('applicant.application')
+                ->with('info', 'You have already submitted your application. You cannot edit it.');
         }
 
         $data = [
@@ -544,9 +564,12 @@ class ApplicationController extends Controller
             return redirect()->route('applicant.apply')->with('error', 'No application found.');
         }
 
-        // Only allow editing if status is pending or draft
-        if (!in_array($applicant->status, ['pending', 'draft'])) {
-            return back()->with('error', 'You cannot edit your application at this stage.');
+        // Same guard as editApplication: once submitted the applicant
+        // cannot reopen the form to mutate it. The POST handler enforces
+        // the same rule so the route can't be hit directly either.
+        if ($applicant->status !== 'draft') {
+            return redirect()->route('applicant.application')
+                ->with('info', 'You have already submitted your application. You cannot edit it.');
         }
 
         $validated = $request->validate([

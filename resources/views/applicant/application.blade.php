@@ -126,20 +126,56 @@
 </div>
 
 {{-- Personal Information --}}
+@php
+    // Some legacy applicants reached this page without ever submitting
+    // the apply form (e.g. paid externally and were given status='pending'
+    // by verifyExternalPayment without their personal info being filled in).
+    // Their split surname/first_name/middle_name columns are NULL. auth
+    // user's name was always populated at signup so we parse it as a fallback.
+    $userName = trim((string) ($applicant->user->name ?? auth()->user()->name ?? ''));
+    $displaySurname = $applicant->surname ?? null;
+    $displayFirst = $applicant->first_name ?? null;
+    $displayMiddle = $applicant->middle_name ?? null;
+    if ($userName !== '' && (empty($displaySurname) || empty($displayFirst))) {
+        $parts = preg_split('/\s+/', $userName, 3);
+        $displaySurname = $displaySurname ?: ($parts[0] ?? null);
+        $displayFirst = $displayFirst ?: ($parts[1] ?? null);
+        $displayMiddle = $displayMiddle ?: ($parts[2] ?? null);
+    }
+
+    // Passport lookup mirrors print-simple.blade.php: the legacy path is
+    // public/uploads/passports/, the new path is storage/passports/.
+    $passportFile = $applicant->passport ?? '';
+    $passportUrl = '';
+    if ($passportFile) {
+        if (file_exists(public_path('uploads/passports/' . $passportFile))) {
+            $passportUrl = asset('uploads/passports/' . $passportFile);
+        } elseif (file_exists(public_path('storage/passports/' . $passportFile))) {
+            $passportUrl = asset('storage/passports/' . $passportFile);
+        } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists('passports/' . $passportFile)) {
+            $passportUrl = asset('storage/passports/' . $passportFile);
+        }
+    }
+@endphp
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Personal Information</h5>
     </div>
     <div class="card-body">
         <div class="row">
+            @if($passportUrl)
+                <div class="col-md-12 mb-3 text-center">
+                    <img src="{{ $passportUrl }}" alt="Passport" style="max-height:140px; border:1px solid #ddd; padding:4px; background:#fff;">
+                </div>
+            @endif
             <div class="col-md-3 mb-3">
-                <strong>Surname:</strong> {{ $applicant->surname ?? 'N/A' }}
+                <strong>Surname:</strong> {{ $displaySurname ?? 'N/A' }}
             </div>
             <div class="col-md-3 mb-3">
-                <strong>First Name:</strong> {{ $applicant->first_name ?? 'N/A' }}
+                <strong>First Name:</strong> {{ $displayFirst ?? 'N/A' }}
             </div>
             <div class="col-md-3 mb-3">
-                <strong>Middle Name:</strong> {{ $applicant->middle_name ?? 'N/A' }}
+                <strong>Middle Name:</strong> {{ $displayMiddle ?? 'N/A' }}
             </div>
             <div class="col-md-3 mb-3">
                 <strong>Gender:</strong> {{ $applicant->gender ?? 'N/A' }}
