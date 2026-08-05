@@ -229,7 +229,13 @@
             </div>
             <div class="row">
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject1" class="form-control" placeholder="Subject 1" value="{{ old('olevel1_subject1', $applicant->olevel1_subject1 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 1,
+                        'name' => 'olevel1_subject1',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[1] ?? null,
+                        'value' => old('olevel1_subject1', $applicant->olevel1_subject1 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade1" class="form-select">
@@ -246,24 +252,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject2" class="form-control" placeholder="Subject 2" value="{{ old('olevel1_subject2', $applicant->olevel1_subject2 ?? '') }}">
-                </div>
-                <div class="col-md-6 mb-2">
-                    <select name="olevel1_grade2" class="form-select">
-                        <option value="">Grade</option>
-                        <option value="A1" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'A1' ? 'selected' : '' }}>A1</option>
-                        <option value="B2" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'B2' ? 'selected' : '' }}>B2</option>
-                        <option value="B3" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'B3' ? 'selected' : '' }}>B3</option>
-                        <option value="C4" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'C4' ? 'selected' : '' }}>C4</option>
-                        <option value="C5" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'C5' ? 'selected' : '' }}>C5</option>
-                        <option value="C6" {{ old('olevel1_grade2', $applicant->olevel1_grade2 ?? '') == 'C6' ? 'selected' : '' }}>C6</option>
-                        <option value="D7" {{ old('olevel1_grade1', $applicant->olevel1_grade1 ?? '') == 'D7' ? 'selected' : '' }}>D7</option>
-                        <option value="E8" {{ old('olevel1_grade1', $applicant->olevel1_grade1 ?? '') == 'E8' ? 'selected' : '' }}>E8</option>
-                        <option value="F9" {{ old('olevel1_grade1', $applicant->olevel1_grade1 ?? '') == 'F9' ? 'selected' : '' }}>F9</option>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject2" class="form-control" placeholder="Subject 2" value="{{ old('olevel1_subject2', $applicant->olevel1_subject2 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 2,
+                        'name' => 'olevel1_subject2',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[2] ?? null,
+                        'value' => old('olevel1_subject2', $applicant->olevel1_subject2 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade2" class="form-select">
@@ -280,7 +275,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject3" class="form-control" placeholder="Subject 3" value="{{ old('olevel1_subject3', $applicant->olevel1_subject3 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 3,
+                        'name' => 'olevel1_subject3',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel1_subject3', $applicant->olevel1_subject3 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade3" class="form-select">
@@ -297,7 +298,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject4" class="form-control" placeholder="Subject 4" value="{{ old('olevel1_subject4', $applicant->olevel1_subject4 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 4,
+                        'name' => 'olevel1_subject4',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel1_subject4', $applicant->olevel1_subject4 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade4" class="form-select">
@@ -314,7 +321,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject5" class="form-control" placeholder="Subject 5" value="{{ old('olevel1_subject5', $applicant->olevel1_subject5 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 5,
+                        'name' => 'olevel1_subject5',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel1_subject5', $applicant->olevel1_subject5 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade5" class="form-select">
@@ -367,7 +380,13 @@
             </div>
             <div class="row">
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject1" class="form-control" placeholder="Subject 1" value="{{ old('olevel2_subject1', $applicant->olevel2_subject1 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 1,
+                        'name' => 'olevel2_subject1',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[1] ?? null,
+                        'value' => old('olevel2_subject1', $applicant->olevel2_subject1 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade1" class="form-select">
@@ -384,7 +403,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject2" class="form-control" placeholder="Subject 2" value="{{ old('olevel2_subject2', $applicant->olevel2_subject2 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 2,
+                        'name' => 'olevel2_subject2',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[2] ?? null,
+                        'value' => old('olevel2_subject2', $applicant->olevel2_subject2 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade2" class="form-select">
@@ -401,7 +426,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject3" class="form-control" placeholder="Subject 3" value="{{ old('olevel2_subject3', $applicant->olevel2_subject3 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 3,
+                        'name' => 'olevel2_subject3',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel2_subject3', $applicant->olevel2_subject3 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade3" class="form-select">
@@ -418,7 +449,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject4" class="form-control" placeholder="Subject 4" value="{{ old('olevel2_subject4', $applicant->olevel2_subject4 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 4,
+                        'name' => 'olevel2_subject4',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel2_subject4', $applicant->olevel2_subject4 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade4" class="form-select">
@@ -435,7 +472,13 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject5" class="form-control" placeholder="Subject 5" value="{{ old('olevel2_subject5', $applicant->olevel2_subject5 ?? '') }}">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 5,
+                        'name' => 'olevel2_subject5',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                        'value' => old('olevel2_subject5', $applicant->olevel2_subject5 ?? null),
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade5" class="form-select">

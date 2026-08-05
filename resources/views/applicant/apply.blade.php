@@ -233,7 +233,12 @@
             </div>
             <div class="row">
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject1" class="form-control" placeholder="Subject 1">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 1,
+                        'name' => 'olevel1_subject1',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[1] ?? null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade1" class="form-select">
@@ -251,7 +256,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject2" class="form-control" placeholder="Subject 2">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 2,
+                        'name' => 'olevel1_subject2',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[2] ?? null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade2" class="form-select">
@@ -269,7 +279,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject3" class="form-control" placeholder="Subject 3">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 3,
+                        'name' => 'olevel1_subject3',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade3" class="form-select">
@@ -287,7 +302,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject4" class="form-control" placeholder="Subject 4">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 4,
+                        'name' => 'olevel1_subject4',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade4" class="form-select">
@@ -305,7 +325,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel1_subject5" class="form-control" placeholder="Subject 5">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 5,
+                        'name' => 'olevel1_subject5',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel1_grade5" class="form-select">
@@ -359,7 +384,12 @@
             </div>
             <div class="row">
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject1" class="form-control" placeholder="Subject 1">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 1,
+                        'name' => 'olevel2_subject1',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[1] ?? null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade1" class="form-select">
@@ -377,7 +407,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject2" class="form-control" placeholder="Subject 2">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 2,
+                        'name' => 'olevel2_subject2',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => $olevelCompulsory[2] ?? null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade2" class="form-select">
@@ -395,7 +430,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject3" class="form-control" placeholder="Subject 3">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 3,
+                        'name' => 'olevel2_subject3',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade3" class="form-select">
@@ -413,7 +453,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject4" class="form-control" placeholder="Subject 4">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 4,
+                        'name' => 'olevel2_subject4',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade4" class="form-select">
@@ -431,7 +476,12 @@
                     </select>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <input type="text" name="olevel2_subject5" class="form-control" placeholder="Subject 5">
+                    @include('applicant.partials.olevel-subject-select', [
+                        'position' => 5,
+                        'name' => 'olevel2_subject5',
+                        'subjects' => $olevelSubjects,
+                        'lockedValue' => null,
+                    ])
                 </div>
                 <div class="col-md-6 mb-2">
                     <select name="olevel2_grade5" class="form-select">

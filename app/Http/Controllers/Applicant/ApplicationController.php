@@ -23,6 +23,37 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
+    /**
+     * Canonical O'level subject list.
+     *
+     * The two compulsory subjects (English at position 1, Mathematics at
+     * position 2) are also surfaced separately so the view layer can lock
+     * them without having to know the order. Order in this array matches
+     * the order the dropdown shows after the locked subjects.
+     */
+    public const OLEVEL_SUBJECTS = [
+        'English',
+        'Mathematics',
+        'Physics',
+        'Chemistry',
+        'Biology',
+        'Government',
+        'Further Mathematics',
+        'C.R.S',
+        'I.R.K',
+        'Economics',
+        'Civic Education',
+        'Computer Studies',
+        'History',
+        'Commerce',
+        'Prin. of Account',
+    ];
+
+    public const OLEVEL_COMPULSORY = [
+        1 => 'English',
+        2 => 'Mathematics',
+    ];
+
     public function dashboard()
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
@@ -92,6 +123,8 @@ class ApplicationController extends Controller
             'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
             'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
             'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),
+            'olevelSubjects' => self::OLEVEL_SUBJECTS,
+            'olevelCompulsory' => self::OLEVEL_COMPULSORY,
         ];
         return view('applicant.apply', $data);
     }
@@ -477,6 +510,8 @@ class ApplicationController extends Controller
             'states' => \Schema::hasTable('states') ? State::orderBy('name')->get() : collect([]),
             'nationalities' => \Schema::hasTable('nationalities') ? \App\Models\Nationality::all() : collect([]),
             'centres' => \Schema::hasTable('admission_centres') ? \App\Models\AdmissionCentre::orderBy('name')->get() : collect([]),
+            'olevelSubjects' => self::OLEVEL_SUBJECTS,
+            'olevelCompulsory' => self::OLEVEL_COMPULSORY,
         ];
         return view('applicant.apply-edit', $data);
     }
