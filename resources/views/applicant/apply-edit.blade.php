@@ -17,18 +17,42 @@
             <h5 class="mb-0">Personal Information</h5>
         </div>
         <div class="card-body">
+            @php
+                // Same fallback as apply.blade.php: legacy Applicants
+                // created before the signup-time name split have NULL
+                // surname/first_name/middle_name. users.name was always
+                // populated at signup (concatenated from the three parts
+                // for new signups, or whatever the user typed for legacy
+                // signups), so parse it to fill the three slots.
+                $userName = trim((string) (auth()->user()->name ?? ''));
+                $fallbackSurname = $applicant->surname ?? '';
+                $fallbackFirst = $applicant->first_name ?? '';
+                $fallbackMiddle = $applicant->middle_name ?? '';
+                if ($userName !== '' && ($fallbackSurname === '' || $fallbackFirst === '')) {
+                    $parts = preg_split('/\s+/', $userName, 3);
+                    if (count($parts) >= 1 && $fallbackSurname === '') {
+                        $fallbackSurname = $parts[0];
+                    }
+                    if (count($parts) >= 2 && $fallbackFirst === '') {
+                        $fallbackFirst = $parts[1];
+                    }
+                    if (count($parts) >= 3 && $fallbackMiddle === '') {
+                        $fallbackMiddle = $parts[2];
+                    }
+                }
+            @endphp
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Surname *</label>
-                    <input type="text" name="surname" class="form-control" value="{{ old('surname', $applicant->surname ?? '') }}" readonly>
+                    <input type="text" name="surname" class="form-control" value="{{ old('surname', $fallbackSurname) }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">First Name *</label>
-                    <input type="text" name="first_name" class="form-control" value="{{ old('first_name', $applicant->first_name ?? '') }}" readonly>
+                    <input type="text" name="first_name" class="form-control" value="{{ old('first_name', $fallbackFirst) }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Middle Name</label>
-                    <input type="text" name="middle_name" class="form-control" value="{{ old('middle_name', $applicant->middle_name ?? '') }}" readonly>
+                    <input type="text" name="middle_name" class="form-control" value="{{ old('middle_name', $fallbackMiddle) }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Phone Number *</label>
