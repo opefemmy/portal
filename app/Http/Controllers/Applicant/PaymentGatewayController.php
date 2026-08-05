@@ -7,6 +7,7 @@ use App\Models\Applicant;
 use App\Models\PaymentType;
 use App\Models\SystemSetting;
 use App\Models\Payment;
+use App\Models\User;
 use App\Services\ApplicantPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,6 +59,26 @@ class PaymentGatewayController extends Controller
         $paymentType = $this->payments->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
         if (! $paymentType) {
             return back()->with('error', 'Payment type not configured. Please contact the admissions office.');
+        }
+
+        // For the application-fee flow a fresh user with no applicant row is
+        // expected — they're on the official "pay before filling the form"
+        // path. Auto-create a stub so canPay() (which requires an Applicant
+        // instance) doesn't TypeError, and the Pay Now button on the next
+        // page can submit successfully. For acceptance/compulsory/school_fee
+        // a missing row means the user is trying to skip ahead — bounce
+        // them with a clear message instead.
+        if (! $applicant) {
+            if ($purpose !== PaymentType::PURPOSE_APPLICATION) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'No application record found for your account.');
+            }
+
+            $applicant = $this->createStubApplicant($user);
+            if (! $applicant) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'We could not start your application record just now. Please try again or contact the admissions office.');
+            }
         }
 
         // Service-driven gate (replaces the two ad-hoc checks that lived here before).
@@ -116,9 +137,29 @@ class PaymentGatewayController extends Controller
         $user = Auth::user();
         $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
         $applicant = Applicant::where('user_id', $user->id)->first();
+
         if (! $applicant) {
-            return redirect()->route('applicant.dashboard')
-                ->with('error', 'No application record found for your account.');
+            // Only the application-fee flow can boot a fresh applicant — the
+            // user is on the official "pay before filling the form" path
+            // (/applicant/apply/payment -> Pay Now here). For acceptance,
+            // compulsory, and school_fee, the user must already have a
+            // submitted (and admitted) application, so a missing row means
+            // they're trying to skip ahead — send them to the dashboard.
+            if ($purpose !== PaymentType::PURPOSE_APPLICATION) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'No application record found for your account.');
+            }
+
+            $applicant = $this->createStubApplicant($user);
+            if (! $applicant) {
+                \Log::error('payment initiate: stub applicant create failed', [
+                    'user_id' => $user->id,
+                    'purpose' => $purpose,
+                ]);
+
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'We could not start your application record just now. Please try again or contact the admissions office.');
+            }
         }
 
         $block = $this->payments->canPay($applicant, $purpose);
@@ -494,5 +535,42 @@ class PaymentGatewayController extends Controller
 
         return redirect()->route('applicant.payment')
             ->with('info', 'Payment cancelled.');
+    }
+
+    /**
+     * Create a minimal Applicant row so a fresh user can pay the application
+     * fee before filling out the form. Mirrors the pattern used in
+     * processTestPaymentInner — same demo-shape stub (school/department/etc.
+     * fall back to the first available row, status starts as pending).
+     *
+     * The user fills in the real school_id/department_id/etc. when they
+     * submit /applicant/apply afterwards — submitApplication() does an update
+     * (line 259) or creates-with-update (line 630-632) which replaces these
+     * placeholder values with the real ones.
+     *
+     * Returns null on any DB failure so the caller can fall back to a
+     * graceful redirect instead of 500-ing.
+     */
+    private function createStubApplicant(User $user): ?Applicant
+    {
+        try {
+            return Applicant::create([
+                'user_id'            => $user->id,
+                'email'              => $user->email,
+                'application_number' => Applicant::generateApplicationNumber(),
+                'status'             => 'pending',
+                'school_id'          => \App\Models\School::first()?->id,
+                'department_id'      => \App\Models\Department::first()?->id,
+                'programme_id'       => \App\Models\Programme::first()?->id,
+                'session_id'         => \App\Models\Session::where('is_current', true)->first()?->id,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('payment initiate: stub applicant create failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

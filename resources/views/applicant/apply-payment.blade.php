@@ -43,6 +43,7 @@
                 {{-- Pay Now Button --}}
                 @php
                 $paymentPortalUrl = \App\Models\SystemSetting::getPaymentPortalUrl();
+                $hasApplicant = isset($applicant) && $applicant;
                 @endphp
                 @if($paymentPortalUrl)
                 <div class="d-grid mt-3">
@@ -56,6 +57,18 @@
                         <i class="fas fa-credit-card me-2"></i>Pay Now
                     </a>
                 </div>
+                @endif
+
+                @if(!$hasApplicant && !$paymentPortalUrl)
+                {{-- Fresh user with no applicant row yet. The Pay Now button
+                     routes through the gateway and the real payment handler
+                     will auto-create a stub Applicant on first submit so the
+                     payment can be recorded. Tell the user that clicking Pay
+                     Now will start their application record. --}}
+                <p class="text-muted small mt-2 mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Clicking <strong>Pay Now</strong> will create your application record. You will complete the form after payment.
+                </p>
                 @endif
 
                 <hr>
