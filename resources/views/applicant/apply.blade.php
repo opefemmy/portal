@@ -26,15 +26,15 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Surname *</label>
-                    <input type="text" name="surname" class="form-control" required>
+                    <input type="text" name="surname" class="form-control" value="{{ old('surname', $applicant->surname ?? '') }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">First Name *</label>
-                    <input type="text" name="first_name" class="form-control" required>
+                    <input type="text" name="first_name" class="form-control" value="{{ old('first_name', $applicant->first_name ?? '') }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Middle Name</label>
-                    <input type="text" name="middle_name" class="form-control">
+                    <input type="text" name="middle_name" class="form-control" value="{{ old('middle_name', $applicant->middle_name ?? '') }}" readonly>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Email *</label>

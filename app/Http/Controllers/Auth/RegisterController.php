@@ -68,7 +68,9 @@ class RegisterController extends Controller
     public function registerApplicant(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|confirmed|min:6',
             'phone' => 'nullable|string|max:20',
@@ -80,14 +82,38 @@ class RegisterController extends Controller
             return back()->with('error', 'Applicant role not found. Please contact administrator.');
         }
 
+        // Concatenate the three name parts for users.name so existing code
+        // (mailers, navigation, audit logs) that reads users.name still works.
+        $fullName = trim(
+            ($validated['surname'] ?? '') . ' ' .
+            ($validated['first_name'] ?? '') . ' ' .
+            ($validated['middle_name'] ?? '')
+        );
+
         $user = User::create([
-            'name' => $validated['name'],
+            'name' => $fullName,
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'phone' => $validated['phone'] ?? null,
             'role_id' => $applicantRole->id,
             'is_active' => true,
         ]);
+
+        // Seed an Applicant row with the split name parts so the apply form
+        // can pre-fill and lock them. The Applicant record is created
+        // here at signup (typically created later, on first payment), but
+        // doing it now lets us enforce the name-once contract early.
+        Applicant::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'email' => $validated['email'],
+                'surname' => $validated['surname'],
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'status' => 'draft',
+            ]
+        );
 
         auth()->login($user);
 
