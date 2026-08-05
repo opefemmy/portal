@@ -15,9 +15,12 @@ class HospitalPatient extends Model
     protected $table = 'hospital_patients';
 
     protected $fillable = [
-        'user_id', 'first_name', 'last_name', 'gender',
-        'date_of_birth', 'blood_type', 'phone', 'email', 'address',
-        'allergies', 'medical_history', 'is_active'
+        'user_id', 'patient_number', 'registered_by',
+        'first_name', 'last_name', 'other_name', 'gender',
+        'date_of_birth', 'blood_group', 'genotype',
+        'phone', 'email', 'address', 'state', 'lga',
+        'next_of_kin_name', 'next_of_kin_phone', 'next_of_kin_relationship',
+        'allergies', 'medical_history', 'is_active',
     ];
 
     protected $casts = [

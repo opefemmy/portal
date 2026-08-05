@@ -84,7 +84,21 @@
       "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 60)",
       "PowerShell(cd \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\"; $env:DB_CONNECTION='sqlite'; php artisan test --filter=ApplicantPaymentFlowTest 2>&1 | Select-Object -Last 25)",
       "Bash(.\\\\vendor\\\\bin\\\\phpunit --filter ApplicantPaymentFlowTest)",
-      "Bash(\"vendor/bin/phpunit\" --filter ApplicantPaymentFlowTest)"
+      "Bash(\"vendor/bin/phpunit\" --filter ApplicantPaymentFlowTest)",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' -Tail 200\")",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' -Tail 5\")",
+      "Bash(powershell -Command \"Select-String -Path 'storage\\\\logs\\\\laravel.log' -Pattern 'dashboard' -SimpleMatch | Select-Object -Last 5\")",
+      "Bash(powershell -Command \"Select-String -Path 'storage\\\\logs\\\\laravel.log' -Pattern 'admin.dashboard.blade' -SimpleMatch | Select-Object -Last 3\")",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' -TotalCount 7000 -Tail 50\")",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' | Select-Object -Skip 6950 -First 30\")",
+      "Bash(powershell -Command \"Select-String -Path 'storage\\\\logs\\\\laravel.log' -Pattern 'payment.test.process|processTestPayment|payment-test' -SimpleMatch | Select-Object -Last 5\")",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' -Tail 30\")",
+      "Bash(powershell -Command \"Select-String -Path 'storage\\\\logs\\\\laravel.log' -Pattern 'applicant/payment|processTestPayment|payment-test|PaymentGatewayController' -SimpleMatch | Select-Object -Last 3\")",
+      "Bash(powershell -Command \"Get-Content 'storage\\\\logs\\\\laravel.log' | Select-String -Pattern 'production.ERROR' | Select-Object -Last 3\")",
+      "Bash(grep -n 'full_name\\\\|protected $fillable\\\\|getFullNameAttribute' app/Models/Applicant.php)",
+      "Bash(awk NR>=176 && NR<=210 *)",
+      "Bash(grep *)",
+      "Bash(awk NR>=110 && NR<=180 *)"
     ]
   }
 }

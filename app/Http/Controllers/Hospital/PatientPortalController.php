@@ -8,6 +8,7 @@ use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalStaff;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PatientPortalController extends Controller
 {
@@ -22,29 +23,20 @@ class PatientPortalController extends Controller
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
         if (!$patient) {
-            // Create patient record from user data
-            $patient = HospitalPatient::create([
-                'user_id'         => $user->id,
-                'patient_number'  => $this->generatePatientNumber(),
-                'registered_by'   => $user->id,
-                'first_name'      => explode(' ', $user->name)[0] ?? 'Unknown',
-                'last_name'       => implode(' ', array_slice(explode(' ', $user->name ?? ''), 1)) ?: 'Patient',
-                'gender'          => $user->gender ?? 'male',
-                'date_of_birth'   => $user->date_of_birth ?? now()->subYears(18)->format('Y-m-d'),
-                'phone'           => $user->phone ?? 'N/A',
-                'address'         => $user->address ?? 'N/A',
-                'next_of_kin_name'         => 'Self',
-                'next_of_kin_phone'        => $user->phone ?? 'N/A',
-                'next_of_kin_relationship' => 'self',
-                'is_active'       => true,
-            ]);
+            $patient = $this->createPatientForUser($user);
         }
 
-        // Get patient's appointments
-        $appointments = HospitalAppointment::where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->limit(5)
-            ->get();
+        $appointments = collect();
+        if ($patient) {
+            try {
+                $appointments = HospitalAppointment::where('patient_id', $patient->id)
+                    ->orderBy('appointment_date', 'desc')
+                    ->limit(5)
+                    ->get();
+            } catch (\Throwable $e) {
+                \Log::error('Student medical index query failed: ' . $e->getMessage());
+            }
+        }
 
         return view('student.medical.index', compact('patient', 'appointments'));
     }
@@ -58,22 +50,12 @@ class PatientPortalController extends Controller
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
         if (!$patient) {
-            // Create patient record
-            $patient = HospitalPatient::create([
-                'user_id'                => $user->id,
-                'patient_number'         => $this->generatePatientNumber(),
-                'registered_by'          => $user->id,
-                'first_name'             => explode(' ', $user->name)[0] ?? 'Unknown',
-                'last_name'              => implode(' ', array_slice(explode(' ', $user->name ?? ''), 1)) ?: 'Patient',
-                'gender'                 => $user->gender ?? 'male',
-                'date_of_birth'          => $user->date_of_birth ?? now()->subYears(18)->format('Y-m-d'),
-                'phone'                  => $user->phone ?? 'N/A',
-                'address'                => $user->address ?? 'N/A',
-                'next_of_kin_name'       => 'Self',
-                'next_of_kin_phone'      => $user->phone ?? 'N/A',
-                'next_of_kin_relationship' => 'self',
-                'is_active'              => true,
-            ]);
+            $patient = $this->createPatientForUser($user);
+        }
+
+        if (!$patient) {
+            return redirect()->route('student.medical.index')
+                ->with('error', 'Unable to load your patient profile. Please try again or contact support.');
         }
 
         $request->validate([
@@ -106,11 +88,10 @@ class PatientPortalController extends Controller
         $user = auth()->user();
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = collect();
+        $appointments = $this->emptyPaginator();
         if ($patient) {
             try {
                 $appointments = HospitalAppointment::where('patient_id', $patient->id)
-                    ->with('staff')
                     ->orderBy('appointment_date', 'desc')
                     ->paginate(10);
             } catch (\Throwable $e) {
@@ -122,14 +103,14 @@ class PatientPortalController extends Controller
     }
 
     /**
-     * View my medical history (placeholder - table may not exist)
+     * View my medical history
      */
     public function myMedicalHistory()
     {
         $user = auth()->user();
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = collect();
+        $appointments = $this->emptyPaginator();
         if ($patient) {
             try {
                 $appointments = HospitalAppointment::where('patient_id', $patient->id)
@@ -144,14 +125,14 @@ class PatientPortalController extends Controller
     }
 
     /**
-     * View my prescriptions (placeholder - table may not exist)
+     * View my prescriptions
      */
     public function myPrescriptions()
     {
         $user = auth()->user();
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = collect();
+        $appointments = $this->emptyPaginator();
         if ($patient) {
             try {
                 $appointments = HospitalAppointment::where('patient_id', $patient->id)
@@ -166,14 +147,14 @@ class PatientPortalController extends Controller
     }
 
     /**
-     * View my lab results (placeholder - table may not exist)
+     * View my lab results
      */
     public function myLabResults()
     {
         $user = auth()->user();
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = collect();
+        $appointments = $this->emptyPaginator();
         if ($patient) {
             try {
                 $appointments = HospitalAppointment::where('patient_id', $patient->id)
@@ -188,14 +169,14 @@ class PatientPortalController extends Controller
     }
 
     /**
-     * View my admissions (placeholder - table may not exist)
+     * View my admissions
      */
     public function myAdmissions()
     {
         $user = auth()->user();
         $patient = HospitalPatient::where('user_id', $user->id)->first();
 
-        $appointments = collect();
+        $appointments = $this->emptyPaginator();
         if ($patient) {
             try {
                 $appointments = HospitalAppointment::where('patient_id', $patient->id)
@@ -207,6 +188,50 @@ class PatientPortalController extends Controller
         }
 
         return view('student.medical.admissions', compact('appointments'));
+    }
+
+    /**
+     * Create a HospitalPatient for a user, returning null on failure rather than 500ing.
+     */
+    private function createPatientForUser(User $user): ?HospitalPatient
+    {
+        try {
+            return HospitalPatient::create([
+                'user_id'                => $user->id,
+                'patient_number'         => $this->generatePatientNumber(),
+                'registered_by'          => $user->id,
+                'first_name'             => explode(' ', $user->name)[0] ?? 'Unknown',
+                'last_name'              => implode(' ', array_slice(explode(' ', $user->name ?? ''), 1)) ?: 'Patient',
+                'gender'                 => $user->gender ?? 'male',
+                'date_of_birth'          => $user->date_of_birth ?? now()->subYears(18)->format('Y-m-d'),
+                'phone'                  => $user->phone ?? 'N/A',
+                'address'                => $user->address ?? 'N/A',
+                'next_of_kin_name'       => 'Self',
+                'next_of_kin_phone'      => $user->phone ?? 'N/A',
+                'next_of_kin_relationship' => 'self',
+                'is_active'              => true,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Student medical patient create failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Empty paginator so views calling ->links() never 500 when there's no patient/records.
+     */
+    private function emptyPaginator(): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            collect(),
+            0,
+            10,
+            1,
+            [
+                'path'     => request()->url(),
+                'pageName' => 'page',
+            ]
+        );
     }
 
     /**
