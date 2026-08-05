@@ -181,15 +181,34 @@
 
 {{-- Quick Actions --}}
 <div class="row mt-3">
+    @php
+        // View/print only become active once the applicant has actually
+        // submitted the form (status flips from 'draft' to 'pending' on
+        // submit). Before submission there is nothing worth viewing or
+        // printing — the apply form is still the place to be.
+        $canViewOrPrint = $applicant && !in_array($applicant->status, ['draft'], true);
+    @endphp
     <div class="col-md-4 mb-3">
         <div class="card h-100">
             <div class="card-body text-center">
-                <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                <i class="fas fa-file-alt fa-3x {{ $canViewOrPrint ? 'text-primary' : 'text-muted' }} mb-3"></i>
                 <h5>View Application</h5>
-                <p class="text-muted">View your submitted application details</p>
-                <a href="{{ route('applicant.application') }}" class="btn btn-primary">
-                    <i class="fas fa-eye me-2"></i>View
-                </a>
+                <p class="text-muted">
+                    @if($canViewOrPrint)
+                        View your submitted application details
+                    @else
+                        Available once you submit your application form
+                    @endif
+                </p>
+                @if($canViewOrPrint)
+                    <a href="{{ route('applicant.application') }}" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>View
+                    </a>
+                @else
+                    <button type="button" class="btn btn-outline-secondary" disabled aria-disabled="true">
+                        <i class="fas fa-eye me-2"></i>View
+                    </button>
+                @endif
             </div>
         </div>
     </div>
@@ -197,12 +216,24 @@
     <div class="col-md-4 mb-3">
         <div class="card h-100">
             <div class="card-body text-center">
-                <i class="fas fa-print fa-3x text-secondary mb-3"></i>
+                <i class="fas fa-print fa-3x {{ $canViewOrPrint ? 'text-secondary' : 'text-muted' }} mb-3"></i>
                 <h5>Print Application</h5>
-                <p class="text-muted">Print a copy of your application form</p>
-                <a href="{{ route('applicant.application.print') }}" class="btn btn-secondary" target="_blank">
-                    <i class="fas fa-print me-2"></i>Print
-                </a>
+                <p class="text-muted">
+                    @if($canViewOrPrint)
+                        Print a copy of your application form
+                    @else
+                        Available once you submit your application form
+                    @endif
+                </p>
+                @if($canViewOrPrint)
+                    <a href="{{ route('applicant.application.print') }}" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-print me-2"></i>Print
+                    </a>
+                @else
+                    <button type="button" class="btn btn-outline-secondary" disabled aria-disabled="true">
+                        <i class="fas fa-print me-2"></i>Print
+                    </button>
+                @endif
             </div>
         </div>
     </div>

@@ -402,6 +402,15 @@ class ApplicationController extends Controller
             'user'
         ])->where('user_id', auth()->id())->first();
 
+        // Block direct URL hits before the form has been submitted. The
+        // dashboard disables the View button while in draft, but a
+        // bookmarked link could bypass that. Sending them back to the
+        // apply form keeps the path visible-and-meaningful.
+        if ($applicant && $applicant->status === 'draft') {
+            return redirect()->route('applicant.apply')
+                ->with('error', 'Please complete and submit your application form before viewing it.');
+        }
+
         // Get external payment if applicant exists
         $externalPayment = null;
         if ($applicant) {
@@ -437,6 +446,14 @@ class ApplicationController extends Controller
         if (!$applicant) {
             return redirect()->route('applicant.dashboard')
                 ->with('error', 'No application found. Please submit an application first.');
+        }
+
+        // Same guard as viewApplication: nothing to print until the form
+        // has been submitted. Stops a bookmarked /applicant/application/print
+        // URL from rendering a half-filled draft as a printable document.
+        if ($applicant->status === 'draft') {
+            return redirect()->route('applicant.apply')
+                ->with('error', 'Please complete and submit your application form before printing it.');
         }
 
         // Get external payment if exists
