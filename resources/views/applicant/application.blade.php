@@ -127,17 +127,34 @@
 
 {{-- Personal Information --}}
 @php
-    // Some legacy applicants reached this page without ever submitting
-    // the apply form (e.g. paid externally and were given status='pending'
-    // by verifyExternalPayment without their personal info being filled in).
-    // Their split surname/first_name/middle_name columns are NULL. auth
-    // user's name was always populated at signup so we parse it as a fallback.
-    $userName = trim((string) ($applicant->user->name ?? auth()->user()->name ?? ''));
+    // Legacy applicants can have a few different data shapes:
+    //   - all three surname/first_name/middle_name NULL (signup row only)
+    //   - surname set to the full concatenated name (older forms had a
+    //     single surname field that accepted the full name)
+    //   - users.name populated but applicants row missing the split
+    //
+    // We try every source we have, in priority order, and only fall back
+    // to parsing users.name (or the surname itself, if it contains
+    // whitespace) when the more specific fields are empty.
+    $nameSource = trim((string) ($applicant->user->name ?? auth()->user()->name ?? ''));
     $displaySurname = $applicant->surname ?? null;
     $displayFirst = $applicant->first_name ?? null;
     $displayMiddle = $applicant->middle_name ?? null;
-    if ($userName !== '' && (empty($displaySurname) || empty($displayFirst))) {
-        $parts = preg_split('/\s+/', $userName, 3);
+
+    // If first_name is missing but surname contains multiple words, the
+    // user typed the full name into the surname field on an older form.
+    // Split it the same way we split users.name.
+    if (empty($displayFirst) && !empty($displaySurname) && str_contains($displaySurname, ' ')) {
+        $parts = preg_split('/\s+/', $displaySurname, 3);
+        $displaySurname = $parts[0] ?? null;
+        $displayFirst = $displayFirst ?: ($parts[1] ?? null);
+        $displayMiddle = $displayMiddle ?: ($parts[2] ?? null);
+    }
+
+    // If we still don't have either first or surname, fall back to
+    // users.name (always populated at signup).
+    if ($nameSource !== '' && (empty($displaySurname) || empty($displayFirst))) {
+        $parts = preg_split('/\s+/', $nameSource, 3);
         $displaySurname = $displaySurname ?: ($parts[0] ?? null);
         $displayFirst = $displayFirst ?: ($parts[1] ?? null);
         $displayMiddle = $displayMiddle ?: ($parts[2] ?? null);

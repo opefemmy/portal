@@ -92,11 +92,17 @@ class ApplicationController extends Controller
                 ->with('info', 'You have already been admitted and paid the acceptance fee.');
         }
 
-        // Once the form has been submitted (status='pending', 'admitted',
-        // 'rejected', …) the applicant must not be able to re-open it.
-        // Only the no-row / status='draft' state permits (re-)entry into
-        // the apply form. Anything else is sent to the read-only view.
-        if ($applicant && $applicant->status !== 'draft') {
+        // Once the form has been filled in (status='pending' AND the
+        // personal info fields are populated) the applicant cannot
+        // re-open it. But an applicant can reach status='pending' via
+        // verifyExternalPayment without ever filling the form — those
+        // fields will be NULL. Allow them to come back and fill in the
+        // form until they actually do.
+        $formIsFilled = $applicant
+            && !empty($applicant->gender)
+            && !empty($applicant->date_of_birth)
+            && !empty($applicant->address);
+        if ($applicant && $applicant->status !== 'draft' && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot apply again.');
         }
@@ -533,7 +539,13 @@ class ApplicationController extends Controller
         // the applicant is sent to the read-only view — the form cannot
         // be reopened. This matches the same status check on the apply
         // route so re-apply and re-edit are blocked together.
-        if ($applicant->status !== 'draft') {
+        // Exception: if payment was completed but the form has never
+        // actually been filled in (gender / DOB / address are NULL), the
+        // applicant can still come back to fill it in.
+        $formIsFilled = !empty($applicant->gender)
+            && !empty($applicant->date_of_birth)
+            && !empty($applicant->address);
+        if ($applicant->status !== 'draft' && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot edit it.');
         }
@@ -567,7 +579,12 @@ class ApplicationController extends Controller
         // Same guard as editApplication: once submitted the applicant
         // cannot reopen the form to mutate it. The POST handler enforces
         // the same rule so the route can't be hit directly either.
-        if ($applicant->status !== 'draft') {
+        // Exception (same as editApplication): if the form has not been
+        // actually filled in yet, allow the submit to populate it.
+        $formIsFilled = !empty($applicant->gender)
+            && !empty($applicant->date_of_birth)
+            && !empty($applicant->address);
+        if ($applicant->status !== 'draft' && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot edit it.');
         }
