@@ -525,7 +525,7 @@
     </div>
 </form>
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -627,5 +627,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 }); // End DOMContentLoaded
 </script>
-@endsection
+@endpush
 @endsection
