@@ -47,6 +47,43 @@ class ApplicantPaymentService
         PaymentType::PURPOSE_SCHOOL_FEE => 'SCHOOL_FEE',
     ];
 
+    /**
+     * Map an applicant payment purpose to the value that must be written
+     * to payments.fee_type on production.
+     *
+     * payments.fee_type is an ENUM column on production
+     * ('application','acceptance','school_fees','hostel','library','other')
+     * — see UpdateManagerService's repair path and the live SHOW CREATE
+     * TABLE output. The PaymentType.code values (APP_FORM / ACCEPT_FEE /
+     * SCHOOL_FEE) are short identifiers for joining against
+     * payment_types, NOT valid enum values for the payments.fee_type
+     * column. Inserting those codes raises "Data truncated for column
+     * 'fee_type'" on MySQL strict mode.
+     *
+     * Anything not in the canonical three purposes maps to 'other' so
+     * the call never has to worry about strict-mode truncation.
+     */
+    public const FEE_TYPE_FOR_PURPOSE = [
+        PaymentType::PURPOSE_APPLICATION => 'application',
+        PaymentType::PURPOSE_ACCEPTANCE  => 'acceptance',
+        PaymentType::PURPOSE_SCHOOL_FEE => 'school_fees',
+    ];
+
+    /**
+     * Resolve the enum-safe value to write into payments.fee_type for a
+     * given purpose. Public so other call sites (test handler fallback,
+     * registrar flow, legacy rebuild) can centralise the mapping here
+     * instead of duplicating magic strings.
+     */
+    public function feeTypeFor(?string $purpose): string
+    {
+        if ($purpose !== null && isset(self::FEE_TYPE_FOR_PURPOSE[$purpose])) {
+            return self::FEE_TYPE_FOR_PURPOSE[$purpose];
+        }
+
+        return 'other';
+    }
+
     /* ------------------------------------------------------------------
      | Resolution
      * ------------------------------------------------------------------*/
@@ -248,11 +285,14 @@ class ApplicantPaymentService
             'status'          => 'pending',
             'student_type'    => 'applicant',
             'payment_purpose' => $purpose,
-            // Use the short code (APP_FORM, ACCEPT_FEE, SCHOOL_FEE) instead of
-            // the human name (e.g. "Application Form Fee"). The code always
-            // fits the payments.fee_type column, the name may not if the
-            // column was redefined shorter on a given deployment.
-            'fee_type'        => $type?->code ?? 'other',
+            // payments.fee_type is an ENUM on production with values
+            // (application, acceptance, school_fees, hostel, library,
+            // other). The PaymentType.code (APP_FORM etc.) is a join key
+            // for payment_types, NOT a valid enum value here — using it
+            // raises 'Data truncated for column fee_type' under MySQL
+            // strict mode. Map via feeTypeFor() so the column always gets
+            // an enum-safe value.
+            'fee_type'        => $this->feeTypeFor($purpose),
             'payer_id'        => $applicant->id,
             'payer_name'      => $applicant->full_name,
             'payer_email'     => $applicant->email ?: $applicant->user?->email,
@@ -290,8 +330,8 @@ class ApplicantPaymentService
                 'is_verified'     => true,
                 'student_type'    => 'applicant',
                 'payment_purpose' => $purpose,
-                // Short code — same reasoning as in initiate().
-                'fee_type'        => $type?->code ?? 'other',
+                // ENUM-safe — see initiate() for the rationale.
+                'fee_type'        => $this->feeTypeFor($purpose),
                 'payer_id'        => $applicant->id,
                 'payer_name'      => $external->applicant_name ?: $applicant->full_name,
                 'payer_email'     => $external->email ?: $applicant->email,

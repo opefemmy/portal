@@ -6,6 +6,7 @@ use App\Models\Applicant;
 use App\Models\ExternalPayment;
 use App\Models\Payment;
 use App\Models\PaymentType;
+use App\Services\ApplicantPaymentService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -96,7 +97,8 @@ class RebuildTransactionHistory extends Command
                     'is_verified'     => true,
                     'student_type'    => 'applicant',
                     'payment_purpose' => PaymentType::PURPOSE_APPLICATION,
-                    'fee_type'        => $type?->code ?? 'other',
+                    // ENUM-safe value — see ApplicantPaymentService::feeTypeFor().
+                    'fee_type'        => app(ApplicantPaymentService::class)->feeTypeFor(PaymentType::PURPOSE_APPLICATION),
                     'payer_id'        => $applicant->id,
                     'payer_name'      => $applicant->full_name,
                     'payer_email'     => $applicant->email,

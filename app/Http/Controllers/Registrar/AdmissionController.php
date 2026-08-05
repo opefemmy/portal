@@ -215,7 +215,12 @@ class AdmissionController extends Controller
                     ]),
                     'student_type' => $applicant->category ?? 'fresh',
                     'is_verified' => true,
-                    'fee_type' => 'application_fee',
+                    // ENUM-safe value — see ApplicantPaymentService::feeTypeFor().
+                    // payments.fee_type on production is an ENUM
+                    // ('application','acceptance','school_fees','hostel',
+                    // 'library','other'); 'application_fee' is not a valid
+                    // value and would raise 'Data truncated for column fee_type'.
+                    'fee_type' => 'application',
                 ]);
             }
         }
@@ -237,7 +242,8 @@ class AdmissionController extends Controller
                     ]),
                     'student_type' => $applicant->category ?? 'fresh',
                     'is_verified' => true,
-                    'fee_type' => 'application_fee',
+                    // ENUM-safe value — see ApplicantPaymentService::feeTypeFor().
+                    'fee_type' => 'application',
                 ]);
             }
         }

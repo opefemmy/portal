@@ -479,8 +479,11 @@ class PaymentGatewayController extends Controller
                 'is_verified'     => true,
                 'student_type'    => 'applicant',
                 'payment_purpose' => $purpose,
-                // payments.fee_type is NOT NULL with default 'other' — never null.
-                'fee_type'        => 'test',
+                // payments.fee_type is an ENUM on production — see
+                // ApplicantPaymentService::feeTypeFor() for the canonical
+                // mapping. 'test' isn't a valid enum value, so map via
+                // the helper to avoid MySQL strict-mode truncation.
+                'fee_type'        => app(ApplicantPaymentService::class)->feeTypeFor($purpose),
                 'payer_id'        => $applicant->id,
                 'payer_name'      => $applicant->full_name,
                 'payer_email'     => $applicant->email ?: $applicant->user?->email,
