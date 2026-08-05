@@ -52,7 +52,16 @@ class PaymentGatewayController extends Controller
     {
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
-        $purpose = $request->get('purpose', PaymentType::PURPOSE_APPLICATION);
+
+        // $request->get() returns null when the query key is missing AND
+        // also when it's present-but-empty (?purpose=). The default only
+        // kicks in for missing keys. Normalise to a known constant so
+        // downstream calls (canPay, resolvePaymentType) never see a null
+        // or empty purpose.
+        $rawPurpose = $request->get('purpose');
+        $purpose = $rawPurpose !== null && $rawPurpose !== ''
+            ? $rawPurpose
+            : PaymentType::PURPOSE_APPLICATION;
 
         \Illuminate\Support\Facades\Log::info('payment gateway: requested', [
             'user_id' => $user->id ?? null,
@@ -155,7 +164,16 @@ class PaymentGatewayController extends Controller
         ]);
 
         $user = Auth::user();
-        $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
+
+        // Normalise purpose: $request->input()'s default doesn't kick in
+        // when the key is present-but-empty (?purpose=). Coerce null/'' to
+        // the application-fee default so canPay() and resolvePaymentType()
+        // never see an empty purpose.
+        $rawPurpose = $request->input('purpose');
+        $purpose = $rawPurpose !== null && $rawPurpose !== ''
+            ? $rawPurpose
+            : PaymentType::PURPOSE_APPLICATION;
+
         $applicant = Applicant::where('user_id', $user->id)->first();
 
         if (! $applicant) {
@@ -375,7 +393,14 @@ class PaymentGatewayController extends Controller
         ]);
 
         $user = Auth::user();
-        $purpose = $request->input('purpose', PaymentType::PURPOSE_APPLICATION);
+
+        // Same null/empty normalisation as showPaymentPageInner and
+        // initiatePaymentInner so all three payment entry points agree.
+        $rawPurpose = $request->input('purpose');
+        $purpose = $rawPurpose !== null && $rawPurpose !== ''
+            ? $rawPurpose
+            : PaymentType::PURPOSE_APPLICATION;
+
         $amount = (float) $request->input('amount');
 
         $applicant = Applicant::where('user_id', $user->id)->first();

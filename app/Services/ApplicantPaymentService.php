@@ -135,6 +135,12 @@ class ApplicantPaymentService
      *
      * Returns null when allowed, or a string explaining why not.
      * Caller turns the string into a 403 / flash message.
+     *
+     * Always returns a ?string — never void — so PHP's return-type check
+     * can't fire on a misrouted purpose. The three per-purpose helpers
+     * each return either a string reason or null, and an unknown purpose
+     * is mapped to the same "Unknown payment purpose." reason the default
+     * arm used to return, preserving the public contract.
      */
     public function canPay(Applicant $applicant, string $purpose): ?string
     {
@@ -142,7 +148,7 @@ class ApplicantPaymentService
             PaymentType::PURPOSE_APPLICATION => $this->canPayApplication($applicant),
             PaymentType::PURPOSE_ACCEPTANCE  => $this->canPayAcceptance($applicant),
             PaymentType::PURPOSE_SCHOOL_FEE => $this->canPayCompulsory($applicant),
-            default => 'Unknown payment purpose.',
+            default                         => 'Unknown payment purpose.',
         };
     }
 
