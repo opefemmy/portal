@@ -54,10 +54,20 @@ class PaymentGatewayController extends Controller
         $applicant = Applicant::where('user_id', $user->id)->first();
         $purpose = $request->get('purpose', PaymentType::PURPOSE_APPLICATION);
 
+        \Illuminate\Support\Facades\Log::info('payment gateway: requested', [
+            'user_id' => $user->id ?? null,
+            'has_applicant' => (bool) $applicant,
+            'purpose' => $purpose,
+        ]);
+
         // Locked to the applicant audience so an admin can't accidentally
         // route a student-only type into the applicant flow.
         $paymentType = $this->payments->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
         if (! $paymentType) {
+            \Illuminate\Support\Facades\Log::warning('payment gateway: no PaymentType resolved', [
+                'user_id' => $user->id ?? null,
+                'purpose' => $purpose,
+            ]);
             return back()->with('error', 'Payment type not configured. Please contact the admissions office.');
         }
 
@@ -76,6 +86,11 @@ class PaymentGatewayController extends Controller
 
             $applicant = $this->createStubApplicant($user);
             if (! $applicant) {
+                \Illuminate\Support\Facades\Log::error('payment gateway: stub applicant create returned null', [
+                    'user_id' => $user->id ?? null,
+                    'purpose'  => $purpose,
+                    'reason'   => 'createStubApplicant failed (see prior log entry for the underlying exception)',
+                ]);
                 return redirect()->route('applicant.dashboard')
                     ->with('error', 'We could not start your application record just now. Please try again or contact the admissions office.');
             }
@@ -84,6 +99,11 @@ class PaymentGatewayController extends Controller
         // Service-driven gate (replaces the two ad-hoc checks that lived here before).
         $block = $this->payments->canPay($applicant, $purpose);
         if ($block) {
+            \Illuminate\Support\Facades\Log::info('payment gateway: canPay blocked', [
+                'user_id' => $user->id ?? null,
+                'purpose' => $purpose,
+                'block'   => $block,
+            ]);
             return redirect()->route('applicant.dashboard')->with('error', $block);
         }
 
@@ -539,9 +559,14 @@ class PaymentGatewayController extends Controller
 
     /**
      * Create a minimal Applicant row so a fresh user can pay the application
-     * fee before filling out the form. Mirrors the pattern used in
-     * processTestPaymentInner — same demo-shape stub (school/department/etc.
-     * fall back to the first available row, status starts as pending).
+     * fee before filling out the form.
+     *
+     * The applicants table has FK NOT NULL constraints on school_id,
+     * department_id, programme_id, and session_id (migration
+     * 2024_01_01_000008_create_applicants_table), so the helper pre-flights
+     * each required row and returns a clear error if any are missing —
+     * otherwise the INSERT would fail with a cryptic FK violation and the
+     * caller would just bounce to the dashboard with a generic flash.
      *
      * The user fills in the real school_id/department_id/etc. when they
      * submit /applicant/apply afterwards — submitApplication() does an update
@@ -553,19 +578,40 @@ class PaymentGatewayController extends Controller
      */
     private function createStubApplicant(User $user): ?Applicant
     {
+        $school     = \App\Models\School::first();
+        $department = \App\Models\Department::first();
+        $programme  = \App\Models\Programme::first();
+        $session    = \App\Models\Session::where('is_current', true)->first() ?? \App\Models\Session::first();
+
+        $missing = [];
+        if (! $school)     { $missing[] = 'school'; }
+        if (! $department) { $missing[] = 'department'; }
+        if (! $programme)  { $missing[] = 'programme'; }
+        if (! $session)    { $missing[] = 'session'; }
+
+        if (! empty($missing)) {
+            \Illuminate\Support\Facades\Log::error('payment gateway: cannot create stub applicant — required reference rows missing', [
+                'user_id' => $user->id,
+                'missing' => $missing,
+                'hint'    => 'Admin must seed at least one of each before applicants can pay.',
+            ]);
+
+            return null;
+        }
+
         try {
             return Applicant::create([
                 'user_id'            => $user->id,
                 'email'              => $user->email,
                 'application_number' => Applicant::generateApplicationNumber(),
                 'status'             => 'pending',
-                'school_id'          => \App\Models\School::first()?->id,
-                'department_id'      => \App\Models\Department::first()?->id,
-                'programme_id'       => \App\Models\Programme::first()?->id,
-                'session_id'         => \App\Models\Session::where('is_current', true)->first()?->id,
+                'school_id'          => $school->id,
+                'department_id'      => $department->id,
+                'programme_id'       => $programme->id,
+                'session_id'         => $session->id,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('payment initiate: stub applicant create failed', [
+            \Illuminate\Support\Facades\Log::error('payment gateway: stub applicant create threw', [
                 'user_id' => $user->id,
                 'error'   => $e->getMessage(),
             ]);
