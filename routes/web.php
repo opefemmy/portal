@@ -45,6 +45,7 @@ use App\Http\Controllers\Lecturer\ResultController as LecturerResultController;
 use App\Http\Controllers\Lecturer\AttendanceController;
 use App\Http\Controllers\Applicant\ApplicationController;
 use App\Http\Controllers\Applicant\PaymentGatewayController;
+use App\Http\Controllers\Payment\TestPaymentController;
 use App\Http\Controllers\Bursar\RegimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserUnlockController;
@@ -213,6 +214,13 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // Test Payment (for demo)
         Route::get('/payment/test', [PaymentGatewayController::class, 'testPayment'])->name('payment.test');
         Route::post('/payment/test/process', [PaymentGatewayController::class, 'processTestPayment'])->name('payment.test.process');
+
+        // Shared cross-audience test-payment simulator. Disabled in
+        // production by the controller; works for applicant catalogue
+        // here. For student + bursar + registrar use the routes at
+        // the bottom of this file.
+        Route::get('/payment/test/applicant', [TestPaymentController::class, 'show'])->defaults('audience', 'applicant')->name('test.show.applicant');
+        Route::post('/payment/test/applicant/process', [TestPaymentController::class, 'process'])->defaults('audience', 'applicant')->name('test.process.applicant');
 
         Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
         Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
@@ -514,6 +522,10 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/payments/verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
 
+    // Shared cross-audience test-payment simulator (student view).
+    Route::get('/payment/test', [TestPaymentController::class, 'show'])->defaults('audience', 'student')->name('payment.test.show.student');
+    Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'student')->name('payment.test.process.student');
+
     // Exam clearance
     Route::get('/exam-clearance', [\App\Http\Controllers\Student\ExamClearanceController::class, 'index'])->name('exam-clearance');
     Route::get('/exam-clearance/print', [\App\Http\Controllers\Student\ExamClearanceController::class, 'print'])->name('exam-clearance.print');
@@ -671,6 +683,10 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate.store');
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
     Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
+
+    // Shared test-payment simulator (registrar sees BOTH by default).
+    Route::get('/payment/test', [TestPaymentController::class, 'show'])->defaults('audience', 'both')->name('payment.test.show');
+    Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'both')->name('payment.test.process');
 });
 
 // Bursar Routes
@@ -678,6 +694,10 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,super
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
     Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');
+
+    // Shared test-payment simulator (bursar sees BOTH catalogue by default).
+    Route::get('/payment/test', [TestPaymentController::class, 'show'])->defaults('audience', 'both')->name('payment.test.show');
+    Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'both')->name('payment.test.process');
     Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])->name('payments.receipt');

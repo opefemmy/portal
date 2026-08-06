@@ -214,7 +214,7 @@
                         <label class="form-label">Amount (₦) <span class="text-danger">*</span></label>
                         <input type="number" name="amount"
                                class="form-control @error('amount') is-invalid @enderror"
-                               value="{{ old('amount') }}"
+                               value="{{ old('amount', '0.00') }}"
                                placeholder="0.00" required min="0" step="0.01">
                         @error('amount')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>

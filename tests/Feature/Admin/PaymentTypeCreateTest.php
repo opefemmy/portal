@@ -347,6 +347,120 @@ class PaymentTypeCreateTest extends TestCase
         $response->assertSee('id="createModal"', false);
     }
 
+    /**
+     * The modal's `amount` field must default to "0.00" so a click
+     * on Create with no other input never trips the `required`
+     * rule and bounces the admin with a red banner.
+     *
+     * (User complaint: "i am getting a error message every time am
+     * trying to add a payment" — the placeholder 0.00 isn't a
+     * value; browsers submit the empty field and the controller's
+     * `required|numeric|min:0` rule fires `Please enter the amount
+     * to charge.`)
+     */
+    public function test_modal_amount_field_has_default_value(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/admin/payment-types');
+
+        $response->assertOk();
+        // The amount input inside the create modal carries value="0.00"
+        // even on a fresh page load (no old input to fall back on).
+        // The regex captures the amount input regardless of any other
+        // attributes that may follow.
+        $response->assertSee('<input type="number" name="amount"', false);
+        $response->assertSee('value="0.00"', false);
+    }
+
+    /**
+     * End-to-end modal reproduction: the modal submits the
+     * right-shaped payload even when the admin leaves the
+     * description/purpose empty and only fills the required fields.
+     * Before the fix, the empty `amount` triggered the
+     * `required` rule and the modal flashed a validation error
+     * on every submit.
+     */
+    public function test_modal_submission_with_only_required_fields_creates_row(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        // Mirrors the modal payload: amount has the new `0.00`
+        // default (no longer empty), description and purpose left
+        // blank, both checkboxes defaulted, audience defaulted to
+        // "both", payment_channel defaulted to "both".
+        $payload = [
+            'name'             => 'Modal Repro',
+            'code'             => 'MODAL_REPRO',
+            'description'      => null,
+            'amount'           => '0.00',
+            'payment_channel'  => 'both',
+            'purpose'          => '',
+            'audience'         => 'both',
+            'priority'         => 1,
+            'is_active'        => 1,
+            'requires_payment' => 1,
+        ];
+
+        $response = $this->actingAs($admin)->post('/admin/payment-types', $payload);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('payment_types', [
+            'code'    => 'MODAL_REPRO',
+            'name'    => 'Modal Repro',
+            'amount'  => 0,
+            'audience' => 'both',
+        ]);
+    }
+
+    /**
+     * When `audience` / `purpose` columns are missing on the
+     * deployment, the controller strips them and the success flash
+     * should make it crystal clear that:
+     *   1. the row WAS saved
+     *   2. these specific columns were dropped
+     *   3. running `php artisan migrate` will restore them
+     *
+     * Previously the flash was too terse — admins thought it
+     * meant the save failed.
+     */
+    public function test_missing_column_flash_lists_dropped_columns(): void
+    {
+        Schema::table('payment_types', function ($t) {
+            $t->dropColumn('audience');
+            $t->dropColumn('purpose');
+        });
+
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/payment-types', [
+                'name' => 'Listing Drop',
+                'code' => 'LIST_DROP',
+                'amount' => 1000,
+                'payment_channel' => 'both',
+                'purpose' => 'other',
+                'audience' => 'student',
+                'is_active' => 1,
+                'requires_payment' => 1,
+                'priority' => 1,
+            ]);
+
+        $response->assertStatus(302);
+        $flash = (string) session('success');
+        // The row WAS saved — the flash shouldn't read like a 500.
+        $this->assertStringContainsString('created successfully', $flash);
+        // The flash must name the actual dropped columns so the
+        // admin knows what to migrate.
+        $this->assertStringContainsString('audience', $flash);
+        $this->assertStringContainsString('purpose', $flash);
+        // And the canonical migrate command is present.
+        $this->assertStringContainsString('php artisan migrate', $flash);
+    }
+
     /* --- helpers --- */
 
     private function makeUser(string $roleSlug): User

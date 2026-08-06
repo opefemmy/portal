@@ -48,11 +48,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            // 404s and validation failures should be handled by their own
-            // dedicated renderers. Don't shadow them with our friendly
-            // flash message.
+            // 404s, validation failures, and CSRF failures should be handled
+            // by their own dedicated renderers. Don't shadow them with our
+            // friendly flash message.
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException
+                || $e instanceof \Illuminate\Validation\ValidationException) {
                 return null;
             }
 

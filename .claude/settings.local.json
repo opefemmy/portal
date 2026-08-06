@@ -103,7 +103,16 @@
       "Bash(Select-String \"payment_type|audience\")",
       "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 200\")",
       "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 4000 | Select-String -Pattern 'payment.type|payment.type store|payment.type create|admin/payment' | Select-Object -Last 40\")",
-      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log | Select-String -Pattern 'payment-type|payment_type' | Select-Object -Last 30\")"
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log | Select-String -Pattern 'payment-type|payment_type' | Select-Object -Last 30\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 8000 | Select-String -Pattern 'payment.types: store|payment.types: create|payment.types: update|admin/payment-types|Validator' | Select-Object -Last 30\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 20000 | Select-String -Pattern 'payment-types|store failed|create failed' | Select-Object -Last 40\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 20000 | Select-String -Pattern 'payment.types: validation failed' | Select-Object -Last 5\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 20000 | Select-String -Pattern 'purpose' | Select-Object -First 20\")",
+      "Bash(powershell -Command \"Select-String -Path database_backup_20260724.sql -Pattern 'purpose' | Select-Object -First 10\")",
+      "Bash(powershell -Command \"Select-String -Path database_backup_20260724.sql -Pattern 'payment_types' | Select-Object -First 5\")",
+      "Bash(powershell -Command \"Get-ChildItem database/migrations/2026_07_24_000001_add_purpose* ; Get-ChildItem database/migrations/*purpose*\")",
+      "Bash(git stash *)",
+      "Bash(amount)"
     ]
   }
 }

@@ -173,10 +173,15 @@ class PaymentTypeController extends Controller
 
         // If we had to strip columns, also remind the admin to run
         // migrations so they get the full feature set (audience
-        // scoping etc.) on next save.
+        // scoping etc.) on next save. Without this hint, the admin
+        // sees a row in the catalogue but it never inherits the
+        // audience/purpose they picked — and the modal *says* it's
+        // there. They think the page is broken; in reality the row
+        // just had the new columns silently stripped to keep the
+        // INSERT from 500-ing on unrun migrations.
         $migrationHint = empty($columnsToStrip)
             ? null
-            : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
+            : ' Note: this database is missing some columns (' . implode(', ', $columnsToStrip) . ') so they were dropped from this save. Run `php artisan migrate` to add them — the row is saved, but the dropped fields are empty until you do.';
 
         $coercionHint = !empty($validated['purpose_was_coerced'])
             ? " Note: production's `payment_types.purpose` is a strict ENUM and doesn't accept custom values, so your purpose was saved as 'other' instead."
@@ -309,7 +314,7 @@ class PaymentTypeController extends Controller
 
         $migrationHint = empty($columnsToStrip)
             ? null
-            : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
+            : ' Note: this database is missing some columns (' . implode(', ', $columnsToStrip) . ') so they were dropped from this save. Run `php artisan migrate` to add them — the row is updated, but the dropped fields are empty until you do.';
 
         $coercionHint = !empty($validated['purpose_was_coerced'])
             ? " Note: production's `payment_types.purpose` is a strict ENUM and doesn't accept custom values, so your purpose was saved as 'other' instead."
