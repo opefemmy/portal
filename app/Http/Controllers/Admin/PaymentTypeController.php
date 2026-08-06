@@ -96,6 +96,22 @@ class PaymentTypeController extends Controller
         // like "Compulsory Fee" or "Convocation".
         if (!empty($validated['purpose'])) {
             $validated['purpose'] = strtolower(trim(preg_replace('/\s+/', '_', $validated['purpose'])));
+            // Production has `payment_types.purpose` as a strict MySQL
+            // ENUM, not the varchar(30) the migration declares. Any
+            // value outside the allowed set triggers a 1265 truncation
+            // error and aborts the whole INSERT. Mirror the
+            // feeTypeFor() pattern: coerce anything unknown to 'other'
+            // so the row always saves. The admin sees a one-time hint
+            // telling them their custom purpose was mapped to 'other'.
+            $allowedPurposes = [
+                'application', 'acceptance', 'school_fee',
+                'hostel', 'registration', 'library', 'other',
+            ];
+            $validated['purpose_was_coerced'] = false;
+            if (!in_array($validated['purpose'], $allowedPurposes, true)) {
+                $validated['purpose_was_coerced'] = true;
+                $validated['purpose'] = 'other';
+            }
         }
 
         // The 2026_07_24 migration added `purpose` and the 2026_08_04
@@ -126,6 +142,8 @@ class PaymentTypeController extends Controller
         if (! Schema::hasColumn('payment_types', 'requires_payment')) {
             $columnsToStrip[] = 'requires_payment';
         }
+        // `purpose_was_coerced` is a controller-only flag, not a column.
+        $columnsToStrip[] = 'purpose_was_coerced';
         $payload = array_diff_key($validated, array_flip($columnsToStrip));
 
         try {
@@ -153,11 +171,15 @@ class PaymentTypeController extends Controller
             ? null
             : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
 
+        $coercionHint = !empty($validated['purpose_was_coerced'])
+            ? " Note: production's `payment_types.purpose` is a strict ENUM and doesn't accept custom values, so your purpose was saved as 'other' instead."
+            : null;
+
         return redirect()
             ->route('admin.payment-types.index')
             ->with(
                 'success',
-                'Payment type created successfully.' . ($migrationHint ?? '')
+                'Payment type created successfully.' . ($migrationHint ?? '') . ($coercionHint ?? '')
             );
     }
 
@@ -221,6 +243,19 @@ class PaymentTypeController extends Controller
         $validated['priority'] = $validated['priority'] ?? 1;
         if (!empty($validated['purpose'])) {
             $validated['purpose'] = strtolower(trim(preg_replace('/\s+/', '_', $validated['purpose'])));
+            // See store() — production has `purpose` as a strict ENUM,
+            // so anything outside the allowed set must be coerced to
+            // 'other' before the UPDATE or MySQL strict mode will
+            // truncate and abort.
+            $allowedPurposes = [
+                'application', 'acceptance', 'school_fee',
+                'hostel', 'registration', 'library', 'other',
+            ];
+            $validated['purpose_was_coerced'] = false;
+            if (!in_array($validated['purpose'], $allowedPurposes, true)) {
+                $validated['purpose_was_coerced'] = true;
+                $validated['purpose'] = 'other';
+            }
         }
 
         // Strip columns that don't exist on this deployment so the
@@ -245,6 +280,8 @@ class PaymentTypeController extends Controller
         if (! Schema::hasColumn('payment_types', 'requires_payment')) {
             $columnsToStrip[] = 'requires_payment';
         }
+        // `purpose_was_coerced` is a controller-only flag, not a column.
+        $columnsToStrip[] = 'purpose_was_coerced';
         $payload = array_diff_key($validated, array_flip($columnsToStrip));
 
         try {
@@ -267,11 +304,15 @@ class PaymentTypeController extends Controller
             ? null
             : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
 
+        $coercionHint = !empty($validated['purpose_was_coerced'])
+            ? " Note: production's `payment_types.purpose` is a strict ENUM and doesn't accept custom values, so your purpose was saved as 'other' instead."
+            : null;
+
         return redirect()
             ->route('admin.payment-types.index')
             ->with(
                 'success',
-                'Payment type updated successfully.' . ($migrationHint ?? '')
+                'Payment type updated successfully.' . ($migrationHint ?? '') . ($coercionHint ?? '')
             );
     }
 

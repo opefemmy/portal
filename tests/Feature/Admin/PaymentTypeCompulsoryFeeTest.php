@@ -81,7 +81,9 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $this->assertEquals('1000000.00', (string) $row->amount);
         $this->assertEquals('applicant', $row->audience);
         $this->assertEquals('external', $row->payment_channel);
-        $this->assertEquals('compulsory_fee', $row->purpose);
+        // 'Compulsory Fee' is not in the production ENUM, so the
+        // controller coerces it to 'other' before INSERT.
+        $this->assertEquals('other', $row->purpose);
         $this->assertEquals(0, (int) $row->is_active);
         $this->assertEquals(0, (int) $row->requires_payment);
     }
@@ -117,7 +119,9 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $this->assertNotNull($row);
         $this->assertEquals('100000.00', (string) $row->amount);
         $this->assertEquals('applicant', $row->audience);
-        $this->assertEquals('compulsory', $row->purpose);
+        // 'compulsory' is not in the production ENUM, so it is
+        // coerced to 'other' before INSERT.
+        $this->assertEquals('other', $row->purpose);
     }
 
     /**
@@ -154,6 +158,69 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $second->assertSessionHasErrors('code');
         // And the row count must still be exactly 1 — no duplicate.
         $this->assertEquals(1, PaymentType::where('code', 'COMP_FEE_2026')->count());
+    }
+
+    /**
+     * Production has `payment_types.purpose` as a strict MySQL ENUM
+     * (not the varchar(30) the migration declares). Any value
+     * outside the allowed set triggers a 1265 truncation error
+     * and aborts the INSERT. The controller must coerce unknown
+     * purposes to 'other' before the INSERT — mirroring the
+     * ApplicantPaymentService::feeTypeFor() pattern. This test
+     * pins that coercion so a future refactor doesn't accidentally
+     * re-introduce the silent bounce-back the user reported.
+     */
+    public function test_unknown_purpose_is_coerced_to_other_on_save(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        // 'compulsory' is what the user typed. It is NOT in the
+        // allowed production ENUM, so it must be coerced.
+        $response = $this->actingAs($admin)->post('/admin/payment-types', [
+            'name'             => 'Compulsory Fee',
+            'code'             => 'COMP_FEE_COERCE',
+            'amount'           => 50000,
+            'payment_channel'  => 'external',
+            'purpose'          => 'compulsory',
+            'audience'         => 'applicant',
+            'priority'         => 1,
+            'is_active'        => 1,
+            'requires_payment' => 1,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success');
+        $flash = (string) session('success');
+        $this->assertStringContainsString('saved as \'other\'', $flash);
+
+        $row = PaymentType::where('code', 'COMP_FEE_COERCE')->first();
+        $this->assertNotNull($row);
+        $this->assertEquals('other', $row->purpose,
+            'Unknown purpose must be coerced to other so the production ENUM accepts the INSERT.');
+    }
+
+    /**
+     * A known purpose (e.g. 'application') must be saved verbatim,
+     * not coerced. Otherwise we'd silently lose categorisation on
+     * existing payment types like APP_FORM.
+     */
+    public function test_known_purpose_is_saved_verbatim(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $this->actingAs($admin)->post('/admin/payment-types', [
+            'name'             => 'Library Fee Copy',
+            'code'             => 'LIBRARY_COPY',
+            'amount'           => 1000,
+            'payment_channel'  => 'both',
+            'purpose'          => 'library',
+            'audience'         => 'student',
+            'priority'         => 1,
+            'is_active'        => 1,
+            'requires_payment' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals('library', PaymentType::where('code', 'LIBRARY_COPY')->value('purpose'));
     }
 
     /* --- helpers --- */
@@ -198,6 +265,10 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
             $t->boolean('requires_payment')->default(true);
             $t->string('payment_channel')->nullable();
             $t->integer('priority')->default(0);
+            // Use string (mirroring the migration) — the production
+            // ENUM constraint isn't reproducible in SQLite, so the
+            // controller's purpose-coercion logic is exercised
+            // explicitly in the dedicated test below.
             $t->string('purpose')->nullable();
             $t->enum('audience', ['applicant', 'student', 'both'])->default('both');
             $t->timestamps();
