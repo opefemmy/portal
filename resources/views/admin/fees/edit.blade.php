@@ -77,10 +77,13 @@
                 </div>
             </div>
 
-            <div id="amount-both" class="row fee-amount-row" data-show-when="both">
+            <div class="row">
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="indigene_amount" class="form-label">Indigene Amount (₦)</label>
+                        <label for="indigene_amount" class="form-label">
+                            Indigene Amount (₦)
+                            <span class="text-danger" id="indigene_required_marker">*</span>
+                        </label>
                         <input type="number" class="form-control @error('indigene_amount') is-invalid @enderror"
                                id="indigene_amount" name="indigene_amount"
                                value="{{ old('indigene_amount', $fee->indigene_amount) }}" min="0" step="0.01"
@@ -92,7 +95,10 @@
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="non_indigene_amount" class="form-label">Non-Indigene Amount (₦)</label>
+                        <label for="non_indigene_amount" class="form-label">
+                            Non-Indigene Amount (₦)
+                            <span class="text-danger" id="non_indigene_required_marker">*</span>
+                        </label>
                         <input type="number" class="form-control @error('non_indigene_amount') is-invalid @enderror"
                                id="non_indigene_amount" name="non_indigene_amount"
                                value="{{ old('non_indigene_amount', $fee->non_indigene_amount) }}" min="0" step="0.01"
@@ -104,80 +110,12 @@
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="portal_charge_both" class="form-label">Portal Charges (₦)</label>
+                        <label for="portal_charge" class="form-label">Portal Charges (₦)</label>
                         <input type="number" class="form-control @error('portal_charge') is-invalid @enderror"
-                               id="portal_charge_both" name="portal_charge"
+                               id="portal_charge" name="portal_charge"
                                value="{{ old('portal_charge', $fee->portal_charge ?? 0) }}" min="0" step="0.01"
-                               placeholder="Applies to all students">
-                        @error('portal_charge')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-
-            <div id="amount-indigene" class="row fee-amount-row" data-show-when="indigene">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="indigene_amount_only" class="form-label">Indigene Amount (₦)</label>
-                        <input type="number" class="form-control @error('indigene_amount') is-invalid @enderror"
-                               id="indigene_amount_only" name="indigene_amount"
-                               value="{{ old('indigene_amount', $fee->indigene_amount) }}" min="0" step="0.01"
-                               placeholder="Fee paid by indigene students">
-                        @error('indigene_amount')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="portal_charge_indigene" class="form-label">Portal Charges (₦)</label>
-                        <input type="number" class="form-control @error('portal_charge') is-invalid @enderror"
-                               id="portal_charge_indigene" name="portal_charge"
-                               value="{{ old('portal_charge', $fee->portal_charge ?? 0) }}" min="0" step="0.01"
-                               placeholder="Applies to indigene students">
-                        @error('portal_charge')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-
-            <div id="amount-non_indigene" class="row fee-amount-row" data-show-when="non_indigene">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="non_indigene_amount_only" class="form-label">Non-Indigene Amount (₦)</label>
-                        <input type="number" class="form-control @error('non_indigene_amount') is-invalid @enderror"
-                               id="non_indigene_amount_only" name="non_indigene_amount"
-                               value="{{ old('non_indigene_amount', $fee->non_indigene_amount) }}" min="0" step="0.01"
-                               placeholder="Fee paid by non-indigene students">
-                        @error('non_indigene_amount')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="portal_charge_non_indigene" class="form-label">Portal Charges (₦)</label>
-                        <input type="number" class="form-control @error('portal_charge') is-invalid @enderror"
-                               id="portal_charge_non_indigene" name="portal_charge"
-                               value="{{ old('portal_charge', $fee->portal_charge ?? 0) }}" min="0" step="0.01"
-                               placeholder="Applies to non-indigene students">
-                        @error('portal_charge')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-
-            <div id="amount-portal_charge" class="row fee-amount-row" data-show-when="portal_charge">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="portal_charge_only" class="form-label">Portal Charges Only (₦)</label>
-                        <input type="number" class="form-control @error('portal_charge') is-invalid @enderror"
-                               id="portal_charge_only" name="portal_charge"
-                               value="{{ old('portal_charge', $fee->portal_charge ?? 0) }}" min="0" step="0.01"
-                               placeholder="Portal charge amount">
+                               placeholder="Applies to the selected audience">
+                        <small class="text-muted" id="portal_charge_help">Applies to all students.</small>
                         @error('portal_charge')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -240,27 +178,49 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const category = document.getElementById('category');
-    const rows = document.querySelectorAll('.fee-amount-row');
+    const indigeneMarker = document.getElementById('indigene_required_marker');
+    const nonIndigeneMarker = document.getElementById('non_indigene_required_marker');
+    const portalHelp = document.getElementById('portal_charge_help');
     const legacyAmount = document.getElementById('amount_legacy');
+    const indigeneInput = document.getElementById('indigene_amount');
+    const nonIndigeneInput = document.getElementById('non_indigene_amount');
+
+    const config = {
+        both:         { indigene: true,  nonIndigene: true,  help: 'Applies to all students.' },
+        indigene:     { indigene: true,  nonIndigene: false, help: 'Applies to indigene students.' },
+        non_indigene: { indigene: false, nonIndigene: true,  help: 'Applies to non-indigene students.' },
+        portal_charge:{ indigene: false, nonIndigene: false, help: 'Portal charge only — the amounts above are ignored.' },
+    };
 
     function refresh() {
         const value = category.value || 'both';
-        rows.forEach(function (row) {
-            row.style.display = row.dataset.showWhen === value ? '' : 'none';
-        });
+        const c = config[value] || config.both;
 
-        const visibleAmount = document.querySelector(
-            '.fee-amount-row:not([style*="display: none"]) input[type="number"]:not([name="portal_charge"])'
-        );
-        if (visibleAmount && legacyAmount) {
-            legacyAmount.value = visibleAmount.value || 0;
-            visibleAmount.addEventListener('input', function () {
-                legacyAmount.value = visibleAmount.value || 0;
-            });
+        if (indigeneMarker)    indigeneMarker.style.display    = c.indigene    ? '' : 'none';
+        if (nonIndigeneMarker) nonIndigeneMarker.style.display = c.nonIndigene ? '' : 'none';
+        if (portalHelp)        portalHelp.textContent          = c.help;
+
+        if (legacyAmount) {
+            if (value === 'portal_charge') {
+                legacyAmount.value = 0;
+            } else if (value === 'non_indigene') {
+                legacyAmount.value = nonIndigeneInput && nonIndigeneInput.value ? nonIndigeneInput.value : 0;
+            } else {
+                legacyAmount.value = indigeneInput && indigeneInput.value ? indigeneInput.value : 0;
+            }
         }
     }
 
-    category.addEventListener('change', refresh);
+    if (indigeneInput) {
+        indigeneInput.addEventListener('input', refresh);
+    }
+    if (nonIndigeneInput) {
+        nonIndigeneInput.addEventListener('input', refresh);
+    }
+    if (category) {
+        category.addEventListener('change', refresh);
+    }
+
     refresh();
 });
 </script>
