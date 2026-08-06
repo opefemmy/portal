@@ -118,6 +118,29 @@ class DiagnosePaymentTypes extends Command
                 (float) $sample->amount,
                 $sample->audience ?? '(NULL — column missing?)'
             ));
+
+            // Print every row. The "i am unable to add a payment type"
+            // complaint has been traced back to the user re-submitting a
+            // code that already exists in the table; without this dump
+            // they have no way to see that without going to the DB or
+            // carefully refreshing the admin list page.
+            $this->newLine();
+            $this->line('  <options=bold>All payment_types rows</>');
+            $rows = PaymentType::orderBy('id')->get(['id', 'code', 'name', 'amount', 'purpose', 'audience', 'is_active', 'requires_payment', 'created_at']);
+            $this->table(
+                ['id', 'code', 'name', 'amount', 'purpose', 'audience', 'active', 'requires_pay', 'created'],
+                $rows->map(fn ($r) => [
+                    $r->id,
+                    $r->code,
+                    $r->name,
+                    number_format((float) $r->amount, 2),
+                    $r->purpose ?? '—',
+                    $r->audience ?? '—',
+                    $r->is_active ? 'yes' : 'NO',
+                    $r->requires_payment ? 'yes' : 'NO',
+                    optional($r->created_at)->toDateTimeString() ?? '—',
+                ])->toArray()
+            );
         }
 
         // --- 4. Routes ---------------------------------------------------

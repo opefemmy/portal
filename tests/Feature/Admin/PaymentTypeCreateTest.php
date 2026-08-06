@@ -98,14 +98,13 @@ class PaymentTypeCreateTest extends TestCase
     }
 
     /**
-     * Required-field validation: missing `audience` must NOT create
-     * a row — audience is `required` in the controller, but if the
-     * column is missing on production (unrun migration), the row
-     * insert will throw a SQL error and the user will see a 500.
-     * This test pins the validation behaviour in the test env where
-     * the column exists.
+     * Missing audience must NOT crash the controller. After making
+     * `audience` `nullable` with a default of 'both', the controller
+     * accepts a missing audience and stores 'both' instead. This
+     * test pins that behaviour so a future refactor doesn't silently
+     * make it required again.
      */
-    public function test_missing_audience_is_rejected(): void
+    public function test_missing_audience_defaults_to_both(): void
     {
         $admin = $this->makeUser('admin');
 
@@ -117,8 +116,14 @@ class PaymentTypeCreateTest extends TestCase
                 'payment_channel' => 'both',
             ]);
 
-        $response->assertSessionHasErrors('audience');
-        $this->assertDatabaseMissing('payment_types', ['code' => 'NOAUD']);
+        $response->assertStatus(302);
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('payment_types', [
+            'code' => 'NOAUD',
+            'audience' => 'both',
+        ]);
     }
 
     /**
