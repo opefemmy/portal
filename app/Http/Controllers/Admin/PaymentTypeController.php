@@ -36,8 +36,14 @@ class PaymentTypeController extends Controller
             'code' => 'required|string|max:50|unique:payment_types,code',
             'description' => 'nullable|string|max:500',
             'amount' => 'required|numeric|min:0',
-            'purpose' => 'nullable|string',
-            'audience' => 'required|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
+            // Purpose is free-form so admins can add any new fee
+            // (e.g. "compulsory_fee", "convocation") without a code
+            // change. Existing enum-style values still work.
+            'purpose' => 'nullable|string|max:50',
+            // Audience is required, but we default to 'both' so the
+            // form never silently bounces an admin back on a missing
+            // dropdown value.
+            'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
             'is_active' => 'boolean',
             'requires_payment' => 'boolean',
             'payment_channel' => 'nullable|in:external,internal,both',
@@ -46,6 +52,16 @@ class PaymentTypeController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');
+        $validated['audience'] = $validated['audience'] ?? PaymentType::AUDIENCE_BOTH;
+        $validated['payment_channel'] = $validated['payment_channel'] ?? 'both';
+        $validated['priority'] = $validated['priority'] ?? 1;
+        // Normalise free-text purpose to a safe slug-like value so
+        // downstream enum-aware lookups (e.g. ApplicantPaymentService
+        // -> feeTypeFor) keep working when an admin types something
+        // like "Compulsory Fee" or "Convocation".
+        if (!empty($validated['purpose'])) {
+            $validated['purpose'] = strtolower(trim(preg_replace('/\s+/', '_', $validated['purpose'])));
+        }
 
         // The 2026_07_24 migration added `purpose` and the 2026_08_04
         // migration added `audience`. On deployments that have not yet
@@ -127,8 +143,8 @@ class PaymentTypeController extends Controller
             'code' => 'required|string|max:50|unique:payment_types,code,' . $paymentType->id,
             'description' => 'nullable|string|max:500',
             'amount' => 'required|numeric|min:0',
-            'purpose' => 'nullable|string',
-            'audience' => 'required|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
+            'purpose' => 'nullable|string|max:50',
+            'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
             'is_active' => 'boolean',
             'requires_payment' => 'boolean',
             'payment_channel' => 'nullable|in:external,internal,both',
@@ -137,6 +153,12 @@ class PaymentTypeController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');
+        $validated['audience'] = $validated['audience'] ?? PaymentType::AUDIENCE_BOTH;
+        $validated['payment_channel'] = $validated['payment_channel'] ?? 'both';
+        $validated['priority'] = $validated['priority'] ?? 1;
+        if (!empty($validated['purpose'])) {
+            $validated['purpose'] = strtolower(trim(preg_replace('/\s+/', '_', $validated['purpose'])));
+        }
 
         // Strip columns that don't exist on this deployment so the
         // update doesn't 500 on unrun migrations. See store() for the

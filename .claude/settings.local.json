@@ -100,7 +100,10 @@
       "Bash(grep *)",
       "Bash(awk NR>=110 && NR<=180 *)",
       "PowerShell(curl *)",
-      "Bash(Select-String \"payment_type|audience\")"
+      "Bash(Select-String \"payment_type|audience\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 200\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log -Tail 4000 | Select-String -Pattern 'payment.type|payment.type store|payment.type create|admin/payment' | Select-Object -Last 40\")",
+      "Bash(powershell -Command \"Get-Content storage/logs/laravel.log | Select-String -Pattern 'payment-type|payment_type' | Select-Object -Last 30\")"
     ]
   }
 }

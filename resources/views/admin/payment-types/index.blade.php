@@ -185,44 +185,66 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger py-2 small">
+                            Please fix the errors below and try again.
+                        </div>
+                    @endif
                     <div class="mb-3">
                         <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g., Convocation Fee" required>
+                        <input type="text" name="name"
+                               class="form-control @error('name') is-invalid @enderror"
+                               value="{{ old('name') }}"
+                               placeholder="e.g., Compulsory Fee, Convocation Fee" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Code <span class="text-danger">*</span></label>
-                        <input type="text" name="code" class="form-control" placeholder="e.g., CONVOCATION" required>
+                        <input type="text" name="code"
+                               class="form-control @error('code') is-invalid @enderror"
+                               value="{{ old('code') }}"
+                               placeholder="e.g., COMP_FEE, CONVOCATION" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" placeholder="Optional description"></textarea>
+                        <textarea name="description" class="form-control" placeholder="Optional description">{{ old('description') }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Amount (₦) <span class="text-danger">*</span></label>
-                        <input type="number" name="amount" class="form-control" placeholder="0.00" required min="0" step="0.01">
+                        <input type="number" name="amount"
+                               class="form-control @error('amount') is-invalid @enderror"
+                               value="{{ old('amount') }}"
+                               placeholder="0.00" required min="0" step="0.01">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Payment Channel <span class="text-danger">*</span></label>
-                        <select name="payment_channel" class="form-select" required>
-                            <option value="external">External (Online Payment)</option>
-                            <option value="internal">Internal (Manual)</option>
-                            <option value="both">Both</option>
+                        <label class="form-label">Payment Channel</label>
+                        <select name="payment_channel" class="form-select">
+                            <option value="external" {{ old('payment_channel') === 'external' ? 'selected' : '' }}>External (Online Payment)</option>
+                            <option value="internal" {{ old('payment_channel') === 'internal' ? 'selected' : '' }}>Internal (Manual)</option>
+                            <option value="both" {{ old('payment_channel', 'both') === 'both' ? 'selected' : '' }}>Both</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Purpose</label>
-                        <select name="purpose" class="form-select">
-                            <option value="">— None —</option>
+                        <input type="text" name="purpose"
+                               class="form-control @error('purpose') is-invalid @enderror"
+                               value="{{ old('purpose') }}"
+                               list="purpose-suggestions-modal"
+                               placeholder="e.g., compulsory_fee, convocation, hostel">
+                        <datalist id="purpose-suggestions-modal">
                             @foreach(\App\Models\PaymentType::getPurposes() as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
-                        </select>
+                        </datalist>
+                        <small class="text-muted">
+                            Pick a known purpose or type any label (e.g. <code>compulsory_fee</code>).
+                            Spaces are converted to underscores automatically.
+                        </small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Audience <span class="text-danger">*</span></label>
-                        <select name="audience" class="form-select" required>
+                        <select name="audience" class="form-select @error('audience') is-invalid @enderror" required>
                             @foreach(\App\Models\PaymentType::getAudiences() as $value => $label)
-                                <option value="{{ $value }}" {{ $value === 'both' ? 'selected' : '' }}>{{ $label }}</option>
+                                <option value="{{ $value }}" {{ old('audience', 'both') === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                         <small class="text-muted">
@@ -232,18 +254,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Priority</label>
-                        <input type="number" name="priority" class="form-control" placeholder="1" min="1">
+                        <input type="number" name="priority"
+                               class="form-control @error('priority') is-invalid @enderror"
+                               value="{{ old('priority', 1) }}" min="1">
                         <small class="text-muted">Lower number = higher priority</small>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="is_active" class="form-check-input" id="create_active" checked>
+                            <input type="checkbox" name="is_active" class="form-check-input" id="create_active" {{ old('is_active', 1) ? 'checked' : '' }}>
                             <label class="form-check-label" for="create_active">Active</label>
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="requires_payment" class="form-check-input" id="create_payment" checked>
+                            <input type="checkbox" name="requires_payment" class="form-check-input" id="create_payment" {{ old('requires_payment', 1) ? 'checked' : '' }}>
                             <label class="form-check-label" for="create_payment">Requires Payment</label>
                         </div>
                     </div>
@@ -256,4 +280,12 @@
         </div>
     </div>
 </div>
+@if($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('createModal');
+        if (el && window.bootstrap) { new bootstrap.Modal(el).show(); }
+    });
+</script>
+@endif
 @endsection
