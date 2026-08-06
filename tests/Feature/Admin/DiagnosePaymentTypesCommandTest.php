@@ -23,12 +23,51 @@ class DiagnosePaymentTypesCommandTest extends TestCase
     {
         parent::setUp();
         $this->buildSchema();
+        $this->seedCanonicalRows();
     }
 
     protected function tearDown(): void
     {
         Schema::dropIfExists('payment_types');
         parent::tearDown();
+    }
+
+    /**
+     * Seed the three canonical-purpose rows so the applicant-flow
+     * resolver section of the diagnostic has something to inspect.
+     */
+    private function seedCanonicalRows(): void
+    {
+        PaymentType::create([
+            'name' => 'Application Form Fee',
+            'code' => 'APP_FORM',
+            'purpose' => PaymentType::PURPOSE_APPLICATION,
+            'amount' => 5000,
+            'audience' => PaymentType::AUDIENCE_BOTH,
+            'is_active' => true,
+            'requires_payment' => true,
+            'payment_channel' => 'both',
+        ]);
+        PaymentType::create([
+            'name' => 'Acceptance Fee',
+            'code' => 'ACCEPT_FEE',
+            'purpose' => PaymentType::PURPOSE_ACCEPTANCE,
+            'amount' => 25000,
+            'audience' => PaymentType::AUDIENCE_BOTH,
+            'is_active' => true,
+            'requires_payment' => true,
+            'payment_channel' => 'both',
+        ]);
+        PaymentType::create([
+            'name' => 'School Fees',
+            'code' => 'SCHOOL_FEE',
+            'purpose' => PaymentType::PURPOSE_SCHOOL_FEE,
+            'amount' => 50000,
+            'audience' => PaymentType::AUDIENCE_BOTH,
+            'is_active' => true,
+            'requires_payment' => true,
+            'payment_channel' => 'both',
+        ]);
     }
 
     public function test_command_runs_against_legacy_schema_with_only_base_columns(): void
@@ -72,6 +111,73 @@ class DiagnosePaymentTypesCommandTest extends TestCase
         // The command catches the QueryException internally and returns
         // SUCCESS with an error message rather than throwing.
         $exit = $this->artisan('payment-types:diagnose')->run();
+        $this->assertSame(0, $exit);
+    }
+
+    /**
+     * The applicant sees "Payment type not configured. Please contact the
+     * admissions office." when resolvePaymentType() returns null. The
+     * diagnostic must surface this so the operator can fix the audience
+     * / activation state without having to reproduce the applicant flow.
+     */
+    public function test_diagnostic_flags_payment_type_with_wrong_audience(): void
+    {
+        // Mark SCHOOL_FEE as audience=student. The applicant-flow audience
+        // filter rejects anything that isn't 'both' or 'applicant', so the
+        // applicant sees "Payment type not configured" when they try to
+        // pay school fees.
+        \App\Models\PaymentType::where('code', 'SCHOOL_FEE')
+            ->update(['audience' => 'student']);
+
+        $exit = $this->artisan('payment-types:diagnose')->expectsOutputToContain('NOT RESOLVED')
+            ->expectsOutputToContain('audience=student')
+            ->run();
+
+        $this->assertSame(0, $exit);
+    }
+
+    /**
+     * When a canonical-code row is INACTIVE, the applicant can't pay for
+     * that purpose either. Diagnostic must flag it.
+     */
+    public function test_diagnostic_flags_inactive_canonical_payment_type(): void
+    {
+        \App\Models\PaymentType::where('code', 'SCHOOL_FEE')
+            ->update(['is_active' => false]);
+
+        // The diagnostic prints "active=NO" in the resolver row and
+        // "INACTIVE" in the issues list — assert both to pin the
+        // contract.
+        $exit = $this->artisan('payment-types:diagnose')
+            ->expectsOutputToContain('active=NO')
+            ->expectsOutputToContain('INACTIVE')
+            ->run();
+
+        $this->assertSame(0, $exit);
+    }
+
+    /**
+     * When the canonical-code row is missing entirely (e.g. someone
+     * deleted it), the diagnostic must report it as missing.
+     */
+    public function test_diagnostic_flags_missing_canonical_payment_type(): void
+    {
+        // Wipe every row whose purpose OR code would match the resolver
+        // candidate set, so the diagnostic must print "no PaymentType
+        // row exists".
+        \App\Models\PaymentType::whereIn('code', ['APP_FORM', 'ACCEPT_FEE', 'SCHOOL_FEE'])
+            ->orWhereIn('purpose', [
+                PaymentType::PURPOSE_APPLICATION,
+                PaymentType::PURPOSE_ACCEPTANCE,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+            ])
+            ->delete();
+
+        $exit = $this->artisan('payment-types:diagnose')
+            ->expectsOutputToContain('NOT RESOLVED')
+            ->expectsOutputToContain('no PaymentType row exists')
+            ->run();
+
         $this->assertSame(0, $exit);
     }
 

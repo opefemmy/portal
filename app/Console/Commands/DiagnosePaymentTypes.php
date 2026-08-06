@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\PaymentType;
+use App\Services\ApplicantPaymentService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -141,7 +142,85 @@ class DiagnosePaymentTypes extends Command
             $issues[] = "Routes not registered: ".implode(', ', $missingRoutes).". `php artisan route:clear` then `php artisan optimize:clear`.";
         }
 
-        // --- 5. Optional real-INSERT test --------------------------------
+        // --- 5. Applicant-flow resolver check ----------------------------
+        // The applicant sees "Payment type not configured. Please contact the
+        // admissions office." (PaymentGatewayController.php:80) when
+        // ApplicantPaymentService::resolvePaymentType() returns null.
+        // That happens when:
+        //   (a) the canonical-code row is missing entirely, or
+        //   (b) the canonical-code row exists but its audience column has
+        //       a value other than 'both' / 'applicant', so the audience
+        //       filter rules it out, AND
+        //   (c) the purpose-fallback query also returns null (e.g. no row
+        //       with purpose='acceptance' or purpose='school_fee' etc.).
+        //
+        // Resolve each canonical purpose from the perspective of the
+        // applicant flow and print the result so the operator can see
+        // which one would 302 the user with the "not configured" flash.
+        $this->newLine();
+        $this->line('  <options=bold>Applicant-flow resolver</> (what /applicant/payment/gateway would find)');
+        try {
+            $svc = app(ApplicantPaymentService::class);
+            $canonicals = [
+                PaymentType::PURPOSE_APPLICATION,
+                PaymentType::PURPOSE_ACCEPTANCE,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+            ];
+            foreach ($canonicals as $purpose) {
+                $resolved = $svc->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
+                if ($resolved) {
+                    $this->line(sprintf('    purpose=%-12s -> RESOLVED to code=%s (#%d, audience=%s, amount=%.2f, active=%s)',
+                        $purpose,
+                        $resolved->code,
+                        $resolved->id,
+                        $resolved->audience ?? 'both',
+                        (float) $resolved->amount,
+                        $resolved->is_active ? 'yes' : 'NO'
+                    ));
+                    if (! $resolved->is_active) {
+                        $issues[] = "PaymentType #{$resolved->id} (code={$resolved->code}, purpose={$purpose}) is INACTIVE. Activate it in /admin/payment-types or it will never be matched by resolvePaymentType().";
+                    }
+                } else {
+                    $this->line(sprintf('    purpose=%-12s -> NOT RESOLVED — applicant will see "Payment type not configured." flash', $purpose));
+                    // Show every candidate row so the operator can see why
+                    // each one was rejected (wrong audience, missing
+                    // purpose column, etc.).
+                    $candidates = PaymentType::orderBy('id')->get();
+                    $candidatesByPurpose = $candidates->filter(function ($pt) use ($purpose) {
+                        return $pt->purpose === $purpose
+                            || in_array($pt->code, ['APP_FORM', 'ACCEPT_FEE', 'SCHOOL_FEE'], true);
+                    });
+                    if ($candidatesByPurpose->isEmpty()) {
+                        $this->line('      no PaymentType row exists with this purpose or canonical code');
+                        $issues[] = "No PaymentType row exists for purpose={$purpose}. Add one via /admin/payment-types with the matching purpose OR a canonical code (APP_FORM / ACCEPT_FEE / SCHOOL_FEE).";
+                    } else {
+                        foreach ($candidatesByPurpose as $c) {
+                            $reason = '';
+                            if ($c->audience !== null && ! in_array($c->audience, ['both', PaymentType::AUDIENCE_APPLICANT], true)) {
+                                $reason = 'audience='.$c->audience.' (only applicant sees both|applicant)';
+                            } elseif (! $c->is_active) {
+                                $reason = 'is_active=NO';
+                            }
+                            $this->line(sprintf('      candidate: #%d code=%s purpose=%s audience=%s active=%s%s',
+                                $c->id,
+                                $c->code,
+                                $c->purpose ?? '(NULL)',
+                                $c->audience ?? 'both',
+                                $c->is_active ? 'yes' : 'NO',
+                                $reason ? '  — REJECTED: '.$reason : ''
+                            ));
+                            if ($reason !== '' && str_contains($reason, 'audience=')) {
+                                $issues[] = "PaymentType #{$c->id} (code={$c->code}) has audience='{$c->audience}' which excludes applicants. Set it to 'both' or 'applicant' via /admin/payment-types/{$c->id}/edit so the applicant flow can resolve it.";
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->warn('  applicant resolver check failed: '.$e->getMessage());
+        }
+
+        // --- 6. Optional real-INSERT test --------------------------------
         if ($this->option('try-create')) {
             $this->newLine();
             $this->warn('  Attempting a real INSERT with the controller-shaped payload...');
