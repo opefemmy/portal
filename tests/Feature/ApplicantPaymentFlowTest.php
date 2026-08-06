@@ -92,13 +92,17 @@ class ApplicantPaymentFlowTest extends TestCase
         $this->assertTrue($applicant->hasPaid(PaymentType::PURPOSE_ACCEPTANCE));
         $this->assertNotNull($applicant->acceptance_paid_at);
 
-        // 5. COMPULSORY fee — triggers migration
-        $this->assertNull($this->payments->canPay($applicant, PaymentType::PURPOSE_SCHOOL_FEE));
-        $initiated = $this->payments->initiate($applicant, PaymentType::PURPOSE_SCHOOL_FEE, 'test');
+        // 5. COMPULSORY fee — triggers migration. Compulsory (not
+        // School_Fee) is what the applicant catalogue carries: School
+        // Fees is a returning-student fee (audience=student) and must
+        // not show up in the applicant flow. Compulsory alone is enough
+        // to migrate the applicant to a Student row.
+        $this->assertNull($this->payments->canPay($applicant, PaymentType::PURPOSE_COMPULSORY));
+        $initiated = $this->payments->initiate($applicant, PaymentType::PURPOSE_COMPULSORY, 'test');
         $this->payments->markCompleted($initiated['payment'], ['test_mode' => true]);
         $applicant->refresh();
 
-        $this->assertTrue($applicant->hasPaid(PaymentType::PURPOSE_SCHOOL_FEE));
+        $this->assertTrue($applicant->hasPaid(PaymentType::PURPOSE_COMPULSORY));
         $this->assertNotNull($applicant->compulsory_paid_at);
         $this->assertTrue($applicant->isMigrated());
         $this->assertNotNull($applicant->student_id);
@@ -113,7 +117,7 @@ class ApplicantPaymentFlowTest extends TestCase
         $this->assertCount(3, $history);
         $purposes = $history->pluck('purpose')->all();
         $this->assertEqualsCanonicalizing(
-            ['application', 'acceptance', 'school_fee'],
+            ['application', 'acceptance', 'compulsory'],
             $purposes
         );
         foreach ($history as $row) {
@@ -135,7 +139,9 @@ class ApplicantPaymentFlowTest extends TestCase
         $applicant = $this->makeApplicant('admitted');
         $applicant->update(['application_paid_at' => now(), 'payment_status' => 'completed']);
 
-        $block = $this->payments->canPay($applicant, PaymentType::PURPOSE_SCHOOL_FEE);
+        // Compulsory (not School_Fee) is the migration-trigger the
+        // applicant sees — see note in PaymentTypeSeeder.
+        $block = $this->payments->canPay($applicant, PaymentType::PURPOSE_COMPULSORY);
         $this->assertStringContainsString('acceptance', (string) $block);
     }
 
@@ -152,9 +158,13 @@ class ApplicantPaymentFlowTest extends TestCase
         $applicant->refresh();
         $this->assertEquals(PaymentType::PURPOSE_ACCEPTANCE, $applicant->nextPayablePurpose());
 
+        // School Fees is now audience=student (returning-student
+        // only), so after Application + Acceptance the next-payable
+        // walk lands on COMPULSORY — that's the migration trigger
+        // for newly admitted applicants.
         $applicant->update(['acceptance_paid_at' => now()]);
         $applicant->refresh();
-        $this->assertEquals(PaymentType::PURPOSE_SCHOOL_FEE, $applicant->nextPayablePurpose());
+        $this->assertEquals(PaymentType::PURPOSE_COMPULSORY, $applicant->nextPayablePurpose());
 
         $applicant->update(['compulsory_paid_at' => now(), 'student_id' => 1]);
         $applicant->refresh();
@@ -176,6 +186,60 @@ class ApplicantPaymentFlowTest extends TestCase
     {
         \App\Models\SystemSetting::set('admission_application_fee_amount', '9999.99');
         $this->assertEquals(9999.99, $this->payments->resolveAmount(PaymentType::PURPOSE_APPLICATION));
+    }
+
+    /**
+     * The applicant catalogue must NOT include School Fees. School Fees
+     * is a returning-student fee — it lives in the student portal. New
+     * applicants see Compulsory Fee instead, which is what triggers the
+     * applicant→student migration.
+     *
+     * Regression: previously the SCHOOL_FEE row was seeded with
+     * audience='both', so it appeared on the applicant catalogue and
+     * shadowed the Compulsory fee in the dashboard's "next payable"
+     * step. This test pins the audience scoping so the change sticks.
+     */
+    public function test_applicant_catalogue_excludes_school_fees(): void
+    {
+        // Seed a SCHOOL_FEE row that mirrors the production seeder:
+        // audience=student (not applicant, not both).
+        PaymentType::create([
+            'name'     => 'School Fees',
+            'code'     => 'SCHOOL_FEE_STUDENT_ONLY',
+            'purpose'  => PaymentType::PURPOSE_SCHOOL_FEE,
+            'amount'   => 50000,
+            'audience' => PaymentType::AUDIENCE_STUDENT,
+        ]);
+
+        $applicantCatalogue = $this->payments->getApplicantPaymentTypes();
+        $codes = $applicantCatalogue->pluck('code')->all();
+
+        // Compulsory Fee is visible to applicants.
+        $this->assertContains('COMP_FEE', $codes);
+        // School Fees is NOT visible to applicants.
+        $this->assertNotContains('SCHOOL_FEE_STUDENT_ONLY', $codes);
+    }
+
+    /**
+     * Once School Fees is hidden from applicants, the next-payable
+     * walk lands on COMPULSORY (not PURPOSE_SCHOOL_FEE) for an
+     * admitted applicant who has paid application + acceptance.
+     */
+    public function test_next_payable_for_admitted_applicant_returns_compulsory(): void
+    {
+        // Mirror production:School Fees is audience=student.
+        PaymentType::where('code', 'SCHOOL_FEE')->update([
+            'audience' => PaymentType::AUDIENCE_STUDENT,
+        ]);
+
+        $applicant = $this->makeApplicant('admitted');
+        $applicant->update([
+            'application_paid_at' => now(),
+            'acceptance_paid_at'  => now(),
+        ]);
+
+        $next = $applicant->nextPayablePurpose();
+        $this->assertEquals(PaymentType::PURPOSE_COMPULSORY, $next);
     }
 
     /* --- helpers --- */
@@ -381,6 +445,23 @@ class ApplicantPaymentFlowTest extends TestCase
             'code' => 'SCHOOL_FEE',
             'purpose' => PaymentType::PURPOSE_SCHOOL_FEE,
             'amount' => 50000,
+            // audience='student' mirrors the production seeder:
+            // school fees are NOT visible to applicants. The
+            // applicant catalogue should only show Application,
+            // Acceptance, and Compulsory.
+            'audience' => PaymentType::AUDIENCE_STUDENT,
+        ]);
+
+        // Compulsory fee — the migration trigger that newly
+        // admitted applicants see. Sits at the top of the
+        // applicant catalogue once Application + Acceptance are
+        // both paid.
+        PaymentType::create([
+            'name' => 'Compulsory Fee',
+            'code' => 'COMP_FEE',
+            'purpose' => PaymentType::PURPOSE_COMPULSORY,
+            'amount' => 100000,
+            'audience' => PaymentType::AUDIENCE_APPLICANT,
         ]);
     }
 }

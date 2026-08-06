@@ -46,6 +46,7 @@ class ApplicantPaymentService
         PaymentType::PURPOSE_APPLICATION => 'APP_FORM',
         PaymentType::PURPOSE_ACCEPTANCE  => 'ACCEPT_FEE',
         PaymentType::PURPOSE_SCHOOL_FEE => 'SCHOOL_FEE',
+        PaymentType::PURPOSE_COMPULSORY => 'COMP_FEE',
     ];
 
     /**
@@ -317,11 +318,15 @@ class ApplicantPaymentService
             return sprintf('You have already paid the %s fee.', $type->display_label);
         }
 
-        // Per-purpose gates (only the three canonical purposes have them).
+        // Per-purpose gates (only the canonical purposes have them).
+        // Compulsory is the new applicant-facing migration trigger
+        // (replacing school_fee on the applicant catalogue), so it
+        // shares the same prerequisite gate as school_fee.
         $reason = match ($type->purpose) {
             PaymentType::PURPOSE_APPLICATION => $this->canPayApplication($applicant),
             PaymentType::PURPOSE_ACCEPTANCE  => $this->canPayAcceptance($applicant),
-            PaymentType::PURPOSE_SCHOOL_FEE => $this->canPayCompulsory($applicant),
+            PaymentType::PURPOSE_SCHOOL_FEE,
+            PaymentType::PURPOSE_COMPULSORY  => $this->canPayCompulsory($applicant),
             default                          => null,
         };
 
@@ -331,8 +336,13 @@ class ApplicantPaymentService
 
         // Closed-form gate: the admission form must be open for any
         // applicant-side payment to be payable. Skipped for school_fee
-        // because that flow continues past admission closing.
-        if ($type->purpose !== PaymentType::PURPOSE_SCHOOL_FEE
+        // and compulsory because those flows continue past admission
+        // closing (admitted applicants still pay after the cycle ends).
+        $isPostAdmissionFee = in_array($type->purpose, [
+            PaymentType::PURPOSE_SCHOOL_FEE,
+            PaymentType::PURPOSE_COMPULSORY,
+        ], true);
+        if (! $isPostAdmissionFee
             && ! SystemSetting::isOpen(SystemSetting::ADMISSION_FORM_OPEN)
         ) {
             return 'The admission form is currently closed.';
@@ -645,7 +655,12 @@ class ApplicantPaymentService
                     $update['acceptance_paid_at'] = $applicant->acceptance_paid_at ?: $stamp;
                     break;
 
+                // Compulsory is the new applicant-facing migration trigger.
+                // It writes to the same column as school_fee because both
+                // are the post-admission "you now become a student" fee —
+                // we kept a single timestamp for backward-compat.
                 case PaymentType::PURPOSE_SCHOOL_FEE:
+                case PaymentType::PURPOSE_COMPULSORY:
                     $update['compulsory_paid_at'] = $applicant->compulsory_paid_at ?: $stamp;
                     break;
             }
@@ -657,7 +672,10 @@ class ApplicantPaymentService
             // step — currently school_fee, but extensible for future flows.
             if ($resolvedType && $this->isMigrationTrigger($resolvedType)) {
                 $this->migrateApplicantToStudent($applicant);
-            } elseif ($effectivePurpose === PaymentType::PURPOSE_SCHOOL_FEE) {
+            } elseif (in_array($effectivePurpose, [
+                PaymentType::PURPOSE_SCHOOL_FEE,
+                PaymentType::PURPOSE_COMPULSORY,
+            ], true)) {
                 $this->migrateApplicantToStudent($applicant);
             }
         });

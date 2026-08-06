@@ -54,16 +54,20 @@ class PaymentTypeSeeder extends Seeder
             [
                 'name' => 'School Fees',
                 'code' => 'SCHOOL_FEE',
-                'description' => 'Tuition and other school fees',
+                'description' => 'Tuition and other school fees — paid by returning students each session, NOT by applicants. Applicants see this as part of Compulsory only.',
                 'amount' => 50000.00,
                 'is_active' => true,
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 4,
                 'purpose' => 'school_fees',
-                // School fee is charged to applicants (compulsory, to migrate to
-                // the student portal) AND to returning students each session.
-                'audience' => PaymentType::AUDIENCE_BOTH,
+                // School fee is charged ONLY to returning students each
+                // session. New applicants see Compulsory Fee instead —
+                // that's the row that triggers the applicant→student
+                // migration. Audience=student keeps it out of the
+                // applicant catalogue without changing its underlying
+                // business role for the migration logic.
+                'audience' => PaymentType::AUDIENCE_STUDENT,
             ],
             [
                 'name' => 'Hostel Fee',

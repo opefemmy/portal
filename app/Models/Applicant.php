@@ -174,7 +174,12 @@ class Applicant extends Model
         return match ($purpose) {
             PaymentType::PURPOSE_APPLICATION => ! is_null($this->application_paid_at),
             PaymentType::PURPOSE_ACCEPTANCE => ! is_null($this->acceptance_paid_at),
-            PaymentType::PURPOSE_SCHOOL_FEE => ! is_null($this->compulsory_paid_at),
+            // Both spellings of school_fee map to the same timestamp —
+            // production ENUM is school_fees (with s), legacy constant
+            // is school_fee. Both come from the same column.
+            PaymentType::PURPOSE_SCHOOL_FEE,
+            PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION,
+            PaymentType::PURPOSE_COMPULSORY => ! is_null($this->compulsory_paid_at),
             default => \App\Models\Payment::where('payer_id', $this->id)
                 ->where('payment_purpose', $purpose)
                 ->where('status', 'completed')
@@ -199,9 +204,17 @@ class Applicant extends Model
                 continue;
             }
 
-            // Acceptance and compulsory only matter once the registrar
-            // has admitted the applicant.
-            if (in_array($type->purpose, [PaymentType::PURPOSE_ACCEPTANCE, PaymentType::PURPOSE_SCHOOL_FEE], true)
+            // Acceptance, compulsory (and school_fees) only matter
+            // once the registrar has admitted the applicant. Without
+            // this gate a non-admitted applicant could see "Pay
+            // Compulsory" and trigger the migration before they
+            // were ever offered admission.
+            if (in_array($type->purpose, [
+                PaymentType::PURPOSE_ACCEPTANCE,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+                PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION,
+                PaymentType::PURPOSE_COMPULSORY,
+            ], true)
                 && $this->status !== 'admitted') {
                 continue;
             }
