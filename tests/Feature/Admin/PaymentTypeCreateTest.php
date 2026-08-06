@@ -268,6 +268,80 @@ class PaymentTypeCreateTest extends TestCase
         $this->assertEquals(2000.0, (float) $type->amount);
     }
 
+    /**
+     * The user's complaint: "payment type fails to add". The most
+     * likely silent-failure mode is that the row IS saved in the
+     * database but the user can't see it on the redirected index
+     * page (flash hidden, modal still open, datatable not refreshed,
+     * etc). This test asserts the new row IS visible on the
+     * post-redirect page so we can tell the difference between
+     * "save failed" and "save worked but UI didn't show it".
+     */
+    public function test_new_payment_type_is_visible_on_index_after_creation(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)
+            ->from('/admin/payment-types')
+            ->post('/admin/payment-types', [
+                'name' => 'Visible Convocation',
+                'code' => 'VISIBLE_CONV',
+                'description' => 'Should appear in the table',
+                'amount' => 7500,
+                'payment_channel' => 'both',
+                'purpose' => 'other',
+                'audience' => 'student',
+                'is_active' => 1,
+                'requires_payment' => 1,
+                'priority' => 7,
+            ]);
+
+        $response->assertStatus(302);
+
+        // Follow the redirect and confirm the new row is rendered.
+        $response->assertRedirect(route('admin.payment-types.index'));
+        $follow = $this->actingAs($admin)->get('/admin/payment-types');
+        $follow->assertOk();
+        $follow->assertSee('Visible Convocation', false);
+        $follow->assertSee('VISIBLE_CONV', false);
+        $follow->assertSee('7,500.00', false);
+    }
+
+    /**
+     * The modal submits a hidden value for `audience` even when the
+     * user doesn't change the select. Confirm the modal renders the
+     * right default so the form never submits an empty audience
+     * (which would fail the `required` validation).
+     */
+    public function test_create_modal_renders_audience_default_selected(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/admin/payment-types');
+
+        $response->assertOk();
+        // The create modal's audience select defaults to "both"
+        // (selected attribute on the matching <option>).
+        $response->assertSee('<option value="both" selected', false);
+    }
+
+    /**
+     * The Create button is wired to the create modal via
+     * data-bs-target="#createModal". Confirm the trigger and target
+     * are both in the DOM and resolve correctly. This is the path
+     * the user takes to open the modal.
+     */
+    public function test_create_button_is_wired_to_create_modal(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/admin/payment-types');
+
+        $response->assertOk();
+        $response->assertSee('data-bs-target="#createModal"', false);
+        $response->assertSee('id="createModal"', false);
+    }
+
     /* --- helpers --- */
 
     private function makeUser(string $roleSlug): User
