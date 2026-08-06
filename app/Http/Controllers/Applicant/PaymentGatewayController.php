@@ -22,7 +22,7 @@ class PaymentGatewayController extends Controller
     /**
      * Show payment page with Pay Now button (and bank-transfer tab).
      *
-     * URL: /applicant/payment/gateway?purpose=application|acceptance|compulsory|school_fee
+     * URL: /applicant/payment/gateway?purpose=application|acceptance|school_fee
      *
      * Wrapped in a top-level Throwable catch so a downstream error
      * (unrun migration, FK drift) never surfaces as a 500.
@@ -84,7 +84,7 @@ class PaymentGatewayController extends Controller
         // expected — they're on the official "pay before filling the form"
         // path. Auto-create a stub so canPay() (which requires an Applicant
         // instance) doesn't TypeError, and the Pay Now button on the next
-        // page can submit successfully. For acceptance/compulsory/school_fee
+        // page can submit successfully. For acceptance/school_fee
         // a missing row means the user is trying to skip ahead — bounce
         // them with a clear message instead.
         if (! $applicant) {
@@ -160,7 +160,7 @@ class PaymentGatewayController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'purpose' => 'nullable|string|in:application,acceptance,compulsory,school_fee',
+            'purpose' => 'nullable|string|in:application,acceptance,school_fee',
         ]);
 
         $user = Auth::user();
@@ -180,7 +180,7 @@ class PaymentGatewayController extends Controller
             // Only the application-fee flow can boot a fresh applicant — the
             // user is on the official "pay before filling the form" path
             // (/applicant/apply/payment -> Pay Now here). For acceptance,
-            // compulsory, and school_fee, the user must already have a
+            // school_fee, the user must already have a
             // submitted (and admitted) application, so a missing row means
             // they're trying to skip ahead — send them to the dashboard.
             if ($purpose !== PaymentType::PURPOSE_APPLICATION) {
@@ -292,13 +292,13 @@ class PaymentGatewayController extends Controller
 
             $redirectRoute = match ($purpose) {
                 'acceptance' => 'applicant.dashboard',
-                'compulsory', 'school_fee' => 'student.dashboard',
+                'school_fee' => 'student.dashboard',
                 default => 'applicant.apply',
             };
 
             $successMessage = match ($purpose) {
                 'acceptance' => 'Acceptance fee payment verified. You can now print your admission letter.',
-                'compulsory', 'school_fee' => 'Compulsory fee verified. Redirecting to the student portal.',
+                'school_fee' => 'Compulsory fee verified. Redirecting to the student portal.',
                 default => 'Payment successful! You can now complete your application.',
             };
 
@@ -389,7 +389,7 @@ class PaymentGatewayController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:100',
-            'purpose' => 'nullable|string|in:application,acceptance,compulsory,school_fee',
+            'purpose' => 'nullable|string|in:application,acceptance,school_fee',
         ]);
 
         $user = Auth::user();
@@ -437,7 +437,7 @@ class PaymentGatewayController extends Controller
         if ($existingPaidPayment) {
             $redirectRoute = match ($purpose) {
                 'acceptance' => 'applicant.dashboard',
-                'compulsory', 'school_fee' => 'student.dashboard',
+                'school_fee' => 'student.dashboard',
                 default => 'applicant.apply',
             };
 
@@ -552,13 +552,13 @@ class PaymentGatewayController extends Controller
 
         $redirectRoute = match ($purpose) {
             'acceptance' => 'applicant.dashboard',
-            'compulsory', 'school_fee' => 'student.dashboard',
+            'school_fee' => 'student.dashboard',
             default => 'applicant.apply',
         };
 
         $successMessage = match ($purpose) {
             'acceptance' => 'Acceptance fee verified. You can now print your admission letter. (Ref: ' . $payment->reference . ')',
-            'compulsory', 'school_fee' => 'Compulsory fee verified. (Ref: ' . $payment->reference . ')',
+            'school_fee' => 'Compulsory fee verified. (Ref: ' . $payment->reference . ')',
             default => 'Test payment successful! You can now complete your application. (Reference: ' . $payment->reference . ')',
         };
 

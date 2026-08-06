@@ -211,6 +211,10 @@ function bulkAction(action) {
         return;
     }
     if (confirm('Are you sure you want to ' + action + ' selected applications?')) {
+        // Clear any prior action hidden inputs so a rapid double-click
+        // on different action buttons doesn't POST two `action` values
+        // (the last one wins, but it's confusing in devtools).
+        $('#bulkForm input[name="action"]').remove();
         $('#bulkForm').append('<input type="hidden" name="action" value="' + action + '">');
         $('#bulkForm').submit();
     }

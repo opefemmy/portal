@@ -270,7 +270,7 @@
                 <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
                 <h5>Pay Compulsory Fee</h5>
                 <p class="text-muted">Complete your migration to the student portal and receive your matric number.</p>
-                <a href="{{ route('applicant.payment.gateway') }}?purpose=compulsory" class="btn btn-primary w-100">
+                <a href="{{ route('applicant.payment.gateway') }}?purpose=school_fee" class="btn btn-primary w-100">
                     <i class="fas fa-credit-card me-2"></i>Pay Compulsory Fee
                 </a>
             </div>

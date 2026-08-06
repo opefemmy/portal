@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Programme;
 use App\Models\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
@@ -90,18 +91,28 @@ class ApplicationController extends Controller
             'action' => 'required|in:screening,approved,rejected,admitted',
         ]);
 
-        $count = 0;
-        foreach ($request->applications as $applicationId) {
-            $applicant = Applicant::find($applicationId);
-            if ($applicant) {
-                $applicant->update([
-                    'status' => $request->action,
-                    'reviewed_by' => auth()->id(),
-                    'reviewed_at' => now(),
-                ]);
-                $count++;
-            }
+        // School isolation: every other registrar route goes through
+        // assertSameSchool(), but the bulk endpoint was the lone
+        // exception — a registrar could silently update applicants
+        // from another school. Pre-filter the IDs so cross-school
+        // rows are dropped before the write. Admin / super_admin
+        // users with no school_id keep the legacy "all schools"
+        // behaviour.
+        $authUser = auth()->user();
+        $authSchoolId = $authUser?->school_id;
+
+        $query = Applicant::query()->whereIn('id', $request->applications);
+        if ($authSchoolId) {
+            $query->where('school_id', $authSchoolId);
         }
+
+        $count = DB::transaction(function () use ($query, $request, $authUser) {
+            return $query->update([
+                'status' => $request->action,
+                'reviewed_by' => $authUser?->id,
+                'reviewed_at' => now(),
+            ]);
+        });
 
         return back()->with('success', $count . ' applications updated successfully!');
     }
