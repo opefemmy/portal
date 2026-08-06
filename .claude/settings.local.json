@@ -98,7 +98,9 @@
       "Bash(grep -n 'full_name\\\\|protected $fillable\\\\|getFullNameAttribute' app/Models/Applicant.php)",
       "Bash(awk NR>=176 && NR<=210 *)",
       "Bash(grep *)",
-      "Bash(awk NR>=110 && NR<=180 *)"
+      "Bash(awk NR>=110 && NR<=180 *)",
+      "PowerShell(curl *)",
+      "Bash(Select-String \"payment_type|audience\")"
     ]
   }
 }
