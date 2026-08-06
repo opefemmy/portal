@@ -192,10 +192,10 @@ class ApplicationController extends Controller
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
-        // Get application fee payment type. The audience filter would have
-        // been a problem here too on a DB missing the audience column, but
-        // the service's resolvePaymentType() is now schema-tolerant.
-        $paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
+        // Resolve by purpose instead of by code so an admin who renames
+        // the APP_FORM code (or creates a duplicate row with a different
+        // code) still gets the right amount and label.
+        $paymentType = \App\Models\PaymentType::findByPurpose(\App\Models\PaymentType::PURPOSE_APPLICATION);
 
         if (!$paymentType) {
             return back()->with('error', 'Application fee payment type not found.');

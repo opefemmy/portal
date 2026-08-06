@@ -4,26 +4,31 @@
 
 @section('content')
 @php
-// Get fee amount from PaymentType
-$paymentType = \App\Models\PaymentType::where('code', 'APP_FORM')->first();
+// Get fee amount from PaymentType. Resolved by purpose so an admin who
+// renames the row's code (or creates a duplicate row with a different
+// code) still gets the right amount and label.
+$paymentType = \App\Models\PaymentType::findByPurpose(\App\Models\PaymentType::PURPOSE_APPLICATION);
 $feeAmount = $paymentType ? $paymentType->amount : 5000;
 $requireFee = true;
+// Prefer the catalogue's `name` field (admin can rename freely) so the
+// page header reads exactly what the admin typed.
+$feeLabel = $paymentType?->name ?: ($paymentType?->display_label ?? 'Application Fee');
 @endphp
 
 <div class="page-header">
-    <h4>Application Fee Payment</h4>
+    <h4>{{ $feeLabel }} Payment</h4>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Pay Application Fee</h5>
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Pay {{ $feeLabel }}</h5>
             </div>
             <div class="card-body">
                 @if($requireFee && $feeAmount > 0)
                 <div class="alert alert-info">
-                    <strong>Required Application Fee:</strong> ₦{{ number_format($feeAmount, 2) }}
+                    <strong>Required {{ $feeLabel }}:</strong> ₦{{ number_format($feeAmount, 2) }}
                 </div>
                 @endif
 

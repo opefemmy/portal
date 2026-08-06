@@ -58,6 +58,47 @@ class PaymentType extends Model
     }
 
     /**
+     * Friendly label for views. Falls back to title-cased purpose for
+     * admin-defined purposes that aren't in the canonical map (e.g.
+     * "late_registration" -> "Late Registration"). This is the single
+     * source of truth for what to display on buttons, headings, etc.
+     */
+    public function getDisplayLabelAttribute(): string
+    {
+        $purposes = self::getPurposes();
+        if (isset($purposes[$this->purpose])) {
+            return $purposes[$this->purpose];
+        }
+
+        // Unknown purpose — title-case it for display.
+        return ucwords(str_replace(['_', '-'], ' ', (string) $this->purpose));
+    }
+
+    /**
+     * Find an active PaymentType by its `code` (e.g. 'APP_FORM'). Returns
+     * null when not found or inactive. Case-insensitive on the lookup so
+     * 'app_form' and 'APP_FORM' both match.
+     */
+    public static function findByCode(string $code): ?self
+    {
+        return static::whereRaw('LOWER(code) = ?', [strtolower($code)])->first();
+    }
+
+    /**
+     * Find an active PaymentType by its `purpose`. If multiple rows share
+     * the same purpose (admins sometimes create variations) the
+     * lowest-priority / earliest-id one wins. Returns null when nothing
+     * matches.
+     */
+    public static function findByPurpose(string $purpose): ?self
+    {
+        return static::where('purpose', $purpose)
+            ->orderBy('priority')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
      * Exact allow-list that matches the production MySQL ENUM
      * (verified via `php artisan payment-types:list-purposes`).
      * Anything outside this list must be coerced to one of these

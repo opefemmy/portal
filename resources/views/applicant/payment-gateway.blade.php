@@ -5,12 +5,9 @@
     // hardcode "Pay Application Fee" regardless of purpose, so the user saw
     // a confusing page when they came in via ?purpose=acceptance or
     // ?purpose=school_fee. Now we render the right label everywhere.
-    $purpose = $purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION;
-    $purposeLabel = match ($purpose) {
-        \App\Models\PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
-        \App\Models\PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
-        default => 'Application Fee',
-    };
+    // Prefer the catalogue `name` so admin-renamed rows display verbatim.
+    $purposeLabel = $paymentType?->name
+        ?: ($paymentType?->display_label ?? 'Application Fee');
     $title = "Pay {$purposeLabel}";
 @endphp
 

@@ -75,7 +75,10 @@ class ApplicantPaymentTestPageTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Test Mode', false);
-        $response->assertSee('Application Fee', false);
+        // The label comes from the catalogue `name` field, which the
+        // fixture sets to "Application Form Fee" — proves the dynamic
+        // catalogue is wired through to the view.
+        $response->assertSee('Application Form Fee', false);
     }
 
     /**
@@ -99,8 +102,11 @@ class ApplicantPaymentTestPageTest extends TestCase
     }
 
     /**
-     * ?purpose=school_fee renders the compulsory-fee label and pre-fills
-     * the school-fee amount.
+     * ?purpose=school_fee renders the school-fee label and pre-fills
+     * the school-fee amount. The label now comes from the catalogue's
+     * name field (or canonical purpose label), so the test asserts
+     * "School Fees" — that's what getDisplayLabelAttribute() returns
+     * for PURPOSE_SCHOOL_FEE.
      */
     public function test_test_page_renders_school_fee_purpose(): void
     {
@@ -114,7 +120,7 @@ class ApplicantPaymentTestPageTest extends TestCase
             ->get('/applicant/payment/test?purpose=school_fee');
 
         $response->assertOk();
-        $response->assertSee('Compulsory Fee', false);
+        $response->assertSee('School Fees', false);
         $response->assertViewHas('purpose', 'school_fee');
         $response->assertViewHas('feeAmount');
         $this->assertEquals(50000.0, $response->viewData('feeAmount'));

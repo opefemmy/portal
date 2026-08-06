@@ -41,19 +41,24 @@ class EnsureApplicantHasPaid
             return $next($request);
         }
 
-        if (! in_array($purpose, [
-            PaymentType::PURPOSE_APPLICATION,
-            PaymentType::PURPOSE_ACCEPTANCE,
-            PaymentType::PURPOSE_SCHOOL_FEE,
-        ], true)) {
-            abort(400, "Unknown payment purpose [$purpose].");
-        }
+        // Resolve the PaymentType so admin-defined purposes work without
+        // touching this middleware. Falls back to the canonical three
+        // purposes only when the lookup misses (e.g. an admin deleted the
+        // row the route still references).
+        $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
 
         if (! $applicant->hasPaid($purpose)) {
+            $label = $paymentType?->display_label ?? match ($purpose) {
+                PaymentType::PURPOSE_APPLICATION => 'application fee',
+                PaymentType::PURPOSE_ACCEPTANCE => 'acceptance fee',
+                PaymentType::PURPOSE_SCHOOL_FEE => 'compulsory fee',
+                default => $purpose,
+            };
+
             $message = match ($purpose) {
-                PaymentType::PURPOSE_APPLICATION => 'Pay the application fee to continue.',
-                PaymentType::PURPOSE_ACCEPTANCE => 'You must be admitted and pay the acceptance fee first.',
+                PaymentType::PURPOSE_ACCEPTANCE => "You must be admitted and pay the {$label} first.",
                 PaymentType::PURPOSE_SCHOOL_FEE => 'Pay the acceptance fee before accessing this section.',
+                default => "Pay the {$label} to continue.",
             };
 
             return redirect()->route('applicant.dashboard')->with('error', $message);

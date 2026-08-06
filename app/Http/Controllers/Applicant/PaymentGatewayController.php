@@ -291,17 +291,8 @@ class PaymentGatewayController extends Controller
 
             $purpose = $payment->payment_purpose;
 
-            $redirectRoute = match ($purpose) {
-                'acceptance' => 'applicant.dashboard',
-                'school_fee' => 'student.dashboard',
-                default => 'applicant.apply',
-            };
-
-            $successMessage = match ($purpose) {
-                'acceptance' => 'Acceptance fee payment verified. You can now print your admission letter.',
-                'school_fee' => 'Compulsory fee verified. Redirecting to the student portal.',
-                default => 'Payment successful! You can now complete your application.',
-            };
+            $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
+            [$redirectRoute, $successMessage] = $this->resolveSuccessRouteAndMessage($payment, $paymentType);
 
             // student.dashboard is gated by role:student middleware. If the
             // applicant→student migration didn't fully run (e.g. matric
@@ -309,11 +300,11 @@ class PaymentGatewayController extends Controller
             // applicant), the named route exists but the role middleware
             // would 403 them. Fall back to the applicant dashboard so the
             // user always lands somewhere with the success flash.
-            if ($purpose === 'school_fee') {
+            if ($this->payments->isMigrationTrigger($paymentType ?? null)) {
                 $freshApplicant = Applicant::find($payment->payer_id);
                 if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
                     $redirectRoute = 'applicant.dashboard';
-                    $successMessage = 'Compulsory fee verified. Your student record is being prepared — please check back in a moment.';
+                    $successMessage = (($paymentType?->name ?: $paymentType?->display_label) ?? 'Migration') . ' verified. Your student record is being prepared — please check back in a moment.';
                 }
             }
 
@@ -327,6 +318,46 @@ class PaymentGatewayController extends Controller
 
         return redirect()->route('applicant.payment')
             ->with('error', 'Payment verification failed. Please try again.');
+    }
+
+    /**
+     * Pick the redirect route and success message after a verified
+     * payment. Drives off the PaymentType row so admin-defined payment
+     * types (acceptance, compulsory, hostels, transcripts, ...) pick up
+     * sensible defaults without code changes.
+     *
+     * @return array{0:string,1:string} [routeName, successMessage]
+     */
+    private function resolveSuccessRouteAndMessage(Payment $payment, ?PaymentType $type): array
+    {
+        $purpose = (string) ($payment->payment_purpose ?? $type?->purpose ?? '');
+        // Prefer the catalogue's `name` field (admin can rename freely)
+        // and fall back to the canonical short label.
+        $label   = $type?->name ?: ($type?->display_label ?? 'fee');
+        $name    = $type?->name ?? 'Payment';
+
+        // Migration-triggering payments send the user to the student
+        // portal; everything else stays on the applicant portal.
+        if ($this->payments->isMigrationTrigger($type)) {
+            return [
+                'student.dashboard',
+                "{$label} verified. Redirecting to the student portal.",
+            ];
+        }
+
+        // Acceptance payments unlock the admission-letter print.
+        if ($type?->purpose === PaymentType::PURPOSE_ACCEPTANCE || $purpose === PaymentType::PURPOSE_ACCEPTANCE) {
+            return [
+                'applicant.dashboard',
+                "{$label} verified. You can now print your admission letter.",
+            ];
+        }
+
+        // Application payments unlock the form fill.
+        return [
+            'applicant.apply',
+            "{$name} successful! You can now complete your application.",
+        ];
     }
 
     /**
@@ -464,11 +495,8 @@ class PaymentGatewayController extends Controller
             ->first();
 
         if ($existingPaidPayment) {
-            $redirectRoute = match ($purpose) {
-                'acceptance' => 'applicant.dashboard',
-                'school_fee' => 'student.dashboard',
-                default => 'applicant.apply',
-            };
+            $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
+            [$redirectRoute] = $this->resolveSuccessRouteAndMessage($existingPaidPayment, $paymentType);
 
             return redirect()
                 ->route($redirectRoute)
@@ -579,28 +607,23 @@ class PaymentGatewayController extends Controller
             }
         }
 
-        $redirectRoute = match ($purpose) {
-            'acceptance' => 'applicant.dashboard',
-            'school_fee' => 'student.dashboard',
-            default => 'applicant.apply',
-        };
-
-        $successMessage = match ($purpose) {
-            'acceptance' => 'Acceptance fee verified. You can now print your admission letter. (Ref: ' . $payment->reference . ')',
-            'school_fee' => 'Compulsory fee verified. (Ref: ' . $payment->reference . ')',
-            default => 'Test payment successful! You can now complete your application. (Reference: ' . $payment->reference . ')',
-        };
+        $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
+        [$redirectRoute, $successMessage] = $this->resolveSuccessRouteAndMessage($payment, $paymentType);
+        $refSuffix = ' (Ref: ' . $payment->reference . ')';
+        $successMessage = str_replace('payment', 'Test payment', str_replace('.', $refSuffix . '.', $successMessage))
+            ?: ('Test payment successful. ' . $refSuffix);
 
         // Same fallback as the live Paystack callback: if the
         // applicant→student migration didn't run (matric service down,
         // FK drift, etc.), don't try to land the user on a route the
         // role:student middleware will 403. Send them to the applicant
         // dashboard instead.
-        if ($purpose === 'school_fee') {
+        if ($this->payments->isMigrationTrigger($paymentType)) {
             $freshApplicant = Applicant::find($payment->payer_id);
             if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
                 $redirectRoute = 'applicant.dashboard';
-                $successMessage = 'Test payment simulated for the compulsory fee. Your student record is being prepared — please check back in a moment. (Ref: ' . $payment->reference . ')';
+                $label = $paymentType?->name ?: ($paymentType?->display_label ?? 'Compulsory');
+                $successMessage = "Test payment simulated for the {$label} fee. Your student record is being prepared — please check back in a moment." . $refSuffix;
             }
         }
 

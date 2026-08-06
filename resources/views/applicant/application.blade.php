@@ -56,7 +56,7 @@
         <hr>
         <p class="mb-2">Or pay through the portal:</p>
         <a href="{{ route('applicant.apply.fee') }}" class="btn btn-success">
-            <i class="fas fa-credit-card me-2"></i>Pay Application Fee Online
+            <i class="fas fa-credit-card me-2"></i>Pay {{ \App\Models\PaymentType::findByPurpose(\App\Models\PaymentType::PURPOSE_APPLICATION)?->display_label ?? 'Application Fee' }} Online
         </a>
     </div>
 </div>

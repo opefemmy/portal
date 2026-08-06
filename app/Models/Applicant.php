@@ -164,6 +164,10 @@ class Applicant extends Model
     /**
      * Whether the applicant has paid the given purpose.
      * purpose: application | acceptance | compulsory
+     *
+     * Delegates to ApplicantPaymentService so the source-of-truth lives
+     * in one place; this method stays as a convenience wrapper for
+     * backward compat.
      */
     public function hasPaid(string $purpose): bool
     {
@@ -171,29 +175,40 @@ class Applicant extends Model
             PaymentType::PURPOSE_APPLICATION => ! is_null($this->application_paid_at),
             PaymentType::PURPOSE_ACCEPTANCE => ! is_null($this->acceptance_paid_at),
             PaymentType::PURPOSE_SCHOOL_FEE => ! is_null($this->compulsory_paid_at),
-            default => false,
+            default => \App\Models\Payment::where('payer_id', $this->id)
+                ->where('payment_purpose', $purpose)
+                ->where('status', 'completed')
+                ->exists(),
         };
     }
 
     /**
      * The next fee the applicant should pay, in canonical order.
      * Returns null once all three have been paid.
+     *
+     * Walks the admin's configured catalogue in priority order. This
+     * replaces the old hardcoded three-arm logic so an admin adding a
+     * fourth required fee doesn't need to touch this method.
      */
     public function nextPayablePurpose(): ?string
     {
-        if (! $this->hasPaid(PaymentType::PURPOSE_APPLICATION)) {
-            return PaymentType::PURPOSE_APPLICATION;
-        }
+        // Walk the catalogue. The service has already filtered to
+        // applicant-visible, active rows in priority order.
+        foreach (\App\Services\ApplicantPaymentService::getApplicantPaymentTypesStatic() as $type) {
+            if (! $type->requires_payment) {
+                continue;
+            }
 
-        // Acceptance only matters once the registrar has admitted the applicant.
-        if ($this->status === 'admitted' && ! $this->hasPaid(PaymentType::PURPOSE_ACCEPTANCE)) {
-            return PaymentType::PURPOSE_ACCEPTANCE;
-        }
+            // Acceptance and compulsory only matter once the registrar
+            // has admitted the applicant.
+            if (in_array($type->purpose, [PaymentType::PURPOSE_ACCEPTANCE, PaymentType::PURPOSE_SCHOOL_FEE], true)
+                && $this->status !== 'admitted') {
+                continue;
+            }
 
-        if ($this->status === 'admitted'
-            && $this->hasPaid(PaymentType::PURPOSE_ACCEPTANCE)
-            && ! $this->hasPaid(PaymentType::PURPOSE_SCHOOL_FEE)) {
-            return PaymentType::PURPOSE_SCHOOL_FEE;
+            if (! $this->hasPaid($type->purpose)) {
+                return $type->purpose;
+            }
         }
 
         return null;
@@ -205,13 +220,17 @@ class Applicant extends Model
     public function nextPayableLabel(): ?string
     {
         $purpose = $this->nextPayablePurpose();
+        if (! $purpose) {
+            return null;
+        }
 
-        return match ($purpose) {
-            PaymentType::PURPOSE_APPLICATION => 'Pay Application Fee',
-            PaymentType::PURPOSE_ACCEPTANCE => 'Pay Acceptance Fee',
-            PaymentType::PURPOSE_SCHOOL_FEE => 'Pay Compulsory Fee',
-            default => null,
-        };
+        $type = \App\Models\PaymentType::findByPurpose($purpose);
+
+        // Prefer the catalogue's `name` field so admin-renamed rows
+        // display verbatim; fall back to the canonical short label.
+        $label = $type?->name ?: ($type?->display_label ?? null);
+
+        return $label ? 'Pay ' . $label : null;
     }
 
     /**

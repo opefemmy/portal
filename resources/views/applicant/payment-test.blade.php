@@ -2,13 +2,13 @@
 
 @php
     // Same labelling rules as the live gateway view so the test page
-    // is consistent with what the user sees in production.
-    $purpose = $purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION;
-    $purposeLabel = match ($purpose) {
-        \App\Models\PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
-        \App\Models\PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
-        default => 'Application Fee',
-    };
+    // is consistent with what the user sees in production. Prefer the
+    // catalogue's `name` field so admin-defined purposes display exactly
+    // what the admin typed (e.g. "Acceptance Fee", "Late Registration
+    // Fee"). Fall back to display_label for backwards compat with rows
+    // that have no name set.
+    $paymentType = \App\Models\PaymentType::findByPurpose($purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION);
+    $purposeLabel = $paymentType?->name ?: ($paymentType?->display_label ?? 'Application Fee');
     $title = "Test Payment — {$purposeLabel}";
 @endphp
 
@@ -77,20 +77,17 @@
 
                 <hr>
 
-                {{-- Switch the test page to a different fee without going
-                     through the live gateway — handy when the user wants to
-                     simulate acceptance or compulsory after the app-fee
-                     step succeeds. --}}
+                {{-- Quick-switch to a different fee. Pulled from the catalogue
+                     so any admin-defined PaymentType shows up automatically —
+                     no template edit needed when they add a new fee. --}}
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="{{ route('applicant.payment.test', ['purpose' => 'application']) }}" class="btn btn-outline-primary btn-sm flex-fill">
-                        Test Application
-                    </a>
-                    <a href="{{ route('applicant.payment.test', ['purpose' => 'acceptance']) }}" class="btn btn-outline-success btn-sm flex-fill">
-                        Test Acceptance
-                    </a>
-                    <a href="{{ route('applicant.payment.test', ['purpose' => 'school_fee']) }}" class="btn btn-outline-info btn-sm flex-fill">
-                        Test School Fee
-                    </a>
+                    @foreach(\App\Services\ApplicantPaymentService::getApplicantPaymentTypesStatic() as $idx => $type)
+                        @php $variants = ['btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-warning', 'btn-outline-secondary']; @endphp
+                        <a href="{{ route('applicant.payment.test', ['purpose' => $type->purpose]) }}"
+                           class="btn btn-sm flex-fill {{ $variants[$idx % count($variants)] }}">
+                            Test {{ $type->display_label }}
+                        </a>
+                    @endforeach
                 </div>
 
                 <hr>

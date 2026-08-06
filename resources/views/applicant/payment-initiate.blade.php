@@ -5,11 +5,8 @@
     // "Application Fee Payment" regardless of purpose — fixed so the user
     // sees the fee they actually intend to pay on the Paystack iframe step.
     $purpose = $purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION;
-    $purposeLabel = match ($purpose) {
-        \App\Models\PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
-        \App\Models\PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
-        default => 'Application Fee',
-    };
+    $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
+    $purposeLabel = $paymentType?->name ?: ($paymentType?->display_label ?? 'Application Fee');
 @endphp
 
 @section('title', 'Processing Payment')

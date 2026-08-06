@@ -9,6 +9,7 @@ use App\Models\PaymentType;
 use App\Models\Student;
 use App\Models\SystemSetting;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -164,29 +165,247 @@ class ApplicantPaymentService
     }
 
     /* ------------------------------------------------------------------
-     | Gating
+     | Catalogue — what the admin has configured
      * ------------------------------------------------------------------*/
 
     /**
-     * Whether the applicant is allowed to pay the given purpose RIGHT NOW.
+     * Every active PaymentType visible to the applicant portal,
+     * ordered by admin priority then by name. Audience filtering is
+     * applied so the applicant never sees student-only rows.
      *
-     * Returns null when allowed, or a string explaining why not.
-     * Caller turns the string into a 403 / flash message.
+     * This is the source of truth for "what to list on the applicant
+     * dashboard" — no controller should hand-roll a where query.
      *
-     * Always returns a ?string — never void — so PHP's return-type check
-     * can't fire on a misrouted purpose. The three per-purpose helpers
-     * each return either a string reason or null, and an unknown purpose
-     * is mapped to the same "Unknown payment purpose." reason the default
-     * arm used to return, preserving the public contract.
+     * @return Collection<int, PaymentType>
      */
-    public function canPay(Applicant $applicant, string $purpose): ?string
+    public function getApplicantPaymentTypes(): Collection
     {
-        return match ($purpose) {
+        return PaymentType::query()
+            ->active()
+            ->forAudience(PaymentType::AUDIENCE_APPLICANT)
+            ->orderBy('priority')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Static helper for callers that don't have DI handy (Eloquent
+     * models, Blade views). Mirrors getApplicantPaymentTypes().
+     */
+    public static function getApplicantPaymentTypesStatic(): Collection
+    {
+        return PaymentType::query()
+            ->active()
+            ->forAudience(PaymentType::AUDIENCE_APPLICANT)
+            ->orderBy('priority')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Every active PaymentType visible to the student portal. Same
+     * shape as getApplicantPaymentTypes() but audience=student.
+     *
+     * @return Collection<int, PaymentType>
+     */
+    public function getStudentPaymentTypes(): Collection
+    {
+        return PaymentType::query()
+            ->active()
+            ->forAudience(PaymentType::AUDIENCE_STUDENT)
+            ->orderBy('priority')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Static mirror of getStudentPaymentTypes() for callers without DI.
+     */
+    public static function getStudentPaymentTypesStatic(): Collection
+    {
+        return PaymentType::query()
+            ->active()
+            ->forAudience(PaymentType::AUDIENCE_STUDENT)
+            ->orderBy('priority')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Find an active PaymentType by code. Returns null when not found.
+     * Backward-compat alias for code that used to query
+     * `PaymentType::where('code', 'X')->first()`.
+     */
+    public function findPaymentType(string $code): ?PaymentType
+    {
+        return PaymentType::findByCode($code);
+    }
+
+    /**
+     * Friendly purpose label for a PaymentType, used by views. Backed by
+     * PaymentType's getDisplayLabelAttribute for admin-defined purposes
+     * and falls back to the canonical getPurposes() map for the seeded
+     * set.
+     */
+    public function resolvePaymentPurpose(PaymentType $type): string
+    {
+        return (string) $type->display_label;
+    }
+
+    /**
+     * Resolve the amount an applicant should pay for a given PaymentType,
+     * honouring any live system-setting override. Mirrors the legacy
+     * resolveAmount($purpose) but takes the resolved type directly so
+     * callers can use it on a row from getApplicantPaymentTypes().
+     */
+    public function getPaymentAmount(PaymentType $type, ?Applicant $applicant = null): float
+    {
+        // Override key derived from the type's purpose so admins can
+        // change the price without touching code. Falls back to a
+        // purpose-based legacy key for the three canonical rows so
+        // existing overrides keep working.
+        $overrideKey = $this->overrideKeyFor($type);
+        if ($overrideKey) {
+            $override = SystemSetting::get($overrideKey);
+            if ($override !== null && $override !== '' && is_numeric($override)) {
+                return (float) $override;
+            }
+        }
+
+        return (float) ($type->amount ?? 0);
+    }
+
+    /**
+     * Build the system-settings key used to override this payment type's
+     * default amount. For the three legacy purposes we keep the original
+     * key names so existing override values on production keep applying;
+     * for any other purpose we derive a stable, code-based key.
+     */
+    private function overrideKeyFor(PaymentType $type): ?string
+    {
+        if (isset(self::OVERRIDE_KEYS_PUBLIC[$type->purpose])) {
+            return self::OVERRIDE_KEYS_PUBLIC[$type->purpose];
+        }
+
+        // `admission_<code-without-dashes>_amount` for admin-defined types.
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', (string) $type->code));
+        $slug = trim($slug, '_');
+
+        return $slug ? "admission_{$slug}_amount" : null;
+    }
+
+    /* ------------------------------------------------------------------
+     | Per-applicant gates (PaymentType-driven)
+     * ------------------------------------------------------------------*/
+
+    /**
+     * Whether the given PaymentType is meant to be paid by this applicant
+     * RIGHT NOW. Returns null when allowed, or a string explaining why
+     * not. Caller turns the string into a flash message.
+     *
+     * This is the modern, PaymentType-aware replacement for the legacy
+     * canPay(Applicant, string $purpose). It routes by purpose through a
+     * small allow-list of business rules — for the three legacy purposes
+     * the rules are unchanged (preserving existing behaviour); for any
+     * other purpose the gate is permissive (admin's choice — they can
+     * make a payment type available or not via the active toggle).
+     */
+    public function canPayApplicant(Applicant $applicant, PaymentType $type): ?string
+    {
+        // Already paid? Block regardless of purpose.
+        if ($this->applicantHasPaidType($applicant, $type)) {
+            return sprintf('You have already paid the %s fee.', $type->display_label);
+        }
+
+        // Per-purpose gates (only the three canonical purposes have them).
+        $reason = match ($type->purpose) {
             PaymentType::PURPOSE_APPLICATION => $this->canPayApplication($applicant),
             PaymentType::PURPOSE_ACCEPTANCE  => $this->canPayAcceptance($applicant),
             PaymentType::PURPOSE_SCHOOL_FEE => $this->canPayCompulsory($applicant),
-            default                         => 'Unknown payment purpose.',
+            default                          => null,
         };
+
+        if ($reason !== null) {
+            return $reason;
+        }
+
+        // Closed-form gate: the admission form must be open for any
+        // applicant-side payment to be payable. Skipped for school_fee
+        // because that flow continues past admission closing.
+        if ($type->purpose !== PaymentType::PURPOSE_SCHOOL_FEE
+            && ! SystemSetting::isOpen(SystemSetting::ADMISSION_FORM_OPEN)
+        ) {
+            return 'The admission form is currently closed.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Backward-compat: route a legacy canPay($applicant, $purpose) call
+     * through the new PaymentType-aware gate. Resolves the type for the
+     * purpose first (using the legacy PURPOSE_CODES map) so any old
+     * caller keeps working.
+     */
+    public function canPay(Applicant $applicant, string $purpose): ?string
+    {
+        $type = $this->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
+        if (! $type) {
+            return 'Unknown payment purpose.';
+        }
+
+        return $this->canPayApplicant($applicant, $type);
+    }
+
+    /**
+     * Whether the applicant has paid every applicant-audience payment
+     * type the admin has marked requires_payment=true. Used by the
+     * applicant dashboard to decide whether to render a "you're all
+     * done" panel.
+     */
+    public function isFullyPaid(Applicant $applicant): bool
+    {
+        foreach ($this->getApplicantPaymentTypes() as $type) {
+            if (! $type->requires_payment) {
+                continue;
+            }
+            if (! $this->applicantHasPaidType($applicant, $type)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Generic, PaymentType-driven has-paid check. Routes by purpose so
+     * the canonical three purposes still read the per-purpose timestamps
+     * on the applicants table; any other purpose is read from the
+     * payments table directly (via payer_id).
+     */
+    public function applicantHasPaidType(Applicant $applicant, PaymentType $type): bool
+    {
+        // Canonical three purposes — read the per-purpose timestamp on
+        // the applicants table. Backward-compat with existing columns.
+        return match ($type->purpose) {
+            PaymentType::PURPOSE_APPLICATION => ! is_null($applicant->application_paid_at),
+            PaymentType::PURPOSE_ACCEPTANCE  => ! is_null($applicant->acceptance_paid_at),
+            PaymentType::PURPOSE_SCHOOL_FEE => ! is_null($applicant->compulsory_paid_at),
+            default => Payment::where('payer_id', $applicant->id)
+                ->where('fee_id', $type->id)
+                ->where('status', 'completed')
+                ->exists(),
+        };
+    }
+
+    /**
+     * Whether the admin has marked this PaymentType as required before
+     * some downstream step (course registration, exam clearance, etc).
+     * Drives UI gating elsewhere.
+     */
+    public function requiresPayment(PaymentType $type): bool
+    {
+        return (bool) $type->requires_payment;
     }
 
     private function canPayApplication(Applicant $applicant): ?string
@@ -343,7 +562,7 @@ class ApplicantPaymentService
                 ]),
             ]);
 
-            $this->applyApplicantSideEffects($applicant, $payment, $purpose);
+            $this->applyApplicantSideEffects($applicant, $payment, $purpose, $type);
 
             return $payment;
         });
@@ -383,7 +602,7 @@ class ApplicantPaymentService
             return $payment;
         }
 
-        $this->applyApplicantSideEffects($applicant, $payment, $payment->payment_purpose);
+        $this->applyApplicantSideEffects($applicant, $payment, $payment->payment_purpose, $payment->fee_id ? PaymentType::find($payment->fee_id) : null);
 
         return $payment->fresh();
     }
@@ -395,9 +614,18 @@ class ApplicantPaymentService
      *     (kept for back-compat with existing views)
      *   - student migration when purpose == school_fee
      */
-    private function applyApplicantSideEffects(Applicant $applicant, Payment $payment, string $purpose): void
+    private function applyApplicantSideEffects(Applicant $applicant, Payment $payment, ?string $purpose = null, ?PaymentType $type = null): void
     {
-        DB::transaction(function () use ($applicant, $payment, $purpose) {
+        // Resolve the purpose from either the PaymentType or the string.
+        // The PaymentType is preferred because it carries the full context;
+        // the string is the legacy fallback.
+        $effectivePurpose = $type?->purpose ?? $purpose;
+
+        // Resolve the PaymentType from the purpose if it wasn't passed
+        // explicitly — needed for the migration trigger below.
+        $resolvedType = $type ?? ($purpose ? $this->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT) : null);
+
+        DB::transaction(function () use ($applicant, $payment, $effectivePurpose, $resolvedType) {
             $update = [
                 'payment_status' => 'completed',
                 'payment_ref' => $payment->reference,
@@ -408,7 +636,7 @@ class ApplicantPaymentService
 
             $stamp = $payment->payment_date ?: now();
 
-            switch ($purpose) {
+            switch ($effectivePurpose) {
                 case PaymentType::PURPOSE_APPLICATION:
                     $update['application_paid_at'] = $applicant->application_paid_at ?: $stamp;
                     break;
@@ -425,10 +653,40 @@ class ApplicantPaymentService
             $applicant->update($update);
 
             // Compulsory triggers the applicant → student migration.
-            if ($purpose === PaymentType::PURPOSE_SCHOOL_FEE) {
+            // Allow any purpose that admin has tagged as a "compulsory"
+            // step — currently school_fee, but extensible for future flows.
+            if ($resolvedType && $this->isMigrationTrigger($resolvedType)) {
+                $this->migrateApplicantToStudent($applicant);
+            } elseif ($effectivePurpose === PaymentType::PURPOSE_SCHOOL_FEE) {
                 $this->migrateApplicantToStudent($applicant);
             }
         });
+    }
+
+    /**
+     * Whether this PaymentType, when paid, should trigger the
+     * applicant → student migration. Defaults to true for the canonical
+     * school_fee purpose; admin can opt-in additional rows by setting
+     * `requires_payment = true` and adding their `code` to the
+     * MIGRATION_TRIGGER_CODES list (or by tagging the row's purpose
+     * as `compulsory_fee`).
+     */
+    private function isMigrationTrigger(PaymentType $type): bool
+    {
+        // Direct: school_fee / school_fees / compulsory / compulsory_fee.
+        if (in_array($type->purpose, [
+            PaymentType::PURPOSE_SCHOOL_FEE,
+            PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION,
+            PaymentType::PURPOSE_COMPULSORY,
+        ], true)) {
+            return true;
+        }
+
+        // Admin-defined: codes that imply "this is the final step before
+        // becoming a student". Easy to extend without code changes.
+        $triggerCodes = ['SCHOOL_FEE', 'COMPULSORY_FEE', 'COMP_FEE', 'MIGRATION_FEE'];
+
+        return in_array(strtoupper((string) $type->code), $triggerCodes, true);
     }
 
     /**

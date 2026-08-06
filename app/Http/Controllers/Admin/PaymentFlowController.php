@@ -11,47 +11,34 @@ use Illuminate\Http\Request;
 /**
  * Combined admin screen for the admission payment flow.
  *
- * Lets an admin set the three amounts (application / acceptance / compulsory)
- * and the three "live" overrides, and toggle the form-open / require-fee
- * switches. Saves straight to PaymentType + SystemSetting; the
- * ApplicantPaymentService picks them up at request time.
+ * Drives every row from the database catalogue: every PaymentType row
+ * that exists for the applicant audience (or `both`) shows up here
+ * with its default amount + override field + active toggle. The legacy
+ * "three-purpose" hardcoded list (PURPOSES/LABELS/CODES) is gone —
+ * admins add payment types at /admin/payment-types and they appear here
+ * without code changes.
  */
 class PaymentFlowController extends Controller
 {
-    private const PURPOSES = [
-        PaymentType::PURPOSE_APPLICATION,
-        PaymentType::PURPOSE_ACCEPTANCE,
-        PaymentType::PURPOSE_SCHOOL_FEE,
-    ];
-
-    private const LABELS = [
-        PaymentType::PURPOSE_APPLICATION => 'Application Fee',
-        PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
-        PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
-    ];
-
-    private const CODES = [
-        PaymentType::PURPOSE_APPLICATION => 'APP_FORM',
-        PaymentType::PURPOSE_ACCEPTANCE => 'ACCEPT_FEE',
-        PaymentType::PURPOSE_SCHOOL_FEE => 'SCHOOL_FEE',
-    ];
-
     public function edit(ApplicantPaymentService $payments)
     {
-        $rows = [];
-        foreach (self::PURPOSES as $purpose) {
-            $type = $payments->resolvePaymentType($purpose);
-            $rows[] = [
-                'purpose' => $purpose,
-                'label' => self::LABELS[$purpose],
-                'code' => self::CODES[$purpose],
+        // Pull every applicant-audience PaymentType row, regardless of
+        // purpose. sort by priority then name so the form has the same
+        // ordering as the applicant dashboard.
+        $types = $payments->getApplicantPaymentTypes();
+
+        $rows = $types->map(function (PaymentType $type) use ($payments): array {
+            return [
+                'purpose' => $type->purpose,
+                'label' => $type->display_label,
+                'code' => $type->code,
                 'type' => $type,
-                'defaultAmount' => $type ? (float) $type->amount : 0.0,
-                'isActive' => $type ? (bool) $type->is_active : false,
-                'overrideKey' => $payments::OVERRIDE_KEYS_PUBLIC[$purpose] ?? null,
-                'overrideAmount' => $this->overrideAmount($purpose),
+                'defaultAmount' => (float) $type->amount,
+                'isActive' => (bool) $type->is_active,
+                'overrideKey' => $payments::OVERRIDE_KEYS_PUBLIC[$type->purpose] ?? null,
+                'overrideAmount' => $this->overrideAmount($type->purpose),
             ];
-        }
+        })->values()->all();
 
         $formOpen = SystemSetting::isOpen(SystemSetting::ADMISSION_FORM_OPEN);
         $requireFee = SystemSetting::requiresAdmissionFee();
@@ -67,34 +54,34 @@ class PaymentFlowController extends Controller
     {
         $validated = $request->validate([
             'overrides' => 'array',
-            'overrides.application' => 'nullable|numeric|min:0',
-            'overrides.acceptance' => 'nullable|numeric|min:0',
-            'overrides.school_fee' => 'nullable|numeric|min:0',
+            'overrides.*' => 'nullable|numeric|min:0',
             'is_active' => 'array',
             'form_open' => 'nullable|boolean',
             'require_fee' => 'nullable|boolean',
         ]);
 
-        // Live overrides
-        $overrideMap = [
-            PaymentType::PURPOSE_APPLICATION => 'admission_application_fee_amount',
-            PaymentType::PURPOSE_ACCEPTANCE => 'admission_accept_fee_amount',
-            PaymentType::PURPOSE_SCHOOL_FEE => 'admission_school_fee_amount',
-        ];
-        foreach ($overrideMap as $purpose => $key) {
-            $value = $validated['overrides'][$purpose] ?? null;
-            // Empty string → clear the override.
-            SystemSetting::set($key, $value === null || $value === '' ? '' : (string) $value);
-        }
-
-        // Per-purpose is_active
-        foreach (self::PURPOSES as $purpose) {
-            $type = $payments->resolvePaymentType($purpose);
-            if (! $type) {
+        // Live overrides: each payment type has its own override key,
+        // pulled from the service's OVERRIDE_KEYS_PUBLIC map. Types
+        // outside that map (admin-created extras) just use the catalogue
+        // default amount — no override needed.
+        foreach ($payments->getApplicantPaymentTypes() as $type) {
+            $overrideKey = $payments::OVERRIDE_KEYS_PUBLIC[$type->purpose] ?? null;
+            if (! $overrideKey) {
                 continue;
             }
-            $active = $request->boolean('is_active.' . $purpose, true);
-            $type->update(['is_active' => $active]);
+            $value = $validated['overrides'][$type->purpose] ?? null;
+            SystemSetting::set(
+                $overrideKey,
+                $value === null || $value === '' ? '' : (string) $value
+            );
+        }
+
+        // Per-type is_active toggle. Admin can flip any catalogue row on/off.
+        foreach ($payments->getApplicantPaymentTypes() as $type) {
+            $active = $request->boolean('is_active.' . $type->purpose, $type->is_active);
+            if ($active !== (bool) $type->is_active) {
+                $type->update(['is_active' => $active]);
+            }
         }
 
         SystemSetting::set(SystemSetting::ADMISSION_FORM_OPEN, $request->boolean('form_open') ? 'true' : 'false');
