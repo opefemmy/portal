@@ -461,6 +461,83 @@ class PaymentTypeCreateTest extends TestCase
         $this->assertStringContainsString('php artisan migrate', $flash);
     }
 
+    /**
+     * User complaint: "Please fix the errors below and try again"
+     * with no field marking the error.
+     *
+     * The modal's error banner used to say "fix the errors below"
+     * but never listed WHICH fields were failing — so the admin
+     * stared at the modal with no clue where to look. The banner
+     * must now enumerate every active error so it's actionable.
+     */
+    public function test_modal_error_banner_lists_every_active_error(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)
+            ->from('/admin/payment-types')
+            ->post('/admin/payment-types', [
+                // Both `name` and `code` empty — two errors.
+                'name' => '',
+                'code' => '',
+                'amount' => 1,
+                'audience' => 'both',
+                'payment_channel' => 'both',
+            ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['name', 'code']);
+
+        // Follow the redirect back to the index, where the modal
+        // reopens with errors visible.
+        $follow = $this->actingAs($admin)->get('/admin/payment-types');
+
+        $follow->assertOk();
+        $follow->assertSee('Please fix the errors below and try again', false);
+        // Each field error must appear as a list item inside the
+        // banner — admin reads which fields are bad without
+        // having to scroll-hunt for red borders.
+        $follow->assertSee('Please give this payment type a name.', false);
+        $follow->assertSee('Please enter a short code (e.g. COMP_FEE).', false);
+        // The banner is an alert + ul, not just an alert.
+        $follow->assertSee('<ul class="mb-0 mt-2 ps-3">', false);
+    }
+
+    /**
+     * The reopen script must scroll the modal to the first invalid
+     * field so the admin sees the failing input without scrolling
+     * for it manually. Without this, the modal opens with the
+     * alert at the top and the bad field potentially below the
+     * modal body's fold.
+     */
+    public function test_modal_reopen_script_scrolls_to_first_invalid_field(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        // Force an error on the `amount` field only.
+        $this->actingAs($admin)
+            ->from('/admin/payment-types')
+            ->post('/admin/payment-types', [
+                'name' => 'OK Name',
+                'code' => 'OK_CODE',
+                'amount' => '',
+                'audience' => 'both',
+                'payment_channel' => 'both',
+            ])
+            ->assertSessionHasErrors('amount');
+
+        $follow = $this->actingAs($admin)->get('/admin/payment-types');
+
+        $follow->assertOk();
+        // The reopen script is present and uses scrollIntoView on
+        // the first .is-invalid field. This is the contract the
+        // modal follows — pin it so a future refactor doesn't
+        // silently drop the auto-scroll.
+        $follow->assertSee('scrollIntoView', false);
+        $follow->assertSee('.is-invalid', false);
+        $follow->assertSee("getElementById('createModal')", false);
+    }
+
     /* --- helpers --- */
 
     private function makeUser(string $roleSlug): User

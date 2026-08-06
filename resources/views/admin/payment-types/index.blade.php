@@ -188,6 +188,17 @@
                     @if($errors->any())
                         <div class="alert alert-danger py-2 small">
                             <strong>Please fix the errors below and try again.</strong>
+                            {{-- List every active error so the admin
+                                 knows which field to look at. Without
+                                 this the banner just says "fix the
+                                 errors below" but the form has no
+                                 visible cue to point at — admin
+                                 thinks the modal is broken. --}}
+                            <ul class="mb-0 mt-2 ps-3">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
                         </div>
                     @endif
                     <div class="mb-3">
@@ -292,6 +303,20 @@
     document.addEventListener('DOMContentLoaded', function () {
         var el = document.getElementById('createModal');
         if (el && window.bootstrap) { new bootstrap.Modal(el).show(); }
+        // Scroll to the first invalid field on open so the admin
+        // sees exactly which field is failing. Without this the
+        // modal opens with the alert at the top and the bad
+        // field potentially below the fold of the modal body.
+        var firstInvalid = document.querySelector('#createModal .is-invalid');
+        if (firstInvalid) {
+            // Defer the scroll so the modal animation finishes
+            // first — otherwise the scroll runs against a 0-height
+            // modal body and the user lands back at the top.
+            setTimeout(function () {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus({ preventScroll: true });
+            }, 350);
+        }
     });
 </script>
 @endif
