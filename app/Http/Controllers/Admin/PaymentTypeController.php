@@ -47,8 +47,67 @@ class PaymentTypeController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');
 
-        PaymentType::create($validated);
-        return redirect()->route('admin.payment-types.index')->with('success', 'Payment type created successfully');
+        // The 2026_07_24 migration added `purpose` and the 2026_08_04
+        // migration added `audience`. On deployments that have not yet
+        // run those migrations, the columns don't exist on
+        // payment_types — without this guard, the INSERT would throw
+        // "table payment_types has no column named audience" and the
+        // user would see a 500 with no actionable message. Drop the
+        // unsupported keys from the payload so the row still saves on
+        // legacy schemas, and surface a one-time hint to run
+        // migrations.
+        $columnsToStrip = [];
+        if (! Schema::hasColumn('payment_types', 'purpose')) {
+            $columnsToStrip[] = 'purpose';
+        }
+        if (! Schema::hasColumn('payment_types', 'audience')) {
+            $columnsToStrip[] = 'audience';
+        }
+        if (! Schema::hasColumn('payment_types', 'payment_channel')) {
+            $columnsToStrip[] = 'payment_channel';
+        }
+        if (! Schema::hasColumn('payment_types', 'priority')) {
+            $columnsToStrip[] = 'priority';
+        }
+        if (! Schema::hasColumn('payment_types', 'description')) {
+            $columnsToStrip[] = 'description';
+        }
+        if (! Schema::hasColumn('payment_types', 'requires_payment')) {
+            $columnsToStrip[] = 'requires_payment';
+        }
+        $payload = array_diff_key($validated, array_flip($columnsToStrip));
+
+        try {
+            PaymentType::create($payload);
+        } catch (\Throwable $e) {
+            // Final safety net: surface a clear flash instead of a 500
+            // if some other column / constraint mismatch trips the
+            // INSERT. The trace is logged for support.
+            \Illuminate\Support\Facades\Log::error('admin/payment-types: create failed', [
+                'payload_keys' => array_keys($payload),
+                'stripped_keys' => $columnsToStrip,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Could not save the payment type. Please run `php artisan migrate` if your database is missing recent columns, then try again.');
+        }
+
+        // If we had to strip columns, also remind the admin to run
+        // migrations so they get the full feature set (audience
+        // scoping etc.) on next save.
+        $migrationHint = empty($columnsToStrip)
+            ? null
+            : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
+
+        return redirect()
+            ->route('admin.payment-types.index')
+            ->with(
+                'success',
+                'Payment type created successfully.' . ($migrationHint ?? '')
+            );
     }
 
     public function edit(PaymentType $paymentType)
@@ -79,8 +138,56 @@ class PaymentTypeController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');
 
-        $paymentType->update($validated);
-        return redirect()->route('admin.payment-types.index')->with('success', 'Payment type updated successfully');
+        // Strip columns that don't exist on this deployment so the
+        // update doesn't 500 on unrun migrations. See store() for the
+        // same guard and the full rationale.
+        $columnsToStrip = [];
+        if (! Schema::hasColumn('payment_types', 'purpose')) {
+            $columnsToStrip[] = 'purpose';
+        }
+        if (! Schema::hasColumn('payment_types', 'audience')) {
+            $columnsToStrip[] = 'audience';
+        }
+        if (! Schema::hasColumn('payment_types', 'payment_channel')) {
+            $columnsToStrip[] = 'payment_channel';
+        }
+        if (! Schema::hasColumn('payment_types', 'priority')) {
+            $columnsToStrip[] = 'priority';
+        }
+        if (! Schema::hasColumn('payment_types', 'description')) {
+            $columnsToStrip[] = 'description';
+        }
+        if (! Schema::hasColumn('payment_types', 'requires_payment')) {
+            $columnsToStrip[] = 'requires_payment';
+        }
+        $payload = array_diff_key($validated, array_flip($columnsToStrip));
+
+        try {
+            $paymentType->update($payload);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('admin/payment-types: update failed', [
+                'id' => $paymentType->id,
+                'payload_keys' => array_keys($payload),
+                'stripped_keys' => $columnsToStrip,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Could not update the payment type. Please run `php artisan migrate` if your database is missing recent columns, then try again.');
+        }
+
+        $migrationHint = empty($columnsToStrip)
+            ? null
+            : ' The database is missing some columns — run `php artisan migrate` to enable audience scoping and the full feature set.';
+
+        return redirect()
+            ->route('admin.payment-types.index')
+            ->with(
+                'success',
+                'Payment type updated successfully.' . ($migrationHint ?? '')
+            );
     }
 
     public function destroy(PaymentType $paymentType)
