@@ -81,8 +81,9 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $this->assertEquals('1000000.00', (string) $row->amount);
         $this->assertEquals('applicant', $row->audience);
         $this->assertEquals('external', $row->payment_channel);
-        // 'Compulsory Fee' is not in the production ENUM, so the
-        // controller coerces it to 'other' before INSERT.
+        // 'Compulsory Fee' is slugified to 'compulsory_fee', which
+        // is NOT in the production ENUM — the controller coerces
+        // it to 'other' before INSERT.
         $this->assertEquals('other', $row->purpose);
         $this->assertEquals(0, (int) $row->is_active);
         $this->assertEquals(0, (int) $row->requires_payment);
@@ -119,9 +120,9 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $this->assertNotNull($row);
         $this->assertEquals('100000.00', (string) $row->amount);
         $this->assertEquals('applicant', $row->audience);
-        // 'compulsory' is not in the production ENUM, so it is
-        // coerced to 'other' before INSERT.
-        $this->assertEquals('other', $row->purpose);
+        // 'compulsory' is in the production ENUM (added per the
+        // user's request) so it is saved verbatim.
+        $this->assertEquals('compulsory', $row->purpose);
     }
 
     /**
@@ -174,14 +175,14 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
     {
         $admin = $this->makeUser('admin');
 
-        // 'compulsory' is what the user typed. It is NOT in the
-        // allowed production ENUM, so it must be coerced.
+        // 'weird_label' is something the admin might invent and
+        // is NOT in the production ENUM, so it must be coerced.
         $response = $this->actingAs($admin)->post('/admin/payment-types', [
-            'name'             => 'Compulsory Fee',
-            'code'             => 'COMP_FEE_COERCE',
+            'name'             => 'Custom Fee',
+            'code'             => 'CUSTOM_FEE',
             'amount'           => 50000,
             'payment_channel'  => 'external',
-            'purpose'          => 'compulsory',
+            'purpose'          => 'weird_label',
             'audience'         => 'applicant',
             'priority'         => 1,
             'is_active'        => 1,
@@ -193,10 +194,42 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         $flash = (string) session('success');
         $this->assertStringContainsString('saved as \'other\'', $flash);
 
-        $row = PaymentType::where('code', 'COMP_FEE_COERCE')->first();
+        $row = PaymentType::where('code', 'CUSTOM_FEE')->first();
         $this->assertNotNull($row);
         $this->assertEquals('other', $row->purpose,
             'Unknown purpose must be coerced to other so the production ENUM accepts the INSERT.');
+    }
+
+    /**
+     * 'compulsory' IS in the production ENUM, so it must be saved
+     * verbatim (the user's whole point in adding a Compulsory Fee
+     * was to have a properly-labelled row, not one coerced to
+     * 'other'). This pins the difference between "known but
+     * slugified" (allowed) and "totally invented" (coerced).
+     */
+    public function test_compulsory_purpose_is_known_and_saved_verbatim(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $this->actingAs($admin)->post('/admin/payment-types', [
+            'name'             => 'Compulsory Fee',
+            'code'             => 'COMP_FEE_REAL',
+            'amount'           => 50000,
+            'payment_channel'  => 'external',
+            'purpose'          => 'compulsory',
+            'audience'         => 'applicant',
+            'priority'         => 1,
+            'is_active'        => 1,
+            'requires_payment' => 1,
+        ])->assertSessionHasNoErrors();
+
+        // The first user-payload test already asserts the row is
+        // created; here we assert the purpose is preserved verbatim
+        // and that the success flash does NOT contain the coercion
+        // hint.
+        $this->assertEquals('compulsory', PaymentType::where('code', 'COMP_FEE_REAL')->value('purpose'));
+        $flash = (string) session('success');
+        $this->assertStringNotContainsString('saved as \'other\'', $flash);
     }
 
     /**
@@ -221,6 +254,32 @@ class PaymentTypeCompulsoryFeeTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertEquals('library', PaymentType::where('code', 'LIBRARY_COPY')->value('purpose'));
+    }
+
+    /**
+     * Production's ENUM uses 'school_fees' (with trailing s), but
+     * the historical codebase constant used 'school_fee' (no s).
+     * The controller must map the legacy spelling to the live
+     * value so existing call sites that pass `school_fee` keep
+     * working.
+     */
+    public function test_school_fee_alias_is_mapped_to_school_fees(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $this->actingAs($admin)->post('/admin/payment-types', [
+            'name'             => 'School Fees Copy',
+            'code'             => 'SCHOOL_FEE_COPY',
+            'amount'           => 50000,
+            'payment_channel'  => 'external',
+            'purpose'          => 'school_fee',
+            'audience'         => 'both',
+            'priority'         => 3,
+            'is_active'        => 1,
+            'requires_payment' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals('school_fees', PaymentType::where('code', 'SCHOOL_FEE_COPY')->value('purpose'));
     }
 
     /* --- helpers --- */

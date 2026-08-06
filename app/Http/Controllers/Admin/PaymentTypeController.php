@@ -97,20 +97,27 @@ class PaymentTypeController extends Controller
         if (!empty($validated['purpose'])) {
             $validated['purpose'] = strtolower(trim(preg_replace('/\s+/', '_', $validated['purpose'])));
             // Production has `payment_types.purpose` as a strict MySQL
-            // ENUM, not the varchar(30) the migration declares. Any
-            // value outside the allowed set triggers a 1265 truncation
+            // ENUM (see PaymentType::allowedPurposes()). Any value
+            // outside the allowed set triggers a 1265 truncation
             // error and aborts the whole INSERT. Mirror the
-            // feeTypeFor() pattern: coerce anything unknown to 'other'
-            // so the row always saves. The admin sees a one-time hint
-            // telling them their custom purpose was mapped to 'other'.
-            $allowedPurposes = [
-                'application', 'acceptance', 'school_fee',
-                'hostel', 'registration', 'library', 'other',
-            ];
+            // feeTypeFor() pattern: coerce anything unknown to
+            // 'other' so the row always saves. The admin sees a
+            // one-time hint telling them their custom purpose was
+            // mapped to 'other'.
+            //
+            // Compatibility alias: historical code uses
+            // `school_fee` (no s); production's ENUM uses
+            // `school_fees` (with s). Map the legacy spelling to
+            // the live value so existing call sites that pass
+            // `school_fee` keep working.
+            $aliases = ['school_fee' => PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION];
+            if (isset($aliases[$validated['purpose']])) {
+                $validated['purpose'] = $aliases[$validated['purpose']];
+            }
             $validated['purpose_was_coerced'] = false;
-            if (!in_array($validated['purpose'], $allowedPurposes, true)) {
+            if (!in_array($validated['purpose'], PaymentType::allowedPurposes(), true)) {
                 $validated['purpose_was_coerced'] = true;
-                $validated['purpose'] = 'other';
+                $validated['purpose'] = PaymentType::PURPOSE_OTHER;
             }
         }
 
@@ -247,14 +254,14 @@ class PaymentTypeController extends Controller
             // so anything outside the allowed set must be coerced to
             // 'other' before the UPDATE or MySQL strict mode will
             // truncate and abort.
-            $allowedPurposes = [
-                'application', 'acceptance', 'school_fee',
-                'hostel', 'registration', 'library', 'other',
-            ];
+            $aliases = ['school_fee' => PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION];
+            if (isset($aliases[$validated['purpose']])) {
+                $validated['purpose'] = $aliases[$validated['purpose']];
+            }
             $validated['purpose_was_coerced'] = false;
-            if (!in_array($validated['purpose'], $allowedPurposes, true)) {
+            if (!in_array($validated['purpose'], PaymentType::allowedPurposes(), true)) {
                 $validated['purpose_was_coerced'] = true;
-                $validated['purpose'] = 'other';
+                $validated['purpose'] = PaymentType::PURPOSE_OTHER;
             }
         }
 

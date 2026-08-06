@@ -43,7 +43,7 @@ class PaymentTypeSeeder extends Seeder
                 'requires_payment' => true,
                 'payment_channel' => 'external',
                 'priority' => 3,
-                'purpose' => 'school_fee',
+                'purpose' => 'school_fees',
                 // School fee is charged to applicants (compulsory, to migrate to
                 // the student portal) AND to returning students each session.
                 'audience' => PaymentType::AUDIENCE_BOTH,

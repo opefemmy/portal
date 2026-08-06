@@ -28,23 +28,63 @@ class PaymentType extends Model
 
     // Purpose constants
     const PURPOSE_APPLICATION = 'application';
+    // NOTE: the production MySQL ENUM uses 'school_fees' (with
+    // trailing s) but the historical codebase constant used the
+    // shorter 'school_fee' (no s). Both spellings are accepted on
+    // input by the alias map in the controller, and the legacy
+    // constant is preserved here so existing call sites that read
+    // PaymentType::PURPOSE_SCHOOL_FEE keep working unchanged.
     const PURPOSE_SCHOOL_FEE = 'school_fee';
+    const PURPOSE_SCHOOL_FEE_PRODUCTION = 'school_fees';
     const PURPOSE_ACCEPTANCE = 'acceptance';
     const PURPOSE_HOSTEL = 'hostel';
     const PURPOSE_REGISTRATION = 'registration';
     const PURPOSE_LIBRARY = 'library';
+    const PURPOSE_COMPULSORY = 'compulsory';
     const PURPOSE_OTHER = 'other';
 
     public static function getPurposes(): array
     {
         return [
             self::PURPOSE_APPLICATION => 'Application',
-            self::PURPOSE_SCHOOL_FEE => 'School Fee',
+            self::PURPOSE_SCHOOL_FEE => 'School Fees',
             self::PURPOSE_ACCEPTANCE => 'Acceptance',
             self::PURPOSE_HOSTEL => 'Hostel',
             self::PURPOSE_REGISTRATION => 'Registration',
             self::PURPOSE_LIBRARY => 'Library',
+            self::PURPOSE_COMPULSORY => 'Compulsory',
             self::PURPOSE_OTHER => 'Other',
+        ];
+    }
+
+    /**
+     * Exact allow-list that matches the production MySQL ENUM
+     * (verified via `php artisan payment-types:list-purposes`).
+     * Anything outside this list must be coerced to one of these
+     * values before INSERT or MySQL strict mode aborts the
+     * transaction with a 1265 truncation error.
+     *
+     * NOTE: production's ENUM uses `school_fees` (with trailing s)
+     * while the historical codebase constant uses `school_fee`. The
+     * list below uses the production spelling — the controller
+     * alias-maps the legacy spelling to the live value before
+     * hitting this list.
+     *
+     * This method is the single source of truth for "what values
+     * may be written to payment_types.purpose" — call it instead
+     * of hard-coding purposes anywhere else.
+     */
+    public static function allowedPurposes(): array
+    {
+        return [
+            self::PURPOSE_APPLICATION,
+            self::PURPOSE_ACCEPTANCE,
+            self::PURPOSE_SCHOOL_FEE_PRODUCTION,
+            self::PURPOSE_HOSTEL,
+            self::PURPOSE_REGISTRATION,
+            self::PURPOSE_LIBRARY,
+            self::PURPOSE_COMPULSORY,
+            self::PURPOSE_OTHER,
         ];
     }
 
