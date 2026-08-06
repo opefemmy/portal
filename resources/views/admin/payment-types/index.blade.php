@@ -144,13 +144,13 @@
                                         </div>
                                         <div class="mb-3">
                                             <div class="form-check">
-                                                <input type="checkbox" name="is_active" class="form-check-input" id="edit_active{{ $type->id }}" {{ $type->is_active ? 'checked' : '' }}>
+                                                <input type="checkbox" name="is_active" value="1" class="form-check-input" id="edit_active{{ $type->id }}" {{ $type->is_active ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="edit_active{{ $type->id }}">Active</label>
                                             </div>
                                         </div>
                                         <div class="mb-3">
                                             <div class="form-check">
-                                                <input type="checkbox" name="requires_payment" class="form-check-input" id="edit_pay{{ $type->id }}" {{ $type->requires_payment ? 'checked' : '' }}>
+                                                <input type="checkbox" name="requires_payment" value="1" class="form-check-input" id="edit_pay{{ $type->id }}" {{ $type->requires_payment ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="edit_pay{{ $type->id }}">Requires Payment</label>
                                             </div>
                                         </div>
@@ -279,13 +279,13 @@
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="is_active" class="form-check-input" id="create_active" {{ old('is_active', 1) ? 'checked' : '' }}>
+                            <input type="checkbox" name="is_active" value="1" class="form-check-input" id="create_active" {{ old('is_active', 1) ? 'checked' : '' }}>
                             <label class="form-check-label" for="create_active">Active</label>
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="requires_payment" class="form-check-input" id="create_payment" {{ old('requires_payment', 1) ? 'checked' : '' }}>
+                            <input type="checkbox" name="requires_payment" value="1" class="form-check-input" id="create_payment" {{ old('requires_payment', 1) ? 'checked' : '' }}>
                             <label class="form-check-label" for="create_payment">Requires Payment</label>
                         </div>
                     </div>

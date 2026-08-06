@@ -40,6 +40,20 @@ class PaymentTypeController extends Controller
             $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         }
 
+        // Coerce the checkboxes to boolean before validation runs.
+        // A native HTML checkbox that is checked sends "on" (when
+        // value="1" is missing) or "1" — Laravel's `boolean` rule
+        // only accepts [true, false, 0, 1, "0", "1"], so "on" is
+        // rejected with "The is active field must be true or false."
+        // `$request->boolean()` parses "on", "yes", "1", "true" as
+        // true and everything else (including absent) as false, so we
+        // can merge in the canonical 0/1 form and let the validator
+        // pass.
+        $request->merge([
+            'is_active' => $request->boolean('is_active') ? 1 : 0,
+            'requires_payment' => $request->boolean('requires_payment') ? 1 : 0,
+        ]);
+
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
@@ -210,6 +224,15 @@ class PaymentTypeController extends Controller
         if ($request->filled('code')) {
             $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         }
+
+        // Coerce the checkboxes to 0/1 before validation. Native
+        // browsers send "on" (not "1") when a checkbox has no
+        // value="..." attribute, and Laravel's `boolean` rule treats
+        // "on" as invalid. See store() for the full rationale.
+        $request->merge([
+            'is_active' => $request->boolean('is_active') ? 1 : 0,
+            'requires_payment' => $request->boolean('requires_payment') ? 1 : 0,
+        ]);
 
         try {
             $validated = $request->validate([
