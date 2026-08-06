@@ -31,24 +31,59 @@ class PaymentTypeController extends Controller
             return back()->with('error', 'Payment types table does not exist. Please run migrations.');
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:payment_types,code',
-            'description' => 'nullable|string|max:500',
-            'amount' => 'required|numeric|min:0',
-            // Purpose is free-form so admins can add any new fee
-            // (e.g. "compulsory_fee", "convocation") without a code
-            // change. Existing enum-style values still work.
-            'purpose' => 'nullable|string|max:50',
-            // Audience is required, but we default to 'both' so the
-            // form never silently bounces an admin back on a missing
-            // dropdown value.
-            'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
-            'is_active' => 'boolean',
-            'requires_payment' => 'boolean',
-            'payment_channel' => 'nullable|in:external,internal,both',
-            'priority' => 'nullable|integer|min:1',
-        ]);
+        // Normalise the code to uppercase so 'Comp_Fee' and
+        // 'comp_fee' collide on the unique index. This also means
+        // the row stored on disk is always 'COMP_FEE', which keeps
+        // the rest of the codebase (case-sensitive lookups in
+        // ApplicantPaymentService, etc.) happy.
+        if ($request->filled('code')) {
+            $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
+        }
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'code' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    \Illuminate\Validation\Rule::unique('payment_types', 'code'),
+                ],
+                'description' => 'nullable|string|max:500',
+                'amount' => 'required|numeric|min:0',
+                // Purpose is free-form so admins can add any new fee
+                // (e.g. "compulsory_fee", "convocation") without a code
+                // change. Existing enum-style values still work.
+                'purpose' => 'nullable|string|max:50',
+                // Audience is required, but we default to 'both' so the
+                // form never silently bounces an admin back on a missing
+                // dropdown value.
+                'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
+                'is_active' => 'boolean',
+                'requires_payment' => 'boolean',
+                'payment_channel' => 'nullable|in:external,internal,both',
+                'priority' => 'nullable|integer|min:1',
+            ], [
+                'name.required'   => 'Please give this payment type a name.',
+                'code.required'   => 'Please enter a short code (e.g. COMP_FEE).',
+                'code.unique'     => 'A payment type with this code already exists. Try a different code (e.g. COMP_FEE_2026).',
+                'code.max'        => 'Code must be 50 characters or fewer.',
+                'amount.required' => 'Please enter the amount to charge.',
+                'amount.numeric'  => 'Amount must be a number.',
+                'amount.min'      => 'Amount cannot be negative.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Log the actual failing field/error so we can see it in
+            // laravel.log if the user reports another bounce-back —
+            // validate() by default just redirects with withErrors
+            // and does NOT log.
+            \Illuminate\Support\Facades\Log::warning('admin/payment-types: validation failed', [
+                'action' => 'store',
+                'errors' => $e->errors(),
+                'input'  => $request->only(['name', 'code', 'amount', 'audience', 'purpose', 'payment_channel', 'priority']),
+            ]);
+            throw $e;
+        }
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');
@@ -138,18 +173,46 @@ class PaymentTypeController extends Controller
             return back()->with('error', 'Payment types table does not exist.');
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:payment_types,code,' . $paymentType->id,
-            'description' => 'nullable|string|max:500',
-            'amount' => 'required|numeric|min:0',
-            'purpose' => 'nullable|string|max:50',
-            'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
-            'is_active' => 'boolean',
-            'requires_payment' => 'boolean',
-            'payment_channel' => 'nullable|in:external,internal,both',
-            'priority' => 'nullable|integer|min:1',
-        ]);
+        if ($request->filled('code')) {
+            $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
+        }
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'code' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    \Illuminate\Validation\Rule::unique('payment_types', 'code')
+                        ->ignore($paymentType->id),
+                ],
+                'description' => 'nullable|string|max:500',
+                'amount' => 'required|numeric|min:0',
+                'purpose' => 'nullable|string|max:50',
+                'audience' => 'nullable|in:' . PaymentType::AUDIENCE_APPLICANT . ',' . PaymentType::AUDIENCE_STUDENT . ',' . PaymentType::AUDIENCE_BOTH,
+                'is_active' => 'boolean',
+                'requires_payment' => 'boolean',
+                'payment_channel' => 'nullable|in:external,internal,both',
+                'priority' => 'nullable|integer|min:1',
+            ], [
+                'name.required'   => 'Please give this payment type a name.',
+                'code.required'   => 'Please enter a short code (e.g. COMP_FEE).',
+                'code.unique'     => 'A payment type with this code already exists. Try a different code (e.g. COMP_FEE_2026).',
+                'code.max'        => 'Code must be 50 characters or fewer.',
+                'amount.required' => 'Please enter the amount to charge.',
+                'amount.numeric'  => 'Amount must be a number.',
+                'amount.min'      => 'Amount cannot be negative.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning('admin/payment-types: validation failed', [
+                'action' => 'update',
+                'id'     => $paymentType->id,
+                'errors' => $e->errors(),
+                'input'  => $request->only(['name', 'code', 'amount', 'audience', 'purpose', 'payment_channel', 'priority']),
+            ]);
+            throw $e;
+        }
 
         $validated['is_active'] = $request->boolean('is_active');
         $validated['requires_payment'] = $request->boolean('requires_payment');

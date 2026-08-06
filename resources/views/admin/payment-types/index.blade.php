@@ -187,7 +187,7 @@
                 <div class="modal-body">
                     @if($errors->any())
                         <div class="alert alert-danger py-2 small">
-                            Please fix the errors below and try again.
+                            <strong>Please fix the errors below and try again.</strong>
                         </div>
                     @endif
                     <div class="mb-3">
@@ -196,6 +196,7 @@
                                class="form-control @error('name') is-invalid @enderror"
                                value="{{ old('name') }}"
                                placeholder="e.g., Compulsory Fee, Convocation Fee" required>
+                        @error('name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Code <span class="text-danger">*</span></label>
@@ -203,6 +204,7 @@
                                class="form-control @error('code') is-invalid @enderror"
                                value="{{ old('code') }}"
                                placeholder="e.g., COMP_FEE, CONVOCATION" required>
+                        @error('code')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -214,14 +216,16 @@
                                class="form-control @error('amount') is-invalid @enderror"
                                value="{{ old('amount') }}"
                                placeholder="0.00" required min="0" step="0.01">
+                        @error('amount')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Payment Channel</label>
-                        <select name="payment_channel" class="form-select">
+                        <select name="payment_channel" class="form-select @error('payment_channel') is-invalid @enderror">
                             <option value="external" {{ old('payment_channel') === 'external' ? 'selected' : '' }}>External (Online Payment)</option>
                             <option value="internal" {{ old('payment_channel') === 'internal' ? 'selected' : '' }}>Internal (Manual)</option>
                             <option value="both" {{ old('payment_channel', 'both') === 'both' ? 'selected' : '' }}>Both</option>
                         </select>
+                        @error('payment_channel')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Purpose</label>
@@ -239,6 +243,7 @@
                             Pick a known purpose or type any label (e.g. <code>compulsory_fee</code>).
                             Spaces are converted to underscores automatically.
                         </small>
+                        @error('purpose')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Audience <span class="text-danger">*</span></label>
@@ -251,13 +256,15 @@
                             <strong>Applicant only</strong> hides this type from the public online-payment selector and from any student-facing page.
                             <strong>Student only</strong> hides it from applicants.
                         </small>
+                        @error('audience')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Priority</label>
                         <input type="number" name="priority"
                                class="form-control @error('priority') is-invalid @enderror"
                                value="{{ old('priority', 1) }}" min="1">
-                        <small class="text-muted">Lower number = higher priority</small>
+                        <small class="text-muted">Lower number = shown first</small>
+                        @error('priority')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
