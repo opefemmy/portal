@@ -219,6 +219,7 @@ class PaymentGatewayController extends Controller
             'email' => $user->email,
             'paystackPublicKey' => $paystackPublicKey,
             'callbackUrl' => route('applicant.payment.callback'),
+            'purpose' => $purpose,
         ]);
     }
 
@@ -302,6 +303,20 @@ class PaymentGatewayController extends Controller
                 default => 'Payment successful! You can now complete your application.',
             };
 
+            // student.dashboard is gated by role:student middleware. If the
+            // applicant→student migration didn't fully run (e.g. matric
+            // number generation failed and the user's role is still
+            // applicant), the named route exists but the role middleware
+            // would 403 them. Fall back to the applicant dashboard so the
+            // user always lands somewhere with the success flash.
+            if ($purpose === 'school_fee') {
+                $freshApplicant = Applicant::find($payment->payer_id);
+                if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
+                    $redirectRoute = 'applicant.dashboard';
+                    $successMessage = 'Compulsory fee verified. Your student record is being prepared — please check back in a moment.';
+                }
+            }
+
             return redirect()->route($redirectRoute)->with('success', $successMessage);
         }
 
@@ -348,10 +363,24 @@ class PaymentGatewayController extends Controller
 
     /**
      * Test payment page (for demo/testing).
+     *
+     * Accepts an optional ?purpose= query string so the user can simulate
+     * an acceptance-fee or school-fee test payment, not just the
+     * application fee. Defaults to application when missing/empty (the
+     * canonical first step in the funnel).
      */
-    public function testPayment()
+    public function testPayment(Request $request)
     {
-        return view('applicant.payment-test');
+        $rawPurpose = $request->get('purpose');
+        $purpose = $rawPurpose !== null && $rawPurpose !== ''
+            ? $rawPurpose
+            : PaymentType::PURPOSE_APPLICATION;
+
+        // Read the amount for the selected purpose so the test page can
+        // pre-fill the right value, matching the live gateway page.
+        $feeAmount = $this->payments->resolveAmount($purpose);
+
+        return view('applicant.payment-test', compact('purpose', 'feeAmount'));
     }
 
     /**
@@ -561,6 +590,19 @@ class PaymentGatewayController extends Controller
             'school_fee' => 'Compulsory fee verified. (Ref: ' . $payment->reference . ')',
             default => 'Test payment successful! You can now complete your application. (Reference: ' . $payment->reference . ')',
         };
+
+        // Same fallback as the live Paystack callback: if the
+        // applicant→student migration didn't run (matric service down,
+        // FK drift, etc.), don't try to land the user on a route the
+        // role:student middleware will 403. Send them to the applicant
+        // dashboard instead.
+        if ($purpose === 'school_fee') {
+            $freshApplicant = Applicant::find($payment->payer_id);
+            if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
+                $redirectRoute = 'applicant.dashboard';
+                $successMessage = 'Test payment simulated for the compulsory fee. Your student record is being prepared — please check back in a moment. (Ref: ' . $payment->reference . ')';
+            }
+        }
 
         return redirect()->route($redirectRoute)->with('success', $successMessage);
     }

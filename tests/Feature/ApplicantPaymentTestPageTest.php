@@ -15,31 +15,29 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * Regression test for the "Pay Compulsory Fee" button on the applicant
- * dashboard.
+ * Regression test for the "Test Payment" page on the applicant flow.
  *
- * The dashboard previously linked to
- *   /applicant/payment/gateway?purpose=compulsory
- * but the ApplicantPaymentService constants use
- *   PURPOSE_SCHOOL_FEE = 'school_fee'
- * (see PaymentType.php). The url-purpose and the service-purpose
- * drifted apart, and the controller's validation whitelist let the
- * bogus purpose through; the user saw "Unknown payment purpose."
- * flash and never got to the Pay Now screen.
+ * The test page used to be hardcoded to the application-fee flow:
+ *   - the view always labelled itself "Test Payment Gateway" with
+ *     "Payment Type: Application Fee" regardless of what the user
+ *     actually wanted to test
+ *   - the form POSTed to /applicant/payment/test/process WITHOUT a
+ *     purpose field, so the controller defaulted to 'application',
+ *     canPay() said "You have already paid the application fee." and
+ *     the user was bounced back to the dashboard before they could
+ *     simulate an acceptance or school-fee payment
  *
- * After the fix:
- *   - the dashboard button uses ?purpose=school_fee
- *   - the controller validation whitelist accepts only the canonical
- *     application|acceptance|school_fee values
- *
- * These tests pin both halves of the contract: the canonical URL
- * must succeed, and the legacy "compulsory" URL must be rejected by
- * validation (so the user gets a clean 422, not a misleading flash).
- *
- * Uses a hand-rolled schema instead of RefreshDatabase to keep
- * independent of the (numerous) pre-existing migration issues.
+ * The fix:
+ *   - testPayment() controller method now reads ?purpose= and passes
+ *     it (plus the resolved amount) to the view
+ *   - payment-test.blade.php renders the right label, amount, and
+ *     hidden purpose, and exposes a 3-button switcher for application
+ *     / acceptance / school_fee
+ *   - processTestPaymentInner() was already purpose-aware (the
+ *     controller side) — only the view and the test-page entry were
+ *     broken
  */
-class ApplicantPaymentGatewayUrlTest extends TestCase
+class ApplicantPaymentTestPageTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -65,133 +63,46 @@ class ApplicantPaymentGatewayUrlTest extends TestCase
     }
 
     /**
-     * Canonical-purpose URL must succeed for an admitted applicant
-     * who has paid the application fee. This is the dashboard button
-     * "Pay Compulsory Fee" codepath.
+     * The test page (without ?purpose=) must default to the application
+     * flow and render successfully for a brand-new applicant.
      */
-    public function test_canonical_school_fee_purpose_url_loads_for_admitted_applicant(): void
+    public function test_test_page_defaults_to_application_flow(): void
     {
-        $applicant = $this->makeApplicant('admitted');
-        $applicant->update([
-            'application_paid_at' => now(),
-            'acceptance_paid_at' => now(),
-        ]);
+        $applicant = $this->makeApplicant('draft');
 
         $response = $this->actingAs($applicant->user)
-            ->get('/applicant/payment/gateway?purpose=school_fee');
+            ->get('/applicant/payment/test');
 
         $response->assertOk();
-        // The payment-gateway view is the "Pay Now" page; it should
-        // resolve the school_fee PaymentType and pass its amount to
-        // the view. (We don't assert the literal 'school_fee' string —
-        // the view may render the friendly name or currency, not the
-        // machine purpose.)
-        $response->assertViewHas('feeAmount');
-        $this->assertEquals(50000.0, $response->viewData('feeAmount'));
+        $response->assertSee('Test Mode', false);
+        $response->assertSee('Application Fee', false);
     }
 
     /**
-     * Regression: the gateway view's Pay Now form must carry the
-     * `purpose` hidden input through to the initiate endpoint.
-     *
-     * The original form omitted the purpose field, so POSTing
-     * /applicant/payment/initiate from the gateway always defaulted
-     * to 'application', the canPay() gate returned
-     * "You have already paid the application fee." and the user was
-     * bounced back to the dashboard before reaching the Paystack
-     * iframe. The fix adds a hidden <input name="purpose" value="...">
-     * to the form, mirroring the URL ?purpose=.
-     *
-     * This is the single most important regression: the user's "pay
-     * acceptance" button was wired to a form that asked for the
-     * application fee.
+     * ?purpose=acceptance renders the acceptance-fee label and pre-fills
+     * the acceptance-fee amount. This is the change that lets the user
+     * simulate an acceptance payment without going through Paystack.
      */
-    public function test_gateway_pay_now_form_carries_purpose_field(): void
+    public function test_test_page_renders_acceptance_purpose(): void
     {
         $applicant = $this->makeApplicant('admitted');
         $applicant->update(['application_paid_at' => now()]);
 
         $response = $this->actingAs($applicant->user)
-            ->get('/applicant/payment/gateway?purpose=acceptance');
+            ->get('/applicant/payment/test?purpose=acceptance');
 
         $response->assertOk();
-        $response->assertSee('name="purpose"', false);
-        $response->assertSee('value="acceptance"', false);
-    }
-
-    /**
-     * Canonical-purpose URL also works for the application-fee flow
-     * (a fresh applicant row).
-     */
-    public function test_canonical_application_purpose_url_loads(): void
-    {
-        $user = $this->makeApplicant('draft')->user;
-
-        $response = $this->actingAs($user)
-            ->get('/applicant/payment/gateway?purpose=application');
-
-        $response->assertOk();
-        $response->assertViewHas('feeAmount');
-        $this->assertEquals(5000.0, $response->viewData('feeAmount'));
-    }
-
-    /**
-     * Central regression: an applicant who has paid the application fee
-     * must be able to initiate an acceptance payment without being
-     * bounced back to the dashboard.
-     *
-     * The old form omitted the purpose field, so POSTing initiate
-     * defaulted to 'application', canPay() said "already paid", and the
-     * user was bounced. The fix: the form passes purpose=acceptance
-     * through, canPay(acceptance) returns null (admitted, not yet paid),
-     * and we get the Paystack iframe view (200) instead of a 302
-     * dashboard bounce.
-     */
-    public function test_initiate_acceptance_payment_does_not_bounce_after_app_fee_paid(): void
-    {
-        $applicant = $this->makeApplicant('admitted');
-        $applicant->update(['application_paid_at' => now()]);
-
-        $response = $this->actingAs($applicant->user)
-            ->post('/applicant/payment/initiate', [
-                'amount' => 25000,
-                'purpose' => 'acceptance',
-            ]);
-
-        // We expect the Paystack iframe page (200), NOT a redirect
-        // to the dashboard.
-        $response->assertOk();
-        $response->assertSessionHasNoErrors();
-    }
-
-    /**
-     * Canonical-purpose URL works for acceptance.
-     */
-    public function test_canonical_acceptance_purpose_url_loads(): void
-    {
-        $applicant = $this->makeApplicant('admitted');
-        $applicant->update(['application_paid_at' => now()]);
-
-        $response = $this->actingAs($applicant->user)
-            ->get('/applicant/payment/gateway?purpose=acceptance');
-
-        $response->assertOk();
+        $response->assertSee('Acceptance Fee', false);
+        $response->assertViewHas('purpose', 'acceptance');
         $response->assertViewHas('feeAmount');
         $this->assertEquals(25000.0, $response->viewData('feeAmount'));
     }
 
     /**
-     * The legacy "compulsory" URL must NOT land on the Pay Now page.
-     *
-     * The gateway endpoint doesn't run Laravel's $request->validate()
-     * for purpose — it normalises the value and asks the service to
-     * resolve a PaymentType. With no PaymentType having
-     * purpose='compulsory', resolvePaymentType() returns null and the
-     * controller bounces back with an error flash. This is the
-     * regression we pin: any caller using `?purpose=compulsory`
-     * should fail loudly, not silently render the wrong Pay Now page.
+     * ?purpose=school_fee renders the compulsory-fee label and pre-fills
+     * the school-fee amount.
      */
-    public function test_legacy_compulsory_purpose_url_is_rejected_by_gateway(): void
+    public function test_test_page_renders_school_fee_purpose(): void
     {
         $applicant = $this->makeApplicant('admitted');
         $applicant->update([
@@ -200,41 +111,84 @@ class ApplicantPaymentGatewayUrlTest extends TestCase
         ]);
 
         $response = $this->actingAs($applicant->user)
-            ->get('/applicant/payment/gateway?purpose=compulsory');
+            ->get('/applicant/payment/test?purpose=school_fee');
 
-        // The controller bounces to the dashboard with an error flash
-        // (302) when no PaymentType matches. The user does NOT land on
-        // the Pay Now page (200).
-        $response->assertStatus(302);
-        $response->assertSessionHas('error');
-        $this->assertNotEquals(200, $response->getStatusCode());
+        $response->assertOk();
+        $response->assertSee('Compulsory Fee', false);
+        $response->assertViewHas('purpose', 'school_fee');
+        $response->assertViewHas('feeAmount');
+        $this->assertEquals(50000.0, $response->viewData('feeAmount'));
     }
 
     /**
-     * Initiate endpoint with the legacy "compulsory" purpose must NOT
-     * start a payment.
-     *
-     * The controller's inner validation runs $request->validate(),
-     * which would normally throw ValidationException and put errors in
-     * the session. But the outer try/catch in initiatePayment() catches
-     * every Throwable (including ValidationException) and redirects
-     * with a generic error flash. Either way, the user must NOT land
-     * on the Paystack iframe page; this test asserts the bounce.
+     * The form action must include a hidden purpose input so the
+     * process endpoint receives the right purpose. This is the
+     * regression that closed the "test page bounces to dashboard"
+     * complaint.
      */
-    public function test_legacy_compulsory_purpose_is_rejected_on_initiate_post(): void
+    public function test_test_page_form_carries_purpose_field(): void
     {
         $applicant = $this->makeApplicant('admitted');
         $applicant->update(['application_paid_at' => now()]);
 
         $response = $this->actingAs($applicant->user)
-            ->post('/applicant/payment/initiate', [
-                'amount' => 50000,
-                'purpose' => 'compulsory',
+            ->get('/applicant/payment/test?purpose=acceptance');
+
+        $response->assertOk();
+        // The view renders a hidden <input name="purpose" value="...">.
+        $response->assertSee('name="purpose"', false);
+        $response->assertSee('value="acceptance"', false);
+    }
+
+    /**
+     * Test payment for acceptance actually completes and stamps the
+     * applicant. This is the full end-to-end test: open test page for
+     * acceptance, submit, verify the applicant has acceptance_paid_at
+     * set and a completed payments row exists.
+     */
+    public function test_test_payment_completes_acceptance_flow(): void
+    {
+        $applicant = $this->makeApplicant('admitted');
+        $applicant->update(['application_paid_at' => now()]);
+
+        $response = $this->actingAs($applicant->user)
+            ->post('/applicant/payment/test/process', [
+                'amount' => 25000,
+                'purpose' => 'acceptance',
             ]);
 
         $response->assertStatus(302);
-        $response->assertSessionHas('error');
-        $this->assertNotEquals(200, $response->getStatusCode());
+        $response->assertSessionHas('success');
+
+        $applicant->refresh();
+        $this->assertNotNull($applicant->acceptance_paid_at, 'acceptance_paid_at should be set after test payment');
+
+        $this->assertDatabaseHas('payments', [
+            'payer_id' => $applicant->id,
+            'payment_purpose' => 'acceptance',
+            'status' => 'completed',
+        ]);
+    }
+
+    /**
+     * Legacy behaviour (purpose missing) still works for the
+     * application-fee flow — old test pages / external links don't
+     * break.
+     */
+    public function test_test_payment_without_purpose_defaults_to_application(): void
+    {
+        $applicant = $this->makeApplicant('draft');
+
+        $response = $this->actingAs($applicant->user)
+            ->post('/applicant/payment/test/process', [
+                'amount' => 5000,
+            ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
+
+        $applicant->refresh();
+        $this->assertNotNull($applicant->application_paid_at);
     }
 
     /* --- helpers --- */

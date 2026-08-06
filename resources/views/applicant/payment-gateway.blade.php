@@ -1,22 +1,36 @@
 @extends('layouts.app')
 
-@section('title', 'Pay Application Fee')
+@php
+    // Friendly label + amount from the resolved PaymentType. The view used to
+    // hardcode "Pay Application Fee" regardless of purpose, so the user saw
+    // a confusing page when they came in via ?purpose=acceptance or
+    // ?purpose=school_fee. Now we render the right label everywhere.
+    $purpose = $purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION;
+    $purposeLabel = match ($purpose) {
+        \App\Models\PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
+        \App\Models\PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
+        default => 'Application Fee',
+    };
+    $title = "Pay {$purposeLabel}";
+@endphp
+
+@section('title', $title)
 
 @section('content')
 <div class="page-header">
-    <h4>Pay Application Fee</h4>
+    <h4>{{ $title }}</h4>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Application Fee Payment</h5>
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>{{ $purposeLabel }} Payment</h5>
             </div>
             <div class="card-body text-center">
                 <i class="fas fa-money-bill-wave fa-4x text-success mb-3"></i>
 
-                <h3 class="mb-3">Application Fee: ₦{{ number_format($feeAmount, 2) }}</h3>
+                <h3 class="mb-3">{{ $purposeLabel }}: ₦{{ number_format($feeAmount, 2) }}</h3>
 
                 <p class="text-muted">
                     Make payment securely using our online payment gateway
@@ -25,9 +39,18 @@
                 <hr>
 
                 {{-- Pay Now Button - Opens Payment Gateway --}}
+                {{-- The previous form omitted the purpose field, so POSTing
+                     /applicant/payment/initiate always defaulted to
+                     'application', the canPay gate returned
+                     "You have already paid the application fee." and the
+                     user was bounced back to the dashboard. We now pass
+                     purpose through to the initiate route AND to the test
+                     endpoint so the user actually reaches the right
+                     Paystack iframe / test page. --}}
                 <form method="POST" action="{{ route('applicant.payment.initiate') }}">
                     @csrf
                     <input type="hidden" name="amount" value="{{ $feeAmount }}">
+                    <input type="hidden" name="purpose" value="{{ $purpose }}">
 
                     <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
                         <i class="fas fa-credit-card me-2"></i>Pay Now
@@ -35,7 +58,10 @@
                 </form>
 
                 <div class="d-flex gap-2 justify-content-center">
-                    <a href="{{ route('applicant.payment.test') }}" class="btn btn-outline-secondary btn-sm">
+                    {{-- Test payment also needs the purpose so the user can
+                         simulate acceptance / school_fee flows without
+                         Paystack. --}}
+                    <a href="{{ route('applicant.payment.test', ['purpose' => $purpose]) }}" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-flask me-1"></i>Test Payment
                     </a>
                     <a href="{{ route('applicant.payment') }}" class="btn btn-outline-info btn-sm">

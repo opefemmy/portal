@@ -1,5 +1,17 @@
 @extends('layouts.app')
 
+@php
+    // Same labelling rules as the gateway and test pages. Was hardcoded to
+    // "Application Fee Payment" regardless of purpose — fixed so the user
+    // sees the fee they actually intend to pay on the Paystack iframe step.
+    $purpose = $purpose ?? \App\Models\PaymentType::PURPOSE_APPLICATION;
+    $purposeLabel = match ($purpose) {
+        \App\Models\PaymentType::PURPOSE_ACCEPTANCE => 'Acceptance Fee',
+        \App\Models\PaymentType::PURPOSE_SCHOOL_FEE => 'Compulsory Fee',
+        default => 'Application Fee',
+    };
+@endphp
+
 @section('title', 'Processing Payment')
 
 @section('content')
@@ -7,7 +19,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Secure Payment</h5>
+                <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Secure Payment — {{ $purposeLabel }}</h5>
             </div>
             <div class="card-body text-center">
                 <div class="mb-4">
@@ -15,7 +27,7 @@
                 </div>
 
                 <h4>₦{{ number_format($amount, 2) }}</h4>
-                <p class="text-muted">Application Fee Payment</p>
+                <p class="text-muted">{{ $purposeLabel }} Payment</p>
                 <p><strong>Reference:</strong> {{ $reference }}</p>
 
                 <hr>
@@ -26,6 +38,7 @@
                     <input type="hidden" name="email" value="{{ $email }}">
                     <input type="hidden" name="amount" value="{{ $amount * 100 }}">
                     <input type="hidden" name="reference" value="{{ $reference }}">
+                    <input type="hidden" name="purpose" value="{{ $purpose }}">
 
                     <button type="submit" class="btn btn-success btn-lg w-100" id="paystackBtn">
                         <i class="fas fa-lock me-2"></i>Pay with Paystack
@@ -42,8 +55,7 @@
 
                 <div class="alert alert-info">
                     <small>
-                        <i class="fas fa-shield-alt me-1"></i>
-                        Your payment is secured by Paystack. We do not store your card details.
+                        <i class="fas fa-shield-alt me-1"></i> Your payment is secured by Paystack. We do not store your card details.
                     </small>
                 </div>
             </div>
@@ -68,8 +80,14 @@
             amount: {{ $amount * 100 }},
             reference: '{{ $reference }}',
             callback: function(response) {
-                // Payment successful - redirect to callback
-                window.location.href = '{{ $callbackUrl }}?reference=' + response.reference + '&trx=' + response.transaction;
+                // Payment successful - redirect to callback. Forward the
+                // purpose so the callback handler / downstream redirects
+                // can use the right route.
+                const url = new URL('{{ $callbackUrl }}', window.location.origin);
+                url.searchParams.set('reference', response.reference);
+                url.searchParams.set('trx', response.transaction);
+                url.searchParams.set('purpose', '{{ $purpose }}');
+                window.location.href = url.toString();
             },
             onClose: function() {
                 paystackBtn.disabled = false;
