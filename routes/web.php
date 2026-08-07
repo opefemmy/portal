@@ -215,6 +215,23 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/payment/test', [PaymentGatewayController::class, 'testPayment'])->name('payment.test');
         Route::post('/payment/test/process', [PaymentGatewayController::class, 'processTestPayment'])->name('payment.test.process');
 
+        // Re-sync the applicant-side side effects of an existing completed
+        // payment. Use case: applicant paid before the markCompleted fix
+        // (commit 8ad089b1) shipped — the Payment row is status='completed'
+        // but `applicants.compulsory_paid_at` was never stamped, so the
+        // dashboard still shows "Compulsory Fee: Locked" and the
+        // applicant→student migration never ran. POST so it's not CSRF-vulnerable
+        // to GET preflight; also reachable from the dashboard button.
+        Route::post('/payment/sync', [PaymentGatewayController::class, 'syncPaymentSideEffects'])->name('payment.sync');
+
+        // Explicit "Go to Student Portal" route. After the applicant has
+        // paid the compulsory fee and `migrateApplicantToStudent` has
+        // produced a Student row, the applicant can claim the portal here
+        // even if the auto-redirect from the test handler fired before the
+        // migration was visible. We re-run markCompleted → migrateApplicantToStudent
+        // defensively before bouncing to the student dashboard.
+        Route::post('/payment/transfer', [PaymentGatewayController::class, 'transferToStudentPortal'])->name('payment.transfer');
+
         // Shared cross-audience test-payment simulator. Disabled in
         // production by the controller; works for applicant catalogue
         // here. For student + bursar + registrar use the routes at

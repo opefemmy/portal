@@ -183,6 +183,57 @@
                         <i class="fas fa-check-circle me-1"></i> All fees paid
                     </div>
                 @endif
+
+                {{--
+                    Side-effect sync — show when the applicant has a completed
+                    Payment row for the compulsory fee but the applicant-side
+                    column (compulsory_paid_at) was never stamped. This is
+                    the legacy state from before commit 8ad089b1 was deployed,
+                    or the case where the live Paystack callback ran
+                    applyApplicantSideEffects but the column write failed
+                    silently (e.g. unrun migration, FK drift). Either way,
+                    the user sees "Compulsory Fee: Locked" with no path
+                    forward — this button gives them one.
+                --}}
+                @php
+                    $hasCompletedCompulsory = $applicant->payments()
+                        ->where('status', 'completed')
+                        ->whereIn('payment_purpose', [
+                            \App\Models\PaymentType::PURPOSE_COMPULSORY,
+                            \App\Models\PaymentType::PURPOSE_SCHOOL_FEE,
+                            \App\Models\PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION,
+                        ])
+                        ->exists();
+                    $needsBackfill = $hasCompletedCompulsory && ! $applicant->hasPaid(\App\Models\PaymentType::PURPOSE_COMPULSORY);
+                @endphp
+                @if($needsBackfill)
+                    <form method="POST" action="{{ route('applicant.payment.sync') }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                            <i class="fas fa-sync me-1"></i>Sync Payment Status
+                        </button>
+                    </form>
+                    <small class="text-muted d-block mt-1 text-center">
+                        Your compulsory payment is recorded but the dashboard is out of sync. Click to refresh.
+                    </small>
+                @endif
+
+                {{--
+                    Transfer to Student Portal — only visible once the
+                    applicant has actually been migrated to a Student row
+                    AND the user has role=student. The role middleware on
+                    /student/dashboard checks this; the button here gives
+                    the user a friendly way to claim the portal instead of
+                    hitting a 403 by typing the URL.
+                --}}
+                @if($applicant->isMigrated() && $applicant->user?->hasRole('student'))
+                    <form method="POST" action="{{ route('applicant.payment.transfer') }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>Go to Student Portal
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>

@@ -508,14 +508,58 @@ class PaymentGatewayController extends Controller
 
         if ($existingPaidPayment) {
             $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
+
+            // Defensive backfill: the existing payment is from the live
+            // Paystack/Flutterwave path that landed BEFORE the
+            // markCompleted → applyApplicantSideEffects fix shipped
+            // (commit 8ad089b1). On those rows the Payment is status='completed'
+            // but `applicants.compulsory_paid_at` was never stamped — so the
+            // dashboard still shows "Compulsory Fee: Locked" and the
+            // applicant→student migration never fired. Re-run markCompleted
+            // (now idempotent) so the *_paid_at columns + migration land.
+            //
+            // Only do this for migration-trigger purposes (compulsory, school
+            // fee) — for application/acceptance there's nothing to backfill
+            // beyond the stamp, which is also handled by markCompleted.
+            $isMigrationTrigger = $paymentType
+                ? $this->payments->isMigrationTrigger($paymentType)
+                : false;
+            $needsBackfill = $isMigrationTrigger && ! $applicant->isMigrated();
+
+            if ($needsBackfill) {
+                try {
+                    $this->payments->markCompleted($existingPaidPayment, [
+                        'test_mode' => true,
+                        'simulated' => true,
+                        'user_id' => $user->id,
+                        'purpose' => $purpose,
+                        'via' => 'test_existing_backfill',
+                    ]);
+                    $applicant = $applicant->fresh();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning(
+                        'test payment existing-row backfill: markCompleted failed',
+                        [
+                            'payment_id' => $existingPaidPayment->id,
+                            'purpose' => $purpose,
+                            'error' => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+
             [$redirectRoute] = $this->resolveSuccessRouteAndMessage($existingPaidPayment, $paymentType);
+
+            $flash = $needsBackfill && $applicant?->isMigrated()
+                ? "Your existing {$purpose} payment has been applied. Your student record is ready."
+                : "You have already paid the {$purpose} fee. No new test payment was recorded. "
+                  . "Existing reference: {$existingPaidPayment->reference}.";
 
             return redirect()
                 ->route($redirectRoute)
                 ->with(
-                    'info',
-                    "You have already paid the {$purpose} fee. No new test payment was recorded. "
-                        . "Existing reference: {$existingPaidPayment->reference}."
+                    $needsBackfill && $applicant?->isMigrated() ? 'success' : 'info',
+                    $flash
                 );
         }
 
@@ -661,6 +705,162 @@ class PaymentGatewayController extends Controller
 
         return redirect()->route('applicant.payment')
             ->with('info', 'Payment cancelled.');
+    }
+
+    /**
+     * Re-sync the applicant-side side effects of the applicant's most
+     * recent completed payment.
+     *
+     * Background: a payment row that landed before the markCompleted fix
+     * (commit 8ad089b1) has `status='completed'` but never stamped
+     * `applicants.compulsory_paid_at` and never ran the applicant→student
+     * migration. The dashboard then shows "Compulsory Fee: Locked" even
+     * though the user paid. This endpoint re-runs markCompleted against
+     * the existing row — markCompleted is idempotent (the per-purpose
+     * *_paid_at columns use OR-existing) — so the side effects catch up
+     * without creating a duplicate Payment row.
+     *
+     * Posted from the dashboard's "Sync Payment Status" button.
+     */
+    public function syncPaymentSideEffects(Request $request)
+    {
+        $user = Auth::user();
+        $applicant = Applicant::where('user_id', $user->id)->first();
+
+        if (! $applicant) {
+            return back()->with('error', 'No applicant record found.');
+        }
+
+        // Walk the applicant's completed payments newest-first and re-run
+        // markCompleted against each. markCompleted is idempotent so the
+        // common case (one compulsory payment) is cheap, and the loop
+        // catches the edge case where the user has multiple completed rows
+        // (test simulation + real Paystack).
+        $payments = $applicant->payments()
+            ->where('status', 'completed')
+            ->latest('payment_date')
+            ->get();
+
+        if ($payments->isEmpty()) {
+            return back()->with('info', 'No completed payment to sync.');
+        }
+
+        $synced = 0;
+        $migrated = false;
+        foreach ($payments as $payment) {
+            try {
+                $this->payments->markCompleted($payment, [
+                    'user_id' => $user->id,
+                    'via' => 'manual_sync',
+                ]);
+                $synced++;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('syncPaymentSideEffects: markCompleted failed', [
+                    'payment_id' => $payment->id,
+                    'purpose' => $payment->payment_purpose,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $applicant = $applicant->fresh();
+        if ($applicant && $applicant->isMigrated()) {
+            $migrated = true;
+        }
+
+        if ($migrated) {
+            return redirect()->route('applicant.dashboard')
+                ->with(
+                    'success',
+                    "Payment status synced ({$synced} payment"
+                    . ($synced === 1 ? '' : 's')
+                    . "). Your student record is ready — use the button below to transfer to the student portal."
+                );
+        }
+
+        return back()->with(
+            'info',
+            "Payment status synced ({$synced} payment"
+            . ($synced === 1 ? '' : 's')
+            . "). If the dashboard still shows Locked, please contact the admissions office."
+        );
+    }
+
+    /**
+     * Explicit "Transfer to Student Portal" action.
+     *
+     * Runs migrateApplicantToStudent on the applicant's most recent
+     * migration-trigger payment, then redirects to the student dashboard.
+     * If the migration can't run (matric service down, applicant not yet
+     * admitted, etc.) we bounce back to the applicant dashboard with a
+     * clear flash instead of dropping the user on a 403.
+     *
+     * Posted from the dashboard's "Go to Student Portal" button.
+     */
+    public function transferToStudentPortal(Request $request)
+    {
+        $user = Auth::user();
+        $applicant = Applicant::where('user_id', $user->id)->first();
+
+        if (! $applicant) {
+            return back()->with('error', 'No applicant record found.');
+        }
+
+        // Defensive: re-stamp the most recent migration-trigger payment
+        // before we try to migrate. If the user has been migrated already
+        // this is a no-op (idempotent).
+        $migrationPayment = $applicant->payments()
+            ->where('status', 'completed')
+            ->whereIn('payment_purpose', [
+                PaymentType::PURPOSE_COMPULSORY,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+            ])
+            ->latest('payment_date')
+            ->first();
+
+        if ($migrationPayment) {
+            try {
+                $this->payments->markCompleted($migrationPayment, [
+                    'user_id' => $user->id,
+                    'via' => 'transfer_to_student',
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('transferToStudentPortal: markCompleted failed', [
+                    'payment_id' => $migrationPayment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $applicant = $applicant->fresh();
+
+        // After the migration the user has role=student. The student
+        // dashboard route is gated by role:student middleware, so we
+        // need the session's user record to reflect the new role before
+        // Auth::user()->role re-reads it.
+        if ($applicant && $applicant->isMigrated() && $applicant->user?->hasRole('student')) {
+            // Refresh the in-memory user so the role check sees the
+            // promotion (Laravel's auth provider caches the user row).
+            Auth::setUser($applicant->user->fresh());
+            return redirect()->route('student.dashboard')
+                ->with('success', 'Welcome to the student portal.');
+        }
+
+        // Migration didn't run. Either the applicant hasn't paid the
+        // compulsory fee yet, or the migration failed. Surface a clear
+        // message instead of letting the role middleware 403.
+        $hasCompulsory = $applicant->payments()
+            ->where('status', 'completed')
+            ->where('payment_purpose', PaymentType::PURPOSE_COMPULSORY)
+            ->exists();
+
+        if (! $hasCompulsory) {
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'Transfer to the student portal requires the compulsory fee to be paid first.');
+        }
+
+        return redirect()->route('applicant.dashboard')
+            ->with('error', 'Your student record is being prepared. Please try again in a moment, or contact the admissions office if the issue persists.');
     }
 
     /**
