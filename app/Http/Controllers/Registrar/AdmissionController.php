@@ -561,17 +561,42 @@ class AdmissionController extends Controller
             $registrarName = trim((string) $request->input('registrar_name', ''));
             SystemSetting::set('registrar_name', $registrarName);
 
-            // Handle signature upload
+            // Handle signature upload.
+            //
+            // The move is wrapped in its own try/catch so the OTHER settings
+            // (body, fees, letterhead, registrar name) still persist even
+            // when the filesystem refuses the write — most commonly because
+            // the PHP-FPM user can't write into
+            // `storage/app/public/signatures` on production. On error we
+            // surface a clear flash the registrar can act on.
             if ($request->hasFile('registrar_signature')) {
-                $file = $request->file('registrar_signature');
-                $destination = public_path('storage/signatures');
-                if (!is_dir($destination)) {
-                    @mkdir($destination, 0755, true);
+                try {
+                    $file = $request->file('registrar_signature');
+                    $destination = public_path('storage/signatures');
+                    if (!is_dir($destination)) {
+                        if (!@mkdir($destination, 0755, true) && !is_dir($destination)) {
+                            throw new \RuntimeException(
+                                "Could not create signature directory: {$destination}. "
+                                . "Check that the web server user owns storage/app/public."
+                            );
+                        }
+                    }
+                    $ext = $file->getClientOriginalExtension();
+                    $filename = 'registrar_signature.' . $ext;
+                    $file->move($destination, $filename);
+                    SystemSetting::set('registrar_signature_path', 'signatures/' . $filename);
+                } catch (\Throwable $fileError) {
+                    // Don't roll back the rest of the settings — body, fees,
+                    // letterhead and registrar name are already persisted.
+                    // Just append the file-specific issue to the success
+                    // flash so the user knows the signature didn't land.
+                    \Log::error('signature upload failed: ' . $fileError->getMessage());
+                    return back()->with(
+                        'success',
+                        'Letter settings saved, but the signature file could not be uploaded: '
+                        . $fileError->getMessage()
+                    );
                 }
-                $ext = $file->getClientOriginalExtension();
-                $filename = 'registrar_signature.' . $ext;
-                $file->move($destination, $filename);
-                SystemSetting::set('registrar_signature_path', 'signatures/' . $filename);
             }
 
             return back()->with('success', 'Letter settings saved successfully.');

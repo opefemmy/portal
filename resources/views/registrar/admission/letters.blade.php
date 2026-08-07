@@ -51,6 +51,13 @@
 @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show">
         <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        @if(session('error') && str_contains(session('error'), 'signature'))
+            <div class="mt-2 small">
+                <strong>Likely cause:</strong> the <code>storage/app/public/signatures</code> directory
+                is not writable by PHP. On Linux run
+                <code>chown -R www-data:www-data storage/app/public</code> (or the PHP-FPM user).
+            </div>
+        @endif
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
@@ -194,8 +201,22 @@
                             </div>
                         </div>
                     @endif
-                    <input type="file" name="registrar_signature" class="form-control" accept="image/*">
-                    <small class="text-muted">Max 2MB. PNG/JPG/SVG.</small>
+                    <input type="file" name="registrar_signature" id="registrar_signature_input"
+                           class="form-control" accept="image/*">
+                    <small class="text-muted">
+                        Max 2MB. PNG/JPG/SVG.
+                        <span class="text-info ms-1">
+                            <i class="fas fa-info-circle"></i> Saving is automatic — the form submits as soon as you pick a file.
+                        </span>
+                    </small>
+
+                    {{-- Inline Save button right under the signature upload so the
+                         admin never has to scroll back to the left column to find it.
+                         The form submit fires on file-select too (see @push scripts),
+                         so this button is just an explicit fallback. --}}
+                    <button type="submit" class="btn btn-primary w-100 mt-3">
+                        <i class="fas fa-save me-2"></i>Save Letter Settings
+                    </button>
                 </div>
             </div>
 
@@ -282,6 +303,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (confirm('Remove the current registrar signature?')) {
                 document.getElementById('deleteSignatureForm').submit();
             }
+        });
+    }
+
+    // Auto-save on signature upload. As soon as the registrar picks a
+    // file, submit the outer form so the signature, name, body, fees
+    // and letterhead all persist together — no need to scroll back to
+    // the left column to find the Save button. We submit immediately;
+    // the browser attaches the file before the submit handler runs.
+    var sigInput = document.getElementById('registrar_signature_input');
+    var outerForm = sigInput ? sigInput.closest('form') : null;
+    if (sigInput && outerForm) {
+        sigInput.addEventListener('change', function() {
+            if (!sigInput.files || sigInput.files.length === 0) {
+                return;
+            }
+            // Disable + show "Saving…" hint so the user sees feedback
+            // before the redirect lands.
+            sigInput.disabled = true;
+            outerForm.submit();
         });
     }
 });
