@@ -52,9 +52,20 @@ return Application::configure(basePath: dirname(__DIR__))
             // 404s, validation failures, and CSRF failures should be handled
             // by their own dedicated renderers. Don't shadow them with our
             // friendly flash message.
+            //
+            // ModelNotFoundException is the Eloquent "row not found" — most
+            // commonly thrown by route model binding when the URL has an id
+            // that no longer exists (e.g. user has a stale form pointing at
+            // a fee that was deleted, or the dashboard link was generated
+            // before the row was removed). Let it propagate so Laravel
+            // renders its 404 page instead of the misleading "We could not
+            // start your school-fee payment" flash — that flash made the
+            // user think something was wrong with the payment endpoint
+            // when really the record was just gone.
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
                 || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpException
-                || $e instanceof \Illuminate\Validation\ValidationException) {
+                || $e instanceof \Illuminate\Validation\ValidationException
+                || $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
                 return null;
             }
 

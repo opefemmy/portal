@@ -184,6 +184,44 @@ class StudentPaymentInitiateTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_unknown_fee_id_renders_404_not_payment_flash(): void
+    {
+        // User complaint: "We could not start your school-fee payment just
+        // now. Please try again or contact the bursar if the issue
+        // persists." — on a stale page where the fee row has been deleted
+        // or the URL has a fee id that no longer exists, route model
+        // binding for `Fee $fee` throws ModelNotFoundException. The
+        // bootstrap exception handler used to catch that and render the
+        // misleading "we could not start your school-fee payment" flash,
+        // making the user think the payment endpoint was broken when
+        // really the record was gone.
+        //
+        // Pin: ModelNotFoundException is now in the bootstrap handler's
+        // exemption list, so Laravel renders its 404 page instead.
+        $user = $this->makeStudent();
+
+        // 999_999 doesn't exist in this test DB.
+        $response = $this->actingAs($user)->post(
+            '/student/payments/999999/initiate',
+            ['percent' => SchoolFeeCalculator::PERCENT_FULL]
+        );
+
+        // Should be a 404, NOT the bootstrap handler's redirect-with-flash.
+        $this->assertEquals(
+            404,
+            $response->getStatusCode(),
+            'Expected a 404 for an unknown fee id, got ' . $response->getStatusCode()
+            . ' — the bootstrap handler probably caught the ModelNotFoundException and rendered the misleading "school-fee payment" flash.'
+        );
+
+        // The generic payment flash MUST NOT appear.
+        $this->assertNull(
+            session('error'),
+            'A session error was set — the bootstrap handler caught the ModelNotFoundException. ' .
+            'ModelNotFoundException must be exempted so Laravel renders its 404 instead.'
+        );
+    }
+
     /* --- helpers --- */
 
     private function makeStudent(): User
