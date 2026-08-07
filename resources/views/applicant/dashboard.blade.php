@@ -153,7 +153,16 @@
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <span><i class="fas fa-user-graduate me-2 text-primary"></i>Compulsory Fee</span>
-                        @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_SCHOOL_FEE))
+                        {{--
+                            Compulsory Fee is the applicant→student migration trigger
+                            (see ApplicantPaymentService::applyApplicantSideEffects).
+                            Once the applicant has paid it (compulsory_paid_at set),
+                            they're migrated to the student portal — so this badge
+                            must read against PURPOSE_COMPULSORY, not the legacy
+                            PURPOSE_SCHOOL_FEE (which is a returning-student fee
+                            with audience=student and a different column).
+                        --}}
+                        @if($applicant->hasPaid(\App\Models\PaymentType::PURPOSE_COMPULSORY))
                             <span class="badge bg-success rounded-pill"><i class="fas fa-check"></i> Paid</span>
                         @else
                             <span class="badge bg-secondary rounded-pill">Locked</span>
