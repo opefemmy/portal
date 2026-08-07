@@ -255,6 +255,48 @@ class SaveLetterSettingsTest extends TestCase
 
     /* --- helpers --- */
 
+    /**
+     * Regression: the default admission letter template is ~360 chars,
+     * which is bigger than the legacy `string('value')` (varchar 255)
+     * column on system_settings. Saving it produced
+     *
+     *   SQLSTATE[22001]: String data, right truncated: 1406
+     *   Data too long for column 'value' at row 1
+     *
+     * and the user saw "Failed to save letter settings: ..." because
+     * the controller's outer try/catch bubbled the message up. The fix
+     * was 2026_08_07_000001_widen_system_settings_value_column which
+     * changed `value` to TEXT. This test pins that a long body still
+     * persists end-to-end.
+     */
+    public function test_save_with_long_letter_body_persists_full_text(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        // The actual default template the user pasted on production.
+        // 350 characters — well past the legacy 255-char limit.
+        $longBody = 'We are pleased to inform you that you have been offered provisional admission into the {programme} programme of the {department}, {school}, for the {session} academic session. Please complete the acceptance process by paying the required fees listed below before the deadline. On behalf of the institution, we congratulate you and look forward to welcoming you on campus.';
+        $this->assertGreaterThan(255, strlen($longBody), 'Pre-condition: body must exceed the legacy varchar(255) limit so the test is meaningful.');
+
+        $response = $this->actingAs($admin)->post('/registrar/admission-letter/settings', [
+            'admission_letter_body' => $longBody,
+            'institution_name'      => 'EKSCOTECH',
+            'registrar_name'        => 'Dr. Long',
+        ]);
+
+        if ($response->getStatusCode() >= 400) {
+            $this->fail('POST returned ' . $response->getStatusCode()
+                . '; error=' . var_export(session('error'), true));
+        }
+
+        $stored = SystemSetting::where('key', 'admission_letter_body')->value('value');
+        $this->assertEquals(
+            $longBody,
+            $stored,
+            'admission_letter_body was truncated — the value column is still narrower than TEXT.'
+        );
+    }
+
     private function makeUser(string $roleSlug): User
     {
         return User::create([
@@ -292,7 +334,11 @@ class SaveLetterSettingsTest extends TestCase
         Schema::create('system_settings', function ($t) {
             $t->id();
             $t->string('key')->unique();
-            $t->string('value')->nullable();
+            // Match production schema after
+            // 2026_08_07_000001_widen_system_settings_value_column —
+            // `value` is TEXT, not varchar(255), because settings like
+            // admission_letter_body hold multi-paragraph templates.
+            $t->text('value')->nullable();
             $t->string('description')->nullable();
             $t->boolean('is_active')->default(true);
             $t->timestamps();
