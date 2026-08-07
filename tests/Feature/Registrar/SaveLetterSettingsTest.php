@@ -135,6 +135,80 @@ class SaveLetterSettingsTest extends TestCase
     }
 
     /**
+     * Browser-realistic: simulate the user filling the registrar_name
+     * field and one fee row, then submitting. The payload below is the
+     * exact field shape the browser emits — single-row fees[0] alongside
+     * a registrar_name and an institution_name.
+     *
+     * Pins the most common "I added one acceptance fee and clicked Save
+     * and the page came back without saving" complaint.
+     */
+    public function test_save_registrar_name_and_single_fee_row_persists(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->post('/registrar/admission-letter/settings', [
+            'admission_letter_body' => 'Welcome',
+            'institution_name'      => 'EKSCOTECH',
+            'registrar_name'        => 'Dr. Jane Smith',
+            'fees' => [
+                ['name' => 'Acceptance Fee', 'amount' => 25000],
+            ],
+        ]);
+
+        if ($response->getStatusCode() >= 400) {
+            $this->fail('POST returned ' . $response->getStatusCode()
+                . '; error=' . var_export(session('error'), true));
+        }
+
+        $this->assertEquals(
+            'Dr. Jane Smith',
+            SystemSetting::where('key', 'registrar_name')->value('value'),
+            'registrar_name did not persist on Save.'
+        );
+
+        $fees = json_decode(SystemSetting::where('key', 'admission_letter_fees')->value('value'), true);
+        $this->assertCount(1, $fees, 'Expected exactly one acceptance fee to be stored.');
+        $this->assertEquals('Acceptance Fee', $fees[0]['name']);
+        $this->assertEquals(25000.0, (float) $fees[0]['amount']);
+    }
+
+    /**
+     * Pin the JS auto-submit on signature file-select: the file input
+     * has the id `registrar_signature_input` AND a `change` listener
+     * calls `outerForm.submit()`. We can only assert the static HTML
+     * contract here (the JS runs in the browser) — i.e. the input has
+     * the id, and the outer form has the right action so the auto-submit
+     * lands on the same endpoint as the manual Save click.
+     */
+    public function test_auto_save_signature_input_id_and_form_action_aligned(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/registrar/admission-letter/settings');
+        $body = $response->getContent();
+
+        // The signature input must have the id the JS binds its change
+        // listener to — without it, "auto-save on file select" silently
+        // does nothing and the registrar thinks the page is broken.
+        $this->assertStringContainsString(
+            'id="registrar_signature_input"',
+            $body,
+            'Signature input is missing id="registrar_signature_input" — auto-save on file select will not fire.'
+        );
+
+        // The form action that the JS submits must match the route
+        // that the manual Save button submits to. Otherwise an
+        // auto-save bypasses the controller and goes to a 404.
+        // Use a regex so the test is not brittle to host:port.
+        $this->assertMatchesRegularExpression(
+            '#action="[^"]*registrar/admission-letter/settings"#',
+            $body,
+            'Outer Save form action is not /registrar/admission-letter/settings — auto-submit would 404.'
+        );
+    }
+
+    /**
      * The view has a file input for registrar_signature but no
      * enctype="multipart/form-data" on the form. Most browsers
      * still POST the form correctly but DROP the file silently —
