@@ -688,8 +688,15 @@ class ApplicantPaymentService
      * `requires_payment = true` and adding their `code` to the
      * MIGRATION_TRIGGER_CODES list (or by tagging the row's purpose
      * as `compulsory_fee`).
+     *
+     * Public because the applicant payment-gateway controller calls
+     * this from the post-migration check (deciding whether to redirect
+     * to the student portal or fall back to the applicant dashboard
+     * when the migration hasn't run yet). Was previously `private` and
+     * 500'd the test-payment simulator with "Call to private method
+     * ... isMigrationTrigger() from scope ... PaymentGatewayController".
      */
-    private function isMigrationTrigger(PaymentType $type): bool
+    public function isMigrationTrigger(PaymentType $type): bool
     {
         // Direct: school_fee / school_fees / compulsory / compulsory_fee.
         if (in_array($type->purpose, [

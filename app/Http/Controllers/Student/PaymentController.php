@@ -82,7 +82,41 @@ class PaymentController extends Controller
         return view('student.payment-pay', compact('fee', 'gateway', 'category', 'percents', 'pricing'));
     }
 
+    /**
+     * Initiate a student-side school-fee payment.
+     *
+     * Wrapped in a top-level Throwable catch so a downstream exception
+     * (Paystack / Flutterwave 5xx, missing PaymentGateway row, missing
+     * Fee id, ENUM truncation on `payments.student_type` etc.) never
+     * surfaces as a raw 500 to the student. We log the exception and
+     * bounce them back to the payments list with a generic flash so
+     * they can retry.
+     */
     public function initiatePayment(Request $request, Fee $fee)
+    {
+        try {
+            return $this->initiatePaymentInner($request, $fee);
+        } catch (\Throwable $e) {
+            Log::error('student payment initiate: uncaught error', [
+                'fee_id'           => $fee?->id,
+                'user_id'          => optional(auth()->user())->id,
+                'percent'          => $request->input('percent'),
+                'exception_class'  => get_class($e),
+                'error'            => $e->getMessage(),
+                'trace'            => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('student.payments')
+                ->with('error', 'We could not start your school-fee payment just now. Please try again or contact the bursar if the issue persists.');
+        }
+    }
+
+    /**
+     * Real implementation of initiatePayment — split out so the public
+     * entry point can wrap it in a top-level Throwable catch and never 500.
+     */
+    private function initiatePaymentInner(Request $request, Fee $fee)
     {
         // Check if payment is open
         if (!SystemSetting::isOpen('payment_open')) {

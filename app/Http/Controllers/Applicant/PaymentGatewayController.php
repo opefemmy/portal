@@ -158,9 +158,17 @@ class PaymentGatewayController extends Controller
      */
     private function initiatePaymentInner(Request $request)
     {
+        // PURPOSE_COMPULSORY is the applicant→student migration trigger
+        // (see ApplicantPaymentService::applyApplicantSideEffects). The
+        // dashboard's "Pay Compulsory Fee" button links to
+        // /applicant/payment/gateway?purpose=compulsory and the form
+        // re-posts the value here, so it must be on the validator's
+        // whitelist or the user sees the catch-all "Test payment
+        // simulated (handler recovered from an internal error)" message
+        // — masking the real ValidationException.
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'purpose' => 'nullable|string|in:application,acceptance,school_fee',
+            'purpose' => 'nullable|string|in:application,acceptance,school_fee,compulsory',
         ]);
 
         $user = Auth::user();
@@ -447,9 +455,13 @@ class PaymentGatewayController extends Controller
      */
     private function processTestPaymentInner(Request $request)
     {
+        // Mirror the validator on initiatePaymentInner — both endpoints
+        // accept the same purpose set. compulsory must be on the list so
+        // the test-mode simulator can be exercised for the migration
+        // trigger purpose.
         $request->validate([
             'amount' => 'required|numeric|min:100',
-            'purpose' => 'nullable|string|in:application,acceptance,school_fee',
+            'purpose' => 'nullable|string|in:application,acceptance,school_fee,compulsory',
         ]);
 
         $user = Auth::user();

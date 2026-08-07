@@ -15,26 +15,27 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * Regression test for the "Pay Compulsory Fee" button on the applicant
- * dashboard.
+ * Regression tests for the applicant payment gateway URL endpoints.
  *
- * The dashboard previously linked to
- *   /applicant/payment/gateway?purpose=compulsory
- * but the ApplicantPaymentService constants use
- *   PURPOSE_SCHOOL_FEE = 'school_fee'
- * (see PaymentType.php). The url-purpose and the service-purpose
- * drifted apart, and the controller's validation whitelist let the
- * bogus purpose through; the user saw "Unknown payment purpose."
- * flash and never got to the Pay Now screen.
+ * History:
+ *   The dashboard's "Pay Compulsory Fee" button links to
+ *   /applicant/payment/gateway?purpose=compulsory (the migration
+ *   trigger). The form on the gateway page re-posts `purpose=compulsory`
+ *   to /applicant/payment/initiate when the applicant clicks Pay Now.
+ *
+ *   The controller's validator on `initiate` used a hardcoded
+ *   `in:application,acceptance,school_fee` whitelist (no `compulsory`),
+ *   so a Compulsory submit 500'd as a ValidationException and the
+ *   top-level Throwable catch surfaced a misleading "Test payment
+ *   simulated (handler recovered from an internal error)" success
+ *   flash — masking the real reason. The user never saw the Paystack
+ *   iframe.
  *
  * After the fix:
- *   - the dashboard button uses ?purpose=school_fee
- *   - the controller validation whitelist accepts only the canonical
- *     application|acceptance|school_fee values
- *
- * These tests pin both halves of the contract: the canonical URL
- * must succeed, and the legacy "compulsory" URL must be rejected by
- * validation (so the user gets a clean 422, not a misleading flash).
+ *   - the validator on `initiate` accepts `compulsory` as a valid
+ *     purpose (alongside application|acceptance|school_fee).
+ *   - the gateway URL `?purpose=compulsory` resolves to the COMP_FEE
+ *     PaymentType and renders the Pay Now page.
  *
  * Uses a hand-rolled schema instead of RefreshDatabase to keep
  * independent of the (numerous) pre-existing migration issues.
@@ -181,17 +182,16 @@ class ApplicantPaymentGatewayUrlTest extends TestCase
     }
 
     /**
-     * The legacy "compulsory" URL must NOT land on the Pay Now page.
+     * Compulsory purpose URL must land on the Pay Now page when the
+     * COMP_FEE row is configured for the applicant audience.
      *
-     * The gateway endpoint doesn't run Laravel's $request->validate()
-     * for purpose — it normalises the value and asks the service to
-     * resolve a PaymentType. With no PaymentType having
-     * purpose='compulsory', resolvePaymentType() returns null and the
-     * controller bounces back with an error flash. This is the
-     * regression we pin: any caller using `?purpose=compulsory`
-     * should fail loudly, not silently render the wrong Pay Now page.
+     * The dashboard's "Pay Compulsory Fee" button links to
+     * /applicant/payment/gateway?purpose=compulsory. resolvePaymentType
+     * looks up the COMP_FEE row by PURPOSE_CODES['compulsory'] = 'COMP_FEE'
+     * and the row's audience='applicant', so the gateway renders the
+     * Pay Now page (200). The feeAmount must match the seeded amount.
      */
-    public function test_legacy_compulsory_purpose_url_is_rejected_by_gateway(): void
+    public function test_compulsory_purpose_url_loads_for_admitted_applicant(): void
     {
         $applicant = $this->makeApplicant('admitted');
         $applicant->update([
@@ -202,39 +202,74 @@ class ApplicantPaymentGatewayUrlTest extends TestCase
         $response = $this->actingAs($applicant->user)
             ->get('/applicant/payment/gateway?purpose=compulsory');
 
-        // The controller bounces to the dashboard with an error flash
-        // (302) when no PaymentType matches. The user does NOT land on
-        // the Pay Now page (200).
-        $response->assertStatus(302);
-        $response->assertSessionHas('error');
-        $this->assertNotEquals(200, $response->getStatusCode());
+        $response->assertOk();
+        $response->assertViewHas('feeAmount');
+        $this->assertEquals(30000.0, $response->viewData('feeAmount'));
     }
 
     /**
-     * Initiate endpoint with the legacy "compulsory" purpose must NOT
-     * start a payment.
+     * Initiate endpoint with `purpose=compulsory` must NOT be rejected
+     * by the validator. The validator's whitelist now includes
+     * `compulsory` (the migration trigger); without this, the applicant
+     * who clicks the dashboard "Pay Compulsory Fee" button would 500
+     * with ValidationException, masked by the top-level Throwable
+     * catch as a misleading "Test payment simulated (handler recovered
+     * from an internal error)" success flash.
      *
-     * The controller's inner validation runs $request->validate(),
-     * which would normally throw ValidationException and put errors in
-     * the session. But the outer try/catch in initiatePayment() catches
-     * every Throwable (including ValidationException) and redirects
-     * with a generic error flash. Either way, the user must NOT land
-     * on the Paystack iframe page; this test asserts the bounce.
+     * With only `application_paid_at` set, canPay() still blocks with
+     * "Pay the acceptance fee before paying the compulsory fee." — so
+     * the response is a 302 with an error flash, but the redirect is
+     * the dashboard, not the gateway reload. We assert the redirect
+     * target to confirm the canPay gate (not the validator) is what
+     * bounced us.
      */
-    public function test_legacy_compulsory_purpose_is_rejected_on_initiate_post(): void
+    public function test_compulsory_purpose_passes_validator_on_initiate_post(): void
     {
         $applicant = $this->makeApplicant('admitted');
         $applicant->update(['application_paid_at' => now()]);
 
         $response = $this->actingAs($applicant->user)
             ->post('/applicant/payment/initiate', [
-                'amount' => 50000,
+                'amount' => 30000,
                 'purpose' => 'compulsory',
             ]);
 
         $response->assertStatus(302);
+        // If the validator rejected `compulsory`, the catch would have
+        // bounced us to /applicant/payment/gateway?purpose=compulsory
+        // (see initiatePayment() catch block). If the canPay gate
+        // bounced us, the redirect target is the applicant dashboard.
+        $response->assertRedirect(route('applicant.dashboard'));
         $response->assertSessionHas('error');
-        $this->assertNotEquals(200, $response->getStatusCode());
+    }
+
+    /**
+     * Initiate endpoint with `purpose=compulsory` and a fully-paid
+     * applicant reaches the Paystack iframe page.
+     *
+     * This is the happy-path regression: the dashboard button must
+     * land on the Paystack inline page, not bounce or 500. Without
+     * `compulsory` on the validator's whitelist, the request throws
+     * ValidationException and the catch surfaces a misleading success
+     * flash. With it on the whitelist, canPay returns null and the
+     * controller renders the payment-initiate view (200).
+     */
+    public function test_initiate_compulsory_payment_reaches_paystack_iframe_when_admitted(): void
+    {
+        $applicant = $this->makeApplicant('admitted');
+        $applicant->update([
+            'application_paid_at' => now(),
+            'acceptance_paid_at'  => now(),
+        ]);
+
+        $response = $this->actingAs($applicant->user)
+            ->post('/applicant/payment/initiate', [
+                'amount' => 30000,
+                'purpose' => 'compulsory',
+            ]);
+
+        $response->assertOk();
+        $response->assertSessionHasNoErrors();
     }
 
     /* --- helpers --- */
@@ -424,6 +459,17 @@ class ApplicantPaymentGatewayUrlTest extends TestCase
             'purpose' => PaymentType::PURPOSE_SCHOOL_FEE,
             'amount' => 50000,
             'audience' => PaymentType::AUDIENCE_BOTH,
+        ]);
+        // Compulsory Fee is the applicant→student migration trigger. The
+        // dashboard's "Pay Compulsory Fee" button links to
+        // /applicant/payment/gateway?purpose=compulsory and the form on
+        // that page re-posts `purpose=compulsory` to /applicant/payment/initiate.
+        PaymentType::create([
+            'name' => 'Compulsory Fee',
+            'code' => 'COMP_FEE',
+            'purpose' => PaymentType::PURPOSE_COMPULSORY,
+            'amount' => 30000,
+            'audience' => PaymentType::AUDIENCE_APPLICANT,
         ]);
 
         SystemSetting::set('admission_form_open', 'true');
