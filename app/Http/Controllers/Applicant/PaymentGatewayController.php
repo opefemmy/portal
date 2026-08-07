@@ -573,10 +573,11 @@ class PaymentGatewayController extends Controller
             // Payment row is "completed" but the dashboard still shows
             // Payment Progress as Pending — because Applicant::hasPaid()
             // reads the per-purpose *_paid_at timestamp on the applicants
-            // table. markCompleted is idempotent for status='completed', so
-            // it will skip the redundant update and go straight to
-            // applyApplicantSideEffects(). Wrap in try/catch because we are
-            // still in the demo "always succeed" path.
+            // table. markCompleted guards the Payment->update() block but
+            // ALWAYS calls applyApplicantSideEffects(), so the *_paid_at
+            // stamp lands even though the row is already 'completed'.
+            // Wrap in try/catch because we are still in the demo "always
+            // succeed" path.
             try {
                 $this->payments->markCompleted($payment, [
                     'test_mode' => true,

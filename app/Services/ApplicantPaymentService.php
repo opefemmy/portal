@@ -584,26 +584,44 @@ class ApplicantPaymentService
 
     /**
      * Mark a pending payment as completed and stamp the right applicant
-     * timestamp. If the purpose is `school_fee`, also runs the
-     * applicant → student migration.
+     * timestamp. If the purpose is `compulsory` / `school_fee`, also runs
+     * the applicant → student migration.
+     *
+     * Idempotency contract: this method is safe to call multiple times
+     * for the same payment row. The Payment->update() block is guarded
+     * by a status check (don't reset status='completed' to itself, don't
+     * clobber an existing transaction_id), and the side effects in
+     * applyApplicantSideEffects() use the OR-existing pattern
+     * (applicant->compulsory_paid_at ?: $stamp) so a second call never
+     * moves a stamp that was already written.
+     *
+     * Note: do NOT short-circuit with an early `return $payment` on
+     * `status === 'completed'`. The test handler's fallback path
+     * creates a row with status='completed' before calling this method
+     * (so the demo simulator returns 'completed' to the user without
+     * calling Paystack) — and that fallback relies on the side effects
+     * still running. Earlier code had `if (status === completed) return`
+     * which silently broke the test handler: the Payment row existed
+     * with status='completed' but applicant.compulsory_paid_at was
+     * never stamped, so the dashboard kept showing "Locked".
      *
      * @param  array<string, mixed>  $gatewayResponse  raw Paystack/Flutterwave data
      */
     public function markCompleted(Payment $payment, array $gatewayResponse = []): Payment
     {
-        if ($payment->status === 'completed') {
-            return $payment; // idempotent
+        // Guard the row update, not the whole method — so side effects
+        // still run when called against a pre-completed row.
+        if ($payment->status !== 'completed') {
+            $payment->update([
+                'status' => 'completed',
+                'is_verified' => true,
+                'payment_details' => json_encode($gatewayResponse),
+                'payment_date' => $payment->payment_date ?: now(),
+                'transaction_id' => $gatewayResponse['data']['transaction_id']
+                    ?? $gatewayResponse['transaction_id']
+                    ?? $payment->transaction_id,
+            ]);
         }
-
-        $payment->update([
-            'status' => 'completed',
-            'is_verified' => true,
-            'payment_details' => json_encode($gatewayResponse),
-            'payment_date' => $payment->payment_date ?: now(),
-            'transaction_id' => $gatewayResponse['data']['transaction_id']
-                ?? $gatewayResponse['transaction_id']
-                ?? $payment->transaction_id,
-        ]);
 
         $applicant = Applicant::find($payment->payer_id);
         if (! $applicant) {
@@ -612,6 +630,9 @@ class ApplicantPaymentService
             return $payment;
         }
 
+        // Always run the side effects. applyApplicantSideEffects() uses
+        // the OR-existing guard per-payload, so a second call on the
+        // same row won't move the *_paid_at stamp.
         $this->applyApplicantSideEffects($applicant, $payment, $payment->payment_purpose, $payment->fee_id ? PaymentType::find($payment->fee_id) : null);
 
         return $payment->fresh();
