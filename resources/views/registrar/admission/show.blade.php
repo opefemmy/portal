@@ -165,7 +165,7 @@
                 <hr>
 
                 <h6>Actions</h6>
-                <div class="d-flex gap-2 mb-3">
+                <div class="d-flex gap-2 mb-3 flex-wrap">
                     <!-- Update Status -->
                     <form method="POST" action="{{ route('registrar.admission.updateStatus', $applicant) }}" class="d-flex gap-2">
                         @csrf @method('PUT')
@@ -182,6 +182,34 @@
                     <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
                         <i class="fas fa-key me-1"></i> Reset Password
                     </button>
+
+                    {{--
+                        Auto-login link generator.
+
+                        Only meaningful after admission + student creation —
+                        without a Student row there's no portal account yet.
+                        Clicking opens a modal that exposes the one-time URL
+                        the registrar can send to the student (SMS, email,
+                        WhatsApp, etc.).
+                    --}}
+                    @php
+                        // Prefer student_id (set by ApplicantPaymentService when the
+                        // compulsory fee is paid); fall back to matric lookup for the
+                        // legacy flow where student_created was set but no row
+                        // migration happened yet.
+                        $studentRow = null;
+                        if ($applicant->student_id) {
+                            $studentRow = \App\Models\Student::find($applicant->student_id);
+                        }
+                        if (! $studentRow && $applicant->matric_number) {
+                            $studentRow = \App\Models\Student::where('matric_number', $applicant->matric_number)->first();
+                        }
+                    @endphp
+                    @if($studentRow && $studentRow->user)
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#autoLoginModal">
+                        <i class="fas fa-magic me-1"></i> Generate Auto-Login Link
+                    </button>
+                    @endif
                 </div>
 
                 <!-- Reset Password Modal -->
@@ -212,6 +240,53 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Auto-Login Link Modal -->
+                @if($studentRow && $studentRow->user)
+                <div class="modal fade" id="autoLoginModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-magic me-1"></i> Student Auto-Login Link
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>
+                                    Send this one-time link to <strong>{{ $applicant->full_name }}</strong>
+                                    (<code>{{ $studentRow->matric_number }}</code>). Opening it signs them
+                                    in and forces a password change.
+                                </p>
+                                <p class="text-muted small mb-2">
+                                    <i class="fas fa-clock me-1"></i> Expires 7 days after generation.
+                                </p>
+                                <div class="input-group">
+                                    <input type="text" id="autoLoginUrl" class="form-control" readonly
+                                           value="{{ \App\Http\Controllers\Student\AutoLoginController::generateForStudent($studentRow) }}">
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            onclick="(function(){
+                                                var i=document.getElementById('autoLoginUrl');
+                                                i.select(); document.execCommand('copy');
+                                                this.innerHTML='<i class=\'fas fa-check\'></i> Copied';
+                                                var b=this; setTimeout(function(){ b.innerHTML='<i class=\'fas fa-copy\'></i> Copy'; }, 1500);
+                                            })()">
+                                        <i class="fas fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="mt-3 small text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    The link is bound to this specific student account and can only be used once.
+                                    Sharing it with anyone other than the student is at your own risk.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
     </div>

@@ -520,6 +520,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
 });
 
 // Student Routes
+// Auto-login consume endpoint — sits OUTSIDE the auth-guarded student
+// group because the user arrives unauthenticated (via a signed URL
+// the registrar generated). The `signed` middleware enforces URL
+// integrity and an absolute expiry; once inside the controller we
+// sign the user in and bounce them to the password-change form.
+Route::get('/student/auto-login/{user}', [\App\Http\Controllers\Student\AutoLoginController::class, 'consume'])
+    ->middleware('signed')
+    ->name('student.auto-login.consume');
+
 Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 'student.onboarding'])->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
     Route::get('/courses', [CourseRegistrationController::class, 'index'])->name('courses');

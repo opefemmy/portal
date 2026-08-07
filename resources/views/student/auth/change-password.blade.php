@@ -2,6 +2,14 @@
 
 @section('title', 'Change Password')
 
+@php
+    // The auto-login flow (registrar-generated link) signs the student in
+    // and forces a password change. We hide the "current password" field
+    // in that case because the student has no usable password yet — they
+    // were authenticated by the signed URL.
+    $isForcedChange = auth()->user() && auth()->user()->must_change_password;
+@endphp
+
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-6">
@@ -10,10 +18,18 @@
                 <h5 class="mb-0"><i class="fas fa-key me-2"></i>Change Your Password</h5>
             </div>
             <div class="card-body">
+                @if($isForcedChange)
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Welcome! You signed in via a one-time link from the registrar.
+                    Please set a new password to activate your student portal account.
+                </div>
+                @else
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     For security reasons, you must change your password before continuing.
                 </div>
+                @endif
 
                 @if(session('info'))
                 <div class="alert alert-warning">
@@ -33,6 +49,7 @@
 
                 <form method="POST" action="{{ route('student.password.change') }}">
                     @csrf
+                    @if(!$isForcedChange)
                     <div class="mb-3">
                         <label for="current_password" class="form-label">Current Password</label>
                         <input type="password" name="current_password" id="current_password"
@@ -41,6 +58,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+                    @endif
 
                     <div class="mb-3">
                         <label for="new_password" class="form-label">New Password</label>
@@ -59,7 +77,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-save me-2"></i>Change Password
+                        <i class="fas fa-save me-2"></i>{{ $isForcedChange ? 'Set Password & Continue' : 'Change Password' }}
                     </button>
                 </form>
             </div>
