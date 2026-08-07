@@ -55,7 +55,7 @@
     </div>
 @endif
 
-<form method="POST" action="{{ route('registrar.admission.saveLetterSettings') }}">
+<form method="POST" action="{{ route('registrar.admission.saveLetterSettings') }}" enctype="multipart/form-data">
     @csrf
 
     <div class="row">
@@ -210,29 +210,34 @@
                     </p>
                 </div>
             </div>
-
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-print me-2"></i>Print Letters</h5>
-                </div>
-                <div class="card-body">
-                    <form method="GET" action="{{ route('registrar.admission.generateLetters') }}" class="mb-3">
-                        <label class="form-label">Filter by Department</label>
-                        <select name="department_id" class="form-select mb-3" onchange="this.form.submit()">
-                            <option value="">All Departments</option>
-                            @foreach(\App\Models\Department::orderBy('name')->get() as $dept)
-                                <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                            @endforeach
-                        </select>
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-eye me-2"></i>Preview Letters
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 </form>
+
+{{-- Print Letters lives OUTSIDE the Save form so its inner GET
+     form does not nest inside the outer POST form. Nested forms
+     are invalid HTML and Chrome/Firefox will silently drop the
+     parent's submit button when the inner form closes; that was
+     why "Save Letter Settings" appeared to do nothing. --}}
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-print me-2"></i>Print Letters</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ route('registrar.admission.generateLetters') }}" class="mb-3">
+            <label class="form-label">Filter by Department</label>
+            <select name="department_id" class="form-select mb-3" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach(\App\Models\Department::orderBy('name')->get() as $dept)
+                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="btn btn-success w-100">
+                <i class="fas fa-eye me-2"></i>Preview Letters
+            </button>
+        </form>
+    </div>
+</div>
 
 {{-- Delete signature form (separate to avoid multipart issue with no file) --}}
 @if($registrarSignature)
