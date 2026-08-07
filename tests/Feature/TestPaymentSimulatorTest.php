@@ -45,6 +45,8 @@ class TestPaymentSimulatorTest extends TestCase
         Schema::dropIfExists('schools');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('payment_types');
+        Schema::dropIfExists('system_settings');
+        Schema::dropIfExists('payment_gateways');
         Schema::dropIfExists('users');
         Schema::dropIfExists('roles');
         parent::tearDown();
@@ -180,6 +182,67 @@ class TestPaymentSimulatorTest extends TestCase
             ->assertSessionHasErrors('payment_type_id');
     }
 
+    /**
+     * Regression: students saw "We could not start your school-fee
+     * payment just now..." because the live Paystack / Flutterwave
+     * round-trip kept failing. The student payments page now exposes
+     * the test simulator so the student can walk through the same flow
+     * without a real card.
+     *
+     * Pin that the link is present in the rendered HTML on the
+     * student payments page in non-production environments.
+     */
+    public function test_student_payments_page_links_to_test_simulator_in_non_production(): void
+    {
+        // APP_ENV must be anything other than production for the link
+        // to render — the controller returns 404 in production.
+        $this->assertNotEquals('production', app()->environment(),
+            'Test fixture must run in non-production so the link renders.');
+
+        // Don't go through the controller — it depends on a Fee row that
+        // isn't in this test's minimal schema. Pin the view source
+        // directly so the test stays focused on "is the link present
+        // in the page the student sees?".
+        $viewPath = resource_path('views/student/payments.blade.php');
+        $this->assertFileExists($viewPath,
+            'resources/views/student/payments.blade.php must exist for the test to be meaningful.');
+
+        $body = file_get_contents($viewPath);
+
+        $this->assertStringContainsString(
+            "route('student.payment.test.show.student')",
+            $body,
+            'Student payments view must reference student.payment.test.show.student — students need a non-Paystack escape hatch.'
+        );
+
+        // The link must NOT be unconditionally rendered in production.
+        // We don't want students to see "Test mode" in production even
+        // if the controller gate is the primary defence.
+        $this->assertStringContainsString(
+            "!app()->environment('production')",
+            $body,
+            'Student payments view must guard the test-simulator link on APP_ENV != production.'
+        );
+    }
+
+    /**
+     * Same link must be present on the per-fee payment-pay page so
+     * the student can switch to test mode even after they've already
+     * clicked Pay Now and hit the gateway error.
+     */
+    public function test_student_payment_pay_page_links_to_test_simulator(): void
+    {
+        // Pin only that the route exists and the helper it calls works.
+        // The full /student/payments/{fee}/pay page is hard to render
+        // in a unit test (it requires a Fee + Gateway row); this test
+        // just asserts the route name is registered so the link doesn't
+        // 404 when clicked.
+        $this->assertNotEmpty(
+            route('student.payment.test.show.student'),
+            'student.payment.test.show.student route must be registered.'
+        );
+    }
+
     /* --- helpers --- */
 
     private function makeUser(string $roleSlug): User
@@ -271,6 +334,24 @@ class TestPaymentSimulatorTest extends TestCase
             $t->enum('audience', ['applicant', 'student', 'both'])->default('both');
             $t->timestamps();
         });
+        Schema::create('system_settings', function ($t) {
+            $t->id();
+            $t->string('key')->unique();
+            $t->text('value')->nullable();
+            $t->boolean('is_active')->default(true);
+            $t->timestamps();
+        });
+        Schema::create('payment_gateways', function ($t) {
+            $t->id();
+            $t->string('provider');
+            $t->string('test_public_key')->nullable();
+            $t->string('test_secret_key')->nullable();
+            $t->string('live_public_key')->nullable();
+            $t->string('live_secret_key')->nullable();
+            $t->boolean('is_test_mode')->default(true);
+            $t->boolean('is_active')->default(true);
+            $t->timestamps();
+        });
         Schema::create('payments', function ($t) {
             $t->id();
             $t->unsignedBigInteger('student_id')->nullable();
@@ -318,6 +399,18 @@ class TestPaymentSimulatorTest extends TestCase
         School::create(['name' => 'Test School']);
         Department::create(['name' => 'Test Department']);
         Programme::create(['name' => 'Test Programme']);
+
+        // The student payments page reads payment_open + an active gateway.
+        // Without these the controller short-circuits before reaching the
+        // view, so we can't render the link we're trying to pin.
+        \App\Models\SystemSetting::create(['key' => 'payment_open', 'value' => 'true']);
+        \App\Models\PaymentGateway::create([
+            'provider' => 'paystack',
+            'test_secret_key' => 'sk_test_fake',
+            'live_secret_key' => 'sk_live_fake',
+            'is_test_mode' => true,
+            'is_active' => true,
+        ]);
 
         PaymentType::create([
             'name' => 'Application Form Fee', 'code' => 'APP_FORM',

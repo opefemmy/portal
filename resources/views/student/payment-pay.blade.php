@@ -88,6 +88,24 @@
                     </button>
                 </form>
 
+                {{--
+                    Test-mode simulator: lets a student exercise the
+                    payment flow without a live Paystack / Flutterwave
+                    round-trip. Hidden in production — the controller
+                    itself returns 404 if APP_ENV=production.
+                --}}
+                @if(!app()->environment('production'))
+                <div class="text-center mt-3">
+                    <a href="{{ route('student.payment.test.show.student') }}"
+                       class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-vial me-1"></i>Test mode (no live card)
+                    </a>
+                    <div class="small text-muted mt-1">
+                        Gateway call failed? Use this to verify the rest of the flow.
+                    </div>
+                </div>
+                @endif
+
                 <div class="text-center mt-3">
                     <small class="text-muted">
                         <i class="fas fa-lock me-1"></i>Secure payment powered by {{ ucfirst($gateway->provider ?? 'Payment Gateway') }}

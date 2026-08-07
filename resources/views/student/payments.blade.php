@@ -18,6 +18,18 @@
     @if($gateway->is_test_mode)
     <span class="badge bg-warning">Test Mode</span>
     @endif
+    {{--
+        If the live gateway is failing (or in non-prod environments where
+        Paystack/Flutterwave is unreachable), the test-mode simulator lets
+        the student walk through the same flow without an external card.
+        Disabled in production: the controller returns 404 there.
+    --}}
+    @if(!app()->environment('production'))
+    <a href="{{ route('student.payment.test.show.student') }}"
+       class="btn btn-sm btn-warning float-end">
+        <i class="fas fa-vial me-1"></i>Use Test Payment Simulator
+    </a>
+    @endif
 </div>
 @endif
 
