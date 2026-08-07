@@ -152,7 +152,20 @@ class PaymentController extends Controller
         $totalAmount = $amount + $penaltyAmount;
         $label = SchoolFeeCalculator::installmentLabel($percent);
 
-        // Create payment record
+        // Create payment record.
+        //
+        // NOTE on the installment columns: payments has TWO columns:
+        //   - `installment_label` (varchar 20) — lowercase 'full'/'first'/'second',
+        //     used by SchoolFeeCalculator and the reporting path.
+        //   - `installment` (ENUM('First','Second','Full') on production)
+        //     — uppercase, owned by the Bursar regime-payment domain
+        //     (RegimeController).
+        // We must NOT write `installment` here with a lowercase value —
+        // strict mode rejects it as not in the ENUM and the INSERT
+        // throws QueryException. That was the source of the
+        // "student/payments/6/initiate server 500 error" the user
+        // reported on production. The redundant label column already
+        // carries the same information; leave `installment` alone.
         $payment = Payment::create([
             'student_id'        => $student->id,
             'fee_id'            => $fee->id,
@@ -161,7 +174,6 @@ class PaymentController extends Controller
             'total_amount'      => $totalAmount,
             'percent_paid'      => $percent,
             'installment_label' => $label,
-            'installment'       => $label,
             'reference'         => Payment::generateReference(),
             'gateway'           => $gateway->provider,
             'status'            => 'pending',
