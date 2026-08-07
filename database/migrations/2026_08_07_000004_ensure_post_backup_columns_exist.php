@@ -141,6 +141,20 @@ return new class extends Migration
             });
         }
 
+        // 2024_07_07_200001_create_semesters_table
+        // (semesters table exists from backup; only is_active is missing)
+        if (Schema::hasTable('semesters')) {
+            Schema::table('semesters', function (Blueprint $t) {
+                if (! Schema::hasColumn('semesters', 'is_active')) $t->boolean('is_active')->default(true);
+            });
+        }
+        // Same migration also adds semester_id FK to student_courses.
+        if (Schema::hasTable('student_courses')) {
+            Schema::table('student_courses', function (Blueprint $t) {
+                if (! Schema::hasColumn('student_courses', 'semester_id')) $t->foreignId('semester_id')->nullable()->constrained('semesters')->nullOnDelete();
+            });
+        }
+
         // 2024_07_07_200003_create_levels_table
         // (levels table exists from backup; only is_active is missing)
         if (Schema::hasTable('levels')) {

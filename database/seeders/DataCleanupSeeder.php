@@ -61,7 +61,14 @@ class DataCleanupSeeder extends Seeder
     }
 
     /**
-     * Ensure proper semester values (First Semester, Second Semester only)
+     * Ensure proper semester values.
+     *
+     * The schema for `sessions.semester` is ENUM('First','Second') (the
+     * short form), while `semesters.name` is a varchar(255) that holds
+     * the long form ('First Semester' / 'Second Semester'). The seeder
+     * used to write the long form into both, which truncated against the
+     * ENUM. We now write the short form into `sessions` and keep the
+     * long form for `semesters.name`.
      */
     protected function fixSemesters(): void
     {
@@ -76,10 +83,10 @@ class DataCleanupSeeder extends Seeder
 
         $this->command->info('  Current semester values: ' . $currentSemesters->implode(', '));
 
-        // Check if we have valid semesters
-        $validSemesters = ['First Semester', 'Second Semester'];
+        // ENUM('First','Second') — short form only
+        $validSemesters = ['First', 'Second'];
 
-        // Update any N/A or invalid semester values
+        // Update any N/A or invalid semester values to the short ENUM form
         DB::table('sessions')
             ->where(function ($query) {
                 $query->whereNull('semester')
@@ -87,11 +94,10 @@ class DataCleanupSeeder extends Seeder
                     ->orWhere('semester', '')
                     ->orWhereRaw("LOWER(semester) IN ('na', 'n/a', 'null', 'none', 'not applicable')");
             })
-            ->update(['semester' => 'First Semester']);
+            ->update(['semester' => 'First']);
 
         // Update all sessions to have proper semester values
-        // Even-numbered years = First Semester, Odd = Second (example logic)
-        // Or just alternate based on ID
+        // Even-numbered IDs = First, Odd = Second (alternates by row order)
         $sessions = DB::table('sessions')
             ->orderBy('id')
             ->get();
@@ -144,14 +150,15 @@ class DataCleanupSeeder extends Seeder
     {
         $this->command->info('Fixing N/A values...');
 
-        // Fix student_courses semester
+        // Fix student_courses semester — ENUM('first','second') (lowercase)
         DB::table('student_courses')
             ->where(function ($query) {
                 $query->whereNull('semester')
                     ->orWhere('semester', 'N/A')
-                    ->orWhere('semester', '');
+                    ->orWhere('semester', '')
+                    ->orWhereRaw("LOWER(semester) IN ('na', 'n/a', 'null', 'none', 'not applicable')");
             })
-            ->update(['semester' => 'First Semester']);
+            ->update(['semester' => 'first']);
 
         // Fix results - ensure no null references
         // This is handled by the application logic, not direct fixes
