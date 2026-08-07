@@ -561,6 +561,15 @@
         $(document).ready(function() {
             $('.datatable').each(function() {
                 var table = $(this);
+                var thCount = table.find('thead th').length;
+                var firstRowTdCount = table.find('tbody tr:first > td').length;
+                // Skip when the body row is the empty-state row (one <td>
+                // with a colspan matching the header). DataTables counts
+                // <td> elements literally and would warn "Incorrect column
+                // count" (https://datatables.net/tn/18) for that mismatch.
+                if (thCount === 0 || firstRowTdCount < thCount) {
+                    return;
+                }
                 if (table.find('thead').length > 0 && table.find('tbody tr').length > 0) {
                     table.DataTable({
                         processing: false,

@@ -215,13 +215,24 @@ class PaymentController extends Controller
 
             $result = json_decode($response->body());
 
-            if ($result->status) {
+            // Guard against an empty / non-JSON body — the inner try/catch
+            // only catches \Exception, but $result being null and reading
+            // ->status on it throws an \Error under PHP 8 which slips past
+            // this catch and lands in the outer "we could not start your
+            // payment" flash at the initiate entry point. We saw this on
+            // production when Paystack returned an empty body.
+            if (is_object($result) && !empty($result->status)) {
                 return redirect($result->data->authorization_url);
             }
 
             Log::error('Paystack initialization failed', ['response' => $result]);
             return back()->with('error', 'Payment initialization failed. Please try again.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // Catch \Throwable (not \Exception) so PHP 8 \Errors — most
+            // commonly "Attempt to read property on null" when the
+            // gateway returns an unexpected body shape — stay inside
+            // the friendly flash instead of bubbling up to the outer
+            // generic catch.
             Log::error('Paystack error: ' . $e->getMessage());
             return back()->with('error', 'Payment error: ' . $e->getMessage());
         }
@@ -256,13 +267,14 @@ class PaymentController extends Controller
 
             $result = json_decode($response->body());
 
-            if ($result->status === 'success') {
+            // Same null-safe guard as Paystack — see comment there.
+            if (is_object($result) && ($result->status ?? null) === 'success') {
                 return redirect($result->data->link);
             }
 
             Log::error('Flutterwave initialization failed', ['response' => $result]);
             return back()->with('error', 'Payment initialization failed. Please try again.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Flutterwave error: ' . $e->getMessage());
             return back()->with('error', 'Payment error: ' . $e->getMessage());
         }
@@ -307,7 +319,8 @@ class PaymentController extends Controller
 
             $result = json_decode($response->body());
 
-            if ($result->status && $result->data->status === 'success') {
+            // Same null-safe guard as initiate — see initiatePaystackPayment.
+            if (is_object($result) && !empty($result->status) && ($result->data->status ?? null) === 'success') {
                 $payment->update([
                     'status' => 'verified',
                     'transaction_id' => $result->data->transaction_id,
@@ -327,7 +340,7 @@ class PaymentController extends Controller
             $payment->update(['status' => 'failed']);
             return redirect()->route('student.payments')
                 ->with('error', 'Payment verification failed.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Paystack verification error: ' . $e->getMessage());
             return redirect()->route('student.payments')
                 ->with('error', 'Payment verification error.');
@@ -345,7 +358,8 @@ class PaymentController extends Controller
 
             $result = json_decode($response->body());
 
-            if ($result->status === 'success' && $result->data->status === 'successful') {
+            // Same null-safe guard as initiate — see initiatePaystackPayment.
+            if (is_object($result) && ($result->status ?? null) === 'success' && ($result->data->status ?? null) === 'successful') {
                 $payment->update([
                     'status' => 'verified',
                     'transaction_id' => $result->data->id,
@@ -359,7 +373,7 @@ class PaymentController extends Controller
             $payment->update(['status' => 'failed']);
             return redirect()->route('student.payments')
                 ->with('error', 'Payment verification failed.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Flutterwave verification error: ' . $e->getMessage());
             return redirect()->route('student.payments')
                 ->with('error', 'Payment verification error.');

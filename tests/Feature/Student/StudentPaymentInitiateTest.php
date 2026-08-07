@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\SchoolFeeCalculator;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -127,6 +128,60 @@ class StudentPaymentInitiateTest extends TestCase
                 "installment_label was '{$row->installment_label}' — SchoolFeeCalculator::installmentLabel() only emits 'full'/'first'/'second'."
             );
         }
+    }
+
+    public function test_empty_gateway_body_does_not_bubble_uncaught_error(): void
+    {
+        // Regression: when the gateway returns an empty / non-JSON body,
+        // json_decode() returns null and reading $result->status throws an
+        // \Error under PHP 8 — which the inner try/catch (formerly
+        // \Exception) didn't catch, so it slipped up to the outer
+        // "We could not start your school-fee payment..." flash. We now
+        // catch \Throwable and null-check $result before reading ->status.
+        $user = $this->makeStudent();
+        $fee  = $this->makeFee();
+
+        Http::fake([
+            'api.paystack.co/*' => Http::response('', 200),
+        ]);
+
+        $response = $this->actingAs($user)->post(
+            "/student/payments/{$fee->id}/initiate",
+            ['percent' => SchoolFeeCalculator::PERCENT_FULL]
+        );
+
+        // Must NOT be a 500 — the outer catch should not fire.
+        $this->assertNotEquals(500, $response->getStatusCode());
+
+        // Should be a redirect back (the inner catch's `back()` flash),
+        // not the generic outer catch's "We could not start" flash.
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString(
+            'Payment',
+            session('error'),
+            'Expected the inner-catch flash ("Payment error: ...") to surface, not the outer "We could not start" flash.'
+        );
+    }
+
+    public function test_gateway_returns_garbage_json_does_not_bubble_uncaught_error(): void
+    {
+        // The gateway may return a non-object JSON value (string, number,
+        // null). $result is not an object, so reading ->status on it would
+        // also throw \Error. Pin that we handle that shape too.
+        $user = $this->makeStudent();
+        $fee  = $this->makeFee();
+
+        Http::fake([
+            'api.paystack.co/*' => Http::response('not json at all', 200),
+        ]);
+
+        $response = $this->actingAs($user)->post(
+            "/student/payments/{$fee->id}/initiate",
+            ['percent' => SchoolFeeCalculator::PERCENT_FULL]
+        );
+
+        $this->assertNotEquals(500, $response->getStatusCode());
+        $response->assertSessionHas('error');
     }
 
     /* --- helpers --- */
