@@ -54,7 +54,40 @@ class ApplicationController extends Controller
         2 => 'Mathematics',
     ];
 
+    /**
+     * Render the applicant dashboard.
+     *
+     * Wrapped in a top-level Throwable catch so an unhandled exception in
+     * the view (or any of the model accessors it calls — hasPaid,
+     * nextPayablePurpose, transactionHistory, etc.) gets logged with full
+     * detail instead of bubbling up to the bootstrap exception handler
+     * and rendering a generic 500 page. The user lands on a useful error
+     * page they can act on, and the technical team has the trace in
+     * storage/logs/laravel.log to debug from.
+     *
+     * We render errors.500 directly rather than redirecting to the
+     * dashboard because that would re-trigger the same exception —
+     * if the dashboard can't render, redirecting to it produces a
+     * redirect loop.
+     */
     public function dashboard()
+    {
+        try {
+            return $this->dashboardInner();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('applicant dashboard: uncaught error', [
+                'user_id' => optional(auth()->user())->id,
+                'exception_class' => get_class($e),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->view('errors.500', ['exception' => $e], 500);
+        }
+    }
+
+    private function dashboardInner()
     {
         $applicant = Applicant::where('user_id', auth()->id())->first();
 

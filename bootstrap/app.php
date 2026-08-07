@@ -97,24 +97,15 @@ return Application::configure(basePath: dirname(__DIR__))
             $dashboardUrl   = $audience === 'applicant' ? '/applicant/dashboard' : '/student/dashboard';
             $currentPath    = trim($request->path(), '/');
 
-            // Redirecting to the dashboard when the failing route IS the
-            // dashboard creates ERR_TOO_MANY_REDIRECTS — the handler fires
-            // on every hop. If the request is for the dashboard itself,
-            // render an error page instead of looping.
-            if ($currentPath === ($audience . '/dashboard')) {
-                return response()->view('errors.500', ['exception' => $e], 500);
-            }
-
-            try {
-                return redirect()->route($dashboardRoute)->with('error', $flash);
-            } catch (\Throwable $inner) {
-                // Routes aren't always named in test env or during early
-                // boot. Fall back to a hard-coded dashboard URL — guarded
-                // against the same loop as above.
-                if ($currentPath === ($audience . '/dashboard')) {
-                    return response()->view('errors.500', ['exception' => $e], 500);
-                }
-                return redirect($dashboardUrl)->with('error', $flash);
-            }
+            // Render the friendly errors.500 page directly. We don't
+            // redirect to the dashboard because that would re-trigger
+            // the same exception — both /applicant/dashboard and
+            // /student/dashboard now catch their own exceptions and
+            // render this same view, but if the redirect happens
+            // before that, the same code path fires again. errors/500
+            // exists in resources/views/errors/500.blade.php (it was
+            // added alongside this handler) so this no longer falls
+            // back to Laravel's default 500.
+            return response()->view('errors.500', ['exception' => $e], 500);
         });
     })->create();
