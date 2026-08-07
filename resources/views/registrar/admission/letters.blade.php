@@ -100,6 +100,8 @@
                         <div class="fee-row row g-2 mb-2">
                             <div class="col-md-6">
                                 <input type="text" name="fees[{{ $i }}][name]" class="form-control" placeholder="Fee name (e.g. Acceptance Fee)" value="{{ $fee['name'] ?? '' }}">
+                                {{-- Auto-save status — updated by the JS in @push('scripts'). --}}
+                                <span class="fee-save-status save-status small text-muted mt-1" data-state="idle"></span>
                             </div>
                             <div class="col-md-4">
                                 <input type="number" name="fees[{{ $i }}][amount]" class="form-control" placeholder="Amount (₦)" min="0" step="0.01" value="{{ $fee['amount'] ?? '' }}">
@@ -114,6 +116,7 @@
                         <div class="fee-row row g-2 mb-2">
                             <div class="col-md-6">
                                 <input type="text" name="fees[0][name]" class="form-control" placeholder="Fee name (e.g. Acceptance Fee)">
+                                <span class="fee-save-status save-status small text-muted mt-1" data-state="idle"></span>
                             </div>
                             <div class="col-md-4">
                                 <input type="number" name="fees[0][amount]" class="form-control" placeholder="Amount (₦)" min="0" step="0.01">
@@ -180,7 +183,11 @@
                                class="form-control @error('registrar_name') is-invalid @enderror"
                                value="{{ old('registrar_name', $registrarName) }}"
                                placeholder="e.g. Dr. A. B. Registrar">
-                        <small class="text-muted">
+                        {{-- Auto-save status — toggled by the JS in @push('scripts').
+                             Targets registrar_name_status so the AJAX PATCH fires
+                             as soon as the input loses focus. --}}
+                        <small id="registrar_name_status" class="save-status small text-muted" data-state="idle"></small>
+                        <small class="text-muted d-block">
                             This is the name shown under the signature on every printed admission letter. If left blank, the system falls back to the user account with the <code>registrar</code> role.
                         </small>
                     </div>
@@ -322,6 +329,146 @@ document.addEventListener('DOMContentLoaded', function() {
             // before the redirect lands.
             sigInput.disabled = true;
             outerForm.submit();
+        });
+    }
+
+    // Auto-save on blur for individual fields. The full Save-Letter-Settings
+    // form still works for body + letterhead; this is the per-field
+    // experience the registrar asked for ("registrar name should be save on
+    // click", "Acceptance Fees if i add it should also be save on click").
+    //
+    // Each field's status indicator flips to "Saving…" → "✓ Saved" /
+    // "⚠ Failed" so the user always sees whether the AJAX PATCH landed.
+    // The browser does NOT reload — the field stays put, the page stays
+    // put, no scroll jumps.
+    var fieldUrl = "{{ route('registrar.admission.saveLetterField') }}";
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+    if (!csrfToken) {
+        var csrfInput = document.querySelector('input[name="_token"]');
+        csrfToken = csrfInput ? csrfInput.value : null;
+    }
+
+    function setStatus(el, state, msg) {
+        if (!el) return;
+        el.dataset.state = state;
+        el.textContent = msg || (
+            state === 'saving' ? 'Saving…' :
+            state === 'saved'  ? '✓ Saved' :
+            state === 'error'  ? '⚠ Failed — click to retry' :
+                                  ''
+        );
+        el.className = 'save-status small text-' + (
+            state === 'saving' ? 'muted' :
+            state === 'saved'  ? 'success' :
+            state === 'error'  ? 'danger' :
+                                  'muted'
+        );
+    }
+
+    function postField(payload, statusEl) {
+        if (!csrfToken) {
+            setStatus(statusEl, 'error', 'CSRF token missing — refresh the page');
+            return Promise.resolve(false);
+        }
+        setStatus(statusEl, 'saving');
+        return fetch(fieldUrl, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(function (r) {
+            // Always parse JSON; if the server returns an HTML error page
+            // (e.g. 419) we still want a useful message.
+            return r.text().then(function (text) {
+                var body = null;
+                try { body = JSON.parse(text); } catch (e) { body = null; }
+                return { ok: r.ok, status: r.status, body: body, raw: text };
+            });
+        })
+        .then(function (out) {
+            if (out.ok && out.body && out.body.ok) {
+                setStatus(statusEl, 'saved');
+                return true;
+            }
+            var msg = (out.body && out.body.error)
+                ? out.body.error
+                : ('Server returned ' + out.status);
+            setStatus(statusEl, 'error', msg);
+            return false;
+        })
+        .catch(function (e) {
+            setStatus(statusEl, 'error', e.message || 'Network error');
+            return false;
+        });
+    }
+
+    // Registrar name — save on blur.
+    var nameInput = document.getElementById('registrar_name');
+    var nameStatus = document.getElementById('registrar_name_status');
+    if (nameInput && nameStatus) {
+        nameInput.addEventListener('blur', function () {
+            postField({ field: 'registrar_name', value: nameInput.value }, nameStatus);
+        });
+    }
+
+    // Fees — save the whole list on blur of any fee input. Sending the
+    // whole list (rather than one row) keeps server logic identical to
+    // the master Save button and avoids per-row race conditions.
+    function collectFees() {
+        if (!feesContainer) return [];
+        var rows = feesContainer.querySelectorAll('.fee-row');
+        var arr = [];
+        rows.forEach(function (row) {
+            var nameEl = row.querySelector('input[name*="[name]"]');
+            var amtEl  = row.querySelector('input[name*="[amount]"]');
+            if (!nameEl || !amtEl) return;
+            arr.push({ name: nameEl.value, amount: amtEl.value });
+        });
+        return arr;
+    }
+
+    if (feesContainer) {
+        // Use capture so we catch blur on dynamically-cloned rows too.
+        feesContainer.addEventListener('blur', function (e) {
+            if (!e.target.matches('input[name*="[name]"], input[name*="[amount]"]')) return;
+            var row  = e.target.closest('.fee-row');
+            var stat = row && row.querySelector('.fee-save-status');
+            if (!stat) return;
+            postField({ field: 'fees', value: collectFees() }, stat);
+        }, true);
+
+        // When the registrar clicks "Add Fee", the JS clones the first row
+        // and clears the inputs — but the clone has the .fee-save-status
+        // span copied from the source. We need to reset it to 'idle' so
+        // the indicator starts empty for the new row.
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                setTimeout(function () {
+                    var rows = feesContainer.querySelectorAll('.fee-row');
+                    var last = rows[rows.length - 1];
+                    if (last) {
+                        var stat = last.querySelector('.fee-save-status');
+                        if (stat) setStatus(stat, 'idle');
+                    }
+                }, 0);
+            });
+        }
+
+        // Removing a row → save the surviving list (the remove
+        // handler above runs first, then we re-collect and post).
+        feesContainer.addEventListener('click', function (e) {
+            if (!e.target.closest('.remove-fee')) return;
+            setTimeout(function () {
+                var stat = feesContainer.querySelector('.fee-save-status');
+                if (stat) postField({ field: 'fees', value: collectFees() }, stat);
+            }, 0);
         });
     }
 });

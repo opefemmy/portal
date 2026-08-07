@@ -705,6 +705,9 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::get('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterSettings'])->name('admission.letters');
     Route::post('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterSettings'])->name('admission.saveLetterSettings');
     Route::delete('/admission-letter/signature', [\App\Http\Controllers\Registrar\AdmissionController::class, 'deleteSignature'])->name('admission.deleteSignature');
+    // Partial auto-save for individual fields (registrar_name, fees).
+    // Hit via fetch() on blur of the input — page does not reload.
+    Route::patch('/admission-letter/settings/field', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterField'])->name('admission.saveLetterField');
     Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
     Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate.store');
     Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');

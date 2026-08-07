@@ -607,6 +607,86 @@ class AdmissionController extends Controller
     }
 
     /**
+     * Partial auto-save for one field, hit via fetch() on blur.
+     *
+     * The full Save-Letter-Settings form still works for body and
+     * letterhead; this endpoint exists so the registrar_name input and
+     * each acceptance-fee row can save as soon as the registrar leaves
+     * the field — no scroll back to the master Save button.
+     *
+     * Mirrors the trim/clean logic from saveLetterSettings so the master
+     * POST and the AJAX PATCH produce identical system_settings rows.
+     *
+     * Allowed fields: 'registrar_name' (string), 'fees' (array of
+     * {name:string, amount:numeric}). Unknown field → 422 validation.
+     */
+    public function saveLetterField(Request $request)
+    {
+        $payload = $request->validate([
+            'field' => 'required|in:registrar_name,fees',
+            'value' => 'present',
+        ]);
+
+        try {
+            if ($payload['field'] === 'registrar_name') {
+                $name = trim((string) $request->input('value', ''));
+                SystemSetting::set('registrar_name', $name);
+
+                return response()->json([
+                    'ok' => true,
+                    'field' => 'registrar_name',
+                    'saved_at' => now()->toIso8601String(),
+                ]);
+            }
+
+            if ($payload['field'] === 'fees') {
+                $raw = $request->input('value', []);
+                if (! is_array($raw)) {
+                    return response()->json([
+                        'ok' => false,
+                        'field' => 'fees',
+                        'error' => 'fees must be an array',
+                    ], 422);
+                }
+
+                $clean = [];
+                foreach ($raw as $row) {
+                    if (! is_array($row)) {
+                        continue;
+                    }
+                    $name = trim((string) ($row['name'] ?? ''));
+                    $amt  = isset($row['amount']) ? (float) $row['amount'] : 0;
+                    if ($name !== '' && $amt > 0) {
+                        $clean[] = ['name' => $name, 'amount' => $amt];
+                    }
+                }
+                SystemSetting::set('admission_letter_fees', json_encode($clean));
+
+                return response()->json([
+                    'ok' => true,
+                    'field' => 'fees',
+                    'saved_at' => now()->toIso8601String(),
+                    'count' => count($clean),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::error('saveLetterField failed: ' . $e->getMessage());
+            return response()->json([
+                'ok' => false,
+                'field' => $payload['field'],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+
+        // Defensive — validate() should have caught this already.
+        return response()->json([
+            'ok' => false,
+            'field' => $payload['field'],
+            'error' => 'Unhandled field',
+        ], 422);
+    }
+
+    /**
      * Delete the registrar signature
      */
     public function deleteSignature()

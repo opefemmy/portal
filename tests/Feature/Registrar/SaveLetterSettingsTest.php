@@ -524,4 +524,181 @@ class SaveLetterSettingsTest extends TestCase
         Role::create(['name' => 'Admin',     'slug' => 'admin']);
         Role::create(['name' => 'Registrar', 'slug' => 'registrar']);
     }
+
+    /* -------------------------------------------------------------------
+       Auto-save on blur — partial-save endpoint.
+       Hit via fetch() from the registrar's auto-save-on-blur JS, so the
+       page doesn't reload when the registrar finishes typing a name or
+       fee row. Endpoint: PATCH /registrar/admission-letter/settings/field
+       Body: { field: 'registrar_name'|'fees', value: <string|array> }
+       Response: JSON { ok: bool, field: string, saved_at: string, ... }
+       See: resources/views/registrar/admission/letters.blade.php
+       ------------------------------------------------------------------- */
+
+    public function test_partial_save_registrar_name_persists_and_returns_json(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->patchJson(
+            '/registrar/admission-letter/settings/field',
+            ['field' => 'registrar_name', 'value' => 'Dr. Auto Saved']
+        );
+
+        $response->assertOk();
+        $response->assertJson([
+            'ok' => true,
+            'field' => 'registrar_name',
+        ]);
+        $this->assertNotEmpty($response->json('saved_at'));
+
+        $this->assertEquals(
+            'Dr. Auto Saved',
+            SystemSetting::where('key', 'registrar_name')->value('value'),
+            'registrar_name must be persisted after the auto-save PATCH.'
+        );
+    }
+
+    public function test_partial_save_fees_persists_list(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->patchJson(
+            '/registrar/admission-letter/settings/field',
+            [
+                'field' => 'fees',
+                'value' => [
+                    ['name' => 'Acceptance Fee', 'amount' => 25000],
+                    ['name' => 'Caution Fee',    'amount' => 5000],
+                ],
+            ]
+        );
+
+        $response->assertOk();
+        $response->assertJson(['ok' => true, 'field' => 'fees']);
+        $this->assertEquals(2, $response->json('count'));
+
+        $stored = json_decode(
+            SystemSetting::where('key', 'admission_letter_fees')->value('value'),
+            true
+        );
+        $this->assertCount(2, $stored);
+        $this->assertEquals('Acceptance Fee', $stored[0]['name']);
+        $this->assertEquals(25000.0, (float) $stored[0]['amount']);
+        $this->assertEquals('Caution Fee', $stored[1]['name']);
+        $this->assertEquals(5000.0, (float) $stored[1]['amount']);
+    }
+
+    public function test_partial_save_rejects_unknown_field(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->patchJson(
+            '/registrar/admission-letter/settings/field',
+            ['field' => 'institution_name', 'value' => 'hacked']
+        );
+
+        // 422 validation — `field` is constrained to registrar_name|fees.
+        $response->assertStatus(422);
+        $this->assertNull(
+            SystemSetting::where('key', 'institution_name')->value('value'),
+            'Unknown field must NOT have been persisted.'
+        );
+    }
+
+    public function test_partial_save_drops_blank_fee_rows(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->patchJson(
+            '/registrar/admission-letter/settings/field',
+            [
+                'field' => 'fees',
+                'value' => [
+                    ['name' => '',         'amount' => 0],
+                    ['name' => '   ',      'amount' => 100],
+                    ['name' => 'Tuition',  'amount' => 0],
+                    ['name' => 'Acceptance', 'amount' => 25000],
+                ],
+            ]
+        );
+
+        $response->assertOk();
+        $this->assertEquals(1, $response->json('count'));
+
+        $stored = json_decode(
+            SystemSetting::where('key', 'admission_letter_fees')->value('value'),
+            true
+        );
+        $this->assertCount(1, $stored);
+        $this->assertEquals('Acceptance', $stored[0]['name']);
+        $this->assertEquals(25000.0, (float) $stored[0]['amount']);
+    }
+
+    public function test_settings_page_includes_registrar_name_status_indicator(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/registrar/admission-letter/settings');
+        $response->assertOk();
+
+        $body = $response->getContent();
+        $this->assertStringContainsString(
+            'id="registrar_name_status"',
+            $body,
+            'Registrar name auto-save indicator is missing — JS will not be able to flip its state.'
+        );
+    }
+
+    public function test_settings_page_includes_fee_row_status_indicator(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/registrar/admission-letter/settings');
+        $response->assertOk();
+
+        $body = $response->getContent();
+        $this->assertStringContainsString(
+            'fee-save-status',
+            $body,
+            'Fee row auto-save indicator is missing — JS will not be able to flip its state.'
+        );
+    }
+
+    /**
+     * Pin the contract that the auto-save JS depends on:
+     * the layout must ship a <meta name="csrf-token"> so fetch() can
+     * read the token and include it in X-CSRF-TOKEN. Without it, every
+     * PATCH lands on a 419 and the registrar sees "⚠ Failed".
+     */
+    public function test_layout_includes_csrf_meta_tag_for_fetch(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->get('/registrar/admission-letter/settings');
+        $body = $response->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '#<meta\s+name="csrf-token"\s+content="[^"]+"#i',
+            $body,
+            'Layout is missing <meta name="csrf-token"> — auto-save fetch() will 419.'
+        );
+    }
+
+    /**
+     * The partial-save endpoint must reject unauthenticated requests.
+     * The route is inside the registrar prefix group which already has
+     * `auth` middleware, but pin the contract so a future route move
+     * doesn't accidentally expose it.
+     */
+    public function test_partial_save_requires_authentication(): void
+    {
+        $response = $this->patchJson(
+            '/registrar/admission-letter/settings/field',
+            ['field' => 'registrar_name', 'value' => 'x']
+        );
+
+        // 302 → /login (default Laravel behaviour) — accept either
+        // redirect or 401 depending on the auth flow config.
+        $this->assertContains($response->getStatusCode(), [302, 401]);
+    }
 }
