@@ -373,6 +373,32 @@
     @endif
 </div>
 
+{{--
+    Student Portal Access — once the compulsory fee is paid the applicant
+    is migrated to a Student row (ApplicantPaymentService::migrateApplicantToStudent)
+    and a student_id is set on the applicants row. Surface a one-click auto-login
+    that mints a signed URL server-side and signs the user straight into the
+    student portal, where the StudentOnboardingComplete middleware bounces
+    them to /student/password/change-required. The URL is bound to the user id,
+    signed (tamper-proof), and expires in 7 days.
+--}}
+@if($applicant->student_id)
+<div class="card mt-4 border-success">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-external-link-alt me-2"></i>Student Portal Access</h5>
+    </div>
+    <div class="card-body text-center">
+        <p class="mb-3">
+            You have been migrated to the student portal. Click below to sign in — you'll be asked to set a new password on first use.
+        </p>
+        <a href="{{ route('applicant.auto-login.issue') }}" class="btn btn-success btn-lg">
+            <i class="fas fa-sign-in-alt me-2"></i>Go to Student Portal
+        </a>
+        <small class="text-muted d-block mt-2">The link is single-use and expires in 7 days.</small>
+    </div>
+</div>
+@endif
+
 @if($applicant->matric_number)
 <div class="card mt-4">
     <div class="card-header bg-success text-white">
@@ -398,7 +424,14 @@
             </tr>
             <tr>
                 <td><strong>Level:</strong></td>
-                <td>{{ $applicant->level }}00 Level</td>
+                @php
+                    // Canonical level lives on the migrated Student row (int 1..7).
+                    // Fall back to applicants.entry_level only pre-migration.
+                    // Clamp 1..7 to defend against bad legacy data (level=0 rows).
+                    $levelInt = (int) ($applicant->student->level ?? $applicant->entry_level ?? 1);
+                    $levelInt = max(1, min(7, $levelInt));
+                @endphp
+                <td>{{ $levelInt * 100 }} Level</td>
             </tr>
         </table>
     </div>

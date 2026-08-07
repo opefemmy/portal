@@ -10,9 +10,10 @@ use App\Models\SystemSetting;
  * Generates unique matriculation numbers for newly-migrated applicants.
  *
  * Format: `{institution_code}/{dept_prefix}/{2-digit-year}/{3-digit-sequence}`
- *   - `institution_code` : from system_settings.institution_code, e.g. "EKSCOTECH".
- *                          Falls back to uppercase first 3 letters of institution_name,
- *                          or "APP" if neither is set.
+ *   - `institution_code` : from system_settings.institution_short_name,
+ *                          e.g. "EKSCOTECH". Falls back to
+ *                          SystemSetting::getInstitutionShortName() which
+ *                          already defaults to "EKSCOTECH".
  *   - `dept_prefix`      : 3-letter uppercase derived from department code (preferred)
  *                          or department name; falls back to "APP".
  *   - `year`             : 2-digit current calendar year, e.g. "26".
@@ -34,15 +35,17 @@ class MatricNumberService
         $year = (int) date('Y');
         $yearShort = substr((string) $year, -2);
 
-        $institutionCode = strtoupper(trim((string) SystemSetting::get('institution_code', '')));
-        if ($institutionCode === '') {
-            $name = (string) SystemSetting::get('institution_name', '');
-            // Strip non-alphanumerics, take first 3 letters as fallback.
-            $institutionCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $name) ?? '');
-            $institutionCode = substr($institutionCode, 0, 3) ?: 'APP';
-        }
+        // Prefer the brand short name (e.g. "EKSCOTECH") set on the
+        // SystemSetting::INSTITUTION_SHORT_NAME key — falls back to
+        // SystemSetting::getInstitutionShortName() which already defaults to
+        // "EKSCOTECH". Only the legacy `institution_code` key is read as a
+        // backward-compat override for installs that haven't migrated.
+        $institutionCode = strtoupper(trim((string) SystemSetting::get(
+            SystemSetting::INSTITUTION_SHORT_NAME,
+            SystemSetting::getInstitutionShortName()
+        )));
         // Keep the code printable.
-        $institutionCode = preg_replace('/[^A-Z0-9]/', '', $institutionCode) ?: 'APP';
+        $institutionCode = preg_replace('/[^A-Z0-9]/', '', $institutionCode) ?: 'EKSCOTECH';
 
         $department = $applicant->department;
         $prefix = $department?->code ?: ($department ? substr($department->name, 0, 3) : 'APP');

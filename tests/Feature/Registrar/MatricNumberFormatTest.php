@@ -19,9 +19,10 @@ use Tests\TestCase;
  * Old format: `2026/COM/0001`  — 4-digit year, 4-digit sequence
  * New format: `EKSCOTECH/COM/26/001`  — institution_code / dept / 2-digit year / 3-digit sequence
  *
- * The institution_code is sourced from `system_settings.institution_code`.
- * If unset we fall back to a 3-letter uppercase prefix derived from
- * `institution_name`. If that's also unset, we use "APP".
+ * The institution_code is sourced from `system_settings.institution_short_name`.
+ * If unset we fall back to SystemSetting::getInstitutionShortName() which
+ * defaults to "EKSCOTECH" — so even an install with no settings rows at all
+ * produces "EKSCOTECH/..." as the prefix.
  */
 class MatricNumberFormatTest extends TestCase
 {
@@ -49,7 +50,7 @@ class MatricNumberFormatTest extends TestCase
     public function test_format_uses_institution_code_2digit_year_and_3digit_sequence(): void
     {
         SystemSetting::create([
-            'key' => 'institution_code',
+            'key' => SystemSetting::INSTITUTION_SHORT_NAME,
             'value' => 'EKSCOTECH',
             'is_active' => true,
         ]);
@@ -69,7 +70,7 @@ class MatricNumberFormatTest extends TestCase
     public function test_first_student_in_dept_gets_sequence_001(): void
     {
         SystemSetting::create([
-            'key' => 'institution_code',
+            'key' => SystemSetting::INSTITUTION_SHORT_NAME,
             'value' => 'EKSCOTECH',
             'is_active' => true,
         ]);
@@ -89,7 +90,7 @@ class MatricNumberFormatTest extends TestCase
     public function test_second_student_in_same_dept_year_increments_sequence(): void
     {
         SystemSetting::create([
-            'key' => 'institution_code',
+            'key' => SystemSetting::INSTITUTION_SHORT_NAME,
             'value' => 'EKSCOTECH',
             'is_active' => true,
         ]);
@@ -118,7 +119,7 @@ class MatricNumberFormatTest extends TestCase
     public function test_uniqueness_guard_walks_sequence_when_colliding(): void
     {
         SystemSetting::create([
-            'key' => 'institution_code',
+            'key' => SystemSetting::INSTITUTION_SHORT_NAME,
             'value' => 'EKSCOTECH',
             'is_active' => true,
         ]);
@@ -150,24 +151,40 @@ class MatricNumberFormatTest extends TestCase
         );
     }
 
-    public function test_falls_back_to_institution_name_prefix_when_code_unset(): void
+    public function test_falls_back_to_default_ekscotech_when_no_settings_present(): void
     {
-        // No institution_code set — but institution_name is.
+        // No system_settings rows at all. The generator must still produce
+        // an EKSCOTECH-prefixed matric, because SystemSetting::getInstitutionShortName()
+        // defaults to "EKSCOTECH" out of the box.
+        $applicant = $this->makeApplicant();
+        $matric = MatricNumberService::generate($applicant);
+
+        $expectedYear = substr((string) date('Y'), -2);
+        $this->assertStringStartsWith(
+            'EKSCOTECH/COM/' . $expectedYear . '/',
+            $matric,
+            "Expected default 'EKSCOTECH' prefix when no settings present; got '{$matric}'."
+        );
+    }
+
+    public function test_honours_explicit_institution_short_name_setting(): void
+    {
+        // Operator can override the default via system_settings.institution_short_name.
         SystemSetting::create([
-            'key' => 'institution_name',
-            'value' => 'Ekiti State College of Technology',
+            'key'   => SystemSetting::INSTITUTION_SHORT_NAME,
+            'value' => 'FEDPOLY',
             'is_active' => true,
         ]);
 
         $applicant = $this->makeApplicant();
         $matric = MatricNumberService::generate($applicant);
 
-        // Fallback: strip non-alphanumerics from institution_name → uppercase →
-        // first 3 letters. "Ekiti State College of Technology" → "EKI".
-        // (Note: to get the user's preferred "EKSCOTECH" the registrar must
-        // set institution_code explicitly — this test pins the fallback, not
-        // the override.)
-        $this->assertStringStartsWith('EKI/COM/', $matric, "Expected fallback to 'EKI' prefix from institution_name; got '{$matric}'.");
+        $expectedYear = substr((string) date('Y'), -2);
+        $this->assertMatchesRegularExpression(
+            '#^FEDPOLY/COM/' . $expectedYear . '/\d{3}$#',
+            $matric,
+            "Expected override prefix 'FEDPOLY' from institution_short_name; got '{$matric}'."
+        );
     }
 
     public function test_legacy_4digit_year_matrices_do_not_inflate_new_counter(): void
@@ -176,7 +193,7 @@ class MatricNumberFormatTest extends TestCase
         // bump the new-format counter. The new counter uses
         // LIKE '.../YY/...' so the old format never matches.
         SystemSetting::create([
-            'key' => 'institution_code',
+            'key' => SystemSetting::INSTITUTION_SHORT_NAME,
             'value' => 'EKSCOTECH',
             'is_active' => true,
         ]);

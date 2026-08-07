@@ -232,6 +232,14 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // defensively before bouncing to the student dashboard.
         Route::post('/payment/transfer', [PaymentGatewayController::class, 'transferToStudentPortal'])->name('payment.transfer');
 
+        // Self-service auto-login to the student portal. Once the applicant
+        // has been migrated to a Student row (compulsory fee paid), the
+        // dashboard "Go to Student Portal" button hits this endpoint, which
+        // mints a signed URL via the existing student-side AutoLoginController
+        // and 302s the applicant straight into the change-password form.
+        Route::get('/auto-login', [\App\Http\Controllers\Applicant\AutoLoginController::class, 'issue'])
+            ->name('auto-login.issue');
+
         // Shared cross-audience test-payment simulator. Disabled in
         // production by the controller; works for applicant catalogue
         // here. For student + bursar + registrar use the routes at
