@@ -71,7 +71,19 @@ $user = auth()->user();
                         <span class="mx-2">|</span>
                         <span>{{ $student->department->name ?? 'N/A' }}</span>
                         <span class="mx-2">|</span>
-                        <span>Level {{ $student->level }}00</span>
+                        {{--
+                            Level rendering: students.students.level holds the
+                            numeric digit (1, 2, 3, 4) — the user-facing
+                            string is "{n}00 Level" (e.g. 1 → "100 Level").
+                            The previous "Level {{ $student->level }}00"
+                            rendered "00 Level" when level was NULL or 0,
+                            because Blade concatenated the literal "00"
+                            after the (empty) value. Compute the actual
+                            100-multiple and fall back to a default — the
+                            legacy ND 1 ("100 Level") is the most common
+                            for new students so use that as the fallback.
+                        --}}
+                        <span>Level {{ ($student->level ?: 1) * 100 }}</span>
                         <span class="mx-2">|</span>
                         <span>{{ $student->session->name ?? '' }}</span>
                     @endif
