@@ -10,6 +10,7 @@ use App\Models\School;
 use App\Models\Department;
 use App\Models\Programme;
 use App\Models\Session as AcademicSession;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\ApplicantPaymentService;
 use Illuminate\Support\Facades\Schema;
@@ -427,6 +428,12 @@ class ApplicantPaymentFlowTest extends TestCase
         $dept = Department::create(['name' => 'Test Dept', 'code' => 'TSTD', 'school_id' => $school->id]);
         Programme::create(['name' => 'Test Prog', 'code' => 'TSTP', 'department_id' => $dept->id]);
         AcademicSession::create(['name' => '2025/2026', 'is_current' => true]);
+
+        // The applicant flow gates on SystemSetting::isOpen('admission_form_open').
+        // The strict truth-table check (see tests/Feature/Admin/SystemSettingIsOpenTest)
+        // requires an explicit 'true' value rather than relying on the old
+        // (bool) 'false' default that used to be truthy in PHP.
+        SystemSetting::set('admission_form_open', 'true');
 
         PaymentType::create([
             'name' => 'Application Form Fee',

@@ -464,6 +464,7 @@
                             <th>Channel</th>
                             <th>Date</th>
                             <th>Status</th>
+                            <th class="text-end">Receipt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -484,6 +485,17 @@
                                     <span class="badge bg-{{ $row['status'] === 'completed' ? 'success' : 'warning' }}">
                                         {{ ucfirst($row['status']) }}
                                     </span>
+                                </td>
+                                <td class="text-end">
+                                    @if(!empty($row['receipt_url']))
+                                        <a href="{{ $row['receipt_url'] }}" target="_blank"
+                                           class="btn btn-sm btn-outline-success"
+                                           title="View / print receipt">
+                                            <i class="fas fa-receipt"></i>
+                                        </a>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -548,13 +560,4 @@
     </div>
 </div>
 @endif
-
-@push('scripts')
-<script>
-function requeryPayment() {
-    // This would typically call an API to check payment status
-    alert('Requerying payment status...');
-}
-</script>
-@endpush
 @endsection

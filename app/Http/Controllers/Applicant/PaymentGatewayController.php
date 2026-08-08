@@ -316,7 +316,16 @@ class PaymentGatewayController extends Controller
                 }
             }
 
-            return redirect()->route($redirectRoute)->with('success', $successMessage);
+            // Send the user straight to the receipt page so they have a
+            // durable, printable record of the transaction. The receipt
+            // route is gated by auth + ownership so a logged-in applicant
+            // will always see their own payment; if the route is
+            // unreachable for any reason we fall back to the resolved
+            // success route (dashboard / apply form / student dashboard)
+            // so the user still lands somewhere with the success flash.
+            $receiptUrl = route('applicant.payments.receipt', ['payment' => $payment->id], false);
+
+            return redirect($receiptUrl ?: route($redirectRoute))->with('success', $successMessage);
         }
 
         $payment->update([

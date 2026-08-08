@@ -245,6 +245,53 @@ class SaveLetterSettingsTest extends TestCase
         $path = SystemSetting::where('key', 'registrar_signature_path')->value('value');
         $this->assertNotNull($path, 'signature path was not stored');
         $this->assertStringStartsWith('signatures/', $path);
+        // The file must actually land on the fake disk — not just the
+        // path row. Pins that the controller routes through Storage
+        // and isn't doing a silent $file->move() that bypasses the fake.
+        $this->assertTrue(Storage::disk('public')->exists($path),
+            "signature file was not written to storage: {$path}");
+    }
+
+    /**
+     * Uploading a new signature must overwrite (and the old file must
+     * be removed from disk) so a .png -> .jpg swap doesn't leave the
+     * previous extension serving stale content. Pins the
+     * "delete-then-store" logic in the controller.
+     */
+    public function test_uploading_new_signature_removes_old_file(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        Storage::fake('public');
+
+        // Seed a previous signature file on the fake disk + a row.
+        Storage::disk('public')->put('signatures/registrar_signature.png', 'old-bytes');
+        SystemSetting::set('registrar_signature_path', 'signatures/registrar_signature.png');
+
+        $this->assertTrue(Storage::disk('public')->exists('signatures/registrar_signature.png'));
+
+        // Upload a JPG — new extension means the old .png must be deleted.
+        $newFile = UploadedFile::fake()->image('signature.jpg', 200, 80);
+
+        $response = $this->actingAs($admin)->post('/registrar/admission-letter/settings', [
+            'registrar_name'      => 'Dr. New',
+            'registrar_signature' => $newFile,
+        ]);
+
+        if ($response->getStatusCode() >= 400) {
+            $this->fail('POST returned ' . $response->getStatusCode()
+                . '; error=' . var_export(session('error'), true));
+        }
+
+        $path = SystemSetting::where('key', 'registrar_signature_path')->value('value');
+        $this->assertNotNull($path);
+        $this->assertStringEndsWith('.jpg', $path, 'new path should reflect the new extension');
+
+        $this->assertFalse(
+            Storage::disk('public')->exists('signatures/registrar_signature.png'),
+            'old .png signature must be removed from disk on upload'
+        );
+        $this->assertTrue(Storage::disk('public')->exists($path));
     }
 
     /**

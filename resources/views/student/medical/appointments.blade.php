@@ -25,8 +25,8 @@
                 @forelse($appointments as $appointment)
                 <tr>
                     <td>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</td>
-                    <td>{{ $appointment->appointment_number }}</td>
-                    <td>{{ Str::limit($appointment->symptoms, 50) }}</td>
+                    <td>APT-{{ str_pad($appointment->id, 6, '0', STR_PAD_LEFT) }}</td>
+                    <td>{{ Str::limit($appointment->complaint, 50) }}</td>
                     <td>
                         @switch($appointment->status)
                             @case('scheduled')

@@ -59,6 +59,7 @@ class SyncApplicantPaymentTest extends TestCase
         Schema::dropIfExists('departments');
         Schema::dropIfExists('schools');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('system_settings');
         parent::tearDown();
     }
 
@@ -411,6 +412,16 @@ class SyncApplicantPaymentTest extends TestCase
             $t->unsignedBigInteger('validated_by')->nullable();
             $t->dateTime('validated_at')->nullable();
             $t->text('notes')->nullable();
+            $t->timestamps();
+        });
+        // migrateApplicantToStudent reads SystemSetting via
+        // MatricNumberService to build the prefix. Even an empty table
+        // is enough — the select just returns nothing.
+        Schema::create('system_settings', function ($t) {
+            $t->id();
+            $t->string('key')->unique();
+            $t->text('value')->nullable();
+            $t->boolean('is_active')->default(true);
             $t->timestamps();
         });
     }

@@ -54,7 +54,12 @@
                         <tbody>
                             @forelse($fees as $fee)
                             @php
-                            $paid = $payments->where('fee_id', $fee->id)->where('status', 'verified')->first();
+                            // Applicant-side payments have status='completed';
+                            // student-side payments have status='verified'. Count
+                            // either as paid for the required-fees card.
+                            $paid = $payments->where('fee_id', $fee->id)
+                                ->whereIn('status', ['completed', 'verified'])
+                                ->first();
                             @endphp
                             <tr>
                                 <td><strong>{{ $fee->name }}</strong></td>
@@ -114,7 +119,19 @@
                     @forelse($payments as $payment)
                     <tr>
                         <td><small>{{ $payment->reference }}</small></td>
-                        <td>{{ $payment->fee->name ?? 'N/A' }}</td>
+                        <td>
+                            @php
+                                // Polymorphic fee-type label:
+                                //   student-side row   → Fee (school-fee catalogue)
+                                //   applicant-side row → PaymentType (application, acceptance, compulsory)
+                                //   legacy row with no relation → fall back to payment_purpose
+                                $feeTypeLabel = $payment->fee?->name
+                                    ?? $payment->paymentType?->display_label
+                                    ?? $payment->payment_purpose
+                                    ?? 'N/A';
+                            @endphp
+                            {{ $feeTypeLabel }}
+                        </td>
                         <td>₦{{ number_format($payment->amount, 2) }}</td>
                         <td>{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
                         <td>{{ ucfirst($payment->gateway) }}</td>
@@ -130,10 +147,42 @@
                             @endif
                         </td>
                         <td>
-                            @if($payment->status === 'verified')
+                            {{--
+                                Show the receipt button for any successful
+                                payment — applicant-side rows come through
+                                as status='completed', student-side as
+                                status='verified'. Back-linked applicant
+                                payments are owned by the student via
+                                student_id, so the receipt route passes its
+                                ownership check.
+
+                                Non-completed rows (pending/failed) get a
+                                Requery button instead — clicking it hits
+                                the gateway to recheck status. The form
+                                POSTs to the shared payments.requery
+                                route and bounces the user back to this
+                                history page with a flash. See
+                                PaymentRequeryController for ownership /
+                                dispatch logic.
+                            --}}
+                            @if(in_array($payment->status, ['verified', 'completed'], true))
                             <a href="{{ route('student.payments.receipt', $payment) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-print"></i>
                             </a>
+                            @else
+                            <form method="POST"
+                                  action="{{ route('payments.requery', $payment) }}"
+                                  class="d-inline"
+                                  data-requery-form>
+                                @csrf
+                                <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-warning"
+                                        title="Requery this payment with {{ ucfirst($payment->gateway ?? 'the gateway') }}"
+                                        onclick="return confirm('Requery this payment with {{ ucfirst($payment->gateway ?? 'the gateway') }}? We will recheck the status with the gateway.')">
+                                    <i class="fas fa-sync me-1"></i>Requery
+                                </button>
+                            </form>
                             @endif
                         </td>
                     </tr>

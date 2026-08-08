@@ -90,6 +90,7 @@ class StudentController extends Controller
 
     public function edit(Student $student)
     {
+        $student->loadMissing('user');
         $data = [
             'student' => $student,
             'schools' => School::all(),
@@ -116,9 +117,37 @@ class StudentController extends Controller
             'state_id' => 'nullable|exists:states,id',
             'lga_id' => 'nullable|exists:local_governments,id',
             'nationality_id' => 'nullable|exists:nationalities,id',
+
+            // User biodata — name/email drive auth so they're required,
+            // phone/dob/etc. are optional. Email uniqueness ignores the
+            // current user so the registrar can save without first
+            // changing their email.
+            'name'              => ['required', 'string', 'max:255'],
+            'email'             => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore(optional($student->user)->id)],
+            'gender'            => ['nullable', 'in:male,female'],
+            'date_of_birth'     => ['nullable', 'date'],
+            'phone'             => ['nullable', 'string', 'max:30'],
+            'address'           => ['nullable', 'string', 'max:500'],
+            'next_of_kin'       => ['nullable', 'string', 'max:255'],
+            'next_of_kin_phone' => ['nullable', 'string', 'max:30'],
         ]);
 
-        $student->update($validated);
+        // Persist Student first (this also runs validation above) so the
+        // transactional boundary is clean: both rows update or neither.
+        DB::transaction(function () use ($validated, $student) {
+            $student->update(collect($validated)->only([
+                'matric_number', 'school_id', 'department_id', 'programme_id',
+                'session_id', 'level', 'status',
+                'state_id', 'lga_id', 'nationality_id',
+            ])->all());
+
+            if ($student->user) {
+                $student->user->update(collect($validated)->only([
+                    'name', 'email', 'gender', 'date_of_birth',
+                    'phone', 'address', 'next_of_kin', 'next_of_kin_phone',
+                ])->all());
+            }
+        });
 
         return redirect()->route('admin.students.index')->with('success', 'Student updated successfully');
     }

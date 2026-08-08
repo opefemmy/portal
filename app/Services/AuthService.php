@@ -156,6 +156,7 @@ class AuthService
             'hod' => '/hod/dashboard',
             'dean' => '/dean/dashboard',
             'registrar' => '/registrar/dashboard',
+            'admission_officer' => '/registrar/dashboard',
             'bursar', 'finance', 'accountant', 'auditor' => '/bursar/dashboard',
             'librarian' => '/librarian/dashboard',
             'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'cmd', 'hospital_receptionist' => '/hospital/dashboard',

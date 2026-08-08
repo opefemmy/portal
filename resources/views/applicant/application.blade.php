@@ -239,10 +239,10 @@
                 <strong>State:</strong> {{ $applicant->state->name ?? 'N/A' }}
             </div>
             <div class="col-md-4 mb-3">
-                <strong>LGA:</strong> {{ $applicant->lga->name ?? 'N/A' }}
+                <strong>LGA:</strong> {{ $applicant->localGovernment->name ?? 'N/A' }}
             </div>
             <div class="col-md-4 mb-3">
-                <strong>Nationality:</strong> {{ $applicant->nationality->name ?? 'N/A' }}
+                <strong>Nationality:</strong> {{ $applicant->nationalityRecord->name ?? 'N/A' }}
             </div>
         </div>
     </div>

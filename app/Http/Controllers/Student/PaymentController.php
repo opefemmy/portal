@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
+use App\Models\PaymentType;
 use App\Models\SystemSetting;
+use App\Services\ApplicantPaymentService;
 use App\Services\SchoolFeeCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -15,6 +18,8 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    use ResolvesInstitutionLogo;
+
     public function index()
     {
         // Check if payment is open
@@ -42,7 +47,11 @@ class PaymentController extends Controller
             })->get();
 
         $payments = Payment::where('student_id', $student->id)
-            ->with('fee')
+            // Eager-load both `fee` (school-fee catalogue — student-side
+            // payments) and `paymentType` (PaymentType catalogue — applicant-
+            // side payments back-linked at migration time). The view renders
+            // whichever relation is present, with a polymorphic fallback.
+            ->with(['fee', 'paymentType'])
             ->latest()
             ->get();
 
@@ -177,6 +186,17 @@ class PaymentController extends Controller
             'reference'         => Payment::generateReference(),
             'gateway'           => $gateway->provider,
             'status'            => 'pending',
+            // Pin the audience + purpose on the row so dashboard joins
+            // (`payments.student_type` etc.) and the Bursar filters work
+            // even though the student-side controller doesn't go through
+            // ApplicantPaymentService. Without these, MySQL rejects the
+            // INSERT with "Field 'student_type' doesn't have a default".
+            // Use feeTypeFor() to get the production-safe ENUM value
+            // (e.g. 'school_fees' not 'school_fee') — see PaymentType's
+            // ENUM definition.
+            'student_type'      => 'student',
+            'payment_purpose'   => PaymentType::PURPOSE_SCHOOL_FEE,
+            'fee_type'          => app(ApplicantPaymentService::class)->feeTypeFor(PaymentType::PURPOSE_SCHOOL_FEE),
         ]);
 
         // Initialize payment based on gateway
@@ -399,6 +419,11 @@ class PaymentController extends Controller
         if (!$student || $payment->student_id !== $student->id) {
             abort(403, 'You are not allowed to view this receipt.');
         }
-        return view('student.payment-receipt', compact('payment'));
+        return view('student.payment-receipt', [
+            'payment'      => $payment,
+            'logoUrl'      => $this->resolveInstitutionLogoUrl(),
+            'feeTypeLabel' => $this->resolveFeeTypeLabel($payment),
+            'payerMatric'  => $this->resolvePayerMatric($payment),
+        ]);
     }
 }

@@ -12,6 +12,7 @@ use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class AdmissionController extends Controller
 {
@@ -50,7 +51,7 @@ class AdmissionController extends Controller
     public function show(Applicant $applicant)
     {
         $this->assertSameSchool($applicant);
-        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'state', 'lga', 'nationality']);
+        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'state', 'localGovernment', 'nationalityRecord']);
         return view('registrar.admission.show', compact('applicant'));
     }
 
@@ -60,7 +61,7 @@ class AdmissionController extends Controller
     public function edit(Applicant $applicant)
     {
         $this->assertSameSchool($applicant);
-        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'centre', 'state', 'lga', 'nationality']);
+        $applicant->load(['user', 'department', 'programme', 'school', 'session', 'centre', 'state', 'localGovernment', 'nationalityRecord']);
         $data = [
             'applicant' => $applicant,
             'schools' => \App\Models\School::all(),
@@ -563,36 +564,57 @@ class AdmissionController extends Controller
 
             // Handle signature upload.
             //
+            // Routed through Storage::disk('public') so the write lands in
+            // storage/app/public (the same place public/storage junctions to).
+            // Three reasons this is preferable to $file->move() into a
+            // hand-built public_path('storage/signatures'):
+            //   1. Storage::fake('public') intercepts the write in tests —
+            //      direct $file->move() bypasses the fake and silently
+            //      writes to the real (read-only) directory.
+            //   2. Storage handles directory creation with proper
+            //      permissions via the configured disk driver.
+            //   3. The error surface is more diagnostic than "Unable to
+            //      write in the ... directory" from FileException.
+            //
             // The move is wrapped in its own try/catch so the OTHER settings
             // (body, fees, letterhead, registrar name) still persist even
             // when the filesystem refuses the write — most commonly because
-            // the PHP-FPM user can't write into
-            // `storage/app/public/signatures` on production. On error we
-            // surface a clear flash the registrar can act on.
+            // the PHP-FPM user can't write into storage/app/public on
+            // production. On error we surface a clear flash the registrar
+            // can act on.
             if ($request->hasFile('registrar_signature')) {
                 try {
                     $file = $request->file('registrar_signature');
-                    $destination = public_path('storage/signatures');
-                    if (!is_dir($destination)) {
-                        if (!@mkdir($destination, 0755, true) && !is_dir($destination)) {
-                            throw new \RuntimeException(
-                                "Could not create signature directory: {$destination}. "
-                                . "Check that the web server user owns storage/app/public."
-                            );
-                        }
-                    }
-                    $ext = $file->getClientOriginalExtension();
+                    $ext = $file->getClientOriginalExtension() ?: 'png';
                     $filename = 'registrar_signature.' . $ext;
-                    $file->move($destination, $filename);
-                    SystemSetting::set('registrar_signature_path', 'signatures/' . $filename);
+
+                    // Delete the previous file (if any extension change)
+                    // so a .png -> .jpg swap doesn't leave the old .png
+                    // on disk serving stale content.
+                    $existing = SystemSetting::get('registrar_signature_path');
+                    if ($existing && Storage::disk('public')->exists($existing)) {
+                        Storage::disk('public')->delete($existing);
+                    }
+
+                    $stored = Storage::disk('public')->putFileAs(
+                        'signatures',
+                        $file,
+                        $filename
+                    );
+
+                    if (! $stored) {
+                        throw new \RuntimeException('Storage::putFileAs returned false.');
+                    }
+
+                    SystemSetting::set('registrar_signature_path', $stored);
                 } catch (\Throwable $fileError) {
                     // Don't roll back the rest of the settings — body, fees,
                     // letterhead and registrar name are already persisted.
-                    // Just append the file-specific issue to the success
-                    // flash so the user knows the signature didn't land.
+                    // Surface the failure so the registrar knows the
+                    // signature didn't land and can fix filesystem perms.
                     \Log::error('signature upload failed: ' . $fileError->getMessage());
                     return back()->with(
-                        'success',
+                        'error',
                         'Letter settings saved, but the signature file could not be uploaded: '
                         . $fileError->getMessage()
                     );
@@ -688,18 +710,20 @@ class AdmissionController extends Controller
 
     /**
      * Delete the registrar signature
+     *
+     * Routed through Storage::disk('public') to match the save path —
+     * the file was written via Storage::putFileAs('signatures', ...) so
+     * the delete must go through the same driver for the path to
+     * resolve on every disk configuration (local, s3, etc.).
      */
     public function deleteSignature()
     {
         try {
             $existing = SystemSetting::get('registrar_signature_path');
-            if ($existing) {
-                $fullPath = public_path('storage/' . $existing);
-                if (file_exists($fullPath)) {
-                    @unlink($fullPath);
-                }
-                SystemSetting::set('registrar_signature_path', '');
+            if ($existing && Storage::disk('public')->exists($existing)) {
+                Storage::disk('public')->delete($existing);
             }
+            SystemSetting::set('registrar_signature_path', '');
             return back()->with('success', 'Signature removed.');
         } catch (\Throwable $e) {
             \Log::error('deleteSignature failed: ' . $e->getMessage());

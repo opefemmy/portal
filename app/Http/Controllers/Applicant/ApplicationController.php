@@ -93,7 +93,7 @@ class ApplicationController extends Controller
 
         // Get external payment if applicant exists
         $externalPayment = null;
-        if ($applicant) {
+        if ($applicant && Schema::hasTable('external_payments')) {
             $externalPayment = ExternalPayment::where('applicant_id', $applicant->id)
                 ->where('payment_status', 'completed')
                 ->first();
@@ -451,8 +451,8 @@ class ApplicationController extends Controller
             'programme',
             'session',
             'state',
-            'lga',
-            'nationality',
+            'localGovernment',
+            'nationalityRecord',
             'user'
         ])->where('user_id', auth()->id())->first();
 
@@ -467,7 +467,7 @@ class ApplicationController extends Controller
 
         // Get external payment if applicant exists
         $externalPayment = null;
-        if ($applicant) {
+        if ($applicant && Schema::hasTable('external_payments')) {
             $externalPayment = ExternalPayment::where('applicant_id', $applicant->id)
                 ->where('payment_status', 'completed')
                 ->first();
@@ -492,8 +492,8 @@ class ApplicationController extends Controller
             'programme',
             'session',
             'state',
-            'lga',
-            'nationality',
+            'localGovernment',
+            'nationalityRecord',
             'user'
         ])->where('user_id', $userId)->first();
 
@@ -512,7 +512,7 @@ class ApplicationController extends Controller
 
         // Get external payment if exists
         $externalPayment = null;
-        if ($applicant) {
+        if ($applicant && Schema::hasTable('external_payments')) {
             $externalPayment = \App\Models\ExternalPayment::where('applicant_id', $applicant->id)
                 ->where('payment_status', 'completed')
                 ->first();
@@ -785,7 +785,7 @@ class ApplicationController extends Controller
             return back()->with('error', 'Please pay the acceptance fee before printing your admission letter.');
         }
 
-        $applicant->load(['school', 'department', 'programme', 'session', 'state', 'lga']);
+        $applicant->load(['school', 'department', 'programme', 'session', 'state', 'localGovernment']);
         $student = Student::where('matric_number', $applicant->matric_number)->first();
 
         return view('applicant.admission-letter', compact('applicant', 'student'));

@@ -62,6 +62,7 @@ class ApplicantPaymentMarkCompletedTest extends TestCase
         Schema::dropIfExists('schools');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('roles');
+        Schema::dropIfExists('system_settings');
         parent::tearDown();
     }
 
@@ -302,6 +303,17 @@ class ApplicantPaymentMarkCompletedTest extends TestCase
             $t->unsignedBigInteger('nationality_id')->nullable();
             $t->boolean('from_application')->default(false);
             $t->foreignId('applicant_id')->nullable();
+            $t->timestamps();
+        });
+        // migrateApplicantToStudent → MatricNumberService reads the
+        // institution prefix from SystemSetting. An empty table is
+        // enough; the select just returns null and falls back to the
+        // default prefix.
+        Schema::create('system_settings', function ($t) {
+            $t->id();
+            $t->string('key')->unique();
+            $t->text('value')->nullable();
+            $t->boolean('is_active')->default(true);
             $t->timestamps();
         });
     }

@@ -64,16 +64,21 @@ class PatientPortalController extends Controller
             'symptoms' => 'required|string',
         ]);
 
-        // Generate appointment number
-        $appointmentNumber = 'APT-' . strtoupper(uniqid());
-
+        // Schema note: `hospital_appointments` does NOT have an
+        // `appointment_number` or `symptoms` column — appointment
+        // number is synthesized in the views from the row id, and the
+        // patient's free-text reason lives in `complaint`. The model
+        // also has `doctor_id` (not `staff_id`) and `scheduled_by` /
+        // `appointment_time` are NOT NULL FK / time columns the
+        // booking flow must populate or the INSERT will fail.
         $appointment = HospitalAppointment::create([
-            'patient_id' => $patient->id,
-            'staff_id' => $request->doctor_id,
-            'appointment_number' => $appointmentNumber,
+            'patient_id'       => $patient->id,
+            'doctor_id'        => $request->doctor_id,
+            'scheduled_by'     => $user->id,
             'appointment_date' => $request->appointment_date,
-            'symptoms' => $request->symptoms,
-            'status' => 'scheduled',
+            'appointment_time' => '09:00:00',
+            'complaint'        => $request->symptoms,
+            'status'           => 'scheduled',
         ]);
 
         return redirect()->route('student.medical.appointments')

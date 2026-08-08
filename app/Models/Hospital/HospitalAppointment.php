@@ -15,8 +15,9 @@ class HospitalAppointment extends Model
     protected $table = 'hospital_appointments';
 
     protected $fillable = [
-        'patient_id', 'doctor_id', 'appointment_number', 'appointment_date',
-        'status', 'symptoms', 'notes'
+        'patient_id', 'doctor_id', 'scheduled_by',
+        'appointment_date', 'appointment_time',
+        'status', 'complaint', 'notes',
     ];
 
     protected $casts = [

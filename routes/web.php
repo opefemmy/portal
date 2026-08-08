@@ -83,6 +83,11 @@ Route::prefix('hospital-payment')->name('hospital-payment.')->group(function () 
     Route::post('/validate', [\App\Http\Controllers\HospitalPaymentController::class, 'validatePayment'])->name('validate');
     Route::get('/check/{reference}', [\App\Http\Controllers\HospitalPaymentController::class, 'checkPayment'])->name('check');
     Route::get('/receipt/{payment}', [\App\Http\Controllers\HospitalPaymentController::class, 'printReceipt'])->name('receipt');
+
+    // Look up recent payments by phone — for patients who lost their
+    // receipt URL. Public endpoint, exact-match on patient_phone. Lists
+    // the last 10 completed payments and links each to the receipt.
+    Route::get('/history', [\App\Http\Controllers\HospitalPaymentController::class, 'historyByPhone'])->name('history');
 });
 
 // Hospital Patient Portal (Public - External Patients)
@@ -261,6 +266,16 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/payments/history', [ApplicationController::class, 'transactionHistory'])
             ->middleware('applicant.paid:application')
             ->name('payments.history');
+
+        // Authenticated applicant-side payment receipt. The {payment}
+        // segment is polymorphic — the controller resolves it against
+        // Payment.id first, then ExternalPayment.id, and aborts 403 if
+        // the row doesn't belong to the authenticated applicant. Replaces
+        // the public `online-payment.receipt` route for the "from the
+        // portal" use case (the public route is still used by the
+        // gateway's JSON response).
+        Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Applicant\PaymentReceiptController::class, 'show'])
+            ->name('payments.receipt');
     });
 });
 
@@ -564,6 +579,12 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/exam-clearance', [\App\Http\Controllers\Student\ExamClearanceController::class, 'index'])->name('exam-clearance');
     Route::get('/exam-clearance/print', [\App\Http\Controllers\Student\ExamClearanceController::class, 'print'])->name('exam-clearance.print');
 
+    // Admission letter — for migrated applicants who need to reprint
+    // after being signed into the student portal. Reuses the
+    // applicant.admission-letter blade (same letter, just surfaced on
+    // the side the user now lives on).
+    Route::get('/admission-letter', [\App\Http\Controllers\Student\AdmissionLetterController::class, 'show'])->name('admission-letter');
+
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable');
 
     // Student Attendance
@@ -670,8 +691,8 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
     Route::post('/results/bulk-reject', [\App\Http\Controllers\Dean\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
-// Registrar Routes - accessible by both registrar and admin/super_admin
-Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar,super_admin,admin'])->group(function () {
+// Registrar Routes - accessible by registrar, admin, super_admin, and admission_officer
+Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar,super_admin,admin,admission_officer'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])->name('dashboard');
 
     // Application Management
@@ -933,6 +954,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
     Route::delete('/notifications/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Shared PDF-receipt download endpoint. Used by the student,
+    // bursar, and applicant receipt views. Ownership is enforced
+    // inside PaymentReceiptPdfController — see its userCanViewReceipt().
+    Route::get('/payments/{payment}/receipt.pdf', [\App\Http\Controllers\Payment\PaymentReceiptPdfController::class, 'download'])
+        ->name('payments.receipt.pdf');
+
+    // Shared "Requery this payment" endpoint. Used by the student and
+    // applicant history tables when a row is still `pending` or
+    // `failed` (typically because the gateway callback never landed).
+    // Ownership is enforced inside PaymentRequeryController — see its
+    // userCanRequery().
+    Route::post('/payments/{payment}/requery', [\App\Http\Controllers\Payment\PaymentRequeryController::class, 'requery'])
+        ->name('payments.requery');
 });
 
 // ===========================================

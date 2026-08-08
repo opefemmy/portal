@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Applicant;
 use App\Models\Department;
+use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\PaymentType;
 use App\Models\Programme;
@@ -38,6 +39,7 @@ class TestPaymentSimulatorTest extends TestCase
     {
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('payments');
+        Schema::dropIfExists('fees');
         Schema::dropIfExists('applicants');
         Schema::dropIfExists('students');
         Schema::dropIfExists('programmes');
@@ -159,15 +161,117 @@ class TestPaymentSimulatorTest extends TestCase
 
     public function test_invalid_amount_is_rejected(): void
     {
+        // Floor is now min:1 (was min:100) so small fees like HIM 100L
+        // (₦20) can be paid exactly. Below 1 — including 0 — still 422s.
         $user = $this->makeUser('applicant');
         $type = PaymentType::where('code', 'APP_FORM')->first();
 
         $this->actingAs($user)
             ->post('/applicant/payment/test/applicant/process', [
                 'payment_type_id' => $type->id,
-                'amount'          => 5, // below min=100
+                'amount'          => 0,
             ])
             ->assertSessionHasErrors('amount');
+    }
+
+    /**
+     * Regression: previously the simulator enforced a 100-naira floor,
+     * so paying small fees like HIM 100L (₦20) was impossible without
+     * overpaying. The floor is now min:1 — verify a 20-naira payment
+     * (the exact catalogue amount) goes through.
+     */
+    public function test_exact_small_fee_amount_is_accepted(): void
+    {
+        $user = $this->makeUser('applicant');
+        $type = PaymentType::where('code', 'APP_FORM')->first();
+
+        $response = $this->actingAs($user)->post('/applicant/payment/test/applicant/process', [
+            'payment_type_id' => $type->id,
+            'amount'          => 20, // was rejected under min:100
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('payments', [
+            'amount'   => 20,
+            'gateway'  => 'test',
+            'status'   => 'completed',
+            'payer_id' => Applicant::where('user_id', $user->id)->value('id'),
+        ]);
+    }
+
+    /**
+     * When the student picks a Fee row in the dropdown, the simulator
+     * writes fee_id + percent_paid=100 + installment_label='full' so
+     * SchoolFeeCalculator::totalPercentPaid (which filters by fee_id)
+     * sees the row and unlocks exam clearance.
+     */
+    public function test_fee_linked_payment_unlocks_exam_clearance(): void
+    {
+        // Fee + student with the matching school/dept/programme/level.
+        // The exam-clearance filter on requiredFees() matches by those
+        // four columns, so they must align for the test to be
+        // representative of the live flow.
+        $session = AcademicSession::first();
+        $school  = School::first();
+        $dept    = Department::first();
+        $prog    = Programme::first();
+
+        $fee = Fee::create([
+            'name'                => 'HIM 100L Test Fee',
+            'amount'              => 20,
+            'non_indigene_amount' => 20,
+            'portal_charge'       => 0,
+            'school_id'           => $school->id,
+            'department_id'       => $dept->id,
+            'programme_id'        => $prog->id,
+            'level'               => 1,
+            'session_id'          => $session->id,
+            'is_active'           => true,
+        ]);
+
+        // Student user + student row.
+        $user = User::create([
+            'name'      => 'Test Student',
+            'email'     => 'student_' . uniqid() . '@example.com',
+            'password'  => bcrypt('password'),
+            'role_id'   => Role::where('slug', 'student')->value('id'),
+            'is_active' => true,
+        ]);
+        \App\Models\Student::create([
+            'user_id'       => $user->id,
+            'matric_number' => 'STU/' . strtoupper(\Illuminate\Support\Str::random(8)),
+            'school_id'     => $school->id,
+            'department_id' => $dept->id,
+            'programme_id'  => $prog->id,
+            'session_id'    => $session->id,
+            'level'         => 1,
+            'status'        => 'active',
+        ]);
+
+        // Submit through the student-audience route with fee_id.
+        $this->actingAs($user)->post('/student/payment/test/process', [
+            'payment_type_id' => PaymentType::where('code', 'LIBRARY')->value('id'),
+            'fee_id'          => $fee->id,
+            'amount'          => 20,
+        ])->assertStatus(302);
+
+        // Payment row carries the link + percent_paid/installment.
+        $payment = Payment::where('payer_id', null) // student_id-only rows
+            ->where('fee_id', $fee->id)
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($payment,
+            'Simulator must write a Payment row linked to the Fee.');
+        $this->assertSame(100, (int) $payment->percent_paid);
+        $this->assertSame('full', $payment->installment_label);
+
+        // Exam-clearance gate sees the row.
+        $student = \App\Models\Student::where('user_id', $user->id)->first();
+        $paid = \App\Services\SchoolFeeCalculator::totalPercentPaid($student, $fee);
+        $this->assertSame(100, $paid,
+            'totalPercentPaid() must see the simulator row once fee_id is linked.');
     }
 
     public function test_unknown_payment_type_id_is_rejected(): void
@@ -319,6 +423,11 @@ class TestPaymentSimulatorTest extends TestCase
             $t->unsignedBigInteger('department_id')->nullable();
             $t->unsignedBigInteger('programme_id')->nullable();
             $t->unsignedBigInteger('session_id')->nullable();
+            // Required by SchoolFeeCalculator::requiredFeesFor() —
+            // its `where('level', $student->level)` clause throws on
+            // missing column in sqlite. Nullable because some fixtures
+            // omit it.
+            $t->unsignedBigInteger('level')->nullable();
             $t->timestamps();
         });
         Schema::create('payment_types', function ($t) {
@@ -358,6 +467,11 @@ class TestPaymentSimulatorTest extends TestCase
             $t->unsignedBigInteger('fee_id')->nullable();
             $t->decimal('amount', 12, 2);
             $t->decimal('total_amount', 12, 2)->nullable();
+            // percent_paid + installment_label are written by the
+            // test-payment simulator whenever fee_id is set, so the
+            // test schema must mirror the real migrations.
+            $t->integer('percent_paid')->default(100);
+            $t->string('installment_label', 20)->nullable();
             $t->string('reference')->nullable();
             $t->string('payment_ref')->nullable();
             $t->string('transaction_id')->nullable();
@@ -374,6 +488,27 @@ class TestPaymentSimulatorTest extends TestCase
             $t->string('payer_phone')->nullable();
             $t->dateTime('payment_date')->nullable();
             $t->text('payment_details')->nullable();
+            $t->timestamps();
+        });
+        // Fees table mirrors the real schema columns read by the
+        // test simulator's show() / process() paths. Empty here —
+        // tests that need an exact-fee scenario seed their own row.
+        Schema::create('fees', function ($t) {
+            $t->id();
+            $t->string('name');
+            $t->decimal('amount', 12, 2)->default(0);
+            $t->decimal('indigene_amount', 12, 2)->nullable();
+            $t->decimal('non_indigene_amount', 12, 2)->nullable();
+            $t->decimal('portal_charge', 12, 2)->default(0);
+            $t->decimal('portal_charge_percentage', 5, 2)->nullable();
+            $t->boolean('is_editable_amount')->default(false);
+            $t->unsignedBigInteger('school_id')->nullable();
+            $t->unsignedBigInteger('department_id')->nullable();
+            $t->unsignedBigInteger('programme_id')->nullable();
+            $t->unsignedBigInteger('level')->nullable();
+            $t->unsignedBigInteger('session_id')->nullable();
+            $t->string('category')->nullable();
+            $t->boolean('is_active')->default(true);
             $t->timestamps();
         });
         Schema::create('activity_logs', function ($t) {

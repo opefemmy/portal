@@ -27,7 +27,7 @@
                 @forelse($appointments as $appointment)
                 <tr>
                     <td>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</td>
-                    <td>{{ $appointment->appointment_number }}</td>
+                    <td>APT-{{ str_pad($appointment->id, 6, '0', STR_PAD_LEFT) }}</td>
                     <td>{{ Str::limit($appointment->notes, 50) }}</td>
                     <td>
                         <span class="badge bg-{{ $appointment->status === 'completed' ? 'success' : 'warning' }}">

@@ -50,7 +50,7 @@ class ApplicantController extends Controller
     public function show(Applicant $applicant)
     {
         $this->assertSameSchool($applicant);
-        $applicant->load('user', 'department', 'programme', 'school', 'session', 'state', 'lga');
+        $applicant->load('user', 'department', 'programme', 'school', 'session', 'state', 'localGovernment');
         // Reuse the existing admission.show view (same Applicant model).
         return view('registrar.admission.show', compact('applicant'));
     }

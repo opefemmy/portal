@@ -246,6 +246,25 @@ $user = auth()->user();
                     <i class="fas fa-calendar me-2"></i>Timetable
                 </a>
             </div>
+            {{-- Admission Letter reprint — only when this student row is
+                 linked to an applicant who was admitted AND has paid the
+                 acceptance fee. Otherwise the button hides so we don't
+                 403 on click. The same gates the controller enforces. --}}
+            @php
+                $applicantForLetter = $studentRow?->applicant_id
+                    ? \App\Models\Applicant::find($studentRow->applicant_id)
+                    : null;
+            @endphp
+            @if($applicantForLetter
+                && $applicantForLetter->status === 'admitted'
+                && $applicantForLetter->hasPaid(\App\Models\PaymentType::PURPOSE_ACCEPTANCE))
+                <div class="col-md-4">
+                    <a href="{{ route('student.admission-letter') }}" target="_blank"
+                       class="btn btn-outline-dark w-100">
+                        <i class="fas fa-envelope-open-text me-2"></i>Admission Letter
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 </div>

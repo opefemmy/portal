@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'Full system access', 'permissions' => ['*']],
             ['name' => 'Admin', 'slug' => 'admin', 'description' => 'Administrative access', 'permissions' => ['users.*', 'schools.*', 'departments.*', 'courses.*', 'reports.*']],
             ['name' => 'Registrar', 'slug' => 'registrar', 'description' => 'Registry operations', 'permissions' => ['applicants.*', 'students.*', 'admission.*']],
+            ['name' => 'Admission Officer', 'slug' => 'admission_officer', 'description' => 'Admission officer — manages application review and admission lists', 'permissions' => ['applicants.view', 'applicants.review', 'admission.*']],
             ['name' => 'Bursar', 'slug' => 'bursar', 'description' => 'Financial operations', 'permissions' => ['payments.*', 'fees.*', 'reports.payments']],
             ['name' => 'Dean', 'slug' => 'dean', 'description' => 'Faculty Dean', 'permissions' => ['results.approve', 'timetable.approve', 'departments.view']],
             ['name' => 'HOD', 'slug' => 'hod', 'description' => 'Head of Department', 'permissions' => ['courses.assign', 'courses.view', 'timetable.*', 'results.approve', 'lecturers.view']],
@@ -456,11 +457,21 @@ class DatabaseSeeder extends Seeder
         Setting::set('min_course_units', 12);
 
         // System Settings (for admission and other features)
+        //
+        // Payment-open defaults to closed (so a fresh install doesn't accept
+        // payments before the admin has configured a gateway). The seeder is
+        // idempotent on this key — if an admin has already explicitly opened
+        // the portal (`payment_open='true'`), re-running the seeder must NOT
+        // close it. Without this guard, the maintenance page's "Run Seeders"
+        // button silently flips the portal back to closed after every
+        // administrative run.
         SystemSetting::set('admission_form_open', 'true');
         SystemSetting::set('admission_require_application_fee', 'true');
         SystemSetting::set('admission_application_fee_amount', '5000');
         SystemSetting::set('course_registration_open', 'true');
-        SystemSetting::set('payment_open', '0');
+        if (SystemSetting::where('key', 'payment_open')->doesntExist()) {
+            SystemSetting::set('payment_open', '0');
+        }
 
         // Seed States and Local Governments
         $this->call([

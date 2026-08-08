@@ -38,9 +38,29 @@ class SystemSetting extends Model
     const INSTITUTION_WEBSITE = 'institution_website';
     const INSTITUTION_TAGLINE = 'institution_tagline';
 
+    /**
+     * Truthy check for a stored setting.
+     *
+     * Strict comparison against the canonical "on" values rather than a PHP
+     * bool cast. The previous implementation was `(bool) static::get(...)`
+     * which had two real bugs:
+     *   - The string 'false' is non-empty, so `(bool) 'false'` is `true`,
+     *     meaning a stored value of 'false' was reported as open.
+     *   - The default for missing keys was 'false', and that also cast to
+     *     `true`, so a missing key behaved as "open" instead of "closed".
+     *
+     * Both bugs masked the controller's form-submit path — saving an
+     * unrelated setting wrote 'false' to every unchecked checkbox, but the
+     * portal appeared to stay open because of the cast. Once callers
+     * actually compare against 'true' (and friends), those writes close the
+     * portal as the user expects.
+     */
     public static function isOpen($key)
     {
-        return (bool) static::get($key, 'false');
+        $value = static::get($key);
+        return $value === 'true' || $value === true
+            || $value === '1'   || $value === 1
+            || $value === 'on';
     }
 
     public static function getPenalty($key)

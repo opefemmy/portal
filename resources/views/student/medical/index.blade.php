@@ -44,7 +44,7 @@
                     <p><strong>Name:</strong> {{ $patient->first_name }} {{ $patient->last_name }}</p>
                     <p><strong>Gender:</strong> {{ ucfirst($patient->gender ?? 'Not Set') }}</p>
                     <p><strong>Phone:</strong> {{ $patient->phone ?? 'Not Set' }}</p>
-                    <p><strong>Blood Type:</strong> {{ $patient->blood_type ?? 'Not Set' }}</p>
+                    <p><strong>Blood Type:</strong> {{ $patient->blood_group ?? 'Not Set' }}</p>
                     <p><strong>Allergies:</strong> {{ $patient->allergies ?? 'None' }}</p>
                 </div>
             </div>
@@ -61,7 +61,7 @@
                     <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                         <div>
                             <strong>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</strong>
-                            <br><small>{{ $appointment->symptoms ?? 'No symptoms recorded' }}</small>
+                            <br><small>{{ $appointment->complaint ?? 'No reason recorded' }}</small>
                         </div>
                         <span class="badge bg-{{ $appointment->status === 'completed' ? 'success' : 'warning' }}">
                             {{ ucfirst($appointment->status) }}

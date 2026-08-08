@@ -43,6 +43,7 @@
                             <th class="text-end">Amount</th>
                             <th>Status</th>
                             <th>Payer</th>
+                            <th class="text-end">Receipt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,12 +72,73 @@
                                 </td>
                                 <td class="text-end fw-semibold">₦{{ number_format((float) $row['amount'], 2) }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $row['status'] === 'completed' ? 'success' : 'warning' }}">
+                                    {{--
+                                        Status badges now distinguish
+                                        pending / failed / cancelled in
+                                        addition to completed — the
+                                        Applicant::transactionHistory
+                                        filter was relaxed so all rows
+                                        reach the view, including the
+                                        ones the user needs to requery.
+                                    --}}
+                                    @php
+                                        $badgeClass = match ($row['status']) {
+                                            'completed', 'verified' => 'success',
+                                            'pending'   => 'warning',
+                                            'failed'    => 'danger',
+                                            'cancelled' => 'secondary',
+                                            default     => 'secondary',
+                                        };
+                                    @endphp
+                                    <span class="badge bg-{{ $badgeClass }}">
                                         {{ ucfirst($row['status']) }}
                                     </span>
                                 </td>
                                 <td>
                                     <small class="text-muted">{{ $row['payer_name'] ?? '—' }}</small>
+                                </td>
+                                <td class="text-end">
+                                    {{--
+                                        Action affordances:
+                                          - Completed / verified → Receipt
+                                            button (existing affordance,
+                                            goes to the applicant-side
+                                            receipt route).
+                                          - Pending / failed AND a
+                                            payment_id is present → Requery
+                                            button (the new affordance, hits
+                                            the shared payments.requery
+                                            endpoint so the gateway can
+                                            recheck).
+                                          - Manual bank-transfer rows have
+                                            no payment_id and can't be
+                                            requeried — they only get a
+                                            Receipt button when completed,
+                                            or a dash otherwise.
+                                    --}}
+                                    @if(in_array($row['status'], ['completed', 'verified'], true) && !empty($row['receipt_url']))
+                                        <a href="{{ $row['receipt_url'] }}" target="_blank"
+                                           class="btn btn-sm btn-outline-success"
+                                           title="View / print receipt">
+                                            <i class="fas fa-receipt me-1"></i>Receipt
+                                        </a>
+                                    @elseif(!empty($row['payment_id']) && !empty($row['source']) && $row['source'] === 'online')
+                                        <form method="POST"
+                                              action="{{ route('payments.requery', ['payment' => $row['payment_id']]) }}"
+                                              class="d-inline"
+                                              data-requery-form>
+                                            @csrf
+                                            <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-warning"
+                                                    title="Requery this payment with the gateway"
+                                                    onclick="return confirm('Requery this payment? We will recheck the status with the gateway.')">
+                                                <i class="fas fa-sync me-1"></i>Requery
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -85,9 +147,11 @@
                         <tr class="table-light">
                             <td colspan="4" class="text-end fw-semibold">Total paid</td>
                             <td class="text-end fw-semibold">
-                                ₦{{ number_format((float) $history->sum('amount'), 2) }}
+                                {{-- Only settled rows count toward "Total paid" now that the
+                                     view also shows pending / failed rows. --}}
+                                ₦{{ number_format((float) $history->whereIn('status', ['completed', 'verified'])->sum('amount'), 2) }}
                             </td>
-                            <td colspan="2"></td>
+                            <td colspan="3"></td>
                         </tr>
                     </tfoot>
                 </table>

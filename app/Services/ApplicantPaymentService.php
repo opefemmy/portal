@@ -741,6 +741,14 @@ class ApplicantPaymentService
      * Reused by markCompleted() (compulsory fee path) and available as a
      * public method so the Registrar UI can re-trigger on demand if a
      * migration partially failed.
+     *
+     * Side effect: any pre-existing `payments` rows tied to the applicant
+     * via `payer_id` (application fee, acceptance fee, compulsory fee —
+     * they were created with `student_id = null` before the migration
+     * existed) are back-filled with `student_id = $student->id` so the
+     * student-side history view (`Payment::where('student_id', ...)`)
+     * surfaces them. The `whereNull('student_id')` guard makes the
+     * back-fill idempotent — a second call touches zero rows.
      */
     public function migrateApplicantToStudent(Applicant $applicant): ?Student
     {
@@ -757,6 +765,13 @@ class ApplicantPaymentService
                     'migrated_to_student_at' => $applicant->migrated_to_student_at ?: now(),
                 ]);
             }
+
+            // Back-fill applicant-side payments even when the Student row
+            // already exists. Covers pre-existing migrations that
+            // happened before this back-fill code shipped — without it,
+            // their legacy payments would never appear in
+            // /student/payments.
+            $this->relinkApplicantPayments($applicant, $existing);
 
             return $existing;
         }
@@ -800,8 +815,37 @@ class ApplicantPaymentService
                 'migrated_to_student_at' => now(),
             ]);
 
+            // Back-fill applicant-side payment rows so they appear in
+            // /student/payments. Safe inside the same transaction — the
+            // update publishes on commit. The whereNull('student_id')
+            // guard means a re-run of migrateApplicantToStudent against
+            // this applicant touches zero rows.
+            $this->relinkApplicantPayments($applicant, $student);
+
             return $student;
         });
+    }
+
+    /**
+     * Stamp `student_id` on every applicant-side payment row that doesn't
+     * already have one. Idempotent — second invocation finds zero nullable
+     * rows.
+     *
+     * Public because the registrar back-fill path may need to invoke it
+     * directly on applicants who migrated before this code shipped.
+     */
+    public function relinkApplicantPayments(Applicant $applicant, Student $student): int
+    {
+        $relinked = Payment::where('payer_id', $applicant->id)
+            ->whereNull('student_id')
+            ->update(['student_id' => $student->id]);
+
+        if ($relinked > 0) {
+            Log::info("Relinked {$relinked} applicant payment(s) to student {$student->id} on migration (applicant {$applicant->id}).",
+                ['applicant_id' => $applicant->id, 'student_id' => $student->id]);
+        }
+
+        return $relinked;
     }
 
     /* ------------------------------------------------------------------

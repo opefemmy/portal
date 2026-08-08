@@ -34,8 +34,17 @@ class SystemSettingController extends Controller
         ];
 
         foreach ($settingsKeys as $key) {
-            $value = $request->input($key, 'false');
-            SystemSetting::set($key, $value);
+            // Only persist settings the form actually submitted. Without
+            // this guard, saving an unrelated section (e.g. toggling
+            // admission-form-open) would clobber every other unchecked
+            // checkbox back to 'false' — most painfully `payment_open`,
+            // which silently closes the student payment portal. The
+            // late-fee and library-fee loops below already use this
+            // pattern; this brings the top-level loop in line with them.
+            if ($request->has($key)) {
+                $value = $request->input($key, 'false');
+                SystemSetting::set($key, $value);
+            }
         }
 
         // Also handle penalty amounts if provided as numeric

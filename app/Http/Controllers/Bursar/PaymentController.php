@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Bursar;
 
+use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Student;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    use ResolvesInstitutionLogo;
+
     public function index(Request $request)
     {
         $query = Payment::with(['student.user', 'fee', 'applicant']);
@@ -99,7 +102,12 @@ class PaymentController extends Controller
             && $payment->student->school_id !== $authUser->school_id) {
             abort(403, 'You are not allowed to access this payment.');
         }
-        return view('bursar.receipt', compact('payment'));
+        return view('bursar.receipt', [
+            'payment'      => $payment,
+            'logoUrl'      => $this->resolveInstitutionLogoUrl(),
+            'feeTypeLabel' => $this->resolveFeeTypeLabel($payment),
+            'payerMatric'  => $this->resolvePayerMatric($payment),
+        ]);
     }
 
     /**

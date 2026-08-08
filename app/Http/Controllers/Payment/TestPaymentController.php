@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Payment;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Applicant;
+use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\PaymentType;
 use App\Models\Student;
 use App\Services\ApplicantPaymentService;
+use App\Services\SchoolFeeCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -61,14 +63,30 @@ class TestPaymentController extends Controller
                 ->values(),
         };
 
+        // Optional Fee list — only meaningful for student-audience flows
+        // because that's where Fee-catalogued school-fee payments live.
+        // Showing the fee picker lets the user simulate "Pay HIM 100L
+        // exactly" which the previous form couldn't express (the form
+        // was hard-coded to PaymentType-only and fee_id was always null,
+        // so SchoolFeeCalculator::totalPercentPaid never saw the row and
+        // exam clearance stayed locked).
+        $fees = collect();
+        if (in_array($audienceForCatalogue, [PaymentType::AUDIENCE_STUDENT, PaymentType::AUDIENCE_BOTH], true)) {
+            $fees = Fee::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'amount', 'indigene_amount', 'non_indigene_amount', 'portal_charge']);
+        }
+
         $this->audit('test_payment.show', [
             'audience' => $audience,
             'catalogue_audience' => $audienceForCatalogue,
             'type_count' => $types->count(),
+            'fee_count' => $fees->count(),
         ]);
 
         return view('payments.test', [
             'types' => $types,
+            'fees' => $fees,
             'audience' => $audience,
             'audienceLabel' => $audienceForCatalogue,
             'user' => $user,
@@ -91,11 +109,58 @@ class TestPaymentController extends Controller
 
         $validated = $request->validate([
             'payment_type_id' => 'required|integer|exists:payment_types,id',
-            'amount'          => 'required|numeric|min:100',
+            'fee_id'          => 'nullable|integer|exists:fees,id',
+            // Drop the previous min:100 floor — some fees are intentionally
+            // small (e.g. HIM 100L is ₦20). The user types the exact
+            // amount the catalogue row lists so the simulated row matches.
+            'amount'          => 'required|numeric|min:1',
         ]);
 
         $user = Auth::user();
         $type = PaymentType::findOrFail($validated['payment_type_id']);
+
+        // Optional Fee link. When the user picks a Fee (e.g. HIM 100L
+        // school fee) the simulator writes `fee_id=<id>` so:
+        //   - the payment counts toward SchoolFeeCalculator::totalPercentPaid
+        //     (which filters by fee_id and is what unlocks exam clearance),
+        //   - the dashboard's `unpaidFees` correctly drops the fee,
+        //   - the receipt/audit trail ties the simulated payment to a
+        //     specific Fee catalogue row, mirroring what the live
+        //     Paystack path does.
+        //
+        // The amount defaults to the Fee's priceFor(student's category)
+        // so the user doesn't have to type it — but we still accept the
+        // form's amount as an override (e.g. to test partial-payment
+        // flows).
+        $fee = null;
+        $feeAmount = (float) $validated['amount'];
+        $percentPaid = 0;
+        $installmentLabel = null;
+        if (!empty($validated['fee_id'])) {
+            $fee = Fee::findOrFail($validated['fee_id']);
+
+            // Resolve the student-side category so we pick the right
+            // branch of priceFor(). Falls back to non_indigene when we
+            // don't yet have a Student row (e.g. testing the simulator
+            // before admission migrates the user).
+            $category = 'non_indigene';
+            $studentForCategory = $this->resolveStudentFor($user);
+            if ($studentForCategory && $studentForCategory->user?->isIndigene()) {
+                $category = 'indigene';
+            }
+            $feeAmount = (float) $fee->priceFor($category) + (float) $fee->portal_charge;
+            // The user-typed amount wins when present and different —
+            // that way partial-payment scenarios stay testable.
+            if ((float) $validated['amount'] > 0) {
+                $feeAmount = (float) $validated['amount'];
+            }
+            // When the test pays the full fee, mark percent_paid=100
+            // so the exam-clearance gate unlocks. Smaller amounts get
+            // 60 / 40 depending on whether the user is paying 100% of
+            // the fee or a partial slice.
+            $percentPaid = SchoolFeeCalculator::PERCENT_FULL;
+            $installmentLabel = SchoolFeeCalculator::installmentLabel(SchoolFeeCalculator::PERCENT_FULL);
+        }
 
         // Resolve the right payer for this audience — applicants pay
         // from their Applicant row, students pay from their Student
@@ -117,35 +182,38 @@ class TestPaymentController extends Controller
         // audience. For students we also link via student_id so the
         // /bursar payments dashboard sees the row.
         $payment = Payment::create([
-            'student_id'      => $student?->id,
-            'fee_id'          => null,
-            'amount'          => (float) $validated['amount'],
-            'total_amount'    => (float) $validated['amount'],
-            'reference'       => $reference,
-            'payment_ref'     => $reference,
-            'transaction_id'  => $reference,
-            'gateway'         => 'test',
-            'payment_method'  => 'test',
-            'status'          => 'completed',
-            'is_verified'     => true,
-            'student_type'    => $audience,
-            'payment_purpose' => $type->purpose,
+            'student_id'        => $student?->id,
+            'fee_id'            => $fee?->id,
+            'amount'            => $feeAmount,
+            'total_amount'      => $feeAmount,
+            'percent_paid'      => $percentPaid,
+            'installment_label' => $installmentLabel,
+            'reference'         => $reference,
+            'payment_ref'       => $reference,
+            'transaction_id'    => $reference,
+            'gateway'           => 'test',
+            'payment_method'    => 'test',
+            'status'            => 'completed',
+            'is_verified'       => true,
+            'student_type'      => $audience,
+            'payment_purpose'   => $type->purpose,
             // payments.fee_type is an ENUM on production — always go
             // through feeTypeFor() so we never write a value that's
             // outside the allowed set.
-            'fee_type'        => $this->payments->feeTypeFor($type->purpose),
-            'payer_id'        => $applicant?->id,
-            'payer_name'      => $applicant?->full_name ?? $student?->full_name ?? $user->name,
-            'payer_email'     => $applicant?->email ?? $student?->email ?? $user->email,
-            'payer_phone'     => $applicant?->phone ?? $student?->phone,
-            'payment_date'    => now(),
-            'payment_details' => json_encode([
+            'fee_type'          => $this->payments->feeTypeFor($type->purpose),
+            'payer_id'          => $applicant?->id,
+            'payer_name'        => $applicant?->full_name ?? $student?->full_name ?? $user->name,
+            'payer_email'       => $applicant?->email ?? $student?->email ?? $user->email,
+            'payer_phone'       => $applicant?->phone ?? $student?->phone,
+            'payment_date'      => now(),
+            'payment_details'   => json_encode([
                 'test_mode'  => true,
                 'simulated'  => true,
                 'audience'   => $audience,
                 'user_id'    => $user->id,
                 'purpose'    => $type->purpose,
-                'fee_amount' => (float) $validated['amount'],
+                'fee_id'     => $fee?->id,
+                'fee_amount' => $feeAmount,
                 'ip'         => $request->ip(),
             ]),
         ]);

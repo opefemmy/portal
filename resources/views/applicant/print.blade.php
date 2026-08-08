@@ -316,8 +316,8 @@
                     <td width="50%"><strong>State:</strong> {{ $applicant->state->name ?? 'N/A' }}</td>
                 </tr>
                 <tr>
-                    <td><strong>LGA:</strong> {{ $applicant->lga->name ?? 'N/A' }}</td>
-                    <td><strong>Nationality:</strong> {{ $applicant->nationality->name ?? 'N/A' }}</td>
+                    <td><strong>LGA:</strong> {{ $applicant->localGovernment->name ?? 'N/A' }}</td>
+                    <td><strong>Nationality:</strong> {{ $applicant->nationalityRecord->name ?? 'N/A' }}</td>
                 </tr>
             </table>
 

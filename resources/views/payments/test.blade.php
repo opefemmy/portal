@@ -78,18 +78,69 @@
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @if(($audience ?? 'applicant') !== 'applicant' && isset($fees) && $fees->isNotEmpty())
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-receipt me-1"></i>Link to a Fee (optional)
+                                </label>
+                                <select name="fee_id" id="fee_id" class="form-select">
+                                    <option value="">— None (PaymentType only) —</option>
+                                    @foreach($fees as $fee)
+                                        @php
+                                            // Surface every per-category amount so the
+                                            // user can see what the live Paystack path
+                                            // would charge. Indigene / non-indigene
+                                            // columns can each be null, in which case
+                                            // we fall back to the legacy `amount` column.
+                                            $indigene = $fee->indigene_amount !== null
+                                                ? (float) $fee->indigene_amount
+                                                : (float) $fee->amount;
+                                            $nonIndigene = $fee->non_indigene_amount !== null
+                                                ? (float) $fee->non_indigene_amount
+                                                : (float) $fee->amount;
+                                            $totalWithPortal = $nonIndigene + (float) $fee->portal_charge;
+                                        @endphp
+                                        <option value="{{ $fee->id }}"
+                                                data-indigene="{{ $indigene }}"
+                                                data-non-indigene="{{ $nonIndigene }}"
+                                                data-portal="{{ (float) $fee->portal_charge }}">
+                                            {{ $fee->name }}
+                                            — ₦{{ number_format($nonIndigene, 2) }}
+                                            (non-indigene)
+                                            @if((float) $fee->portal_charge > 0)
+                                                + ₦{{ number_format((float) $fee->portal_charge, 2) }} portal
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">
+                                    Linking to a Fee makes the simulated payment count toward
+                                    <code>SchoolFeeCalculator::totalPercentPaid</code> and
+                                    unlock the exam-clearance gate. The amount below auto-fills
+                                    to the Fee's price + portal charge.
+                                </small>
+                                @error('fee_id')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+
                         <div class="mb-3">
                             <label class="form-label">Amount (₦)</label>
                             <input type="number"
                                    name="amount"
+                                   id="amount_input"
                                    class="form-control"
-                                   min="100"
+                                   min="1"
                                    step="0.01"
                                    value="5000"
                                    required>
                             <small class="text-muted">
-                                Defaults to 5,000 — set this to whatever the
-                                catalogue row lists so the simulated row matches.
+                                Defaults to 5,000. Set this to whatever the catalogue row
+                                lists — when you pick a Fee above, the amount auto-fills
+                                to that fee's price + portal charge so the simulated row
+                                matches the live Paystack amount.
                             </small>
                             @error('amount')
                                 <div class="text-danger small">{{ $message }}</div>
@@ -113,6 +164,8 @@
                 <ol class="mb-2">
                     <li>Writes a row to <code>payments</code> with
                         <code>gateway='test'</code>, <code>status='completed'</code></li>
+                    <li>If you picked a Fee, the row is linked via <code>fee_id</code>
+                        so exam-clearance / course-registration gates count it</li>
                     <li>Runs <code>ApplicantPaymentService::markCompleted()</code> —
                         same code path as a real Paystack callback</li>
                     <li>For migration triggers (Compulsory Fee, School Fees)
@@ -129,3 +182,35 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+/**
+ * Auto-fill the Amount input when a Fee is picked.
+ *
+ * Without this, the user has to know that HIM 100L is ₦20 + portal charge,
+ * type the number, and hope they got it right. Picking the Fee row fills
+ * the amount to priceFor(non_indigene) + portal_charge — matching what
+ * the live Paystack path charges the user.
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    const feeSelect = document.getElementById('fee_id');
+    const amountInput = document.getElementById('amount_input');
+    if (!feeSelect || !amountInput) {
+        return;
+    }
+
+    feeSelect.addEventListener('change', function () {
+        const option = feeSelect.options[feeSelect.selectedIndex];
+        if (!option || !option.value) {
+            // User picked "— None —" — leave the amount as the user typed it.
+            return;
+        }
+        const nonIndigene = parseFloat(option.dataset.nonIndigene || '0') || 0;
+        const portal = parseFloat(option.dataset.portal || '0') || 0;
+        const total = nonIndigene + portal;
+        amountInput.value = total.toFixed(2);
+    });
+});
+</script>
+@endpush

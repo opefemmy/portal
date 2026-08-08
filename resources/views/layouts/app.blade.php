@@ -442,6 +442,53 @@
             }
         }
     </style>
+    {{-- Global print stylesheet. Hides the entire portal chrome
+         (sidebar, topbar, navbar, breadcrumbs, action buttons) so any
+         page that triggers window.print() — receipts, admission
+         letters, exam clearance, course forms, results, ID cards —
+         comes out as a clean printable sheet rather than the full
+         dashboard. Views opt into the printable surface by wrapping
+         their content in `.printable-container`. Per-view `@media
+         print` rules (e.g. for watermark opacity bumps) still win
+         because they come later in the cascade. --}}
+    <style>
+        @media print {
+            /* Portal chrome — off. */
+            .sidebar, .topbar, .navbar,
+            .main-header, .main-footer,
+            .breadcrumb, .page-actions,
+            .alert.alert-info.no-print,
+            .no-print { display: none !important; }
+
+            /* Page title row + its button cluster (the "back" / "edit"
+               buttons most page headers sit beside their title). */
+            .page-header .btn,
+            .page-header .actions,
+            .d-flex.justify-content-between.flex-wrap.flex-md-nowrap { display: none !important; }
+
+            /* Reset the layout for print. The dashboard layout uses
+               Bootstrap container-fluid + px-4 padding that look fine
+               on screen but waste paper. */
+            body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            .container-fluid, .container, .px-4, .py-4,
+            .row, .col-md-12, main { padding: 0 !important; margin: 0 !important; }
+            .wrapper { margin: 0 !important; padding: 0 !important; }
+
+            /* Opt-in printable container — full width, no shadow, no
+               border-radius, no border. Views that want a print-clean
+               card wrap their content in this class. */
+            .printable-container,
+            .card.print-shadow-none {
+                max-width: 100% !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+        }
+    </style>
     @yield('styles')
 </head>
 <body>

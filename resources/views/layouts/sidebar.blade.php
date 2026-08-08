@@ -599,6 +599,37 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-user-plus"></i> Admission List
     </a>
 </li>
+@elseif($role === 'admission_officer')
+<li class="nav-item">
+    <a href="{{ route('registrar.dashboard') }}" class="nav-link {{ request()->is('registrar/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applications.index') }}" class="nav-link {{ request()->is('registrar/applications*') ? 'active' : '' }}">
+        <i class="fas fa-file-alt"></i> Applications
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applications.statistics') }}" class="nav-link {{ request()->is('registrar/applications/statistics*') ? 'active' : '' }}">
+        <i class="fas fa-chart-bar"></i> Statistics
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applications.admitted') }}" class="nav-link {{ request()->is('registrar/admitted*') ? 'active' : '' }}">
+        <i class="fas fa-user-graduate"></i> Admitted Students
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.applicants') }}" class="nav-link {{ request()->is('registrar/applicants*') ? 'active' : '' }}">
+        <i class="fas fa-user-graduate"></i> Old Applicants
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.admission') }}" class="nav-link {{ request()->is('registrar/admission*') ? 'active' : '' }}">
+        <i class="fas fa-user-plus"></i> Admission List
+    </a>
+</li>
 @elseif($role === 'bursar')
 <li class="nav-item">
     <a href="{{ route('bursar.dashboard') }}" class="nav-link {{ request()->is('bursar/dashboard*') ? 'active' : '' }}">

@@ -31,9 +31,9 @@
                         <p><strong>Marital Status:</strong> {{ $applicant->marital_status }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Nationality:</strong> {{ $applicant->nationality }}</p>
+                        <p><strong>Nationality:</strong> {{ $applicant->nationalityRecord->name ?? 'N/A' }}</p>
                         <p><strong>State of Origin:</strong> {{ $applicant->state_of_origin }}</p>
-                        <p><strong>LGA:</strong> {{ $applicant->lga }}</p>
+                        <p><strong>LGA:</strong> {{ $applicant->localGovernment->name ?? 'N/A' }}</p>
                         <p><strong>Email:</strong> {{ $applicant->email }}</p>
                         <p><strong>Phone:</strong> {{ $applicant->phone }}</p>
                         <p><strong>Permanent Address:</strong> {{ $applicant->permanent_address }}</p>

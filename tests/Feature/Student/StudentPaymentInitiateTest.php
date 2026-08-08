@@ -184,6 +184,55 @@ class StudentPaymentInitiateTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_initiate_persists_student_type_and_payment_purpose(): void
+    {
+        // Regression: production payments.student_type is NOT NULL with
+        // no default. The student-side controller used to omit it from
+        // the Payment::create() payload — MySQL rejected the INSERT with
+        // "Field 'student_type' doesn't have a default value" and the
+        // outer Throwable catch surfaced as the generic
+        // "We could not start your school-fee payment just now…" flash.
+        // Pin that the controller now writes student_type='student' AND
+        // payment_purpose='school_fee' so the row actually persists and
+        // the user reaches Paystack.
+        $user = $this->makeStudent();
+        $fee  = $this->makeFee();
+
+        // Fake the Paystack call so we don't actually hit the API.
+        Http::fake([
+            'api.paystack.co/*' => Http::response(json_encode([
+                'status' => true,
+                'data' => ['authorization_url' => 'https://paystack.test/checkout/abc'],
+            ]), 200),
+        ]);
+
+        $response = $this->actingAs($user)->post(
+            "/student/payments/{$fee->id}/initiate",
+            ['percent' => SchoolFeeCalculator::PERCENT_FULL]
+        );
+
+        // Should redirect (302) to the Paystack authorization URL.
+        $this->assertContains(
+            $response->getStatusCode(),
+            [302, 200],
+            'Expected a redirect to Paystack, got ' . $response->getStatusCode()
+            . ' — the controller probably never reached the gateway because the Payment::create() failed.'
+        );
+
+        $payment = Payment::latest('id')->first();
+        $this->assertNotNull($payment, 'Payment row was not persisted.');
+        $this->assertEquals(
+            'student',
+            $payment->student_type,
+            "payment.student_type was '{$payment->student_type}' — expected 'student'."
+        );
+        $this->assertEquals(
+            \App\Models\PaymentType::PURPOSE_SCHOOL_FEE,
+            $payment->payment_purpose,
+            "payment.payment_purpose was '{$payment->payment_purpose}' — expected 'school_fee'."
+        );
+    }
+
     public function test_unknown_fee_id_renders_404_not_payment_flash(): void
     {
         // User complaint: "We could not start your school-fee payment just

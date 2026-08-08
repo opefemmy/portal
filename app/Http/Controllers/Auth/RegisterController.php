@@ -106,6 +106,10 @@ class RegisterController extends Controller
         Applicant::firstOrCreate(
             ['user_id' => $user->id],
             [
+                // application_number has no default in production and the
+                // applicants table is unique-indexed on it, so we must
+                // always provide one when seeding a fresh row.
+                'application_number' => Applicant::generateApplicationNumber(),
                 'email' => $validated['email'],
                 'surname' => $validated['surname'],
                 'first_name' => $validated['first_name'],

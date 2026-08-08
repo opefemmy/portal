@@ -399,4 +399,37 @@ class HospitalPaymentController extends Controller
 
         return view('hospital-payment.receipt', compact('payment'));
     }
+
+    /**
+     * Look up recent hospital payments by patient phone number.
+     *
+     * Public endpoint (no login required) so a payer who lost their receipt
+     * URL can still retrieve the last 10 payments they made with their
+     * phone number. Each row links to `hospital-payment.receipt`, which
+     * is also public and renders the printable receipt.
+     *
+     * The phone match is exact — we don't expose anyone else's payments
+     * because the lookup is keyed off the phone number which only the
+     * payer knows. We deliberately don't include patient_email /
+     * patient_name lookups here because phone is the most common
+     * identifier given at payment time (collected on the gateway form).
+     */
+    public function historyByPhone(Request $request)
+    {
+        $phone = trim((string) $request->query('phone', ''));
+
+        $payments = collect();
+        if ($phone !== '') {
+            $payments = HospitalPayment::where('patient_phone', $phone)
+                ->where('status', 'completed')
+                ->latest('payment_date')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('hospital-payment.history', [
+            'payments' => $payments,
+            'phone'    => $phone,
+        ]);
+    }
 }

@@ -145,8 +145,8 @@
                     <label class="form-label">LGA *</label>
                     <select name="lga_id" id="lga_id" class="form-select" required>
                         <option value="">Select LGA</option>
-                        @if($applicant->lga)
-                        <option value="{{ $applicant->lga->id }}" selected>{{ $applicant->lga->name }}</option>
+                        @if($applicant->localGovernment)
+                        <option value="{{ $applicant->localGovernment->id }}" selected>{{ $applicant->localGovernment->name }}</option>
                         @endif
                     </select>
                 </div>

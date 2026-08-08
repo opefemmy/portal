@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Applicant extends Model
@@ -125,14 +126,22 @@ class Applicant extends Model
         return $this->belongsTo(State::class);
     }
 
-    public function lga(): BelongsTo
+    // The applicants table also has legacy varchar columns named `lga`
+    // and `nationality` (alongside `lga_id` / `nationality_id`). Eloquent's
+    // __get checks $this->attributes first, so naming the relation `lga`
+    // or `nationality` would shadow the column and always return NULL.
+    // These non-colliding names keep the relation accessible.
+    public function localGovernment(): BelongsTo
     {
         return $this->belongsTo(LocalGovernment::class, 'lga_id');
     }
 
-    public function nationality(): BelongsTo
+    // `belongsTo(Nationality::class)` without a second arg would infer
+    // the foreign key as `nationality_record_id`, which doesn't exist
+    // on the applicants table. Pin it to `nationality_id` explicitly.
+    public function nationalityRecord(): BelongsTo
     {
-        return $this->belongsTo(Nationality::class);
+        return $this->belongsTo(Nationality::class, 'nationality_id');
     }
 
     public function reviewer(): BelongsTo
@@ -265,8 +274,11 @@ class Applicant extends Model
      */
     public function transactionHistory(): Collection
     {
+        // Show all payment rows regardless of status — pending and
+        // failed rows appear here so the applicant can requery them
+        // after a network drop or bank delay. The view decides which
+        // affordances (Receipt vs. Requery) to render.
         $online = $this->payments()
-            ->where('status', 'completed')
             ->get()
             ->map(function (Payment $p): array {
                 return [
@@ -278,37 +290,65 @@ class Applicant extends Model
                     'paid_at' => $p->payment_date ?: $p->updated_at,
                     'payer_name' => $p->payer_name,
                     'payer_email' => $p->payer_email,
+                    // Required by the history view so the Requery button
+                    // can build `payments.requery` URLs. Null for the
+                    // manual (external_payments) branch — those rows
+                    // can't be requeried; they go through the bursar's
+                    // manual-validate path instead.
+                    'payment_id' => $p->id,
                     'source' => 'online',
-                    'receipt_url' => $p->reference
-                        ? route('online-payment.receipt', ['payment' => $p->reference], false)
-                        : null,
+                    // Receipts always go through the authenticated applicant-side
+                    // route (applicant.payments.receipt) so the user must be
+                    // logged in AND own the payment to view it. The public
+                    // online-payment.receipt is only used by the gateway's
+                    // JSON callback to OnlinePaymentController::processPayment().
+                    'receipt_url' => route('applicant.payments.receipt', ['payment' => $p->id], false),
                 ];
             });
 
-        $manual = $this->externalPayments()
-            ->where('payment_status', 'completed')
-            ->get()
-            ->map(function (ExternalPayment $e): array {
-                $purpose = $e->paymentType?->purpose ?: 'other';
-                // External payments are validated by the applicant, so they may
-                // carry any purpose. Try to resolve from description if missing.
-                if ($purpose === 'other' && $e->description) {
-                    $purpose = $this->guessPurposeFromDescription($e->description);
-                }
+        // External payments (bank transfers / manual uploads) live in a
+        // separate table that may not exist on legacy production DBs. Skip
+        // the manual branch entirely when the table is missing — the
+        // online payments still render, and the dashboard no longer 500s.
+        $manual = collect();
+        if (Schema::hasTable('external_payments')) {
+            $manual = $this->externalPayments()
+                ->where('payment_status', 'completed')
+                ->get()
+                ->map(function (ExternalPayment $e): array {
+                    $purpose = $e->paymentType?->purpose ?: 'other';
+                    // External payments are validated by the applicant, so they may
+                    // carry any purpose. Try to resolve from description if missing.
+                    if ($purpose === 'other' && $e->description) {
+                        $purpose = $this->guessPurposeFromDescription($e->description);
+                    }
 
-                return [
-                    'reference' => $e->transaction_id,
-                    'amount' => (float) $e->amount,
-                    'purpose' => $purpose,
-                    'channel' => $e->payment_channel ?: 'bank_transfer',
-                    'status' => $e->payment_status,
-                    'paid_at' => $e->payment_date ?: $e->validated_at,
-                    'payer_name' => $e->applicant_name,
-                    'payer_email' => $e->email,
-                    'source' => 'manual',
-                    'receipt_url' => null,
-                ];
-            });
+                    return [
+                        'reference' => $e->transaction_id,
+                        'amount' => (float) $e->amount,
+                        'purpose' => $purpose,
+                        'channel' => $e->payment_channel ?: 'bank_transfer',
+                        'status' => $e->payment_status,
+                        'paid_at' => $e->payment_date ?: $e->validated_at,
+                        'payer_name' => $e->applicant_name,
+                        'payer_email' => $e->email,
+                        // Manual bank transfers / external uploads — these
+                        // rows live in `external_payments`, not `payments`,
+                        // and are validated by the bursar not by a gateway.
+                        // `payment_id` is null so the view knows not to
+                        // render a Requery button.
+                        'payment_id' => null,
+                        'source' => 'manual',
+                        // External payments are validated bank transfers or
+                        // manual uploads. The applicant-side receipt route
+                        // (applicant.payments.receipt) accepts either a
+                        // Payment.id or an ExternalPayment.id, so the same
+                        // URL pattern works for both row types — the
+                        // controller disambiguates by primary-key lookup.
+                        'receipt_url' => route('applicant.payments.receipt', ['payment' => $e->id], false),
+                    ];
+                });
+        }
 
         return $online
             ->merge($manual)
