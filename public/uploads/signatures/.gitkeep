@@ -1,0 +1,10 @@
+# Drop the registrar signature image here as `registrar_signature.{png,jpg,jpeg,svg}`.
+# The admission letter (applicant-side printAdmissionLetter, student-side
+# AdmissionLetterController::show, and registrar-side generateLetter)
+# picks up whichever file exists at this path automatically — no need to
+# go through /registrar/admission-letter/settings.
+#
+# If the registrar also uploads via the settings form, that file lands
+# here too, and the upload form's path row (system_settings.
+# registrar_signature_path) takes priority over this fixed-file
+# fallback.
