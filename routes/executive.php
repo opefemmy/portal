@@ -15,8 +15,12 @@ Route::prefix('executive')->name('executive.')->middleware(['auth', 'role:rector
     Route::get('/reports/staff', [ReportController::class, 'staffReport'])->name('reports.staff');
 });
 
-// Auditor Dashboard (Read-only)
-Route::prefix('auditor')->name('auditor.')->middleware(['auth', 'role:auditor'])->group(function () {
+// Auditor Dashboard (Read-only). The three audit roles seeded by
+// ERPRolesSeeder (auditor, internal_auditor, external_auditor) all
+// share the same screens — permissions on specific actions (e.g.
+// "external auditor gets full audit access") are enforced inside the
+// controllers where they matter.
+Route::prefix('auditor')->name('auditor.')->middleware(['auth', 'role:auditor,internal_auditor,external_auditor,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Auditor\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reports', [\App\Http\Controllers\Auditor\ReportController::class, 'index'])->name('reports');
     Route::get('/audit-logs', [\App\Http\Controllers\Auditor\AuditLogController::class, 'index'])->name('audit-logs');

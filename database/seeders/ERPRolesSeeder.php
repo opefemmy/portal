@@ -131,6 +131,31 @@ class ERPRolesSeeder extends Seeder
                     'hospital.reports.financial',
                 ]
             ],
+            [
+                'name' => 'Matron',
+                'slug' => 'matron',
+                'description' => 'Head of Nursing - Hospital Ward Management',
+                'permissions' => [
+                    'hospital.patients.view',
+                    'hospital.vitals.*',
+                    'hospital.appointments.assist',
+                    'hospital.records.view',
+                    'hospital.duty.*',
+                    'hospital.wards.*',
+                ]
+            ],
+            [
+                'name' => 'Ward Manager',
+                'slug' => 'ward_manager',
+                'description' => 'Hospital Ward Operations',
+                'permissions' => [
+                    'hospital.patients.view',
+                    'hospital.vitals.*',
+                    'hospital.records.view',
+                    'hospital.duty.*',
+                    'hospital.wards.*',
+                ]
+            ],
         ];
 
         // ===========================================
@@ -190,6 +215,41 @@ class ERPRolesSeeder extends Seeder
                     'payments.upload',
                     'payments.sync.*',
                     'finance.receipts.*',
+                ]
+            ],
+            [
+                'name' => 'Cashier',
+                'slug' => 'cashier',
+                'description' => 'Cash Office Operations — receives and records payments',
+                'permissions' => [
+                    'finance.receipts.*',
+                    'finance.payments.process',
+                    'finance.invoices.view',
+                    'bursary.view',
+                    'payments.view',
+                ]
+            ],
+            [
+                'name' => 'Finance Officer',
+                'slug' => 'finance_officer',
+                'description' => 'Finance Module Operations Staff',
+                'permissions' => [
+                    'finance.*',
+                    'finance.ledgers.*',
+                    'finance.reports.*',
+                    'finance.budgets.view',
+                    'finance.invoices.*',
+                ]
+            ],
+            [
+                'name' => 'Account Officer',
+                'slug' => 'account_officer',
+                'description' => 'Accounts / Receivables Officer',
+                'permissions' => [
+                    'finance.invoices.*',
+                    'finance.receipts.*',
+                    'finance.payments.process',
+                    'finance.reports.view',
                 ]
             ],
         ];

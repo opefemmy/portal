@@ -141,13 +141,83 @@ $role = $user->role->slug ?? '';
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'bursary_officer']) }}" class="nav-link {{ request('role_slug') == 'bursary_officer' ? 'active' : '' }}">
+                    <i class="fas fa-receipt me-2"></i>Bursary Officers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'fees_officer']) }}" class="nav-link {{ request('role_slug') == 'fees_officer' ? 'active' : '' }}">
+                    <i class="fas fa-tags me-2"></i>Fees Officers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'payment_officer']) }}" class="nav-link {{ request('role_slug') == 'payment_officer' ? 'active' : '' }}">
+                    <i class="fas fa-credit-card me-2"></i>Payment Officers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'cashier']) }}" class="nav-link {{ request('role_slug') == 'cashier' ? 'active' : '' }}">
+                    <i class="fas fa-cash-register me-2"></i>Cashiers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'accountant']) }}" class="nav-link {{ request('role_slug') == 'accountant' ? 'active' : '' }}">
+                    <i class="fas fa-calculator me-2"></i>Accountants
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'auditor']) }}" class="nav-link {{ request('role_slug') == 'auditor' ? 'active' : '' }}">
+                    <i class="fas fa-search-dollar me-2"></i>Auditors
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('admin.staff.index', ['role_slug' => 'librarian']) }}" class="nav-link {{ request('role_slug') == 'librarian' ? 'active' : '' }}">
                     <i class="fas fa-book-reader me-2"></i>Librarians
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'library_officer']) }}" class="nav-link {{ request('role_slug') == 'library_officer' ? 'active' : '' }}">
+                    <i class="fas fa-book-open me-2"></i>Library Officers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'library_assistant']) }}" class="nav-link {{ request('role_slug') == 'library_assistant' ? 'active' : '' }}">
+                    <i class="fas fa-bookmark me-2"></i>Library Assistants
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('admin.staff.index', ['role_slug' => 'ict_admin']) }}" class="nav-link {{ request('role_slug') == 'ict_admin' ? 'active' : '' }}">
                     <i class="fas fa-laptop-code me-2"></i>ICT Admin
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'cmd']) }}" class="nav-link {{ request('role_slug') == 'cmd' ? 'active' : '' }}">
+                    <i class="fas fa-user-md me-2"></i>Chief Medical Director
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'doctor']) }}" class="nav-link {{ request('role_slug') == 'doctor' ? 'active' : '' }}">
+                    <i class="fas fa-stethoscope me-2"></i>Doctors
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'nurse']) }}" class="nav-link {{ request('role_slug') == 'nurse' ? 'active' : '' }}">
+                    <i class="fas fa-user-nurse me-2"></i>Nurses
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'pharmacist']) }}" class="nav-link {{ request('role_slug') == 'pharmacist' ? 'active' : '' }}">
+                    <i class="fas fa-pills me-2"></i>Pharmacists
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'lab_scientist']) }}" class="nav-link {{ request('role_slug') == 'lab_scientist' ? 'active' : '' }}">
+                    <i class="fas fa-flask me-2"></i>Lab Scientists
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.staff.index', ['role_slug' => 'admission_officer']) }}" class="nav-link {{ request('role_slug') == 'admission_officer' ? 'active' : '' }}">
+                    <i class="fas fa-user-check me-2"></i>Admission Officers
                 </a>
             </li>
             <li class="nav-item">

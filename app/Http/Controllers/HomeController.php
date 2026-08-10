@@ -11,13 +11,13 @@ class HomeController extends Controller
         $user = auth()->user();
 
         return match ($user->role->slug) {
-            'super_admin', 'admin' => redirect('/admin/dashboard'),
+            'super_admin', 'admin', 'ict_admin', 'staff' => redirect('/admin/dashboard'),
             'student' => redirect('/student/dashboard'),
             'lecturer' => redirect('/lecturer/dashboard'),
             'hod' => redirect('/hod/dashboard'),
             'dean' => redirect('/dean/dashboard'),
             'registrar' => redirect('/registrar/dashboard'),
-            'bursar' => redirect('/bursar/dashboard'),
+            'bursar', 'bursary_officer', 'fees_officer', 'payment_officer' => redirect('/bursar/dashboard'),
             'applicant' => redirect('/applicant/dashboard'),
             default => redirect('/dashboard'),
         };

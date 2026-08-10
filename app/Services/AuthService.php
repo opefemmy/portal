@@ -150,21 +150,19 @@ class AuthService
         $roleSlug = $user->role?->slug ?? 'student';
 
         return match ($roleSlug) {
-            'super_admin', 'admin', 'ict_admin' => '/admin/dashboard',
+            'super_admin', 'admin', 'ict_admin', 'staff' => '/admin/dashboard',
             'student' => '/student/dashboard',
             'lecturer' => '/lecturer/dashboard',
             'hod' => '/hod/dashboard',
             'dean' => '/dean/dashboard',
-            'registrar' => '/registrar/dashboard',
-            'admission_officer' => '/registrar/dashboard',
-            'bursar', 'finance', 'accountant', 'auditor' => '/bursar/dashboard',
-            'librarian' => '/librarian/dashboard',
-            'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'cmd', 'hospital_receptionist' => '/hospital/dashboard',
+            'registrar', 'admission_officer' => '/registrar/dashboard',
+            'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier', 'finance', 'finance_officer', 'accountant', 'account_officer', 'auditor', 'internal_auditor', 'external_auditor', 'hospital_accountant' => '/bursar/dashboard',
+            'librarian', 'library_officer', 'library_assistant' => '/librarian/dashboard',
+            'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'cmd', 'hospital_admin', 'hospital_receptionist', 'store_keeper', 'medical_records_officer' => '/hospital/dashboard',
             'rector', 'executive' => '/executive/dashboard',
             'business_committee' => '/business-committee/dashboard',
             'academic_board' => '/academic-board/dashboard',
             'applicant' => '/applicant/dashboard',
-            'staff' => '/admin/dashboard',
             default => '/dashboard',
         };
     }

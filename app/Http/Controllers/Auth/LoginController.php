@@ -117,23 +117,25 @@ class LoginController extends Controller
             return redirect('/student/dashboard')->with('success', 'Welcome ' . $user->name . ', you are free to explore yourself.');
         }
 
-        // Redirect based on role
+        // Redirect based on role. New bursary/library/audit/hospital staff
+        // roles seeded by ERPRolesSeeder route to the same dashboard as
+        // their senior counterpart — they share the screens, just with a
+        // narrower permission set enforced inside controllers.
         $redirectTo = match ($roleSlug) {
-            'super_admin', 'admin' => '/admin/dashboard',
+            'super_admin', 'admin', 'ict_admin', 'staff' => '/admin/dashboard',
             'lecturer' => '/lecturer/dashboard',
             'hod' => '/hod/dashboard',
             'dean' => '/dean/dashboard',
-            'registrar' => '/registrar/dashboard',
-            'bursar' => '/bursar/dashboard',
-            'librarian' => '/librarian/dashboard',
-            'ict_admin' => '/admin/dashboard',
-            'staff' => '/admin/dashboard',
+            'registrar', 'admission_officer' => '/registrar/dashboard',
+            'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier' => '/bursar/dashboard',
+            'librarian', 'library_officer', 'library_assistant' => '/librarian/dashboard',
             'rector' => '/executive/dashboard',
-            'cmd' => '/hospital/dashboard',
-            'doctor', 'nurse', 'pharmacist', 'lab_scientist' => '/hospital/dashboard',
-            'hospital', 'hospital_receptionist', 'store_keeper' => '/hospital/dashboard',
+            'cmd', 'hospital_admin', 'doctor', 'nurse', 'pharmacist', 'lab_scientist',
+                'hospital', 'hospital_receptionist', 'store_keeper', 'medical_records_officer',
+                'hospital_accountant' => '/hospital/dashboard',
             'executive' => '/executive/dashboard',
-            'finance', 'accountant', 'auditor' => '/bursar/dashboard',
+            'finance', 'finance_officer', 'accountant', 'account_officer',
+                'auditor', 'internal_auditor', 'external_auditor' => '/bursar/dashboard',
             'business_committee' => '/business-committee/dashboard',
             'academic_board' => '/academic-board/dashboard',
             'applicant' => '/applicant/dashboard',

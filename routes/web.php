@@ -314,8 +314,9 @@ Route::get('/print-preview', function() {
 // Admin Routes - redirect /admin to /admin/dashboard
 Route::redirect('/admin', '/admin/dashboard');
 
-// Admin Dashboard (requires auth and admin role)
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin'])->group(function () {
+// Admin Dashboard (requires auth and admin role). ICT admin and staff
+// share the same admin dashboard, so include them in the role list.
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin,ict_admin,staff'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // User Unlock / Password Reset (MUST come before resource routes)
@@ -747,8 +748,12 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'both')->name('payment.test.process');
 });
 
-// Bursar Routes
-Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,super_admin,admin'])->group(function () {
+// Bursar Routes. The bursary staff roles seeded by ERPRolesSeeder
+// (bursary_officer, fees_officer, payment_officer) and cashier all need
+// access to the same dashboard — they all share the bursar reports /
+// paid-students / regimes / payments screens. super_admin and admin
+// are included so the platform admins can debug any bursar flow.
+Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursary_officer,fees_officer,payment_officer,cashier,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
     Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');
@@ -800,8 +805,11 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
     Route::post('/results/bulk-reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkReject'])->name('results.bulkReject');
 });
 
-// Librarian Routes
-Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librarian'])->group(function () {
+// Librarian Routes. Library Officer and Library Assistant (seeded by
+// ERPRolesSeeder) share the same catalogue/loans screens as the
+// Librarian — they just have a narrower permission set, enforced
+// in code where it matters (e.g. only Librarian can delete books).
+Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librarian,library_officer,library_assistant'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Librarian\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])->name('books');
     Route::get('/books/create', [\App\Http\Controllers\Librarian\DashboardController::class, 'createBook'])->name('books.create');

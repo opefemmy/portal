@@ -17,9 +17,23 @@ class TestUsersSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get existing roles
+        // Get existing roles. Includes the new roles seeded by
+        // ERPRolesSeeder so we can create test users for each of them.
         $roles = [];
-        $roleSlugs = ['super_admin', 'admin', 'bursar', 'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'hospital_receptionist', 'rector', 'auditor', 'student', 'lecturer', 'hod', 'dean', 'business_committee', 'academic_board', 'librarian'];
+        $roleSlugs = [
+            'super_admin', 'admin', 'ict_admin', 'staff',
+            'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier',
+            'accountant', 'finance_officer', 'account_officer',
+            'auditor', 'internal_auditor', 'external_auditor',
+            'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'hospital_receptionist',
+            'cmd', 'hospital_admin', 'medical_records_officer', 'hospital_accountant',
+            'matron', 'ward_manager', 'store_keeper',
+            'rector', 'registrar', 'admission_officer',
+            'student', 'lecturer', 'hod', 'dean',
+            'business_committee', 'academic_board', 'librarian',
+            'library_officer', 'library_assistant',
+            'applicant',
+        ];
 
         foreach ($roleSlugs as $slug) {
             $roles[$slug] = Role::where('slug', $slug)->first();
@@ -158,6 +172,119 @@ class TestUsersSeeder extends Seeder
                 'role' => 'student',
                 'gender' => 'female',
                 'matric_number' => 'ND/2024/002',
+            ],
+            // === New staff roles (added by ERPRolesSeeder) ===
+            [
+                'name' => 'ICT Officer',
+                'email' => 'ict@portal.edu',
+                'password' => 'password123',
+                'role' => 'ict_admin',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Bursary Officer',
+                'email' => 'bursaryofficer@portal.edu',
+                'password' => 'password123',
+                'role' => 'bursary_officer',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Fees Officer',
+                'email' => 'feesofficer@portal.edu',
+                'password' => 'password123',
+                'role' => 'fees_officer',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Payment Officer',
+                'email' => 'paymentofficer@portal.edu',
+                'password' => 'password123',
+                'role' => 'payment_officer',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Cashier',
+                'email' => 'cashier@portal.edu',
+                'password' => 'password123',
+                'role' => 'cashier',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Accountant',
+                'email' => 'accountant@portal.edu',
+                'password' => 'password123',
+                'role' => 'accountant',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Internal Auditor',
+                'email' => 'internalauditor@portal.edu',
+                'password' => 'password123',
+                'role' => 'internal_auditor',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'External Auditor',
+                'email' => 'externalauditor@portal.edu',
+                'password' => 'password123',
+                'role' => 'external_auditor',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Library Officer',
+                'email' => 'libraryofficer@portal.edu',
+                'password' => 'password123',
+                'role' => 'library_officer',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Library Assistant',
+                'email' => 'libraryassistant@portal.edu',
+                'password' => 'password123',
+                'role' => 'library_assistant',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Hospital Admin',
+                'email' => 'hospitaladmin@portal.edu',
+                'password' => 'password123',
+                'role' => 'hospital_admin',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Medical Records Officer',
+                'email' => 'medicalrecords@portal.edu',
+                'password' => 'password123',
+                'role' => 'medical_records_officer',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Hospital Accountant',
+                'email' => 'hospitalaccountant@portal.edu',
+                'password' => 'password123',
+                'role' => 'hospital_accountant',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Matron',
+                'email' => 'matron@portal.edu',
+                'password' => 'password123',
+                'role' => 'matron',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Ward Manager',
+                'email' => 'wardmanager@portal.edu',
+                'password' => 'password123',
+                'role' => 'ward_manager',
+                'gender' => 'female',
+            ],
+            [
+                'name' => 'Store Keeper',
+                'email' => 'storekeeper@portal.edu',
+                'password' => 'password123',
+                'role' => 'store_keeper',
+                'gender' => 'male',
             ],
         ];
 

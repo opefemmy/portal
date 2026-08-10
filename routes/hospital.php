@@ -53,8 +53,10 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         ->name('lab.dashboard');
 
     // External Patients Management (for outsiders)
-    // Receptionists manage; doctors/nurses/cmd view.
-    Route::prefix('external-patients')->name('external-patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,super_admin,admin')->group(function () {
+    // Receptionists manage; doctors/nurses/cmd view. hospital_admin
+    // and medical_records_officer need read-only access for records
+    // management and audit.
+    Route::prefix('external-patients')->name('external-patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,hospital_admin,medical_records_officer,super_admin,admin')->group(function () {
         Route::get('/', [ExternalPatientController::class, 'index'])->name('index');
         Route::post('/', [ExternalPatientController::class, 'store'])->name('store');
         Route::get('/{patient}', [ExternalPatientController::class, 'show'])->name('show');

@@ -9,8 +9,11 @@ use App\Http\Controllers\Finance\BudgetController;
 use App\Http\Controllers\Finance\PayrollController;
 use App\Http\Controllers\Finance\VendorController;
 
-// Finance Module - Protected by roles
-Route::prefix('finance')->name('finance.')->middleware(['auth', 'role:super_admin,admin,finance,finance_officer,accountant,account_officer,auditor'])->group(function () {
+// Finance Module - Protected by roles. Cashier, the bursary staff
+// (bursary_officer, fees_officer, payment_officer), the hospital
+// accountant, and the ICT admin all need to be able to open finance
+// screens for read-only reconciliation work.
+Route::prefix('finance')->name('finance.')->middleware(['auth', 'role:super_admin,admin,finance,finance_officer,accountant,account_officer,auditor,cashier,hospital_accountant,bursary_officer,fees_officer,payment_officer,ict_admin'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
