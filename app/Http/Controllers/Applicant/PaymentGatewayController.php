@@ -232,6 +232,100 @@ class PaymentGatewayController extends Controller
     }
 
     /**
+     * Retry a pending or failed payment attempt.
+     *
+     * Re-initiates the gateway flow against the most recent open row
+     * (status pending/failed) for the current applicant + purpose. If no
+     * open row exists yet, falls through to initiatePayment so a fresh
+     * attempt is created. Completed/verified payments block retry — the
+     * service's canPay() gate handles that, so we bounce with a clear
+     * flash rather than creating a duplicate Payment row.
+     *
+     * Posted from /applicant/payments/history next to the existing
+     * "Requery" button on rows whose status is pending or failed.
+     */
+    public function retryPayment(Request $request, string $purpose)
+    {
+        try {
+            $user = Auth::user();
+            $applicant = Applicant::where('user_id', $user->id)->first();
+
+            if (! $applicant) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'No application record found for your account.');
+            }
+
+            // Normalise purpose the same way the rest of the controller
+            // does — null/empty → application. URL parameter comes in via
+            // route binding so the {purpose} segment is always present,
+            // but a stray empty string would still slip through.
+            $purpose = $purpose !== ''
+                ? $purpose
+                : PaymentType::PURPOSE_APPLICATION;
+
+            // Lock to the applicant audience — same as showPaymentPage.
+            $paymentType = $this->payments->resolvePaymentType($purpose, PaymentType::AUDIENCE_APPLICANT);
+            if (! $paymentType) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('error', 'Payment type not configured. Please contact the admissions office.');
+            }
+
+            // Block retry if the fee is already paid. canPay() reads the
+            // canonical three-purpose *_paid_at columns OR
+            // payments.status='completed' for non-canonical purposes,
+            // so this is the same gate the gateway uses.
+            $block = $this->payments->canPay($applicant, $purpose);
+            if ($block) {
+                return redirect()->route('applicant.dashboard')
+                    ->with('info', $block);
+            }
+
+            // Find the most recent open attempt (pending/failed). If none,
+            // create a fresh one through the normal initiate flow.
+            $existing = $this->payments->pendingAttemptFor($applicant, $purpose);
+
+            if (! $existing) {
+                // No open attempt — fall through to a normal init so the
+                // user still gets a payment page, just from a clean slate.
+                $request->merge(['purpose' => $purpose]);
+                return $this->initiatePayment($request);
+            }
+
+            // Reuse the open row. refreshForRetry() updates the reference,
+            // gateway fields, flips status back to pending and clears
+            // payment_date / paid_at / is_verified — i.e. prepares the
+            // row for the gateway init call below.
+            $reference = $this->payments->generateReference($purpose, 'paystack');
+            $existing->refreshForRetry($reference, 'paystack');
+
+            session()->put('pending_payment_id', $existing->id);
+            session()->put('pending_payment_ref', $reference);
+            session()->put('pending_payment_purpose', $purpose);
+
+            $paystackPublicKey = config('services.paystack.public_key', 'pk_test_xxxxxxxxxxxxxxxx');
+
+            return view('applicant.payment-initiate', [
+                'reference' => $reference,
+                'amount' => $existing->amount,
+                'email' => $user->email,
+                'paystackPublicKey' => $paystackPublicKey,
+                'callbackUrl' => route('applicant.payment.callback'),
+                'purpose' => $purpose,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('payment retry: uncaught error', [
+                'user_id' => optional(Auth::user())->id,
+                'purpose' => $purpose,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('applicant.dashboard')
+                ->with('error', 'We could not resume your payment just now. Please try again or contact the admissions office.');
+        }
+    }
+
+    /**
      * Paystack payment callback. Single funnel into the service.
      *
      * Wrapped in a top-level Throwable catch so a verification failure or

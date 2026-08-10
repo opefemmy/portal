@@ -213,6 +213,13 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // Payment Gateway - Pay Now with online payment
         Route::get('/payment/gateway', [PaymentGatewayController::class, 'showPaymentPage'])->name('payment.gateway');
         Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePayment'])->name('payment.initiate');
+        // Retry the most recent pending/failed attempt for a given purpose.
+        // Posted from /applicant/payments/history next to the Requery button
+        // on rows whose status is pending or failed — reuses the open row
+        // (Payment::refreshForRetry) instead of creating a duplicate.
+        Route::post('/payment/{purpose}/retry', [PaymentGatewayController::class, 'retryPayment'])
+            ->where('purpose', 'application|acceptance|school_fee|compulsory')
+            ->name('payment.retry');
         Route::get('/payment/callback', [PaymentGatewayController::class, 'paymentCallback'])->name('payment.callback');
         Route::get('/payment/cancel', [PaymentGatewayController::class, 'cancelPayment'])->name('payment.cancel');
 
@@ -569,6 +576,11 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{fee}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
     Route::post('/payments/{fee}/initiate', [PaymentController::class, 'initiatePayment'])->name('payments.initiate');
+    // Retry a pending/failed school-fee payment. Reuses the open row
+    // (Payment::refreshForRetry) and refreshes the gateway reference
+    // instead of creating a duplicate. Ownership is enforced in the
+    // controller via Student::where('user_id', auth()->id()).
+    Route::post('/payments/{payment}/retry', [PaymentController::class, 'retryPayment'])->name('payments.retry');
     Route::get('/payments/verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'printReceipt'])->name('payments.receipt');
 
