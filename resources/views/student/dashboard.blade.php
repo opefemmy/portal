@@ -83,7 +83,7 @@ $user = auth()->user();
                             legacy ND 1 ("100 Level") is the most common
                             for new students so use that as the fallback.
                         --}}
-                        <span>Level {{ ($student->level ?: 1) * 100 }}</span>
+                        <span>Level {{ $student->level_display }}</span>
                         <span class="mx-2">|</span>
                         <span>{{ $student->session->name ?? '' }}</span>
                     @endif

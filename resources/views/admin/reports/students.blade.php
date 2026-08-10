@@ -84,7 +84,7 @@
                         <td>{{ $student->school->name ?? 'N/A' }}</td>
                         <td>{{ $student->department->name ?? 'N/A' }}</td>
                         <td>{{ $student->programme->name ?? 'N/A' }}</td>
-                        <td>{{ $student->levelDisplay }}</td>
+                        <td>{{ $student->level_display }}</td>
                         <td>
                             <span class="badge bg-{{ $student->status === 'active' ? 'success' : 'secondary' }}">
                                 {{ ucfirst($student->status) }}

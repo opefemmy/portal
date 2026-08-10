@@ -19,7 +19,7 @@
                 <p><strong>Email:</strong> {{ $student->user->email }}</p>
                 <p><strong>School:</strong> {{ $student->school->name ?? 'N/A' }}</p>
                 <p><strong>Department:</strong> {{ $student->department->name ?? 'N/A' }}</p>
-                <p><strong>Level:</strong> {{ $student->level }}</p>
+                <p><strong>Level:</strong> {{ $student->level_display ?? $student->level }}</p>
                 <p><strong>Status:</strong>
                     @if($student->status === 'active')
                         <span class="badge bg-success">Active</span>

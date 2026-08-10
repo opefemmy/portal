@@ -112,7 +112,7 @@ $student = ($user && method_exists($user, 'students')) ? $user->students()->firs
                 <p><strong>Matric Number:</strong> {{ $student->matric_number }}</p>
                 <p><strong>Name:</strong> {{ $user->name }}</p>
                 <p><strong>Department:</strong> {{ $student->department->name ?? 'N/A' }}</p>
-                <p><strong>Level:</strong> {{ $student->level }}</p>
+                <p><strong>Level:</strong> {{ $student->level_display ?? $student->level }}</p>
             </div>
         </div>
 
@@ -129,7 +129,7 @@ $student = ($user && method_exists($user, 'students')) ? $user->students()->firs
     <div class="text-center mb-4">
         <h2>Student Measurements Slip</h2>
         <p><strong>Name:</strong> {{ $user->name }} | <strong>Matric:</strong> {{ $student->matric_number }}</p>
-        <p><strong>Department:</strong> {{ $student->department->name ?? 'N/A' }} | <strong>Level:</strong> {{ $student->level }}</p>
+        <p><strong>Department:</strong> {{ $student->department->name ?? 'N/A' }} | <strong>Level:</strong> {{ $student->level_display ?? $student->level }}</p>
         <hr>
     </div>
 </div>

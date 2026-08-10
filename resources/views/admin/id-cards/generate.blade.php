@@ -43,7 +43,7 @@
                         <p class="mb-1"><strong>Matric No:</strong> {{ $student->matric_number ?? 'N/A' }}</p>
                         <p class="mb-1"><strong>Department:</strong> {{ $student->department->name ?? 'N/A' }}</p>
                         <p class="mb-1"><strong>Programme:</strong> {{ $student->programme->name ?? 'N/A' }}</p>
-                        <p class="mb-0"><strong>Level:</strong> {{ $student->levelDisplay }}</p>
+                        <p class="mb-0"><strong>Level:</strong> {{ $student->level_display ?? $student->levelDisplay ?? $student->level }}</p>
                     </div>
 
                     <div class="text-center mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.3);">
