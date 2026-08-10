@@ -170,9 +170,33 @@
                                 <i class="fas fa-print"></i>
                             </a>
                             @else
+                            {{--
+                                Pending / failed rows get BOTH buttons:
+                                  - Retry: re-runs the whole payment against
+                                    the open row (student.payments.retry).
+                                    Fresh gateway reference, same Payment.id
+                                    so the history doesn't double up.
+                                  - Requery: just re-checks status with the
+                                    gateway for the same attempt.
+
+                                Retry sits next to Requery instead of in
+                                place of it; sometimes the gateway call
+                                simply timed out and a Requery catches it,
+                                which is much faster than Retry.
+                            --}}
+                            <form method="POST"
+                                  action="{{ route('student.payments.retry', $payment) }}"
+                                  class="d-inline">
+                                @csrf
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Resume this payment with a fresh gateway reference">
+                                    <i class="fas fa-redo me-1"></i>Resume
+                                </button>
+                            </form>
                             <form method="POST"
                                   action="{{ route('payments.requery', $payment) }}"
-                                  class="d-inline"
+                                  class="d-inline ms-1"
                                   data-requery-form>
                                 @csrf
                                 <input type="hidden" name="redirect_to" value="{{ url()->current() }}">

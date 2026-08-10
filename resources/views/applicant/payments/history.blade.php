@@ -104,12 +104,19 @@
                                             button (existing affordance,
                                             goes to the applicant-side
                                             receipt route).
-                                          - Pending / failed AND a
-                                            payment_id is present → Requery
-                                            button (the new affordance, hits
-                                            the shared payments.requery
-                                            endpoint so the gateway can
-                                            recheck).
+                                          - Pending / failed AND an
+                                            applicant-purpose is present →
+                                            Retry button (the new affordance,
+                                            hits applicant.payment.retry to
+                                            reuse the open row and re-init
+                                            the gateway with a fresh
+                                            reference). Available alongside
+                                            Requery — Retry re-runs the whole
+                                            payment, Requery only re-checks
+                                            status of the same attempt.
+                                          - Pending / failed AND a payment_id
+                                            is present but no applicant-purpose
+                                            (legacy rows) → Requery button.
                                           - Manual bank-transfer rows have
                                             no payment_id and can't be
                                             requeried — they only get a
@@ -122,6 +129,34 @@
                                            title="View / print receipt">
                                             <i class="fas fa-receipt me-1"></i>Receipt
                                         </a>
+                                    @elseif(in_array($row['status'], ['pending', 'failed'], true)
+                                            && !empty($row['purpose'])
+                                            && in_array($row['purpose'], ['application', 'acceptance', 'school_fee', 'compulsory'], true))
+                                        <form method="POST"
+                                              action="{{ route('applicant.payment.retry', ['purpose' => $row['purpose']]) }}"
+                                              class="d-inline">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    title="Retry this payment with a fresh gateway reference">
+                                                <i class="fas fa-redo me-1"></i>Retry
+                                            </button>
+                                        </form>
+                                        @if(!empty($row['payment_id']) && $row['source'] === 'online')
+                                            <form method="POST"
+                                                  action="{{ route('payments.requery', ['payment' => $row['payment_id']]) }}"
+                                                  class="d-inline ms-1"
+                                                  data-requery-form>
+                                                @csrf
+                                                <input type="hidden" name="redirect_to" value="{{ url()->current() }}">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        title="Requery this payment with the gateway"
+                                                        onclick="return confirm('Requery this payment? We will recheck the status with the gateway.')">
+                                                    <i class="fas fa-sync me-1"></i>Requery
+                                                </button>
+                                            </form>
+                                        @endif
                                     @elseif(!empty($row['payment_id']) && !empty($row['source']) && $row['source'] === 'online')
                                         <form method="POST"
                                               action="{{ route('payments.requery', ['payment' => $row['payment_id']]) }}"
