@@ -85,4 +85,93 @@ class Payment extends Model
     {
         return 'PAY-' . strtoupper(uniqid()) . '-' . date('Ymd');
     }
+
+    /* ------------------------------------------------------------------
+     | Status constants + scopes (single source of truth)
+     |
+     | The payments.status column is varchar(20); the portal writes
+     | 'pending', 'completed', 'verified', 'failed' and 'cancelled'
+     | across the three payment flows (applicant / student / hospital
+     | pre-paid). Constants keep the magic strings out of the controllers,
+     | scopes power the new "retry pending attempt" behaviour —
+     | `scopeRetryable` returns rows whose gateway callback never confirmed
+     | success, so we can reuse the same row instead of creating a
+     | duplicate payment when the payer hits Pay twice on a stuck attempt.
+     * ------------------------------------------------------------------*/
+
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_VERIFIED  = 'verified';
+    public const STATUS_FAILED    = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** Statuses that block a NEW payment attempt because the fee is already paid. */
+    public const PAID_STATUSES = [self::STATUS_COMPLETED, self::STATUS_VERIFIED];
+
+    /** Statuses of an unfinished attempt the payer is allowed to retry. */
+    public const RETRYABLE_STATUSES = [self::STATUS_PENDING, self::STATUS_FAILED];
+
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
+    public function scopeFailed($query)
+    {
+        return $query->where('status', self::STATUS_FAILED);
+    }
+
+    /** Pending OR failed — gateway never confirmed success; safe to retry. */
+    public function scopeRetryable($query)
+    {
+        return $query->whereIn('status', self::RETRYABLE_STATUSES);
+    }
+
+    /** Most recent open attempt for a specific applicant + purpose. */
+    public function scopeOpenForPayer($query, int $payerId, string $purpose)
+    {
+        return $query->where('payer_id', $payerId)
+            ->where('payment_purpose', $purpose)
+            ->retryable()
+            ->latest('created_at');
+    }
+
+    /** Most recent open attempt for a specific student + fee. */
+    public function scopeOpenForStudent($query, int $studentId, int $feeId)
+    {
+        return $query->where('student_id', $studentId)
+            ->where('fee_id', $feeId)
+            ->retryable()
+            ->latest('created_at');
+    }
+
+    /**
+     * True if this attempt is still open — the payer can hit "Pay" /
+     * "Retry" again and we'll reuse the row instead of inserting another.
+     */
+    public function isRetryable(): bool
+    {
+        return in_array($this->status, self::RETRYABLE_STATUSES, true);
+    }
+
+    /**
+     * Refresh the mutable gateway-side fields so a second click on
+     * "Pay" produces a fresh reference. Leaves the row id, payer_id,
+     * payment_purpose, fee_id intact so the schema history is one row,
+     * not several. Caller should wrap in a transaction when followed by
+     * a PaymentGateway create call.
+     */
+    public function refreshForRetry(string $reference, string $gateway): void
+    {
+        $this->update([
+            'reference'      => $reference,
+            'payment_ref'    => $reference,
+            'transaction_id' => $reference,
+            'gateway'        => $gateway,
+            'status'         => self::STATUS_PENDING,
+            'payment_date'   => null,
+            'paid_at'        => null,
+            'is_verified'    => false,
+        ]);
+    }
 }

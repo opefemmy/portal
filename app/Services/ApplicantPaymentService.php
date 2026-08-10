@@ -418,6 +418,20 @@ class ApplicantPaymentService
         return (bool) $type->requires_payment;
     }
 
+    /**
+     * Most recent pending-or-failed attempt for this applicant + purpose.
+     * Used by initiate() to reuse the row on retry, and by the dashboard
+     * "Retry" affordance to find which row to resume.
+     *
+     * Cancelled rows are deliberately EXCLUDED — the payer explicitly
+     * cancelled that attempt, so a fresh "Pay" click should create a
+     * new row.
+     */
+    public function pendingAttemptFor(Applicant $applicant, string $purpose): ?Payment
+    {
+        return Payment::openForPayer($applicant->id, $purpose)->first();
+    }
+
     private function canPayApplication(Applicant $applicant): ?string
     {
         if ($applicant->hasPaid(PaymentType::PURPOSE_APPLICATION)) {
@@ -500,6 +514,23 @@ class ApplicantPaymentService
         }
 
         $reference = $this->generateReference($purpose, $channel);
+
+        // Retry behaviour: if the applicant already has a pending or
+        // failed attempt for this fee (gateway callback never confirmed
+        // success), reuse that row instead of inserting a duplicate.
+        // The previous attempt's reference / gateway / status get reset
+        // to pending so the next Paystack callback can re-resolve and
+        // re-stamp *_paid_at cleanly. The row count for a fee stays at
+        // one even after multiple retry clicks.
+        $existing = $this->pendingAttemptFor($applicant, $purpose);
+        if ($existing) {
+            $existing->refreshForRetry($reference, $channel);
+            return [
+                'payment'  => $existing,
+                'reference' => $reference,
+                'amount'   => $amount,
+            ];
+        }
 
         $payment = Payment::create([
             'student_id'      => null, // becomes populated on migration
