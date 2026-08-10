@@ -559,28 +559,61 @@ class ExternalPatientController extends Controller
         $portalCharge = ($service->amount * 2) / 100;
         $totalAmount = $service->amount + $portalCharge;
 
-        // Generate payment reference
-        $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+        // Retry behaviour: if this patient already has a pending or
+        // failed payment for the same service (gateway callback never
+        // confirmed success), reuse that row instead of inserting a
+        // duplicate. The pay-key is (patient_phone, service_type_id) —
+        // the patient phone is the session-scoped identifier (the
+        // external-patient portal isn't auth'd by user_id), and the
+        // service is the only fee granularity. Cancelled rows are
+        // intentional and get a fresh row instead.
+        $existing = HospitalPayment::where('patient_phone', $patient->phone)
+            ->where('service_type_id', $service->id)
+            ->whereIn('status', [HospitalPayment::STATUS_PENDING, HospitalPayment::STATUS_FAILED])
+            ->latest('created_at')
+            ->first();
 
-        // Create payment record
-        $payment = HospitalPayment::create([
-            'payment_ref' => $paymentRef,
-            'patient_name' => $patient->full_name,
-            'patient_email' => $patient->email,
-            'patient_phone' => $patient->phone,
-            'patient_gender' => $patient->gender,
-            'patient_age' => $patient->age,
-            'service_type_id' => $service->id,
-            'service_name' => $service->name,
-            'amount' => $service->amount,
-            'portal_charge' => $portalCharge,
-            'total_amount' => $totalAmount,
-            'payment_method' => $validated['payment_method'],
-            'status' => 'pending',
-            'payment_date' => Carbon::now()->toDateString(),
-            'appointment_date' => $validated['appointment_date'] ? Carbon::parse($validated['appointment_date'])->format('Y-m-d H:i:s') : null,
-            'doctor_name' => $validated['doctor_name'],
-        ]);
+        if ($existing) {
+            // Generate a fresh reference so the gateway init is new.
+            $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+
+            $existing->update([
+                'payment_ref'      => $paymentRef,
+                'amount'           => $service->amount,
+                'portal_charge'    => $portalCharge,
+                'total_amount'     => $totalAmount,
+                'payment_method'   => $validated['payment_method'],
+                'status'           => HospitalPayment::STATUS_PENDING,
+                'payment_date'     => Carbon::now()->toDateString(),
+                'appointment_date' => $validated['appointment_date'] ? Carbon::parse($validated['appointment_date'])->format('Y-m-d H:i:s') : null,
+                'doctor_name'      => $validated['doctor_name'],
+            ]);
+
+            $payment = $existing;
+        } else {
+            // Generate payment reference
+            $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+
+            // Create payment record
+            $payment = HospitalPayment::create([
+                'payment_ref' => $paymentRef,
+                'patient_name' => $patient->full_name,
+                'patient_email' => $patient->email,
+                'patient_phone' => $patient->phone,
+                'patient_gender' => $patient->gender,
+                'patient_age' => $patient->age,
+                'service_type_id' => $service->id,
+                'service_name' => $service->name,
+                'amount' => $service->amount,
+                'portal_charge' => $portalCharge,
+                'total_amount' => $totalAmount,
+                'payment_method' => $validated['payment_method'],
+                'status' => 'pending',
+                'payment_date' => Carbon::now()->toDateString(),
+                'appointment_date' => $validated['appointment_date'] ? Carbon::parse($validated['appointment_date'])->format('Y-m-d H:i:s') : null,
+                'doctor_name' => $validated['doctor_name'],
+            ]);
+        }
 
         return response()->json([
             'success' => true,

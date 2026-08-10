@@ -61,26 +61,58 @@ class HospitalPaymentController extends Controller
         // Get selected gateway (default to xpresspayments)
         $gateway = $request->gateway ?? 'xpresspayments';
 
-        // Create payment record
-        $payment = HospitalPayment::create([
-            'payment_ref' => $paymentRef,
-            'patient_name' => $request->patient_name,
-            'patient_email' => $request->patient_email,
-            'patient_phone' => $request->patient_phone,
-            'patient_gender' => $request->patient_gender,
-            'patient_age' => $request->patient_age,
-            'service_type_id' => $service->id,
-            'service_name' => $service->name,
-            'amount' => $service->amount,
-            'portal_charge' => $portalCharge,
-            'total_amount' => $totalAmount,
-            'payment_method' => $request->payment_method,
-            'status' => 'pending',
-            'payment_date' => now()->toDateString(),
-            'appointment_date' => $request->appointment_date ? \Carbon\Carbon::parse($request->appointment_date)->format('Y-m-d H:i:s') : null,
-            'doctor_name' => $request->doctor_name,
-            'notes' => $request->notes,
-        ]);
+        // Retry behaviour: if the same patient already has a pending or
+        // failed payment for the same service, reuse that row instead of
+        // inserting a duplicate. Key is (patient_phone, service_type_id)
+        // — admin/staff booking flow uses the typed-in phone rather than
+        // a session-scoped external patient. Cancelled rows still get a
+        // fresh row — they represent intentional aborts.
+        $existing = HospitalPayment::where('patient_phone', $request->patient_phone)
+            ->where('service_type_id', $service->id)
+            ->whereIn('status', [HospitalPayment::STATUS_PENDING, HospitalPayment::STATUS_FAILED])
+            ->latest('created_at')
+            ->first();
+
+        if ($existing) {
+            // Refresh the reference so the gateway init is fresh.
+            $paymentRef = 'HSP-' . strtoupper(Str::random(10));
+
+            $existing->update([
+                'payment_ref'      => $paymentRef,
+                'amount'           => $service->amount,
+                'portal_charge'    => $portalCharge,
+                'total_amount'     => $totalAmount,
+                'payment_method'   => $request->payment_method,
+                'status'           => HospitalPayment::STATUS_PENDING,
+                'payment_date'     => now()->toDateString(),
+                'appointment_date' => $request->appointment_date ? \Carbon\Carbon::parse($request->appointment_date)->format('Y-m-d H:i:s') : null,
+                'doctor_name'      => $request->doctor_name,
+                'notes'            => $request->notes,
+            ]);
+
+            $payment = $existing;
+        } else {
+            // Create payment record
+            $payment = HospitalPayment::create([
+                'payment_ref' => $paymentRef,
+                'patient_name' => $request->patient_name,
+                'patient_email' => $request->patient_email,
+                'patient_phone' => $request->patient_phone,
+                'patient_gender' => $request->patient_gender,
+                'patient_age' => $request->patient_age,
+                'service_type_id' => $service->id,
+                'service_name' => $service->name,
+                'amount' => $service->amount,
+                'portal_charge' => $portalCharge,
+                'total_amount' => $totalAmount,
+                'payment_method' => $request->payment_method,
+                'status' => 'pending',
+                'payment_date' => now()->toDateString(),
+                'appointment_date' => $request->appointment_date ? \Carbon\Carbon::parse($request->appointment_date)->format('Y-m-d H:i:s') : null,
+                'doctor_name' => $request->doctor_name,
+                'notes' => $request->notes,
+            ]);
+        }
 
         // Build response with gateway info
         $response = [
