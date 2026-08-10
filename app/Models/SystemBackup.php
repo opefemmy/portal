@@ -68,7 +68,7 @@ class SystemBackup extends Model
         $this->update(['status' => self::STATUS_IN_PROGRESS]);
     }
 
-    public function markCompleted(string $filePath, string $fileSize): void
+    public function markCompleted(?string $filePath, ?string $fileSize): void
     {
         $this->update([
             'status' => self::STATUS_COMPLETED,

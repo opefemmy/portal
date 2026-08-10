@@ -93,8 +93,12 @@ class MaintenanceController extends Controller
         // Try to create backup first (may fail if table doesn't exist)
         try {
             $this->updater->createDatabaseBackup();
-        } catch (\Exception $e) {
-            // Ignore backup errors
+        } catch (\Throwable $e) {
+            // Ignore backup errors — the caller (runMigrations / runAllRepairs)
+            // should still proceed. Catch \Throwable (not \Exception) so
+            // TypeError / ValueError / other PHP 8 Error subclasses don't
+            // 500 the whole endpoint. Mirrors gateway-empty-body-throwable.
+            \Log::warning('Backup before maintenance failed: ' . $e->getMessage());
         }
 
         $results = $this->updater->runMigrations();
@@ -131,8 +135,12 @@ class MaintenanceController extends Controller
         // Try to create backup first (may fail if table doesn't exist)
         try {
             $this->updater->createDatabaseBackup();
-        } catch (\Exception $e) {
-            // Ignore backup errors
+        } catch (\Throwable $e) {
+            // Ignore backup errors — the caller (runMigrations / runAllRepairs)
+            // should still proceed. Catch \Throwable (not \Exception) so
+            // TypeError / ValueError / other PHP 8 Error subclasses don't
+            // 500 the whole endpoint. Mirrors gateway-empty-body-throwable.
+            \Log::warning('Backup before maintenance failed: ' . $e->getMessage());
         }
 
         $results = $this->updater->runAllRepairs();
