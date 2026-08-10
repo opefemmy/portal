@@ -8,7 +8,9 @@ use App\Models\School;
 use App\Models\Department;
 use App\Models\Programme;
 use App\Models\Session;
+use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RegimeController extends Controller
 {
@@ -17,7 +19,63 @@ class RegimeController extends Controller
         $regimes = RegimePayment::with(['school', 'department', 'programme', 'session'])
             ->latest()
             ->get();
-        return view('bursar.regimes.index', compact('regimes'));
+
+        // Tally: for each regime, sum the actual completed payments that
+        // match its scope (school/department/programme/session/student_type).
+        // Counts how many students have paid under this regime and the
+        // total collected. This is what makes the regimes view reconcile
+        // with /bursar/payments and /bursar/reports.
+        $tallyByRegime = [];
+        foreach ($regimes as $regime) {
+            $paymentsQuery = Payment::query()
+                ->where('status', 'completed')
+                ->where('installment', $regime->installment);
+
+            // Only match payments whose fee_type / payment_purpose matches
+            // the regime's payment_type when both are set.
+            if ($regime->payment_type) {
+                $paymentsQuery->where(function ($q) use ($regime) {
+                    $q->where('fee_type', $regime->payment_type)
+                      ->orWhere('payment_purpose', $regime->payment_type);
+                });
+            }
+
+            // Scope filters: only apply if the regime has them set.
+            if ($regime->school_id) {
+                $paymentsQuery->whereHas('student', function ($q) use ($regime) {
+                    $q->where('school_id', $regime->school_id);
+                });
+            }
+            if ($regime->department_id) {
+                $paymentsQuery->whereHas('student', function ($q) use ($regime) {
+                    $q->where('department_id', $regime->department_id);
+                });
+            }
+            if ($regime->programme_id) {
+                $paymentsQuery->whereHas('student', function ($q) use ($regime) {
+                    $q->where('programme_id', $regime->programme_id);
+                });
+            }
+            if ($regime->session_id) {
+                $paymentsQuery->whereHas('student', function ($q) use ($regime) {
+                    $q->where('session_id', $regime->session_id);
+                });
+            }
+            if ($regime->student_type) {
+                $paymentsQuery->where('student_type', $regime->student_type);
+            }
+
+            $tallyByRegime[$regime->id] = [
+                'students' => (clone $paymentsQuery)
+                    ->whereNotNull('student_id')
+                    ->distinct('student_id')
+                    ->count('student_id'),
+                'count'    => $paymentsQuery->count(),
+                'amount'   => $paymentsQuery->sum('amount'),
+            ];
+        }
+
+        return view('bursar.regimes.index', compact('regimes', 'tallyByRegime'));
     }
 
     public function create()

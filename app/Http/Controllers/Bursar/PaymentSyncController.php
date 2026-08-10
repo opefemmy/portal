@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,27 @@ class PaymentSyncController extends Controller
      */
     public function index()
     {
+        // Guard against the local-DB drift case where the restore from
+        // database_backup_20260724.sql skipped the original
+        // 2026_07_23_000001_create_external_payments_table migration.
+        // Schema::hasTable check keeps this page rendering even before the
+        // 2026_08_09_000001 safety-net migration has been run; the missing
+        // migration can be applied without this controller 500-ing.
+        if (! Schema::hasTable('external_payments')) {
+            return view('bursar.payment-sync', [
+                'recentImports' => collect(),
+                'stats' => [
+                    'total' => 0,
+                    'used' => 0,
+                    'unused' => 0,
+                    'completed' => 0,
+                    'pending' => 0,
+                    'failed' => 0,
+                ],
+                'table_missing' => true,
+            ]);
+        }
+
         $recentImports = ExternalPayment::orderBy('created_at', 'desc')
             ->limit(20)
             ->get();

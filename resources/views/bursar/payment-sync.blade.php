@@ -23,6 +23,20 @@
     </div>
 </div>
 
+@if(!empty($table_missing))
+    <div class="alert alert-warning">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>External payments table is missing</h5>
+        <p class="mb-2">
+            The <code>external_payments</code> table is not present in this database
+            (the local restore from <code>database_backup_20260724.sql</code> skipped the original migration).
+            Run <code>php artisan migrate</code> to install the
+            <code>2026_08_09_000001_ensure_external_payments_table_exists</code> safety-net migration,
+            then refresh this page.
+        </p>
+        <p class="mb-0">No external payments can be uploaded until the table exists.</p>
+    </div>
+@endif
+
 <div class="row">
     <!-- Statistics Cards -->
     <div class="col-md-3">

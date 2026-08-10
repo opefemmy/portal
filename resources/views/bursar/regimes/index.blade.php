@@ -21,6 +21,35 @@
     </ul>
 </div>
 
+{{-- Tally summary across all regimes (so this view reconciles with
+     /bursar/payments and /bursar/reports). --}}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card info">
+            <div class="card-body">
+                <h6 class="text-muted">Total Students Paid (across regimes)</h6>
+                <h2>{{ collect($tallyByRegime ?? [])->sum('students') }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <h6 class="text-muted">Total Payment Records</h6>
+                <h2>{{ collect($tallyByRegime ?? [])->sum('count') }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <h6 class="text-muted">Total Collected (Regimes)</h6>
+                <h2>₦{{ number_format(collect($tallyByRegime ?? [])->sum('amount'), 2) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">
@@ -33,11 +62,15 @@
                         <th>Percentage</th>
                         <th>Amount</th>
                         <th>Status</th>
+                        <th>Students Paid</th>
+                        <th>Payments</th>
+                        <th>Total Collected</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($regimes as $regime)
+                    @php $tally = $tallyByRegime[$regime->id] ?? ['students' => 0, 'count' => 0, 'amount' => 0]; @endphp
                     <tr>
                         <td>{{ $regime->name }}</td>
                         <td>
@@ -53,6 +86,9 @@
                                 {{ $regime->is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
+                        <td><span class="badge bg-info">{{ $tally['students'] }}</span></td>
+                        <td><span class="badge bg-primary">{{ $tally['count'] }}</span></td>
+                        <td><strong>₦{{ number_format($tally['amount'], 2) }}</strong></td>
                         <td>
                             <a href="{{ route('bursar.regimes.edit', $regime) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Edit this regime">
                                 <i class="fas fa-edit"></i>
@@ -68,7 +104,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center py-4">No regimes configured.</td>
+                        <td colspan="10" class="text-center py-4">No regimes configured.</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -33,8 +33,9 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Verified Payments ({{ $paidStudents->total() ?? 0 }})</h5>
+        <span class="badge bg-success fs-6">Total: ₦{{ number_format($totalAmount ?? 0, 2) }}</span>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -59,7 +60,11 @@
                         <td>{{ $payment->student->department->name ?? 'N/A' }}</td>
                         <td>₦{{ number_format($payment->amount, 2) }}</td>
                         <td><code>{{ $payment->reference ?? $payment->payment_ref ?? 'N/A' }}</code></td>
-                        <td><span class="badge bg-success">Verified</span></td>
+                        <td>
+                            <span class="badge bg-{{ $payment->status === 'verified' ? 'info' : 'success' }}">
+                                {{ ucfirst($payment->status) }}
+                            </span>
+                        </td>
                     </tr>
                     @empty
                     <tr>
