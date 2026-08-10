@@ -23,18 +23,55 @@ class Student extends Model
         'measurements_taken_at', 'measured_by',
     ];
 
+    /**
+     * Map of `students.level` integer → human-readable label.
+     *
+     * Two flavours are exposed for each value:
+     *   - `full`:    "100 Level", "200 Level", …   ← primary display
+     *   - `compact`: "ND1", "ND2", "HND1", …      ← for ID cards / tight UI
+     *
+     * The Nigerian polytechnic convention is `students.level` 1 = 100L
+     * (first year ND1), 2 = 200L (ND2), 3 = 300L (HND1), 4 = 400L (HND2).
+     * Levels 5/6 are used by longer programmes (e.g. pre-ND or remedial
+     * tracks) and just keep the numeric ×100L form.
+     */
     const LEVEL_NAMES = [
-        1 => 'ND1 (100L)',
-        2 => 'ND (200L)',
-        3 => 'HND1 (300L)',
-        4 => 'HND2 (400L)',
+        1 => '100 Level',
+        2 => '200 Level',
+        3 => '300 Level',
+        4 => '400 Level',
+        5 => '500 Level',
+        6 => '600 Level',
+    ];
+
+    const LEVEL_NAMES_COMPACT = [
+        1 => 'ND1',
+        2 => 'ND2',
+        3 => 'HND1',
+        4 => 'HND2',
         5 => '500L',
         6 => '600L',
     ];
 
+    /**
+     * Default accessor — returns the long-form label ("100 Level").
+     * Every view that previously wrote `{{ $student->level }}` and
+     * got "1" now writes `{{ $student->level_display }}` and gets
+     * "100 Level" automatically.
+     */
     public function getLevelDisplayAttribute(): string
     {
         return self::LEVEL_NAMES[$this->level] ?? (string) $this->level;
+    }
+
+    /**
+     * Compact accessor for tight UI surfaces (ID cards, table cells).
+     * Use `{{ $student->level_compact }}` to render "ND1" instead of
+     * "100 Level".
+     */
+    public function getLevelCompactAttribute(): string
+    {
+        return self::LEVEL_NAMES_COMPACT[$this->level] ?? (string) $this->level;
     }
 
     public function user(): BelongsTo
