@@ -92,6 +92,107 @@ class PaymentController extends Controller
     }
 
     /**
+     * Retry a pending or failed school-fee payment attempt.
+     *
+     * Reuses the existing Payment row (status pending/failed) instead of
+     * inserting a duplicate. The student-side equivalent of
+     * PaymentGatewayController::retryPayment — same shape, different
+     * relation key: (student_id, fee_id) rather than (payer_id, purpose).
+     *
+     * Posts from /student/payments next to a pending/failed row. The view
+     * only renders the button on retryable rows, so by construction the
+     * Payment arriving here is in scope. If somehow a closed row arrives
+     * (status='completed'/'verified'), we bounce back with an info flash
+     * rather than 500-ing.
+     */
+    public function retryPayment(Request $request, Payment $payment)
+    {
+        try {
+            $student = Student::where('user_id', auth()->id())->firstOrFail();
+
+            // Ownership check — a student may only retry their own rows.
+            if ($payment->student_id !== $student->id) {
+                abort(403, 'You are not allowed to retry this payment.');
+            }
+
+            // Closed rows are not retryable — the calculator still has
+            // them counted in totalPercentPaid(). Return back with a
+            // clear message rather than redirecting to the gateway.
+            if (! $payment->isRetryable()) {
+                return redirect()->route('student.payments')
+                    ->with('info', 'This payment has already been completed.');
+            }
+
+            // resolve Fee — payment->fee is loaded by the index view
+            // already, but for a direct POST we may need to load it.
+            $fee = $payment->fee ?: Fee::find($payment->fee_id);
+            if (! $fee) {
+                return redirect()->route('student.payments')
+                    ->with('error', 'Original fee for this payment is no longer available. Please start a new payment.');
+            }
+
+            // Re-check available percents against the calculator so the
+            // student doesn't retry at a percent that's already locked.
+            $allowed = SchoolFeeCalculator::availablePercents($student, $fee);
+            // Pick the percent that matches the existing row when
+            // possible; otherwise fall back to the first available.
+            $percent = in_array((int) $payment->percent_paid, $allowed, true)
+                ? (int) $payment->percent_paid
+                : ($allowed[0] ?? 100);
+
+            $amount = SchoolFeeCalculator::payable($student, $fee, $percent);
+            $penaltyAmount = 0;
+            if (SystemSetting::get('payment_penalty', 'false') === 'true') {
+                $penaltyAmount = (float) SystemSetting::get('payment_penalty_amount', 0);
+            }
+            $totalAmount = $amount + $penaltyAmount;
+            $label = SchoolFeeCalculator::installmentLabel($percent);
+
+            $reference = Payment::generateReference();
+            $gateway = PaymentGateway::getActiveGateway();
+            if (! $gateway) {
+                return redirect()->route('student.payments')
+                    ->with('error', 'No payment gateway configured.');
+            }
+
+            // refreshForRetry flips the status back to pending and clears
+            // payment_date/paid_at/is_verified so the gateway init
+            // produces a fresh "pending" row.
+            $payment->refreshForRetry($reference, $gateway->provider);
+            // Keep amount/percent/label in sync with what the calculator
+            // returns now (the percent might have changed above).
+            $payment->update([
+                'amount'            => $amount,
+                'portal_charge'     => (float) $fee->portal_charge,
+                'total_amount'      => $totalAmount,
+                'percent_paid'      => $percent,
+                'installment_label' => $label,
+            ]);
+
+            // Funnel into the same gateway-init helpers that initiatePayment
+            // uses — they handle the redirect-to-gateway URL.
+            if ($gateway->provider === 'paystack') {
+                return $this->initiatePaystackPayment($payment->fresh(), $fee, $student, $gateway);
+            } elseif ($gateway->provider === 'flutterwave') {
+                return $this->initiateFlutterwavePayment($payment->fresh(), $fee, $student, $gateway);
+            }
+
+            return redirect()->route('student.payments')
+                ->with('error', 'Unsupported payment gateway.');
+        } catch (\Throwable $e) {
+            Log::error('student payment retry: uncaught error', [
+                'payment_id' => $payment?->id,
+                'user_id'    => optional(auth()->user())->id,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('student.payments')
+                ->with('error', 'We could not resume your payment just now. Please try again or contact the bursar if the issue persists.');
+        }
+    }
+
+    /**
      * Initiate a student-side school-fee payment.
      *
      * Wrapped in a top-level Throwable catch so a downstream exception
@@ -161,43 +262,73 @@ class PaymentController extends Controller
         $totalAmount = $amount + $penaltyAmount;
         $label = SchoolFeeCalculator::installmentLabel($percent);
 
-        // Create payment record.
-        //
-        // NOTE on the installment columns: payments has TWO columns:
-        //   - `installment_label` (varchar 20) — lowercase 'full'/'first'/'second',
-        //     used by SchoolFeeCalculator and the reporting path.
-        //   - `installment` (ENUM('First','Second','Full') on production)
-        //     — uppercase, owned by the Bursar regime-payment domain
-        //     (RegimeController).
-        // We must NOT write `installment` here with a lowercase value —
-        // strict mode rejects it as not in the ENUM and the INSERT
-        // throws QueryException. That was the source of the
-        // "student/payments/6/initiate server 500 error" the user
-        // reported on production. The redundant label column already
-        // carries the same information; leave `installment` alone.
-        $payment = Payment::create([
-            'student_id'        => $student->id,
-            'fee_id'            => $fee->id,
-            'amount'            => $amount,
-            'portal_charge'     => (float) $fee->portal_charge,
-            'total_amount'      => $totalAmount,
-            'percent_paid'      => $percent,
-            'installment_label' => $label,
-            'reference'         => Payment::generateReference(),
-            'gateway'           => $gateway->provider,
-            'status'            => 'pending',
-            // Pin the audience + purpose on the row so dashboard joins
-            // (`payments.student_type` etc.) and the Bursar filters work
-            // even though the student-side controller doesn't go through
-            // ApplicantPaymentService. Without these, MySQL rejects the
-            // INSERT with "Field 'student_type' doesn't have a default".
-            // Use feeTypeFor() to get the production-safe ENUM value
-            // (e.g. 'school_fees' not 'school_fee') — see PaymentType's
-            // ENUM definition.
-            'student_type'      => 'student',
-            'payment_purpose'   => PaymentType::PURPOSE_SCHOOL_FEE,
-            'fee_type'          => app(ApplicantPaymentService::class)->feeTypeFor(PaymentType::PURPOSE_SCHOOL_FEE),
-        ]);
+        $reference = Payment::generateReference();
+
+        // Retry behaviour: if this student already has a pending or
+        // failed attempt for the same fee (gateway callback never
+        // confirmed success), reuse the open row instead of inserting a
+        // duplicate. refreshForRetry() flips status back to 'pending',
+        // clears payment_date/paid_at/is_verified, and updates the new
+        // reference / gateway fields so the next gateway call is fresh.
+        // The hard `totalPercentPaid() >= 100` gate above means a
+        // completed/verified row exists when we reach this branch — we
+        // can safely overwrite an open one and still leave the closed
+        // row untouched.
+        $existing = Payment::openForStudent($student->id, $fee->id)->first();
+        if ($existing) {
+            $existing->refreshForRetry($reference, $gateway->provider);
+            // Keep the amount/percent/label in sync with whatever the
+            // payer just chose — the calculator may have returned a
+            // different number for the new percent option than the
+            // original attempt used (e.g. 60% vs 100%).
+            $existing->update([
+                'amount'            => $amount,
+                'portal_charge'     => (float) $fee->portal_charge,
+                'total_amount'      => $totalAmount,
+                'percent_paid'      => $percent,
+                'installment_label' => $label,
+            ]);
+
+            $payment = $existing->fresh();
+        } else {
+            // Create payment record.
+            //
+            // NOTE on the installment columns: payments has TWO columns:
+            //   - `installment_label` (varchar 20) — lowercase 'full'/'first'/'second',
+            //     used by SchoolFeeCalculator and the reporting path.
+            //   - `installment` (ENUM('First','Second','Full') on production)
+            //     — uppercase, owned by the Bursar regime-payment domain
+            //     (RegimeController).
+            // We must NOT write `installment` here with a lowercase value —
+            // strict mode rejects it as not in the ENUM and the INSERT
+            // throws QueryException. That was the source of the
+            // "student/payments/6/initiate server 500 error" the user
+            // reported on production. The redundant label column already
+            // carries the same information; leave `installment` alone.
+            $payment = Payment::create([
+                'student_id'        => $student->id,
+                'fee_id'            => $fee->id,
+                'amount'            => $amount,
+                'portal_charge'     => (float) $fee->portal_charge,
+                'total_amount'      => $totalAmount,
+                'percent_paid'      => $percent,
+                'installment_label' => $label,
+                'reference'         => $reference,
+                'gateway'           => $gateway->provider,
+                'status'            => 'pending',
+                // Pin the audience + purpose on the row so dashboard joins
+                // (`payments.student_type` etc.) and the Bursar filters work
+                // even though the student-side controller doesn't go through
+                // ApplicantPaymentService. Without these, MySQL rejects the
+                // INSERT with "Field 'student_type' doesn't have a default".
+                // Use feeTypeFor() to get the production-safe ENUM value
+                // (e.g. 'school_fees' not 'school_fee') — see PaymentType's
+                // ENUM definition.
+                'student_type'      => 'student',
+                'payment_purpose'   => PaymentType::PURPOSE_SCHOOL_FEE,
+                'fee_type'          => app(ApplicantPaymentService::class)->feeTypeFor(PaymentType::PURPOSE_SCHOOL_FEE),
+            ]);
+        }
 
         // Initialize payment based on gateway
         if ($gateway->provider === 'paystack') {
