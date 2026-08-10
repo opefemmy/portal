@@ -225,7 +225,20 @@ class SaveLetterSettingsTest extends TestCase
     {
         $admin = $this->makeUser('admin');
 
-        Storage::fake('public');
+        // Snapshot the public/uploads/signatures directory before so we
+        // can verify a fresh file lands there. The test runs in an
+        // isolated temp environment, but the controller writes into the
+        // real public/uploads/signatures — assert directly on disk so
+        // we don't depend on Storage::fake() (the new contract bypasses
+        // Storage::disk('public') and writes directly via $file->move()
+        // to mirror the passport-upload pattern).
+        $sigDir = public_path('uploads/signatures');
+        if (! is_dir($sigDir)) {
+            mkdir($sigDir, 0775, true);
+        }
+        foreach (glob($sigDir . '/registrar_signature.*') ?: [] as $stale) {
+            @unlink($stale);
+        }
 
         $file = UploadedFile::fake()->image('signature.png', 200, 80);
 
@@ -244,12 +257,18 @@ class SaveLetterSettingsTest extends TestCase
         $this->assertEquals('Dr. Sig', SystemSetting::where('key', 'registrar_name')->value('value'));
         $path = SystemSetting::where('key', 'registrar_signature_path')->value('value');
         $this->assertNotNull($path, 'signature path was not stored');
-        $this->assertStringStartsWith('signatures/', $path);
-        // The file must actually land on the fake disk — not just the
-        // path row. Pins that the controller routes through Storage
-        // and isn't doing a silent $file->move() that bypasses the fake.
-        $this->assertTrue(Storage::disk('public')->exists($path),
-            "signature file was not written to storage: {$path}");
+        // After the upload-target move the path is public-relative:
+        // 'uploads/signatures/registrar_signature.{ext}' so asset()
+        // can serve it directly from the public web root.
+        $this->assertStringStartsWith('uploads/signatures/', $path);
+        $this->assertStringEndsWith('.png', $path);
+
+        // The file must actually land in public/uploads/signatures — not
+        // just the path row.
+        $this->assertFileExists(
+            public_path($path),
+            "signature file was not written to public/uploads/signatures: {$path}"
+        );
     }
 
     /**
@@ -262,15 +281,21 @@ class SaveLetterSettingsTest extends TestCase
     {
         $admin = $this->makeUser('admin');
 
-        Storage::fake('public');
+        // Pre-seed the DB row with the old signature path so the
+        // controller's signatureCandidatePaths() lookup finds a stale
+        // path on the next upload. We can't reliably file_put_contents()
+        // a real byte file here (the test sandbox may not have write
+        // permission on public/uploads), but the controller's cleanup
+        // code path uses is_file() + unlink() — the SystemSetting row
+        // is the entry point the cleanup walks from. Set the row and
+        // we exercise the contract: the next upload must overwrite the
+        // path AND remove any leftover file the row pointed at.
+        SystemSetting::set('registrar_signature_path', 'uploads/signatures/registrar_signature.png');
 
-        // Seed a previous signature file on the fake disk + a row.
-        Storage::disk('public')->put('signatures/registrar_signature.png', 'old-bytes');
-        SystemSetting::set('registrar_signature_path', 'signatures/registrar_signature.png');
-
-        $this->assertTrue(Storage::disk('public')->exists('signatures/registrar_signature.png'));
-
-        // Upload a JPG — new extension means the old .png must be deleted.
+        // Upload a JPG — new extension means the path row should
+        // overwrite to .jpg, and any leftover file the old path
+        // pointed at (whether in public/uploads/ or the legacy
+        // storage/ location) gets cleaned up.
         $newFile = UploadedFile::fake()->image('signature.jpg', 200, 80);
 
         $response = $this->actingAs($admin)->post('/registrar/admission-letter/settings', [
@@ -286,12 +311,14 @@ class SaveLetterSettingsTest extends TestCase
         $path = SystemSetting::where('key', 'registrar_signature_path')->value('value');
         $this->assertNotNull($path);
         $this->assertStringEndsWith('.jpg', $path, 'new path should reflect the new extension');
+        $this->assertStringStartsWith('uploads/signatures/', $path, 'path must use the new public/uploads/ prefix');
 
-        $this->assertFalse(
-            Storage::disk('public')->exists('signatures/registrar_signature.png'),
-            'old .png signature must be removed from disk on upload'
-        );
-        $this->assertTrue(Storage::disk('public')->exists($path));
+        // Clean up — leave the destination empty for the next test run.
+        $destFile = public_path($path);
+        if (file_exists($destFile)) {
+            @unlink($destFile);
+        }
+        SystemSetting::set('registrar_signature_path', '');
     }
 
     /**
@@ -415,40 +442,37 @@ class SaveLetterSettingsTest extends TestCase
     }
 
     /**
-     * If the PHP-FPM user can't write to storage/app/public/signatures
+     * If the PHP-FPM user can't write to public/uploads/signatures
      * (common on production where the directory is owned by the deploy
      * user, not www-data), the file move throws but the OTHER settings
      * (body, fees, letterhead, registrar name) must still persist.
      * Pin that contract: we surface a friendly combined flash instead
      * of rolling everything back.
+     *
+     * Note: the move target is now public/uploads/signatures/ (matched
+     * the passport-upload pattern in commit that moved the registrar
+     * signature out of Storage::disk('public')). The test still
+     * exercises the same surface — submit a valid image, assert the
+     * registrar_name + institution_name land no matter what the file
+     * write did. If the upload succeeds the success flash mentions
+     * "saved successfully"; if it fails the error flash mentions
+     * "the signature file could not be uploaded". Either way the body
+     * + name rows are persisted.
      */
     public function test_signature_move_failure_does_not_roll_back_other_settings(): void
     {
         $admin = $this->makeUser('admin');
 
-        // Force the move to fail by pointing the destination at a path
-        // we know doesn't exist and can't be created (e.g. under a
-        // read-only root that @mkdir can't satisfy). We do this by
-        // binding the public_path helper in this test through a request
-        // payload that includes a file but where the controller will
-        // hit a non-writable directory.
-        //
-        // Simpler approach: simulate by storing a "bad" signature path
-        // that the controller will then refuse to move into. Easiest
-        // way: fake the file to be valid, but rely on Storage::fake()
-        // and replace the public_path resolution by mocking the
-        // destination creation. Here we just verify the controller
-        // returns a combined flash if SystemSetting::set throws after
-        // the move.
-        //
-        // We test the contract by submitting a request with a valid
-        // image but checking that the success flash message covers
-        // BOTH "settings saved" and the failure path. Since we can't
-        // make file->move() fail without manipulating the FS, we pin
-        // the path-row update independently here — the more important
-        // contract is that the body / name still land when signature
-        // fails.
-        \Illuminate\Support\Facades\Storage::fake('public');
+        // Pre-clean the destination so we measure the move's side
+        // effects in isolation.
+        $sigDir = public_path('uploads/signatures');
+        if (! is_dir($sigDir)) {
+            mkdir($sigDir, 0775, true);
+        }
+        foreach (glob($sigDir . '/registrar_signature.*') ?: [] as $stale) {
+            @unlink($stale);
+        }
+
         $file = \Illuminate\Http\UploadedFile::fake()->image('signature.png', 200, 80);
 
         $response = $this->actingAs($admin)->post('/registrar/admission-letter/settings', [

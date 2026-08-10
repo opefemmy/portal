@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\PaymentType;
@@ -30,6 +31,8 @@ use Illuminate\View\View;
  */
 class AdmissionLetterController extends Controller
 {
+    use ResolvesRegistrarSignature;
+
     /**
      * Show the admission letter for the authenticated student.
      *
@@ -69,10 +72,15 @@ class AdmissionLetterController extends Controller
         // The applicant.admission-letter blade reads both $applicant
         // and $student — $student is used to pull the canonical
         // matric number off the Student row rather than the applicant's
-        // copy.
+        // copy. $signatureUrl resolves through ResolvesRegistrarSignature
+        // — walks the new public/uploads/ location first, then the legacy
+        // storage/ paths, and falls back to a fixed
+        // public/uploads/signatures/registrar_signature.{ext} file if the
+        // registrar drops one in directly (the "live" fallback).
         return view('applicant.admission-letter', [
-            'applicant' => $applicant,
-            'student'   => $student,
+            'applicant'    => $applicant,
+            'student'      => $student,
+            'signatureUrl' => $this->resolveRegistrarSignatureUrl(),
         ]);
     }
 }

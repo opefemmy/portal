@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\School;
@@ -23,6 +24,7 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
+    use ResolvesRegistrarSignature;
     /**
      * Canonical O'level subject list.
      *
@@ -788,7 +790,16 @@ class ApplicationController extends Controller
         $applicant->load(['school', 'department', 'programme', 'session', 'state', 'localGovernment']);
         $student = Student::where('matric_number', $applicant->matric_number)->first();
 
-        return view('applicant.admission-letter', compact('applicant', 'student'));
+        // Resolve the registrar signature via the shared concern so the
+        // applicant-side and student-side print endpoints agree on the
+        // on-disk location — see ResolvesRegistrarSignature for the
+        // resolution order (new public/uploads/ first, legacy storage/
+        // fallback, fixed-file fallback).
+        return view('applicant.admission-letter', [
+            'applicant'    => $applicant,
+            'student'      => $student,
+            'signatureUrl' => $this->resolveRegistrarSignatureUrl(),
+        ]);
     }
 
     /**

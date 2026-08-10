@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Registrar;
 
+use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\Setting;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AdmissionController extends Controller
 {
+    use ResolvesRegistrarSignature;
     public function index(Request $request)
     {
         $query = Applicant::with(['user', 'department', 'programme', 'school']);
@@ -418,7 +420,16 @@ class AdmissionController extends Controller
 
         $student = Student::where('matric_number', $applicant->matric_number)->first();
 
-        return view('registrar.admission.letter', compact('applicant', 'student'));
+        // Resolve the registrar signature via the shared concern so the
+        // applicant-side and student-side print endpoints agree on the
+        // on-disk location — see ResolvesRegistrarSignature for the
+        // resolution order (new public/uploads/ first, legacy storage/
+        // fallback, fixed-file fallback).
+        return view('registrar.admission.letter', [
+            'applicant'    => $applicant,
+            'student'      => $student,
+            'signatureUrl' => $this->resolveRegistrarSignatureUrl(),
+        ]);
     }
 
     /**
@@ -564,49 +575,62 @@ class AdmissionController extends Controller
 
             // Handle signature upload.
             //
-            // Routed through Storage::disk('public') so the write lands in
-            // storage/app/public (the same place public/storage junctions to).
-            // Three reasons this is preferable to $file->move() into a
-            // hand-built public_path('storage/signatures'):
-            //   1. Storage::fake('public') intercepts the write in tests —
-            //      direct $file->move() bypasses the fake and silently
-            //      writes to the real (read-only) directory.
-            //   2. Storage handles directory creation with proper
-            //      permissions via the configured disk driver.
-            //   3. The error surface is more diagnostic than "Unable to
-            //      write in the ... directory" from FileException.
+            // Writes directly into public/uploads/signatures/ (matching the
+            // public/uploads/passports/ pattern used by the student/applicant
+            // profile uploads) so the file is served from the public web
+            // root without going through the storage symlink. Three reasons
+            // we DON'T route through Storage::disk('public') anymore:
+            //   1. The user has a fixed asset path
+            //      (public/uploads/signatures/registrar_signature.{ext})
+            //      they want to drop a replacement file into — direct disk
+            //      access mirrors that workflow.
+            //   2. Avoids the Storage::fake() indirection in feature
+            //      tests — direct $file->move() makes the on-disk location
+            //      unambiguous and matches the convention used by the
+            //      passport upload controller (Student\ProfileController).
+            //   3. The views already read from both locations (this is the
+            //      primary, the storage/ path is the legacy fallback for
+            //      rows uploaded before this commit).
             //
             // The move is wrapped in its own try/catch so the OTHER settings
             // (body, fees, letterhead, registrar name) still persist even
             // when the filesystem refuses the write — most commonly because
-            // the PHP-FPM user can't write into storage/app/public on
-            // production. On error we surface a clear flash the registrar
-            // can act on.
+            // the PHP-FPM user can't write into public/uploads on production.
+            // On error we surface a clear flash the registrar can act on.
             if ($request->hasFile('registrar_signature')) {
                 try {
                     $file = $request->file('registrar_signature');
                     $ext = $file->getClientOriginalExtension() ?: 'png';
                     $filename = 'registrar_signature.' . $ext;
 
-                    // Delete the previous file (if any extension change)
-                    // so a .png -> .jpg swap doesn't leave the old .png
-                    // on disk serving stale content.
+                    // Ensure the destination directory exists with the same
+                    // permissions passport uploads rely on. Idempotent —
+                    // mkdir -p semantics.
+                    $destinationDir = public_path('uploads/signatures');
+                    if (! is_dir($destinationDir)) {
+                        @mkdir($destinationDir, 0775, true);
+                    }
+
+                    // Delete the previous file (any extension) so a
+                    // .png -> .jpg swap doesn't leave the old .png
+                    // on disk serving stale content. Check both the new
+                    // public/uploads location AND the legacy storage
+                    // location so old signatures get cleaned up too.
                     $existing = SystemSetting::get('registrar_signature_path');
-                    if ($existing && Storage::disk('public')->exists($existing)) {
-                        Storage::disk('public')->delete($existing);
+                    foreach ($this->signatureCandidatePaths($existing) as $candidate) {
+                        if (is_file($candidate)) {
+                            @unlink($candidate);
+                        }
                     }
 
-                    $stored = Storage::disk('public')->putFileAs(
-                        'signatures',
-                        $file,
-                        $filename
-                    );
+                    $file->move($destinationDir, $filename);
 
-                    if (! $stored) {
-                        throw new \RuntimeException('Storage::putFileAs returned false.');
-                    }
-
-                    SystemSetting::set('registrar_signature_path', $stored);
+                    // Store the relative URL — views render via asset().
+                    // Keep this as a path RELATIVE to public/ so the
+                    // asset() helper builds the right URL regardless of
+                    // whether the app is served from the root or a
+                    // subdirectory.
+                    SystemSetting::set('registrar_signature_path', 'uploads/signatures/' . $filename);
                 } catch (\Throwable $fileError) {
                     // Don't roll back the rest of the settings — body, fees,
                     // letterhead and registrar name are already persisted.
@@ -626,6 +650,53 @@ class AdmissionController extends Controller
             \Log::error('saveLetterSettings failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to save letter settings: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Build the list of absolute filesystem paths where the registrar
+     * signature might live, given the path stored in
+     * system_settings.registrar_signature_path.
+     *
+     * After the upload target move the canonical value is
+     * 'uploads/signatures/registrar_signature.{ext}' (a public-relative
+     * path). Older rows may carry the legacy 'signatures/registrar_…'
+     * value that used to live under Storage::disk('public') →
+     * storage/app/public/. Both resolve to a real on-disk file so the
+     * upload controller can clean up whichever it finds.
+     *
+     * @return array<int,string>
+     */
+    private function signatureCandidatePaths(?string $storedPath): array
+    {
+        if (! $storedPath) {
+            return [];
+        }
+
+        $candidates = [];
+
+        // If the stored path is a public-relative URL ('uploads/...' or
+        // 'storage/...'), public_path() resolves it directly.
+        $publicHit = public_path($storedPath);
+        if (is_file($publicHit)) {
+            $candidates[] = $publicHit;
+        }
+
+        // Legacy storage location — Storage::disk('public') write into
+        // storage/app/public/<file>. The public/storage symlink also
+        // surfaces them at public_path('storage/<file>').
+        $storageHit = public_path('storage/' . ltrim($storedPath, '/'));
+        if (is_file($storageHit)) {
+            $candidates[] = $storageHit;
+        }
+
+        // Also try the raw storage/app/public path for completeness when
+        // the symlink is missing or broken.
+        $appPublicHit = storage_path('app/public/' . ltrim($storedPath, '/'));
+        if (is_file($appPublicHit)) {
+            $candidates[] = $appPublicHit;
+        }
+
+        return $candidates;
     }
 
     /**
@@ -709,19 +780,21 @@ class AdmissionController extends Controller
     }
 
     /**
-     * Delete the registrar signature
+     * Delete the registrar signature.
      *
-     * Routed through Storage::disk('public') to match the save path —
-     * the file was written via Storage::putFileAs('signatures', ...) so
-     * the delete must go through the same driver for the path to
-     * resolve on every disk configuration (local, s3, etc.).
+     * The signature may live in either the new public/uploads/signatures/
+     * directory or the legacy storage/app/public/signatures/ directory
+     * depending on when it was uploaded. Try both locations so a delete
+     * always lands even on rows from before the upload-target move.
      */
     public function deleteSignature()
     {
         try {
             $existing = SystemSetting::get('registrar_signature_path');
-            if ($existing && Storage::disk('public')->exists($existing)) {
-                Storage::disk('public')->delete($existing);
+            foreach ($this->signatureCandidatePaths($existing) as $candidate) {
+                if (is_file($candidate)) {
+                    @unlink($candidate);
+                }
             }
             SystemSetting::set('registrar_signature_path', '');
             return back()->with('success', 'Signature removed.');

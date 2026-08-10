@@ -6,9 +6,39 @@
     $institutionEmail = SystemSetting::get('institution_email', '');
     $institutionWebsite = SystemSetting::get('institution_website', '');
     $registrarSignature = SystemSetting::get('registrar_signature_path', null);
-    $signatureUrl = $registrarSignature && file_exists(public_path('storage/' . $registrarSignature))
-        ? asset('storage/' . $registrarSignature)
-        : null;
+    // Resolve the signature URL — same logic as the applicant-side blade,
+    // mirrors the ResolvesRegistrarSignature trait. Order:
+    //   1. New public/uploads/signatures/registrar_signature.{ext}
+    //      (today's upload target — system_settings stores a
+    //      public-relative path like 'uploads/signatures/...').
+    //   2. Legacy storage/app/public/signatures/ via the
+    //      public/storage symlink.
+    //   3. Fixed registrar_signature.{png,jpg,jpeg,svg} dropped
+    //      directly into public/uploads/signatures/ — the "live
+    //      asset" fallback so a hand-placed file shows up without
+    //      going through the settings form.
+    $signatureUrl = $signatureUrl ?? null;
+    if (! $signatureUrl) {
+        if ($registrarSignature) {
+            $publicHit = public_path($registrarSignature);
+            if (file_exists($publicHit)) {
+                $signatureUrl = asset($registrarSignature);
+            } else {
+                $legacyHit = public_path('storage/' . ltrim($registrarSignature, '/'));
+                if (file_exists($legacyHit)) {
+                    $signatureUrl = asset('storage/' . ltrim($registrarSignature, '/'));
+                }
+            }
+        }
+        if (! $signatureUrl) {
+            foreach (['png', 'jpg', 'jpeg', 'svg'] as $ext) {
+                if (file_exists(public_path('uploads/signatures/registrar_signature.' . $ext))) {
+                    $signatureUrl = asset('uploads/signatures/registrar_signature.' . $ext);
+                    break;
+                }
+            }
+        }
+    }
     $registrarName = SystemSetting::get('registrar_name');
     if (! $registrarName) {
         try {

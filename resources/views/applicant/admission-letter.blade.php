@@ -27,13 +27,44 @@ if (! $registrarName) {
     }
 }
 
-// Resolve registrar signature image (uploaded via registrar letter settings).
-$registrarSignaturePath = SystemSetting::get('registrar_signature_path');
-$signatureUrl = null;
-if ($registrarSignaturePath) {
-    $fullPath = public_path('storage/' . $registrarSignaturePath);
-    if (file_exists($fullPath)) {
-        $signatureUrl = asset('storage/' . $registrarSignaturePath);
+// Resolve registrar signature image (uploaded via registrar letter settings,
+// or fixed at public/uploads/signatures/registrar_signature.{ext}).
+//
+// The controller computes this with the ResolvesRegistrarSignature trait
+// (Applicant\ApplicationController::printAdmissionLetter and
+// Student\AdmissionLetterController::show) and passes $signatureUrl so
+// the letter renders the same file regardless of who triggered the print.
+// We still compute the path locally here so a direct include of this
+// blade from a non-controller context (preview, tinker, etc.) still
+// resolves — the controller value wins when present.
+$signatureUrl = $signatureUrl ?? null;
+if (! $signatureUrl) {
+    $registrarSignaturePath = SystemSetting::get('registrar_signature_path');
+    if ($registrarSignaturePath) {
+        $fullPath = public_path($registrarSignaturePath);
+        if (file_exists($fullPath)) {
+            $signatureUrl = asset($registrarSignaturePath);
+        } else {
+            // Legacy storage/ location — served via the public/storage
+            // symlink so the URL still resolves.
+            $legacyPath = public_path('storage/' . ltrim($registrarSignaturePath, '/'));
+            if (file_exists($legacyPath)) {
+                $signatureUrl = asset('storage/' . ltrim($registrarSignaturePath, '/'));
+            }
+        }
+    }
+
+    // Final fallback — a file the registrar drops directly into
+    // public/uploads/signatures/ without using the upload form is
+    // picked up here. The user explicitly asked for this "live asset"
+    // behaviour so they can swap signatures via filesystem ops.
+    if (! $signatureUrl) {
+        foreach (['png', 'jpg', 'jpeg', 'svg'] as $ext) {
+            if (file_exists(public_path('uploads/signatures/registrar_signature.' . $ext))) {
+                $signatureUrl = asset('uploads/signatures/registrar_signature.' . $ext);
+                break;
+            }
+        }
     }
 }
 

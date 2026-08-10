@@ -197,16 +197,49 @@
                     <p class="text-muted small mb-3">
                         Upload your signature image (PNG/JPG with transparent background recommended). It will appear as the signee at the bottom of every letter.
                     </p>
-                    @if($registrarSignature && file_exists(public_path('storage/' . $registrarSignature)))
+                    @if($registrarSignature && file_exists(public_path($registrarSignature)))
                         <div class="text-center mb-3 p-3 border rounded bg-white">
-                            <img src="{{ asset('storage/' . $registrarSignature) }}" alt="Signature" style="max-height: 80px;">
+                            <img src="{{ asset($registrarSignature) }}" alt="Signature" style="max-height: 80px;">
                             <div class="mt-2">
-                                <small class="text-muted d-block">Current signature</small>
+                                <small class="text-muted d-block">Current signature (uploaded)</small>
                                 <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="deleteSignatureBtn">
                                     <i class="fas fa-trash me-1"></i>Remove
                                 </button>
                             </div>
                         </div>
+                    @elseif($registrarSignature && file_exists(public_path('storage/' . $registrarSignature)))
+                        {{-- Legacy row from before the upload-target move — file lives at the
+                             old storage/ path. Render via the symlink so the registrar can
+                             still preview / remove it. --}}
+                        <div class="text-center mb-3 p-3 border rounded bg-white">
+                            <img src="{{ asset('storage/' . $registrarSignature) }}" alt="Signature" style="max-height: 80px;">
+                            <div class="mt-2">
+                                <small class="text-muted d-block">Current signature (legacy)</small>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="deleteSignatureBtn">
+                                    <i class="fas fa-trash me-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+                    @elseif(file_exists(public_path('uploads/signatures/registrar_signature.png')) || file_exists(public_path('uploads/signatures/registrar_signature.jpg')) || file_exists(public_path('uploads/signatures/registrar_signature.jpeg')) || file_exists(public_path('uploads/signatures/registrar_signature.svg')))
+                        {{-- A "live" fixed file placed directly in public/uploads/signatures/
+                             by the registrar — show it so they know their drop-in worked. --}}
+                        @php
+                            $liveSignatureUrl = null;
+                            foreach (['png', 'jpg', 'jpeg', 'svg'] as $ext) {
+                                if (file_exists(public_path('uploads/signatures/registrar_signature.' . $ext))) {
+                                    $liveSignatureUrl = asset('uploads/signatures/registrar_signature.' . $ext);
+                                    break;
+                                }
+                            }
+                        @endphp
+                        @if($liveSignatureUrl)
+                            <div class="text-center mb-3 p-3 border rounded bg-white">
+                                <img src="{{ $liveSignatureUrl }}" alt="Signature" style="max-height: 80px;">
+                                <div class="mt-2">
+                                    <small class="text-muted d-block">Current signature (live file in public/uploads/signatures/)</small>
+                                </div>
+                            </div>
+                        @endif
                     @endif
                     <input type="file" name="registrar_signature" id="registrar_signature_input"
                            class="form-control" accept="image/*">
