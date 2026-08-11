@@ -8,7 +8,13 @@
         <h4 class="mb-0">Dashboard</h4>
         <p class="text-muted mb-0">Welcome back, {{ auth()->user()->name }}</p>
     </div>
-    <div>
+    <div class="d-flex align-items-center gap-2">
+        @if(auth()->user()->role && in_array(auth()->user()->role->slug, ['super_admin'], true))
+            <a href="{{ route('admin.dashboard-config.edit', auth()->id()) }}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-sliders-h me-1"></i>Customize Dashboard
+            </a>
+        @endif
         <span class="badge bg-primary fs-6">
             <i class="fas fa-calendar me-1"></i>
             Session: {{ $currentSession->name ?? 'Not Set' }}
@@ -16,244 +22,67 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Total Students</h6>
-                        <h2 class="mb-0">{{ number_format($stats['total_students']) }}</h2>
-                    </div>
-                    <div class="icon text-success">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+@php
+    // Group widgets by type so stat tiles fit 4-per-row (col-xl-3) and
+    // tables fit 2-per-row (col-lg-6). The order the resolver returns
+    // is the order the user sees.
+    $statWidgets   = [];
+    $tableWidgets  = [];
+    $otherWidgets  = [];
+    foreach ($widgets as $entry) {
+        $type = $entry['definition']->type;
+        if ($type === 'stat') {
+            $statWidgets[] = $entry;
+        } elseif ($type === 'table') {
+            $tableWidgets[] = $entry;
+        } else {
+            $otherWidgets[] = $entry;
+        }
+    }
+@endphp
 
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card info h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Total Staff</h6>
-                        <h2 class="mb-0">{{ number_format($stats['total_staff']) }}</h2>
-                    </div>
-                    <div class="icon text-info">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-            </div>
+{{-- Stat tiles: render in groups of 4 per row --}}
+@if(!empty($statWidgets))
+    @foreach(array_chunk($statWidgets, 4) as $rowGroup)
+        <div class="row mb-4">
+            @foreach($rowGroup as $w)
+                @include($w['definition']->partial, ['data' => $w['data'], 'label' => $w['definition']->label])
+            @endforeach
         </div>
-    </div>
+    @endforeach
+@endif
 
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Total Fees Expected</h6>
-                        <h2 class="mb-0">₦{{ number_format($stats['total_expected_fees'], 0) }}</h2>
-                    </div>
-                    <div class="icon text-warning">
-                        <i class="fas fa-calculator"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+{{-- Tables: render in one wide row, two-per-row via the partial's col-lg-6 --}}
+@if(!empty($tableWidgets))
+    <div class="row">
+        @foreach($tableWidgets as $w)
+            @include($w['definition']->partial, ['data' => $w['data']])
+        @endforeach
     </div>
+@endif
 
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Total Payments</h6>
-                        <h2 class="mb-0">₦{{ number_format($stats['total_payments'], 0) }}</h2>
-                    </div>
-                    <div class="icon text-success">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+{{-- Anything else (future widget types) renders in its own row --}}
+@if(!empty($otherWidgets))
+    <div class="row mb-4">
+        @foreach($otherWidgets as $w)
+            @includeIf($w['definition']->partial, ['data' => $w['data'], 'label' => $w['definition']->label])
+        @endforeach
     </div>
-</div>
+@endif
 
-<div class="row mb-4">
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card danger h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Outstanding Fees</h6>
-                        <h2 class="mb-0">₦{{ number_format($stats['outstanding_fees'], 0) }}</h2>
-                    </div>
-                    <div class="icon text-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </div>
-                </div>
-            </div>
+@if(empty($widgets))
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="fas fa-sliders-h fa-2x mb-3 d-block"></i>
+            <p class="mb-2">No widgets are enabled for your dashboard yet.</p>
+            @if(auth()->user()->role && auth()->user()->role->slug === 'super_admin')
+                <a href="{{ route('admin.dashboard-config.edit', auth()->id()) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sliders-h me-1"></i>Customize Dashboard
+                </a>
+            @endif
         </div>
     </div>
-
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card info h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Pending Applications</h6>
-                        <h2 class="mb-0">{{ number_format($stats['pending_applications']) }}</h2>
-                    </div>
-                    <div class="icon text-info">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Registered Courses</h6>
-                        <h2 class="mb-0">{{ number_format($stats['registered_courses']) }}</h2>
-                    </div>
-                    <div class="icon text-success">
-                        <i class="fas fa-book-open"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="text-muted mb-2">Total Courses</h6>
-                        <h2 class="mb-0">{{ number_format($stats['total_courses']) }}</h2>
-                    </div>
-                    <div class="icon text-warning">
-                        <i class="fas fa-book"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Recent Applicants -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-plus me-2"></i>Recent Applications
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentApplicants as $applicant)
-                            <tr>
-                                <td>{{ $applicant->user->name ?? 'N/A' }}</td>
-                                <td>{{ $applicant->department->code ?? 'N/A' }}</td>
-                                <td>
-                                    <span class="badge badge-status bg-{{ $applicant->status === 'admitted' ? 'success' : ($applicant->status === 'rejected' ? 'danger' : 'warning') }}">
-                                        {{ ucfirst($applicant->status) }}
-                                    </span>
-                                </td>
-                                <td>{{ optional($applicant->created_at)->format('d M Y') ?? 'N/A' }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No recent applications</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Payments -->
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0">
-                    <i class="fas fa-dollar-sign me-2"></i>Recent Payments
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Student</th>
-                                <th>Fee Type</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentPayments as $payment)
-                            <tr>
-                                <td>
-                                    @if($payment->student && $payment->student->user)
-                                        {{ $payment->student->user->name }}
-                                    @elseif($payment->student_type === 'applicant')
-                                        {{ $payment->payer_name ?? 'Applicant' }}
-                                    @else
-                                        {{ $payment->payer_name ?? 'N/A' }}
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($payment->fee)
-                                        {{ $payment->fee->name }}
-                                    @elseif($payment->fee_type)
-                                        {{ $payment->fee_type }}
-                                    @elseif($payment->payment_purpose)
-                                        {{ $payment->payment_purpose }}
-                                    @else
-                                        {{ $payment->payer_id ? 'Payment' : 'N/A' }}
-                                    @endif
-                                </td>
-                                <td>₦{{ number_format($payment->amount, 2) }}</td>
-                                <td>
-                                    <span class="badge badge-status bg-{{ $payment->status === 'completed' ? 'success' : ($payment->status === 'failed' ? 'danger' : 'warning') }}">
-                                        {{ ucfirst($payment->status) }}
-                                    </span>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No recent payments</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@endif
 
 <!-- Quick Actions -->
 <div class="row">

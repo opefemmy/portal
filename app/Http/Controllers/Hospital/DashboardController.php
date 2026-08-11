@@ -145,7 +145,7 @@ class DashboardController extends Controller
             'pending_prescriptions' => HospitalPrescription::where('status', 'pending')->count(),
             'dispensed_today' => HospitalPrescription::where('status', 'dispensed')
                 ->whereDate('dispensed_at', today())->count(),
-            'low_stock_items' => HospitalDrug::where('quantity', '<=', 10)->count(),
+            'low_stock_items' => HospitalDrug::where('current_stock', '<=', 10)->count(),
             'total_drugs' => HospitalDrug::count(),
         ];
 
@@ -155,8 +155,8 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $lowStockDrugs = HospitalDrug::where('quantity', '<=', 10)
-            ->orderBy('quantity')
+        $lowStockDrugs = HospitalDrug::where('current_stock', '<=', 10)
+            ->orderBy('current_stock')
             ->limit(10)
             ->get();
 

@@ -15,6 +15,14 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-chart-line"></i> Analytics
     </a>
 </li>
+@if($role === 'super_admin')
+<li class="nav-item">
+    <a href="{{ route('admin.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('admin/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+@endif
 <li class="nav-item">
     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#maintenanceMenu">
         <i class="fas fa-tools"></i> System Maintenance <i class="fas fa-chevron-down float-end"></i>

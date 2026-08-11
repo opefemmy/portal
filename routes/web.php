@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DashboardConfigController as AdminDashboardConfigController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\DepartmentController;
@@ -330,6 +331,18 @@ Route::redirect('/admin', '/admin/dashboard');
 // share the same admin dashboard, so include them in the role list.
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin,ict_admin,staff'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator. Only super_admin can
+    // configure anybody else's dashboard; admin/ict_admin/staff can
+    // only configure their own. The role middleware above already
+    // admits those roles, but we additionally gate by a sub-middleware
+    // on `super_admin` for the cross-user endpoints.
+    Route::get('/dashboard-config/{user}', [AdminDashboardConfigController::class, 'edit'])
+        ->middleware('role:super_admin')
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [AdminDashboardConfigController::class, 'update'])
+        ->middleware('role:super_admin')
+        ->name('dashboard-config.update');
 
     // User Unlock / Password Reset (MUST come before resource routes)
     Route::get('/users/unlock', [UserUnlockController::class, 'showUnlockForm'])->name('users.unlock');

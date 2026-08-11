@@ -21,6 +21,7 @@ class HospitalPermissions
         'cmd' => ['*'],
         'super_admin' => ['*'],
         'admin' => ['*'],
+        'hospital_store_manager' => ['*'],
 
         'doctor' => [
             'patients.view', 'patients.search',
@@ -189,6 +190,7 @@ class HospitalPermissions
         'cmd'                 => 'hospital.dashboard',
         'super_admin'         => 'hospital.dashboard',
         'admin'               => 'hospital.dashboard',
+        'hospital_store_manager' => 'hospital.dashboard',
         'medical_director'    => 'hospital.dashboard',
         'doctor'              => 'hospital.doctor.dashboard',
         'consultant'          => 'hospital.doctor.dashboard',
@@ -217,6 +219,17 @@ class HospitalPermissions
      */
     public const ROLE_MENUS = [
         'cmd' => [
+            ['hospital.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
+            ['hospital.external-patients.index', 'fas fa-user-friends', 'External Patients'],
+            ['hospital.patients.index', 'fas fa-users', 'Patients'],
+            ['hospital.appointments.index', 'fas fa-calendar-check', 'Appointments'],
+            ['hospital.consultations.index', 'fas fa-stethoscope', 'Consultations'],
+            ['hospital.pharmacy.drugs', 'fas fa-pills', 'Pharmacy'],
+            ['hospital.lab.index', 'fas fa-flask', 'Laboratory'],
+            ['hospital.roster.index', 'fas fa-calendar-week', 'Duty Roster'],
+        ],
+
+        'hospital_store_manager' => [
             ['hospital.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
             ['hospital.external-patients.index', 'fas fa-user-friends', 'External Patients'],
             ['hospital.patients.index', 'fas fa-users', 'Patients'],
@@ -451,6 +464,7 @@ class HospitalPermissions
             'radiographer', 'radiologist',
             'store_keeper',
             'hospital_admin', 'medical_records_officer',
+            'hospital_store_manager',
         ], true);
     }
 }

@@ -110,6 +110,26 @@ class ERPRolesSeeder extends Seeder
                 ]
             ],
             [
+                'name' => 'Hospital Store Manager',
+                'slug' => 'hospital_store_manager',
+                'description' => 'Hospital Store Manager — full hospital module access',
+                'permissions' => [
+                    'hospital.*',
+                    'hospital.reports.*',
+                    'hospital.staff.*',
+                    'hospital.patients.*',
+                    'hospital.appointments.*',
+                    'hospital.prescriptions.*',
+                    'hospital.lab.*',
+                    'hospital.pharmacy.*',
+                    'hospital.store.*',
+                    'hospital.inventory.*',
+                    'hospital.billing.*',
+                    'hospital.records.*',
+                    'hospital.wards.*',
+                ]
+            ],
+            [
                 'name' => 'Medical Records Officer',
                 'slug' => 'medical_records_officer',
                 'description' => 'Medical Records Management',

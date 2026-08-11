@@ -27,7 +27,7 @@ class TestUsersSeeder extends Seeder
             'auditor', 'internal_auditor', 'external_auditor',
             'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'hospital_receptionist',
             'cmd', 'hospital_admin', 'medical_records_officer', 'hospital_accountant',
-            'matron', 'ward_manager', 'store_keeper',
+            'matron', 'ward_manager', 'store_keeper', 'hospital_store_manager',
             'rector', 'registrar', 'admission_officer',
             'student', 'lecturer', 'hod', 'dean',
             'business_committee', 'academic_board', 'librarian',
@@ -284,6 +284,13 @@ class TestUsersSeeder extends Seeder
                 'email' => 'storekeeper@portal.edu',
                 'password' => 'password123',
                 'role' => 'store_keeper',
+                'gender' => 'male',
+            ],
+            [
+                'name' => 'Hospital Store Manager',
+                'email' => 'storagemanager@portal.edu',
+                'password' => 'password123',
+                'role' => 'hospital_store_manager',
                 'gender' => 'male',
             ],
         ];
