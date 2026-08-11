@@ -109,6 +109,11 @@ Route::prefix('patient-portal')->name('patient-portal.')->group(function () {
         Route::post('/validate-payment', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'validatePaymentPortal'])->name('validate-payment-portal');
         Route::post('/pay-order-items', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'payOrderItemsPortal'])->name('pay-order-items');
         Route::get('/receipt/{payment}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'viewReceiptPortal'])->name('receipt');
+        // Test-payment simulator: the Pay Now button on the dashboard
+        // POSTs here. The action flips status → completed, stamps a
+        // payment_date, writes an audit row, and redirects back to the
+        // receipt page. See ExternalPatientController::payTestPortal.
+        Route::post('/payments/{payment}/pay-test', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'payTestPortal'])->name('payment.pay-test');
         Route::post('/regenerate-code', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'regenerateCodePortal'])->name('regenerate-code');
         Route::get('/prescriptions', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'prescriptionsPortal'])->name('prescriptions');
         Route::get('/prescriptions/{prescription}', [\App\Http\Controllers\Hospital\ExternalPatientController::class, 'prescriptionShowPortal'])->name('prescription');

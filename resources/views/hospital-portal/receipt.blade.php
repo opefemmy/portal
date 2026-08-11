@@ -1,249 +1,283 @@
-@extends('layouts.app')
+@extends('layouts.print')
 
-@section('title', 'Payment Receipt')
+@section('title', 'Receipt — ' . $payment->payment_ref)
 
-@section('content')
+@push('styles')
 <style>
-    .portal-page {
-        background: url("{{ asset('uploads/backgrounds/login-bg.png') }}") no-repeat center center fixed !important;
-        background-size: cover !important;
-        min-height: 100vh;
-        padding: 20px 0;
+    /*
+     * POS-style printable receipt.
+
+     * Uses layouts.print (not layouts.app) so the portal chrome —
+     * sidebar, topbar, header gradient, primary-button gradient, and
+     * the .portal-page background image — is bypassed entirely. The
+     * print stylesheet below also hard-pins the body background to
+     * white in case any inherited rule from a parent layout still
+     * tries to draw a wallpaper.
+     *
+     * Page size is 80mm auto for thermal-printer POS rolls; the
+     * browser scales to A4/Letter if no POS printer is selected.
+     */
+    body {
+        background: #fff !important;
+        margin: 0;
+        padding: 12px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #000;
     }
-    .portal-card-custom {
-        background: white !important;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+    .receipt {
+        width: 80mm;
+        max-width: 100%;
+        margin: 0 auto;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .receipt header {
+        text-align: center;
+        border-bottom: 1px dashed #333;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+    }
+    .receipt header img {
+        max-height: 50px;
+        max-width: 60mm;
+        margin: 0 auto 6px;
+        display: block;
+    }
+    .receipt header h1 {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 0 0 2px;
+    }
+    .receipt header p {
+        font-size: 11px;
+        margin: 1px 0;
+    }
+
+    .receipt h3 {
+        text-align: center;
+        font-size: 13px;
+        margin: 0 0 8px;
+        letter-spacing: 1px;
+    }
+    .receipt h3.completed { color: #198754; }
+    .receipt h3.pending   { color: #b8860b; }
+
+    .receipt table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 6px;
+    }
+    .receipt th,
+    .receipt td {
+        text-align: left;
+        padding: 2px 0;
+        font-size: 12px;
+        vertical-align: top;
+    }
+    .receipt th {
+        width: 38%;
+        font-weight: normal;
+        color: #444;
+    }
+    .receipt td { font-weight: bold; }
+
+    .receipt .totals td {
+        font-weight: bold;
+        border-top: 1px dashed #333;
+        padding-top: 4px;
+    }
+    .receipt .totals .grand td {
+        font-size: 13px;
+        border-top: 1px solid #000;
+        padding-top: 6px;
+    }
+    .receipt .totals td:last-child { text-align: right; }
+
+    .receipt .barcode {
+        text-align: center;
+        font-family: monospace;
+        letter-spacing: 2px;
+        margin: 12px 0 4px;
+        font-size: 11px;
+    }
+
+    .receipt .thankyou {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 11px;
+        font-style: italic;
+    }
+
+    .receipt .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 16px 0 4px;
+    }
+    .receipt .actions a,
+    .receipt .actions button {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    .receipt .alert {
+        margin: 0 0 10px;
+        padding: 6px 8px;
+        font-size: 11px;
+        border-radius: 3px;
+    }
+    .receipt .alert-success { background: #d1e7dd; color: #0a3622; }
+    .receipt .alert-info    { background: #cff4fc; color: #055160; }
+
+    @media print {
+        @page { size: 80mm auto; margin: 4mm; }
+        body {
+            background: #fff !important;
+            margin: 0;
+            padding: 0;
+        }
+        .receipt {
+            width: 100%;
+            font-size: 11px;
+        }
+        /* Hide all interactive chrome from the printout. */
+        .receipt .actions,
+        .receipt .no-print {
+            display: none !important;
+        }
+        /* Force any inherited image / gradient off in print. */
+        * {
+            background-image: none !important;
+            box-shadow: none !important;
+        }
     }
 </style>
-<div class="portal-page">
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow portal-card-custom">
-                @if($payment->status == 'pending' && request('pay'))
-                <div class="card-header bg-warning text-dark py-3">
-                    <h4 class="mb-0">
-                        <i class="fas fa-credit-card me-2"></i>Complete Payment
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Please complete your payment to confirm your service request.
-                    </div>
-                @elseif($payment->status == 'completed')
-                <div class="card-header bg-success text-white py-3">
-                    <h4 class="mb-0">
-                        <i class="fas fa-receipt me-2"></i>Payment Receipt
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <i class="fas fa-check-circle fa-4x text-success"></i>
-                        <h4 class="mt-3">Payment Verified</h4>
-                    </div>
-                @else
-                <div class="card-header bg-secondary text-white py-3">
-                    <h4 class="mb-0">
-                        <i class="fas fa-receipt me-2"></i>Payment Details
-                    </h4>
-                </div>
-                <div class="card-body">
-                @endif
-
-                    <table class="table table-borderless">
-                        <tr>
-                            <td class="text-muted">Payment Reference</td>
-                            <td class="text-end fw-bold">{{ $payment->payment_ref }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Patient Name</td>
-                            <td class="text-end">{{ $payment->patient_name }}</td>
-                        </tr>
-                        @if($payment->patient_email)
-                        <tr>
-                            <td class="text-muted">Email</td>
-                            <td class="text-end">{{ $payment->patient_email }}</td>
-                        </tr>
-                        @endif
-                        <tr>
-                            <td class="text-muted">Phone</td>
-                            <td class="text-end">{{ $payment->patient_phone }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Service</td>
-                            <td class="text-end">{{ $payment->service_name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Payment Date</td>
-                            <td class="text-end">{{ optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Payment Method</td>
-                            <td class="text-end">{{ ucfirst($payment->payment_method) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Status</td>
-                            <td class="text-end">
-                                @if($payment->status == 'completed')
-                                    <span class="badge bg-success">Paid</span>
-                                @elseif($payment->status == 'pending')
-                                    <span class="badge bg-warning">Pending</span>
-                                @else
-                                    <span class="badge bg-secondary">{{ $payment->status }}</span>
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
-
-                    <hr>
-
-                    <table class="table table-borderless">
-                        <tr>
-                            <td>Service Amount</td>
-                            <td class="text-end">₦{{ number_format($payment->amount, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Portal Charge (2%)</td>
-                            <td class="text-end">₦{{ number_format($payment->portal_charge, 2) }}</td>
-                        </tr>
-                        <tr class="border-top">
-                            <td class="fw-bold">Total Amount</td>
-                            <td class="text-end fw-bold h4 text-success">₦{{ number_format($payment->total_amount, 2) }}</td>
-                        </tr>
-                    </table>
-
-                    <div class="d-grid gap-2 mt-4">
-                        @if($payment->status == 'pending')
-                            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                                <i class="fas fa-credit-card me-2"></i>Pay Now
-                            </button>
-                        @endif
-                        <button onclick="window.print()" class="btn btn-primary">
-                            <i class="fas fa-print me-2"></i>Print Receipt
-                        </button>
-                        <a href="{{ route('patient-portal.dashboard') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
-
-<!-- Payment Modal -->
-@if($payment->status == 'pending')
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="paymentModalLabel">
-                    <i class="fas fa-credit-card me-2"></i>Complete Payment
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Gateway Selection -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Select Payment Gateway <span class="text-danger">*</span></label>
-                    <select id="paymentGateway" class="form-select form-select-lg">
-                        <option value="">-- Select Payment Gateway --</option>
-                        @php
-                        $enabledProviders = \App\Models\PaymentGateway::getEnabledProviders();
-                        @endphp
-                        @foreach($enabledProviders as $key => $name)
-                            <option value="{{ $key }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Payment Details -->
-                <div class="alert alert-info">
-                    <h5 class="alert-heading">Payment Details</h5>
-                    <p class="mb-1"><strong>Reference:</strong> {{ $payment->payment_ref }}</p>
-                    <p class="mb-1"><strong>Service:</strong> {{ $payment->service_name }}</p>
-                    <p class="mb-0"><strong>Amount:</strong> ₦{{ number_format($payment->total_amount, 2) }}</p>
-                </div>
-
-                <div class="d-grid">
-                    <button type="button" class="btn btn-success btn-lg" id="processPaymentBtn">
-                        <i class="fas fa-credit-card me-2"></i>Proceed to Pay
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Auto-show payment modal if pay=1 -->
-@if($showPaymentModal ?? false)
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        var paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-        paymentModal.show();
-    }, 500);
-});
-</script>
-@endpush
-@endif
-
-@endif
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var processBtn = document.getElementById('processPaymentBtn');
-    var gatewaySelect = document.getElementById('paymentGateway');
-
-    if (processBtn && gatewaySelect) {
-        processBtn.addEventListener('click', function() {
-            var gateway = gatewaySelect.value;
-
-            if (!gateway) {
-                alert('Please select a payment gateway');
-                return;
-            }
-
-            // Show loading
-            processBtn.disabled = true;
-            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-
-            // For demo/testing, simulate payment completion
-            // In production, this would redirect to payment gateway
-            var paymentId = {{ $payment->id }};
-            var paymentRef = '{{ $payment->payment_ref }}';
-
-            // Simulate payment processing
-            fetch('{{ route("patient-portal.validate-payment-portal") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    payment_reference: paymentRef
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // For demo, we'll mark as completed
-                // In real implementation, this would verify with the payment gateway
-                location.href = '{{ route("patient-portal.dashboard") }}?payment=completed';
-            })
-            .catch(error => {
-                alert('Payment processing error. Please try again.');
-                processBtn.disabled = false;
-                processBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Proceed to Pay';
-            });
-        });
-    }
-});
-</script>
 @endpush
 
+@section('content')
+@php
+    // Display the most relevant timestamp — payment_date if the
+    // payment is completed, otherwise the row's created_at so a
+    // pending payment still shows when it was generated.
+    $receiptDate = $payment->payment_date
+        ?? $payment->created_at;
+@endphp
+
+<div class="receipt">
+
+    {{-- Flash messages — visible on screen, hidden on printout. --}}
+    @if(session('success'))
+        <div class="alert alert-success no-print">{{ session('success') }}</div>
+    @endif
+    @if(session('info'))
+        <div class="alert alert-info no-print">{{ session('info') }}</div>
+    @endif
+
+    {{-- Hospital branding — logo + name + tagline + address --}}
+    <header>
+        @if(!empty($logo))
+            <img src="{{ $logo }}" alt="Hospital logo">
+        @endif
+        <h1>{{ $institutionName }}</h1>
+        @if(!empty($tagline))
+            <p><em>{{ $tagline }}</em></p>
+        @endif
+        @if(!empty($address))
+            <p>{{ $address }}</p>
+        @endif
+        @if(!empty($phone))
+            <p>Tel: {{ $phone }}</p>
+        @endif
+        @if(!empty($email))
+            <p>{{ $email }}</p>
+        @endif
+    </header>
+
+    {{-- Heading — green when completed, amber when still pending --}}
+    <h3 class="{{ $payment->status === 'completed' ? 'completed' : 'pending' }}">
+        @if($payment->status === 'completed')
+            PAYMENT RECEIPT
+        @else
+            PENDING PAYMENT
+        @endif
+    </h3>
+
+    <table>
+        <tr>
+            <th>Receipt No</th>
+            <td>{{ $payment->payment_ref }}</td>
+        </tr>
+        <tr>
+            <th>Date</th>
+            <td>{{ $receiptDate ? $receiptDate->format('d M Y, h:i A') : 'N/A' }}</td>
+        </tr>
+        <tr>
+            <th>Patient</th>
+            <td>{{ $payment->patient_name }}</td>
+        </tr>
+        @if(!empty($payment->patient_phone))
+            <tr>
+                <th>Phone</th>
+                <td>{{ $payment->patient_phone }}</td>
+            </tr>
+        @endif
+        <tr>
+            <th>Service</th>
+            <td>{{ $payment->service_name }}</td>
+        </tr>
+        <tr>
+            <th>Method</th>
+            <td>{{ ucfirst($payment->payment_method ?? 'pending') }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ strtoupper($payment->status) }}</td>
+        </tr>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td>Service Amount</td>
+            <td>₦{{ number_format((float) $payment->amount, 2) }}</td>
+        </tr>
+        <tr>
+            <td>Portal Charge</td>
+            <td>₦{{ number_format((float) $payment->portal_charge, 2) }}</td>
+        </tr>
+        <tr class="grand">
+            <td>TOTAL</td>
+            <td>₦{{ number_format((float) $payment->total_amount, 2) }}</td>
+        </tr>
+    </table>
+
+    <p class="thankyou">Thank you for choosing {{ $institutionName }}.</p>
+    <p class="barcode">*{{ $payment->payment_ref }}*</p>
+
+    {{-- Pay Now (test) — only when the payment is still pending. --}}
+    @if($payment->status === 'pending')
+        <div class="actions no-print">
+            <form method="POST"
+                  action="{{ route('patient-portal.payment.pay-test', $payment->id) }}"
+                  onsubmit="return confirm('Complete this test payment now?');">
+                @csrf
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="fas fa-credit-card"></i> Pay Now (Test)
+                </button>
+            </form>
+        </div>
+    @endif
+
+    {{-- Print + Back buttons — hidden on the printed page. --}}
+    <div class="actions no-print">
+        <button onclick="window.print()" type="button" class="btn btn-primary btn-sm">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <a href="{{ route('patient-portal.dashboard') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
 @endsection

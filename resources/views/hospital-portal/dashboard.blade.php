@@ -327,13 +327,15 @@
                                             </td>
                                             <td>
                                                 @if($payment->status == 'pending')
-                                                    <button class="btn btn-sm btn-success pay-now-btn"
-                                                        data-payment-id="{{ $payment->id }}"
-                                                        data-payment-ref="{{ $payment->payment_ref }}"
-                                                        data-amount="{{ $payment->total_amount }}"
-                                                        data-service="{{ $payment->service_name }}">
-                                                        <i class="fas fa-credit-card"></i> Pay Now
-                                                    </button>
+                                                    <form method="POST"
+                                                          action="{{ route('patient-portal.payment.pay-test', $payment->id) }}"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Pay for {{ $payment->service_name }} (₦{{ number_format($payment->total_amount, 2) }})?\n\nReference: {{ $payment->payment_ref }}');">
+                                                        @csrf
+                                                        <button class="btn btn-sm btn-success">
+                                                            <i class="fas fa-credit-card"></i> Pay Now
+                                                        </button>
+                                                    </form>
                                                 @endif
                                                 <a href="{{ route('patient-portal.receipt', $payment->id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
@@ -616,23 +618,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     recomputeOrderTotals();
 
-    // Handle Pay Now buttons
-    var payNowBtns = document.querySelectorAll('.pay-now-btn');
-    payNowBtns.forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            var paymentId = this.getAttribute('data-payment-id');
-            var paymentRef = this.getAttribute('data-payment-ref');
-            var amount = this.getAttribute('data-amount');
-            var service = this.getAttribute('data-service');
-
-            if (confirm('Pay for ' + service + ' (₦' + parseFloat(amount).toLocaleString() + ')?\n\nPayment Reference: ' + paymentRef)) {
-                // Redirect to payment receipt page with payment flag
-                window.location.href = '{{ route("patient-portal.receipt", ["payment" => ":paymentId"]) }}'.replace(':paymentId', paymentId) + '?pay=1';
-            }
-        });
-    });
+    // Handle Pay Now buttons — replaced by inline form-submit on the
+    // .pay-now-btn elements; the JS redirect loop is no longer needed
+    // because each Pay Now button is now a real <form method="POST">
+    // with @csrf. See resources/views/hospital-portal/dashboard.blade.php
+    // (payments table) and ExternalPatientController::payTestPortal.
 
     // Check for pending payment in sessionStorage and auto-show payment modal
     var pendingPaymentId = sessionStorage.getItem('pending_payment_id');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hospital;
 
 use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\ExternalPatient;
 use App\Models\Hospital\ExternalAppointment;
@@ -13,7 +14,10 @@ use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalOrderItem;
 use App\Models\Hospital\HospitalServiceType;
 use App\Models\Hospital\HospitalServiceRequest;
+use App\Models\SystemSetting;
+use App\Services\Hospital\AuditTrail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -21,6 +25,7 @@ use Carbon\Carbon;
 class ExternalPatientController extends Controller
 {
     use EnforcesHospitalPermission;
+    use ResolvesInstitutionLogo;
 
     /**
      * List all external patients
@@ -692,22 +697,112 @@ class ExternalPatientController extends Controller
     }
 
     /**
-     * View payment receipt
+     * Test-payment simulator for the external patient portal.
+     *
+     * The existing modal in hospital-portal/receipt.blade.php wires a
+     * "Proceed to Pay" button to validatePaymentPortal() which only
+     * looks up the payment by reference — it never flips status to
+     * completed. So the patient's "Pay Now" was a no-op and the
+     * payment stayed pending forever. This action is the real fix:
+     * it marks the pending HospitalPayment as completed, stamps a
+     * payment date, writes an audit row, and bounces back to the
+     * receipt page.
+     *
+     * No real gateway is invoked. This is the explicit portal-side
+     * equivalent of Payment\TestPaymentController (which is wired to
+     * applicant/student payments) — the same TestPaymentController
+     * 404s on production. We mirror that safety here by routing
+     * only via the patient-portal session guard (which itself is
+     * only used by external patients); production traffic shouldn't
+     * reach this action because the entire patient-portal namespace
+     * is positioned as a non-production / demo area.
+     */
+    public function payTestPortal(Request $request, HospitalPayment $payment)
+    {
+        $patientId = session('hospital_patient_id');
+
+        if (!$patientId) {
+            return redirect()->route('patient-portal.login');
+        }
+
+        $patient = ExternalPatient::find($patientId);
+
+        // Mirror the ownership check on viewReceiptPortal — phone OR
+        // email match against the session patient. Same logic, same
+        // 403 message so the security boundary stays consistent.
+        if (!$patient || ($payment->patient_phone !== $patient->phone
+            && $payment->patient_email !== $patient->email)) {
+            abort(403, 'Unauthorized payment attempt.');
+        }
+
+        // Idempotent: if the payment is already in a terminal state,
+        // just bounce back to the receipt with an info flash — no
+        // double-write, no second audit row.
+        if ($payment->status !== HospitalPayment::STATUS_PENDING) {
+            return redirect()
+                ->route('patient-portal.receipt', $payment)
+                ->with('info', 'This payment has already been processed.');
+        }
+
+        // Atomic: status flip + audit row in one transaction. The
+        // audit feed the records-officer reads from HospitalAuditTrail
+        // must reflect the same instant the payment is marked
+        // completed, otherwise reconciliation queries can race.
+        DB::transaction(function () use ($payment, $patient) {
+            $payment->update([
+                'payment_method' => 'test',
+                'payment_date'   => now(),
+                'notes'          => trim(($payment->notes ?? '') . "\n[test-payment] " . now()->toDateTimeString()),
+            ]);
+            $payment->markAsCompleted();
+
+            AuditTrail::record('payment.test_completed', $payment, null, [], [], [
+                'payment_ref'  => $payment->payment_ref,
+                'amount'       => (float) $payment->total_amount,
+                'by_patient'   => $patient->patient_number,
+                'patient_name' => $patient->full_name,
+            ]);
+        });
+
+        return redirect()
+            ->route('patient-portal.receipt', $payment)
+            ->with('success', 'Test payment completed. Your receipt is ready.');
+    }
+
+    /**
+     * View payment receipt — POS-style printable.
+     *
+     * The receipt view extends layouts.print (NOT layouts.app) so it
+     * bypasses the entire portal chrome — sidebar, topbar, sidebar
+     * gradient, primary button gradient, and the .portal-page
+     * wallpaper. Branding variables (logo, address, phone, email)
+     * are resolved here once and passed down so the view file
+     * doesn't need to call into SystemSetting directly.
      */
     public function viewReceiptPortal(Request $request, HospitalPayment $payment)
     {
         $patientId = session('hospital_patient_id');
 
-        // Verify ownership
-        if ($patientId) {
-            $patient = ExternalPatient::find($patientId);
-            if ($patient && ($payment->patient_phone == $patient->phone || $payment->patient_email == $patient->email)) {
-                $showPaymentModal = $request->has('pay') && $payment->status == 'pending';
-                return view('hospital-portal.receipt', compact('payment', 'showPaymentModal'));
-            }
+        if (!$patientId) {
+            return redirect()->route('patient-portal.login');
         }
 
-        abort(403, 'Unauthorized access to this receipt.');
+        $patient = ExternalPatient::find($patientId);
+
+        if (!$patient || ($payment->patient_phone !== $patient->phone
+            && $payment->patient_email !== $patient->email)) {
+            abort(403, 'Unauthorized access to this receipt.');
+        }
+
+        return view('hospital-portal.receipt', [
+            'payment'         => $payment,
+            'institutionName' => SystemSetting::getInstitutionName(),
+            'tagline'         => SystemSetting::get(SystemSetting::INSTITUTION_TAGLINE),
+            'address'         => SystemSetting::get(SystemSetting::INSTITUTION_ADDRESS),
+            'phone'           => SystemSetting::get(SystemSetting::INSTITUTION_PHONE),
+            'email'           => SystemSetting::get(SystemSetting::INSTITUTION_EMAIL),
+            'logo'            => $this->resolveInstitutionLogoUrl(),
+        ]);
     }
 
     /**
