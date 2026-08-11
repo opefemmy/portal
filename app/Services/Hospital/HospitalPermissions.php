@@ -155,6 +155,31 @@ class HospitalPermissions
             'pharmacy.low-stock', 'pharmacy.expiry',
             'inventory.purchase', 'inventory.suppliers',
         ],
+
+        // Cross-cutting hospital admin: read-mostly across every module,
+        // plus the staff-availability toggle used by the on-call grid.
+        'hospital_admin' => [
+            'patients.view',
+            'staff.view', 'staff.edit',
+            'reports.daily-revenue', 'reports.ward', 'reports.lab',
+            'reports.dispensation', 'reports.revenue',
+            'billing.view', 'pharmacy.view', 'lab.view',
+            'inventory.view',
+            'audit.view',
+            'attendance.view',
+            'wards.view',
+        ],
+
+        // Records officer: confidentiality guardian. Read-only over charts,
+        // plus archive / transfer / chart-request queue / full audit log.
+        'medical_records_officer' => [
+            'records.view', 'records.edit', 'records.archive',
+            'records.transfer', 'records.request',
+            'records.audit',
+            'patients.view',
+            'audit.view',
+            'timeline.view', 'timeline.export',
+        ],
     ];
 
     /**
@@ -168,11 +193,12 @@ class HospitalPermissions
         'doctor'              => 'hospital.doctor.dashboard',
         'consultant'          => 'hospital.doctor.dashboard',
         'nurse'               => 'hospital.nurse.dashboard',
-        'matron'              => 'hospital.nurse.dashboard',
-        'ward_manager'        => 'hospital.nurse.dashboard',
+        'matron'              => 'hospital.matron.dashboard',
+        'ward_manager'        => 'hospital.wards.occupancy',
         'hospital_receptionist'=> 'hospital.reception.dashboard',
         'cashier'             => 'hospital.reception.dashboard',
         'medical_records'     => 'hospital.reception.dashboard',
+        'medical_records_officer' => 'hospital.records.index',
         'pharmacist'          => 'hospital.pharmacy.dashboard',
         'pharmacy_technician' => 'hospital.pharmacy.dashboard',
         'inventory_officer'   => 'hospital.pharmacy.dashboard',
@@ -181,6 +207,7 @@ class HospitalPermissions
         'radiographer'        => 'hospital.lab.dashboard',
         'radiologist'         => 'hospital.lab.dashboard',
         'store_keeper'        => 'hospital.pharmacy.dashboard',
+        'hospital_admin'      => 'hospital.admin.dashboard',
     ];
 
     /**
@@ -260,9 +287,13 @@ class HospitalPermissions
         ],
 
         'matron' => [
-            ['hospital.nurse.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
+            ['hospital.matron.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
+            ['hospital.matron.rounds', 'fas fa-stethoscope', 'Ward Rounds'],
+            ['hospital.matron.staff', 'fas fa-user-clock', 'Staff Load'],
+            ['hospital.wards.index', 'fas fa-procedures', 'Wards'],
+            ['hospital.wards.occupancy', 'fas fa-chart-bar', 'Occupancy'],
             ['hospital.patients.index', 'fas fa-users', 'Patients'],
-            ['hospital.appointments.index', 'fas fa-calendar-check', 'Appointments'],
+            ['hospital.roster.index', 'fas fa-calendar-week', 'Duty Roster'],
         ],
 
         'pharmacy_technician' => [
@@ -297,7 +328,29 @@ class HospitalPermissions
         ],
 
         'ward_manager' => [
-            ['hospital.nurse.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
+            ['hospital.wards.occupancy', 'fas fa-tachometer-alt', 'Occupancy'],
+            ['hospital.wards.index', 'fas fa-procedures', 'Wards'],
+            ['hospital.patients.index', 'fas fa-users', 'Patients'],
+            ['hospital.roster.index', 'fas fa-calendar-week', 'Duty Roster'],
+        ],
+
+        'hospital_admin' => [
+            ['hospital.admin.dashboard', 'fas fa-tachometer-alt', 'Dashboard'],
+            ['hospital.admin.staff', 'fas fa-user-md', 'Staff'],
+            ['hospital.admin.revenue', 'fas fa-coins', 'Revenue'],
+            ['hospital.admin.inventory', 'fas fa-pills', 'Inventory'],
+            ['hospital.admin.attendance', 'fas fa-calendar-check', 'Attendance'],
+            ['hospital.patients.index', 'fas fa-users', 'Patients'],
+            ['hospital.appointments.index', 'fas fa-calendar-check', 'Appointments'],
+            ['hospital.pharmacy.drugs', 'fas fa-pills', 'Pharmacy'],
+            ['hospital.lab.index', 'fas fa-flask', 'Laboratory'],
+        ],
+
+        'medical_records_officer' => [
+            ['hospital.records.index', 'fas fa-tachometer-alt', 'Records'],
+            ['hospital.records.search', 'fas fa-search', 'Search'],
+            ['hospital.records.audit', 'fas fa-history', 'Audit Log'],
+            ['hospital.records.requests', 'fas fa-inbox', 'Requests'],
             ['hospital.patients.index', 'fas fa-users', 'Patients'],
         ],
 
@@ -397,6 +450,7 @@ class HospitalPermissions
             'lab_scientist', 'lab_technician',
             'radiographer', 'radiologist',
             'store_keeper',
+            'hospital_admin', 'medical_records_officer',
         ], true);
     }
 }

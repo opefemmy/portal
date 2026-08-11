@@ -12,6 +12,10 @@ use App\Http\Controllers\Hospital\LaboratoryController;
 use App\Http\Controllers\Hospital\ConsultationController;
 use App\Http\Controllers\Hospital\InventoryController;
 use App\Http\Controllers\Hospital\DutyRosterController;
+use App\Http\Controllers\Hospital\MatronDashboardController;
+use App\Http\Controllers\Hospital\WardController;
+use App\Http\Controllers\Hospital\HospitalAdminController;
+use App\Http\Controllers\Hospital\RecordsController;
 
 // Public Patient Portal Routes (for outsiders)
 Route::prefix('patient')->name('patient.')->group(function () {
@@ -82,7 +86,10 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         ->name('patient.lookup');
 
     // Internal Hospital Patients (registered patients)
-    Route::prefix('patients')->name('patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,pharmacist,lab_scientist,super_admin,admin')->group(function () {
+    // medical_records_officer is included with read-only access — they
+    // navigate patients from /hospital/records/{patient} but are still
+    // blocked from clinical writes by EnforcesHospitalPermission.
+    Route::prefix('patients')->name('patients.')->middleware('role:cmd,doctor,nurse,hospital_receptionist,pharmacist,lab_scientist,medical_records_officer,super_admin,admin')->group(function () {
         Route::get('/', [PatientController::class, 'index'])->name('index');
         Route::get('/create', [PatientController::class, 'create'])->name('create');
         Route::post('/', [PatientController::class, 'store'])->name('store');
@@ -173,5 +180,49 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
         Route::get('/', [DutyRosterController::class, 'index'])->name('index');
         Route::post('/', [DutyRosterController::class, 'store'])->name('store');
         Route::delete('/{entry}', [DutyRosterController::class, 'destroy'])->name('destroy');
+    });
+
+    // === Matron (senior nurse, ward operations oversight) ===
+    Route::prefix('matron')->name('matron.')->middleware('role:matron,cmd,super_admin,admin')->group(function () {
+        Route::get('/dashboard', [MatronDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/rounds',    [MatronDashboardController::class, 'rounds'])->name('rounds');
+        Route::get('/staff',     [MatronDashboardController::class, 'staffLoad'])->name('staff');
+    });
+
+    // === Ward Manager (beds, occupancy, ward CRUD) ===
+    Route::prefix('wards')->name('wards.')->middleware('role:matron,ward_manager,cmd,super_admin,admin')->group(function () {
+        Route::get('/',                 [WardController::class, 'index'])->name('index');
+        Route::get('/create',           [WardController::class, 'create'])->name('create');
+        Route::post('/',                [WardController::class, 'store'])->name('store');
+        Route::get('/{ward}/edit',      [WardController::class, 'edit'])->name('edit');
+        Route::put('/{ward}',           [WardController::class, 'update'])->name('update');
+        Route::get('/occupancy',        [WardController::class, 'occupancyReport'])->name('occupancy');
+        Route::get('/{ward}/beds',      [WardController::class, 'beds'])->name('beds');
+        Route::post('/{ward}/beds',     [WardController::class, 'assignBed'])->name('beds.assign');
+        Route::post('/beds/{bed}/discharge', [WardController::class, 'dischargeBed'])->name('beds.discharge');
+    });
+
+    // === Hospital Admin (cross-cutting dashboard + staff + revenue + inventory + attendance) ===
+    Route::prefix('admin')->name('admin.')->middleware('role:hospital_admin,cmd,super_admin,admin')->group(function () {
+        Route::get('/dashboard', [HospitalAdminController::class, 'index'])->name('dashboard');
+        Route::get('/staff',     [HospitalAdminController::class, 'staff'])->name('staff');
+        Route::post('/staff/{staff}/toggle', [HospitalAdminController::class, 'toggleAvailability'])->name('staff.toggle');
+        Route::get('/revenue',   [HospitalAdminController::class, 'revenue'])->name('revenue');
+        Route::get('/inventory', [HospitalAdminController::class, 'inventory'])->name('inventory');
+        Route::get('/attendance',[HospitalAdminController::class, 'attendance'])->name('attendance');
+    });
+
+    // === Medical Records (archive, transfer, request queue, audit) ===
+    Route::prefix('records')->name('records.')->middleware('role:medical_records_officer,cmd,super_admin,admin,hospital_admin')->group(function () {
+        Route::get('/',                  [RecordsController::class, 'index'])->name('index');
+        Route::get('/search',            [RecordsController::class, 'search'])->name('search');
+        Route::get('/{patient}',         [RecordsController::class, 'show'])->name('show');
+        Route::post('/{patient}/archive',[RecordsController::class, 'archive'])->name('archive');
+        Route::post('/{patient}/unarchive',[RecordsController::class, 'unarchive'])->name('unarchive');
+        Route::post('/{patient}/transfer',[RecordsController::class, 'transfer'])->name('transfer');
+        Route::get('/audit',             [RecordsController::class, 'auditLog'])->name('audit');
+        Route::get('/requests',          [RecordsController::class, 'requests'])->name('requests');
+        Route::post('/requests/{recordRequest}/fulfill', [RecordsController::class, 'fulfillRequest'])->name('requests.fulfill');
+        Route::post('/requests/{recordRequest}/reject',  [RecordsController::class, 'rejectRequest'])->name('requests.reject');
     });
 });
