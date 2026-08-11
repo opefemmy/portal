@@ -765,7 +765,7 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
 // access to the same dashboard — they all share the bursar reports /
 // paid-students / regimes / payments screens. super_admin and admin
 // are included so the platform admins can debug any bursar flow.
-Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursary_officer,fees_officer,payment_officer,cashier,super_admin,admin'])->group(function () {
+Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursary_officer,fees_officer,payment_officer,cashier,accountant,account_officer,finance_officer,finance,auditor,internal_auditor,external_auditor,ict_admin,hospital_accountant,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
     Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');

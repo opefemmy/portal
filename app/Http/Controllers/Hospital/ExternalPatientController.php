@@ -397,9 +397,21 @@ class ExternalPatientController extends Controller
             ->limit(10)
             ->get();
 
-        // Get patient's appointments (by phone or email)
-        $appointments = HospitalAppointment::where('patient_phone', $patient->phone)
-            ->orWhere('patient_email', $patient->email)
+        // Get patient's appointments (by phone or email — the
+        // hospital_appointments table only has patient_id, so we walk
+        // through HospitalPatient by phone/email, not the columns
+        // directly).
+        $appointments = HospitalAppointment::query()
+            ->whereHas('patient', function ($q) use ($patient) {
+                $q->where(function ($sub) use ($patient) {
+                    if ($patient->phone) {
+                        $sub->where('phone', $patient->phone);
+                    }
+                    if ($patient->email) {
+                        $sub->orWhere('email', $patient->email);
+                    }
+                });
+            })
             ->orderBy('appointment_date', 'desc')
             ->limit(10)
             ->get();
