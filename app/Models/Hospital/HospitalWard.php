@@ -36,4 +36,17 @@ class HospitalWard extends Model
     {
         return $this->hasMany(HospitalBed::class, 'ward_id')->where('status', 'occupied');
     }
+
+    /**
+     * Recompute and persist `available_beds` from the live bed statuses.
+     *
+     * Called by WardController whenever an assignment or discharge changes
+     * bed.status, so the ward-level counter stays in sync with the bed-level
+     * truth without forcing every caller to do the math.
+     */
+    public function refreshAvailableBeds(): void
+    {
+        $available = $this->beds()->where('status', 'available')->count();
+        $this->forceFill(['available_beds' => $available])->save();
+    }
 }
