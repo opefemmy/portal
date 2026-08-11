@@ -17,7 +17,7 @@ class UserController extends Controller
         // Filter to only show staff users - exclude students, applicants, parents, visitors
         $roleSlug = $request->get('role', '');
 
-        $users = User::with('role', 'department')
+        $users = User::with(['role', 'roles', 'department'])
             ->whereHas('role', function($query) use ($roleSlug) {
                 // Exclude student, applicant roles from the users page
                 $query->whereNotIn('slug', ['student', 'applicant']);
@@ -30,7 +30,14 @@ class UserController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('admin.users.index', compact('users'));
+        // Roles available to attach. We exclude `student` and
+        // `applicant` to match the index's user scope — students are
+        // managed on a separate page; same for applicants.
+        $roles = Role::whereNotIn('slug', ['student', 'applicant'])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.users.index', compact('users', 'roles'));
     }
 
     public function create()

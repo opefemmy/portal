@@ -359,6 +359,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
     Route::get('/users/upload', [UserController::class, 'upload'])->name('users.upload');
+    // Per-user multi-role assignment (writes to role_user pivot +
+    // users.role_id). Used by the modal on admin/users.
+    Route::put('/users/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'update'])
+        ->name('users.roles.update');
 
     Route::post('/users/upload', [UserController::class, 'processUpload'])->name('users.upload.process');
     Route::post('/users/{user}/passport', [UserController::class, 'uploadPassport'])->name('users.passport');

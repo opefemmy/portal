@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -43,6 +44,51 @@ class User extends Authenticatable implements MustVerifyEmail
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * All roles attached to this user via the `role_user` pivot.
+     *
+     * `users.role_id` continues to be the **primary** role — used by
+     * RoleMiddleware, LoginController, and AuthService for redirect
+     * gating. This relation exposes *additional* roles so a single
+     * user can hold multiple roles (e.g. `bursar` + `cashier`) without
+     * losing the primary-role redirect path.
+     *
+     * Use `sync()` / `attach()` / `detach()` on this relation to
+     * manage memberships. The `booted()` hook below keeps the pivot
+     * in sync when `role_id` is changed elsewhere.
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user')
+            ->withPivot('created_at');
+    }
+
+    /**
+     * All role slugs attached to this user — primary first, then the
+     * pivot. Deduplicated. Useful for gate checks that previously
+     * only consulted the primary role's slug.
+     */
+    public function allRoleSlugs(): array
+    {
+        $slugs = [];
+        if ($this->role) {
+            $slugs[] = $this->role->slug;
+        }
+        foreach ($this->roles as $r) {
+            $slugs[] = $r->slug;
+        }
+        return array_values(array_unique($slugs));
+    }
+
+    /**
+     * Check if this user holds any of the given role slugs across
+     * the primary role and the pivot.
+     */
+    public function hasAnyRoleSlug(array $slugs): bool
+    {
+        return (bool) array_intersect($slugs, $this->allRoleSlugs());
     }
 
     public function school(): BelongsTo
@@ -289,5 +335,29 @@ class User extends Authenticatable implements MustVerifyEmail
             'unlock_code_expires_at' => null,
         ]);
         return true;
+    }
+
+    /**
+     * Keep the `role_user` pivot in sync when `role_id` changes.
+     *
+     * Existing flows that update `users.role_id` (Admin\UserController,
+     * bulk uploads, the staff importer, etc.) don't know about the
+     * pivot. Without this hook, a user could end up with a primary
+     * role that's not in the pivot — the index page would render the
+     * primary pill but the checkbox wouldn't be pre-checked, which
+     * would surprise the admin. `syncWithoutDetaching` only adds the
+     * new role; existing memberships are preserved.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            if ($user->wasChanged('role_id') && $user->role_id) {
+                // The relation may not be loaded yet — load it
+                // explicitly so syncWithoutDetaching reads the live
+                // pivot, not a stale cached version.
+                $user->load('roles');
+                $user->roles()->syncWithoutDetaching([$user->role_id]);
+            }
+        });
     }
 }
