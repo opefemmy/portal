@@ -90,6 +90,9 @@ class AppServiceProvider extends ServiceProvider
         $this->registerRegistrarWidgets();
         $this->registerStudentWidgets();
         $this->registerAuditorWidgets();
+        $this->registerBusinessCommitteeWidgets();
+        $this->registerAcademicBoardWidgets();
+        $this->registerExecutiveWidgets();
         $this->registerLibrarianWidgets();
         $this->registerLecturerWidgets();
         $this->registerHodWidgets();
@@ -877,25 +880,99 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register widgets for the result-approval "auditor" audiences:
-     * business_committee and academic_board.
+     * Register widgets for the auditor audience (auditor,
+     * internal_auditor, external_auditor). Audit logs, deleted
+     * records, finance transaction totals, and pending refunds.
      *
-     * Both audiences move results through a multi-step approval
-     * pipeline (`approved_by_dean` → `approved_by_business` →
-     * `approved_final`). Each dashboard shows its inbound pending
-     * count plus the count of results it has already approved. The
-     * "View Results" call-to-action card with intro paragraph stays
-     * in the view's chrome — it carries narrative copy that's not a
-     * generic widget.
+     * The recent audit logs and failed-actions tables stay in the
+     * view's chrome (they carry user/date joins that don't fit the
+     * generic widget data shape).
      */
     private function registerAuditorWidgets(): void
     {
-        $auditorRoles = ['business_committee', 'academic_board'];
+        $auditorRoles = ['auditor', 'internal_auditor', 'external_auditor', 'super_admin', 'admin'];
 
-        // Shared between the two audiences — they're stages of the
-        // same Result.status pipeline.
         WidgetRegistry::register(new WidgetDefinition(
-            'business_committee.pending', 'Pending Results', 'stat', $auditorRoles,
+            'auditor.total_transactions', 'Total Transactions', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Finance\FinanceTransaction::count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-exchange-alt',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'auditor.total_receipts', 'Total Receipts', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Finance\FinanceReceipt::count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-receipt',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'auditor.deleted_records', 'Deleted Records', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\DeletedRecord::count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-trash-restore',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'auditor.audit_logs', 'Audit Logs', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\AuditLog::withTrashed()->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-clipboard-list',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'auditor.failed_actions', 'Failed Actions', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\AuditLog::withTrashed()->where('status', 'failed')->count(),
+                'format' => 'number',
+                'color' => 'danger',
+                'icon' => 'fas fa-exclamation-triangle',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'auditor.pending_refunds', 'Pending Refunds', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Finance\FinanceRefund::where('status', 'pending')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-undo',
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the result-approval business_committee audience.
+     *
+     * The committee sees the inbound `approved_by_dean` queue plus the
+     * count of results it has already advanced to
+     * `approved_by_business`. The "View Results" call-to-action card
+     * with intro paragraph stays in the view's chrome.
+     */
+    private function registerBusinessCommitteeWidgets(): void
+    {
+        $roles = ['business_committee', 'super_admin', 'admin'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'business_committee.pending', 'Pending Results', 'stat', $roles,
             fn() => [
                 'value' => \App\Models\Result::where('status', 'approved_by_dean')->count(),
                 'format' => 'number',
@@ -907,7 +984,7 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         WidgetRegistry::register(new WidgetDefinition(
-            'business_committee.approved', 'Approved Results', 'stat', $auditorRoles,
+            'business_committee.approved', 'Approved Results', 'stat', $roles,
             fn() => [
                 'value' => \App\Models\Result::where('status', 'approved_by_business')->count(),
                 'format' => 'number',
@@ -916,9 +993,20 @@ class AppServiceProvider extends ServiceProvider
             ],
             'widgets.stat-card'
         ));
+    }
+
+    /**
+     * Register widgets for the final-approval academic_board audience.
+     *
+     * The board sees the `approved_by_business` queue plus the count of
+     * results it has elevated to `approved_final`.
+     */
+    private function registerAcademicBoardWidgets(): void
+    {
+        $roles = ['academic_board', 'super_admin', 'admin'];
 
         WidgetRegistry::register(new WidgetDefinition(
-            'academic_board.pending', 'Pending Final Approval', 'stat', $auditorRoles,
+            'academic_board.pending', 'Pending Final Approval', 'stat', $roles,
             fn() => [
                 'value' => \App\Models\Result::where('status', 'approved_by_business')->count(),
                 'format' => 'number',
@@ -930,7 +1018,7 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         WidgetRegistry::register(new WidgetDefinition(
-            'academic_board.final_approved', 'Final Approved Results', 'stat', $auditorRoles,
+            'academic_board.final_approved', 'Final Approved Results', 'stat', $roles,
             fn() => [
                 'value' => \App\Models\Result::where('status', 'approved_final')->count(),
                 'format' => 'number',
@@ -938,6 +1026,155 @@ class AppServiceProvider extends ServiceProvider
                 'icon' => 'fas fa-graduation-cap',
             ],
             'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the executive audience (rector, super_admin).
+     *
+     * Cross-domain roll-up: students, staff, finance, hospital. The
+     * dashboard tiles mirror the four cards the old hand-built
+     * controller produced (total students, total staff, today revenue,
+     * monthly revenue) plus a few derived ones (active students, new
+     * this month, outstanding balance, admitted patients, today's
+     * appointments) so the executive can see a snapshot of the whole
+     * institution at a glance.
+     *
+     * Top-departments table and recent-receipts table stay in the
+     * view's chrome because they need column joins.
+     */
+    private function registerExecutiveWidgets(): void
+    {
+        $roles = ['rector', 'super_admin', 'admin'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.total_students', 'Total Students', 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\User::whereHas('role', fn($q) => $q->where('slug', 'student'))->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-user-graduate',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.active_students', 'Active Students', 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\User::whereHas('role', fn($q) => $q->where('slug', 'student'))
+                    ->where('is_active', true)->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-user-check',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.new_students_this_month', 'New This Month', 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\User::whereHas('role', fn($q) => $q->where('slug', 'student'))
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-user-plus',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.total_staff', 'Total Staff', 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\User::whereHas('role',
+                    fn($q) => $q->whereNotIn('slug', ['student', 'applicant'])
+                )->count(),
+                'format' => 'number',
+                'color' => 'secondary',
+                'icon' => 'fas fa-user-tie',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.today_revenue', "Today's Revenue", 'stat', $roles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceReceipt::whereDate('payment_date', today())->sum('amount'),
+                'format' => 'currency',
+                'color' => 'success',
+                'icon' => 'fas fa-cash-register',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.monthly_revenue', 'Monthly Revenue', 'stat', $roles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceReceipt::whereMonth('payment_date', now()->month)
+                    ->whereYear('payment_date', now()->year)
+                    ->sum('amount'),
+                'format' => 'currency',
+                'color' => 'primary',
+                'icon' => 'fas fa-chart-line',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.outstanding_balance', 'Outstanding Balance', 'stat', $roles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceInvoice::whereIn('status', ['pending', 'partial'])->sum('balance'),
+                'format' => 'currency',
+                'color' => 'warning',
+                'icon' => 'fas fa-balance-scale',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.admitted_patients', 'Admitted Patients', 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAdmission::where('status', 'admitted')->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-procedures',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.today_appointments', "Today's Appointments", 'stat', $roles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-calendar-check',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'executive.recent_receipts', 'Recent Receipts', 'table', $roles,
+            fn() => [
+                'title'   => 'Recent Receipts',
+                'icon'    => 'fas fa-receipt',
+                'headers' => ['Date', 'Student', 'Amount', 'Method'],
+                'rows'    => \App\Models\Finance\FinanceReceipt::with('student')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn($r) => [
+                        optional($r->created_at)->format('d M Y') ?? 'N/A',
+                        optional($r->student)->name ?? 'N/A',
+                        '₦' . number_format((float) $r->amount, 2),
+                        ucfirst((string) $r->payment_method),
+                    ])
+                    ->all(),
+                'colspan' => 4,
+                'empty_message' => 'No recent receipts',
+            ],
+            'widgets.table-card'
         ));
     }
 

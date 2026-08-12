@@ -6,41 +6,8 @@
 <div class="container-fluid">
     <h4 class="mb-4">Auditor Dashboard</h4>
 
-    <!-- Stats Cards -->
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5>Total Transactions</h5>
-                    <h2>{{ number_format($stats['total_transactions']) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5>Total Receipts</h5>
-                    <h2>{{ number_format($stats['total_receipts']) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5>Deleted Records</h5>
-                    <h2>{{ number_format($stats['total_deleted_records']) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5>Audit Logs</h5>
-                    <h2>{{ number_format($stats['audit_logs_count']) }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- Stat tiles — widget rendered (auditor audience) --}}
+    @include('widgets.render', ['widgets' => $widgets])
 
     <div class="row mt-4">
         <div class="col-md-6">
