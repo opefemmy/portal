@@ -11,7 +11,6 @@ use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalStaff;
 use App\Models\Hospital\HospitalWard;
 use App\Services\Dashboard\DashboardResolver;
-use App\Services\Hospital\HospitalPermissions;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 

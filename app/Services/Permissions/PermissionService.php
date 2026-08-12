@@ -2,6 +2,7 @@
 
 namespace App\Services\Permissions;
 
+use App\Models\Permission;
 use App\Models\User;
 use App\Services\Hospital\HospitalPermissions;
 use Illuminate\Support\Facades\Auth;
