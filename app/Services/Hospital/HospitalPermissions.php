@@ -452,7 +452,49 @@ class HospitalPermissions
             $items = self::ROLE_MENUS['cmd'];
         }
 
+        // Insert a "Customize Dashboard" entry immediately after the
+        // audience's dashboard link, so each hospital role can tweak
+        // their own widget set. The route names follow the
+        // `<audience>.dashboard-config.edit` convention registered in
+        // routes/hospital.php.
+        if (!empty($items)) {
+            $items = self::insertCustomizerEntry($items);
+        }
+
         return $items;
+    }
+
+    /**
+     * Insert the audience's "Customize Dashboard" link right after the
+     * dashboard entry. Mirrors the configurator wiring in
+     * routes/hospital.php so each role gets a one-click link to its own
+     * configurator (the controller itself scopes by audience role).
+     */
+    private static function insertCustomizerEntry(array $items): array
+    {
+        // Map the dashboard route name to its sibling configurator route.
+        $configuratorFor = [
+            'hospital.dashboard'              => 'hospital.dashboard-config.edit',
+            'hospital.doctor.dashboard'       => 'hospital.doctor.dashboard-config.edit',
+            'hospital.nurse.dashboard'        => 'hospital.nurse.dashboard-config.edit',
+            'hospital.reception.dashboard'    => 'hospital.reception.dashboard-config.edit',
+            'hospital.pharmacy.dashboard'     => 'hospital.pharmacy.dashboard-config.edit',
+            'hospital.lab.dashboard'          => 'hospital.lab.dashboard-config.edit',
+            'hospital.matron.dashboard'       => 'hospital.matron.dashboard-config.edit',
+            'hospital.admin.dashboard'        => 'hospital.admin.dashboard-config.edit',
+        ];
+
+        $out = [];
+        $inserted = false;
+        foreach ($items as $entry) {
+            $out[] = $entry;
+            if (!$inserted && isset($entry[0]) && isset($configuratorFor[$entry[0]])) {
+                $out[] = [$configuratorFor[$entry[0]], 'fas fa-sliders-h', 'Customize Dashboard'];
+                $inserted = true;
+            }
+        }
+
+        return $out;
     }
 
     /**

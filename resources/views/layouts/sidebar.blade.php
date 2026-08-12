@@ -542,6 +542,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('student.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('student/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('student.profile') }}" class="nav-link {{ request()->is('student/profile*') ? 'active' : '' }}">
         <i class="fas fa-user-cog"></i> My Profile
     </a>
@@ -611,6 +617,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('lecturer.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('lecturer/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('lecturer.courses') }}" class="nav-link {{ request()->is('lecturer/courses*') ? 'active' : '' }}">
         <i class="fas fa-book"></i> My Courses
     </a>
@@ -624,6 +636,12 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('hod.dashboard') }}" class="nav-link {{ request()->is('hod/dashboard*') ? 'active' : '' }}">
         <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('hod.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('hod/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 <li class="nav-item">
@@ -645,6 +663,12 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('registrar.dashboard') }}" class="nav-link {{ request()->is('registrar/dashboard*') ? 'active' : '' }}">
         <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('registrar.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('registrar/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 <li class="nav-item">
@@ -684,6 +708,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('registrar.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('registrar/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('registrar.applications.index') }}" class="nav-link {{ request()->is('registrar/applications*') ? 'active' : '' }}">
         <i class="fas fa-file-alt"></i> Applications
     </a>
@@ -712,6 +742,12 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('bursar.dashboard') }}" class="nav-link {{ request()->is('bursar/dashboard*') ? 'active' : '' }}">
         <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('bursar.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('bursar/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 <li class="nav-item">
@@ -747,6 +783,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('business-committee.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('business-committee/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('business-committee.results') }}" class="nav-link {{ request()->is('business-committee/results*') ? 'active' : '' }}">
         <i class="fas fa-check-circle"></i> Approve Results
     </a>
@@ -756,6 +798,12 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('academic-board.dashboard') }}" class="nav-link {{ request()->is('academic-board/dashboard*') ? 'active' : '' }}">
         <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('academic-board.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('academic-board/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 <li class="nav-item">
@@ -798,6 +846,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('finance.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('finance/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('finance.invoices.index') }}" class="nav-link {{ request()->is('finance/invoices*') ? 'active' : '' }}">
         <i class="fas fa-file-invoice"></i> Invoices
     </a>
@@ -830,6 +884,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('executive.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('executive/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('executive.reports.students') }}" class="nav-link {{ request()->is('executive/reports*') ? 'active' : '' }}">
         <i class="fas fa-chart-bar"></i> Reports
     </a>
@@ -839,6 +899,12 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('librarian.dashboard') }}" class="nav-link {{ request()->is('librarian/dashboard*') ? 'active' : '' }}">
         <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('librarian/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 <li class="nav-item">
@@ -859,6 +925,12 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('auditor.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('auditor/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('auditor.audit-logs') }}" class="nav-link {{ request()->is('auditor/audit-logs*') ? 'active' : '' }}">
         <i class="fas fa-history"></i> Audit Logs
     </a>
@@ -866,6 +938,19 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('auditor.deleted') }}" class="nav-link {{ request()->is('auditor/deleted*') ? 'active' : '' }}">
         <i class="fas fa-trash-restore"></i> Deleted Records
+    </a>
+</li>
+{{-- DEAN DASHBOARD --}}
+@elseif($role === 'dean')
+<li class="nav-item">
+    <a href="{{ route('dean.dashboard') }}" class="nav-link {{ request()->is('dean/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('dean.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('dean/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
     </a>
 </li>
 @elseif($role === 'applicant')

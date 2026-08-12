@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Finance\DashboardController;
+use App\Http\Controllers\Finance\DashboardConfigController as FinanceDashboardConfigController;
 use App\Http\Controllers\Finance\InvoiceController;
 use App\Http\Controllers\Finance\ReceiptController;
 use App\Http\Controllers\Finance\TransactionController;
@@ -16,6 +17,12 @@ use App\Http\Controllers\Finance\VendorController;
 Route::prefix('finance')->name('finance.')->middleware(['auth', 'role:super_admin,admin,finance,finance_officer,accountant,account_officer,auditor,cashier,hospital_accountant,bursary_officer,fees_officer,payment_officer,ict_admin'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [FinanceDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [FinanceDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
 
     // Invoices
     Route::resource('invoices', InvoiceController::class);

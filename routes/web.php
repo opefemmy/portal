@@ -8,6 +8,15 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DashboardConfigController as AdminDashboardConfigController;
+use App\Http\Controllers\Bursar\DashboardConfigController as BursarDashboardConfigController;
+use App\Http\Controllers\Registrar\DashboardConfigController as RegistrarDashboardConfigController;
+use App\Http\Controllers\Student\DashboardConfigController as StudentDashboardConfigController;
+use App\Http\Controllers\Lecturer\DashboardConfigController as LecturerDashboardConfigController;
+use App\Http\Controllers\HOD\DashboardConfigController as HodDashboardConfigController;
+use App\Http\Controllers\Dean\DashboardConfigController as DeanDashboardConfigController;
+use App\Http\Controllers\Librarian\DashboardConfigController as LibrarianDashboardConfigController;
+use App\Http\Controllers\BusinessCommittee\DashboardConfigController as BusinessCommitteeDashboardConfigController;
+use App\Http\Controllers\AcademicBoard\DashboardConfigController as AcademicBoardDashboardConfigController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\DepartmentController;
@@ -584,6 +593,12 @@ Route::get('/student/auto-login/{user}', [\App\Http\Controllers\Student\AutoLogi
 
 Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 'student.onboarding'])->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [StudentDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [StudentDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/courses', [CourseRegistrationController::class, 'index'])->name('courses');
     Route::get('/courses/register', [CourseRegistrationController::class, 'register'])->name('courses.register');
     Route::post('/courses/register', [CourseRegistrationController::class, 'storeRegistration']);
@@ -678,6 +693,12 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
 // Lecturer Routes
 Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer'])->group(function () {
     Route::get('/dashboard', [LecturerDashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/courses', [LecturerDashboardController::class, 'courses'])->name('courses');
     Route::get('/courses/{course}/students', [LecturerResultController::class, 'courseStudents'])->name('courses.students');
     Route::get('/courses/{course}/results', [LecturerResultController::class, 'enter'])->name('courses.results');
@@ -699,6 +720,12 @@ Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer
 // HOD Routes
 Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\HOD\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [HodDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [HodDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/courses', [\App\Http\Controllers\HOD\CourseController::class, 'index'])->name('courses');
     Route::get('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'assign'])->name('courses.assign');
     Route::post('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'storeAssignment'])->name('courses.assign.store');
@@ -719,6 +746,12 @@ Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(func
 // Dean Routes
 Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Dean\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])->name('departments');
     Route::get('/results', [\App\Http\Controllers\Dean\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])->name('results.approve');
@@ -729,6 +762,12 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
 // Registrar Routes - accessible by registrar, admin, super_admin, and admission_officer
 Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar,super_admin,admin,admission_officer'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
 
     // Application Management
     // Literal sub-paths (statistics, export, bulk) MUST come before /{applicant}
@@ -789,6 +828,12 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
 // are included so the platform admins can debug any bursar flow.
 Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursary_officer,fees_officer,payment_officer,cashier,accountant,account_officer,finance_officer,finance,auditor,internal_auditor,external_auditor,ict_admin,hospital_accountant,super_admin,admin'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
     Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');
 
@@ -822,6 +867,12 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursa
 // Business Committee Routes
 Route::prefix('business-committee')->name('business-committee.')->middleware(['auth', 'role:business_committee'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\BusinessCommittee\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'reject'])->name('results.reject');
@@ -832,6 +883,12 @@ Route::prefix('business-committee')->name('business-committee.')->middleware(['a
 // Academic Board Routes
 Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'role:academic_board'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AcademicBoard\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])->name('results.approve');
     Route::put('/results/{result}/reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'reject'])->name('results.reject');
@@ -845,6 +902,12 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
 // in code where it matters (e.g. only Librarian can delete books).
 Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librarian,library_officer,library_assistant'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Librarian\DashboardController::class, 'index'])->name('dashboard');
+
+    // Per-user dashboard widget configurator
+    Route::get('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
     Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])->name('books');
     Route::get('/books/create', [\App\Http\Controllers\Librarian\DashboardController::class, 'createBook'])->name('books.create');
     Route::post('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'storeBook'])->name('books.store');

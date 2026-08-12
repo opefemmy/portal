@@ -14,7 +14,7 @@
         </p>
     </div>
     <div>
-        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ route($dashboardRouteName) }}" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-tachometer-alt me-1"></i>Back to Dashboard
         </a>
     </div>
@@ -26,7 +26,7 @@
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.dashboard-config.update', $target) }}">
+        <form method="POST" action="{{ route($configUpdateRoute, $target) }}">
             @csrf
             @method('PUT')
 

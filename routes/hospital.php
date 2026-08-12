@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Hospital\DashboardController;
+use App\Http\Controllers\Hospital\DashboardConfigController as HospitalDashboardConfigController;
+use App\Http\Controllers\Hospital\Doctor\DashboardConfigController as HospitalDoctorDashboardConfigController;
+use App\Http\Controllers\Hospital\Nurse\DashboardConfigController as HospitalNurseDashboardConfigController;
+use App\Http\Controllers\Hospital\Reception\DashboardConfigController as HospitalReceptionDashboardConfigController;
+use App\Http\Controllers\Hospital\Pharmacy\DashboardConfigController as HospitalPharmacyDashboardConfigController;
+use App\Http\Controllers\Hospital\Lab\DashboardConfigController as HospitalLabDashboardConfigController;
 use App\Http\Controllers\Hospital\ExternalPatientController;
 use App\Http\Controllers\Hospital\ExternalVisitController;
 use App\Http\Controllers\Hospital\ExternalPortalController;
@@ -13,8 +19,10 @@ use App\Http\Controllers\Hospital\ConsultationController;
 use App\Http\Controllers\Hospital\InventoryController;
 use App\Http\Controllers\Hospital\DutyRosterController;
 use App\Http\Controllers\Hospital\MatronDashboardController;
+use App\Http\Controllers\Hospital\Matron\DashboardConfigController as HospitalMatronDashboardConfigController;
 use App\Http\Controllers\Hospital\WardController;
 use App\Http\Controllers\Hospital\HospitalAdminController;
+use App\Http\Controllers\Hospital\Admin\DashboardConfigController as HospitalAdminDashboardConfigController;
 use App\Http\Controllers\Hospital\RecordsController;
 
 // Public Patient Portal Routes (for outsiders)
@@ -40,21 +48,57 @@ Route::prefix('patient')->name('patient.')->group(function () {
 Route::prefix('hospital')->name('hospital.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Per-user dashboard widget configurator (root cmd/hospital_admin)
+    Route::get('/dashboard-config/{user}', [HospitalDashboardConfigController::class, 'edit'])
+        ->name('dashboard-config.edit');
+    Route::put('/dashboard-config/{user}', [HospitalDashboardConfigController::class, 'update'])
+        ->name('dashboard-config.update');
+
     // Role-specific dashboards
     Route::get('/doctor/dashboard', [DashboardController::class, 'doctorDashboard'])
         ->name('doctor.dashboard');
 
+    // Per-user dashboard widget configurator (doctor)
+    Route::get('/doctor/dashboard-config/{user}', [HospitalDoctorDashboardConfigController::class, 'edit'])
+        ->name('doctor.dashboard-config.edit');
+    Route::put('/doctor/dashboard-config/{user}', [HospitalDoctorDashboardConfigController::class, 'update'])
+        ->name('doctor.dashboard-config.update');
+
     Route::get('/nurse/dashboard', [DashboardController::class, 'nurseDashboard'])
         ->name('nurse.dashboard');
+
+    // Per-user dashboard widget configurator (nurse)
+    Route::get('/nurse/dashboard-config/{user}', [HospitalNurseDashboardConfigController::class, 'edit'])
+        ->name('nurse.dashboard-config.edit');
+    Route::put('/nurse/dashboard-config/{user}', [HospitalNurseDashboardConfigController::class, 'update'])
+        ->name('nurse.dashboard-config.update');
 
     Route::get('/reception/dashboard', [DashboardController::class, 'receptionistDashboard'])
         ->name('reception.dashboard');
 
+    // Per-user dashboard widget configurator (reception)
+    Route::get('/reception/dashboard-config/{user}', [HospitalReceptionDashboardConfigController::class, 'edit'])
+        ->name('reception.dashboard-config.edit');
+    Route::put('/reception/dashboard-config/{user}', [HospitalReceptionDashboardConfigController::class, 'update'])
+        ->name('reception.dashboard-config.update');
+
     Route::get('/pharmacy/dashboard', [DashboardController::class, 'pharmacyDashboard'])
         ->name('pharmacy.dashboard');
 
+    // Per-user dashboard widget configurator (pharmacy)
+    Route::get('/pharmacy/dashboard-config/{user}', [HospitalPharmacyDashboardConfigController::class, 'edit'])
+        ->name('pharmacy.dashboard-config.edit');
+    Route::put('/pharmacy/dashboard-config/{user}', [HospitalPharmacyDashboardConfigController::class, 'update'])
+        ->name('pharmacy.dashboard-config.update');
+
     Route::get('/lab/dashboard', [DashboardController::class, 'labDashboard'])
         ->name('lab.dashboard');
+
+    // Per-user dashboard widget configurator (lab)
+    Route::get('/lab/dashboard-config/{user}', [HospitalLabDashboardConfigController::class, 'edit'])
+        ->name('lab.dashboard-config.edit');
+    Route::put('/lab/dashboard-config/{user}', [HospitalLabDashboardConfigController::class, 'update'])
+        ->name('lab.dashboard-config.update');
 
     // External Patients Management (for outsiders)
     // Receptionists manage; doctors/nurses/cmd view. hospital_admin
@@ -185,6 +229,12 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
     // === Matron (senior nurse, ward operations oversight) ===
     Route::prefix('matron')->name('matron.')->middleware('role:matron,cmd,super_admin,admin')->group(function () {
         Route::get('/dashboard', [MatronDashboardController::class, 'index'])->name('dashboard');
+
+        // Per-user dashboard widget configurator
+        Route::get('/dashboard-config/{user}', [HospitalMatronDashboardConfigController::class, 'edit'])
+            ->name('dashboard-config.edit');
+        Route::put('/dashboard-config/{user}', [HospitalMatronDashboardConfigController::class, 'update'])
+            ->name('dashboard-config.update');
         Route::get('/rounds',    [MatronDashboardController::class, 'rounds'])->name('rounds');
         Route::get('/staff',     [MatronDashboardController::class, 'staffLoad'])->name('staff');
     });
@@ -205,6 +255,12 @@ Route::prefix('hospital')->name('hospital.')->group(function () {
     // === Hospital Admin (cross-cutting dashboard + staff + revenue + inventory + attendance) ===
     Route::prefix('admin')->name('admin.')->middleware('role:hospital_admin,cmd,super_admin,admin')->group(function () {
         Route::get('/dashboard', [HospitalAdminController::class, 'index'])->name('dashboard');
+
+        // Per-user dashboard widget configurator
+        Route::get('/dashboard-config/{user}', [HospitalAdminDashboardConfigController::class, 'edit'])
+            ->name('dashboard-config.edit');
+        Route::put('/dashboard-config/{user}', [HospitalAdminDashboardConfigController::class, 'update'])
+            ->name('dashboard-config.update');
         Route::get('/staff',     [HospitalAdminController::class, 'staff'])->name('staff');
         Route::post('/staff/{staff}/toggle', [HospitalAdminController::class, 'toggleAvailability'])->name('staff.toggle');
         Route::get('/revenue',   [HospitalAdminController::class, 'revenue'])->name('revenue');
