@@ -89,6 +89,8 @@ class AppServiceProvider extends ServiceProvider
         $this->registerBursarWidgets();
         $this->registerRegistrarWidgets();
         $this->registerStudentWidgets();
+        $this->registerAuditorWidgets();
+        $this->registerLibrarianWidgets();
     }
 
     /**
@@ -375,14 +377,18 @@ class AppServiceProvider extends ServiceProvider
      * Register bursar-audience dashboard widgets.
      *
      * Roles: bursar, accountant, cashier, audit_bursar, finance,
-     * business_committee, audit. The dashboard's filter form
-     * (`?school_id=N`) is chrome — it lives in the view and only
-     * filters the paginated lists below the widget grid. Widgets
-     * always show session-wide totals.
+     * audit. The dashboard's filter form (`?school_id=N`) is chrome
+     * — it lives in the view and only filters the paginated lists
+     * below the widget grid. Widgets always show session-wide totals.
      */
     private function registerBursarWidgets(): void
     {
-        $bursarRoles = ['bursar', 'accountant', 'cashier', 'audit_bursar', 'finance', 'business_committee', 'audit'];
+        // NOTE: `business_committee` is intentionally NOT here. The
+        // /bursar/* route middleware (routes/web.php:790) gates that
+        // dashboard separately, and a `business_committee` user who
+        // has no bursar-side visit path has no business seeing
+        // bursar-shaped widgets.
+        $bursarRoles = ['bursar', 'accountant', 'cashier', 'audit_bursar', 'finance', 'audit'];
 
         // Mirror of Bursar/DashboardController::PAID_STATUSES. The
         // verify() flow writes 'completed'; some legacy seed rows are
@@ -852,6 +858,150 @@ class AppServiceProvider extends ServiceProvider
                     'color' => 'danger',
                     'icon' => 'fas fa-exclamation-circle',
                     'href' => route('student.payments'),
+                ];
+            },
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the result-approval "auditor" audiences:
+     * business_committee and academic_board.
+     *
+     * Both audiences move results through a multi-step approval
+     * pipeline (`approved_by_dean` → `approved_by_business` →
+     * `approved_final`). Each dashboard shows its inbound pending
+     * count plus the count of results it has already approved. The
+     * "View Results" call-to-action card with intro paragraph stays
+     * in the view's chrome — it carries narrative copy that's not a
+     * generic widget.
+     */
+    private function registerAuditorWidgets(): void
+    {
+        $auditorRoles = ['business_committee', 'academic_board'];
+
+        // Shared between the two audiences — they're stages of the
+        // same Result.status pipeline.
+        WidgetRegistry::register(new WidgetDefinition(
+            'business_committee.pending', 'Pending Results', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Result::where('status', 'approved_by_dean')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-clock',
+                'href' => route('business-committee.results'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'business_committee.approved', 'Approved Results', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Result::where('status', 'approved_by_business')->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-clipboard-check',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'academic_board.pending', 'Pending Final Approval', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Result::where('status', 'approved_by_business')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-gavel',
+                'href' => route('academic-board.results'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'academic_board.final_approved', 'Final Approved Results', 'stat', $auditorRoles,
+            fn() => [
+                'value' => \App\Models\Result::where('status', 'approved_final')->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-graduation-cap',
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the librarian audience.
+     *
+     * Four stat tiles (total books, available, borrowed, overdue) —
+     * each corresponds to a single Book / BookLoan query. The
+     * Overdue Loans tile carries a coloured CTA linking to
+     * /librarian/loans since that's the actionable destination.
+     * Quick Actions card and the Overdue Books callout (which
+     * switches copy based on count) stay in the view's chrome.
+     */
+    private function registerLibrarianWidgets(): void
+    {
+        $librarianRoles = ['librarian'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'librarian.total_books', 'Total Books', 'stat', $librarianRoles,
+            fn() => [
+                'value' => \App\Models\Book::count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-book',
+                'href' => route('librarian.books'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'librarian.available_books', 'Available Books', 'stat', $librarianRoles,
+            fn() => [
+                // NOTE: pre-existing hand-built controller used
+                // `where('status', 'available')` but the `books`
+                // table has no `status` column — it has `available`
+                // (int count) + `is_active` (bool). Use `available > 0`
+                // so the dashboard actually loads.
+                'value' => \App\Models\Book::where('available', '>', 0)->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-check-circle',
+                'href' => route('librarian.books'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'librarian.borrowed_books', 'Borrowed Books', 'stat', $librarianRoles,
+            fn() => [
+                'value' => \App\Models\BookLoan::where('status', 'borrowed')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-exchange-alt',
+                'href' => route('librarian.loans'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'librarian.overdue_loans', 'Overdue Loans', 'stat', $librarianRoles,
+            function () {
+                $count = \App\Models\BookLoan::where('status', 'borrowed')
+                    ->where('due_date', '<', now())
+                    ->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'danger',
+                    'icon' => 'fas fa-exclamation-triangle',
+                    'href' => route('librarian.loans'),
+                    'cta' => $count > 0 ? [
+                        'label' => 'View Overdue',
+                        'icon' => 'fas fa-list',
+                        'href' => route('librarian.loans'),
+                        'color' => 'danger',
+                    ] : null,
                 ];
             },
             'widgets.stat-card'

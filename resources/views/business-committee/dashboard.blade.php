@@ -7,24 +7,7 @@
     <h4>Business Committee Dashboard</h4>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <h6 class="text-muted">Pending Results</h6>
-                <h2>{{ $pendingResults }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <h6 class="text-muted">Approved Results</h6>
-                <h2>{{ $approvedResults }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
+@include('widgets.render', ['widgets' => $widgets])
 
 <div class="card">
     <div class="card-header">

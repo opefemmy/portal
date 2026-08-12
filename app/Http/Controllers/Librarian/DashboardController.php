@@ -7,19 +7,33 @@ use App\Models\Book;
 use App\Models\BookLoan;
 use App\Models\User;
 use App\Models\Role;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $totalBooks = Book::count();
-        $availableBooks = Book::where('status', 'available')->count();
+        // The `books` table has no `status` column — it has
+        // `available` (int) + `is_active` (bool). The earlier
+        // `where('status', 'available')` query was a latent 500
+        // that surfaced only when the registration flow added
+        // a librarian widget. Use `available > 0` so the dashboard
+        // actually loads.
+        $availableBooks = Book::where('available', '>', 0)->count();
         $borrowedBooks = BookLoan::where('status', 'borrowed')->count();
         $overdueLoans = BookLoan::where('status', 'borrowed')
             ->where('due_date', '<', now())->count();
 
-        return view('librarian.dashboard', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueLoans'));
+        // Widget grid (4 stat tiles) — read from the registry via
+        // DashboardResolver. Quick Actions card and Overdue Books
+        // callout stay in the view's chrome.
+        $widgets = DashboardResolver::widgetsForUser($request->user());
+
+        return view('librarian.dashboard', compact(
+            'widgets', 'totalBooks', 'availableBooks', 'borrowedBooks', 'overdueLoans'
+        ));
     }
 
     public function books()

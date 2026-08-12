@@ -7,40 +7,7 @@
     <h4>Librarian Dashboard</h4>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <h6 class="text-muted">Total Books</h6>
-                <h2>{{ $totalBooks }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card info">
-            <div class="card-body">
-                <h6 class="text-muted">Available Books</h6>
-                <h2>{{ $availableBooks }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <h6 class="text-muted">Borrowed Books</h6>
-                <h2>{{ $borrowedBooks }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card danger">
-            <div class="card-body">
-                <h6 class="text-muted">Overdue Loans</h6>
-                <h2>{{ $overdueLoans }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
+@include('widgets.render', ['widgets' => $widgets])
 
 <div class="row">
     <div class="col-md-6">
