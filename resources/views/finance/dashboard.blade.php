@@ -6,41 +6,8 @@
 <div class="container-fluid">
     <h4 class="mb-4">Finance Dashboard</h4>
 
-    <!-- Stats Cards -->
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5>Today Income</h5>
-                    <h2>₦{{ number_format($stats['today_income'], 2) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5>Monthly Income</h5>
-                    <h2>₦{{ number_format($stats['monthly_income'], 2) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5>Outstanding Invoices</h5>
-                    <h2>₦{{ number_format($stats['outstanding_balance'], 2) }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5>Active Budgets</h5>
-                    <h2>{{ $stats['active_budgets'] }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- Stat tiles — widget rendered (finance audience) --}}
+    @include('widgets.render', ['widgets' => $widgets])
 
     <div class="row mt-4">
         <div class="col-md-6">

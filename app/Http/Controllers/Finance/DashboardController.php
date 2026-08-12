@@ -7,39 +7,29 @@ use App\Models\Finance\FinanceInvoice;
 use App\Models\Finance\FinanceReceipt;
 use App\Models\Finance\FinanceTransaction;
 use App\Models\Finance\FinanceBudget;
+use App\Services\Dashboard\DashboardResolver;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $stats = [
-            'today_income' => FinanceReceipt::whereDate('payment_date', today())->sum('amount'),
-            'monthly_income' => FinanceReceipt::whereMonth('payment_date', date('m'))
-                ->whereYear('payment_date', date('Y'))->sum('amount'),
-            'pending_invoices' => FinanceInvoice::where('status', 'pending')->count(),
-            'outstanding_balance' => FinanceInvoice::whereIn('status', ['pending', 'partial'])
-                ->sum('balance'),
-            'total_expenses' => FinanceTransaction::where('type', 'debit')
-                ->whereMonth('transaction_date', date('m'))
-                ->whereYear('transaction_date', date('Y'))
-                ->sum('amount'),
-            'active_budgets' => FinanceBudget::where('status', 'active')->count(),
-        ];
+        $widgets = DashboardResolver::widgetsForUser($request->user());
 
-        // Recent transactions
+        // Chrome payload — Recent Transactions + Recent Receipts tables
+        // and the daily/category income data the JS sparkline consumes.
+        // Stat tiles are widget-rendered (finance audience).
         $recentTransactions = FinanceTransaction::with('user')
             ->orderBy('transaction_date', 'desc')
             ->limit(10)
             ->get();
 
-        // Recent receipts
         $recentReceipts = FinanceReceipt::with('student')
             ->orderBy('payment_date', 'desc')
             ->limit(10)
             ->get();
 
-        // Daily income for last 7 days
         $dailyIncome = FinanceReceipt::select(
             DB::raw('DATE(payment_date) as date'),
             DB::raw('SUM(amount) as total')
@@ -49,7 +39,6 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
 
-        // Income by category this month
         $incomeByCategory = FinanceTransaction::where('type', 'credit')
             ->whereMonth('transaction_date', date('m'))
             ->whereYear('transaction_date', date('Y'))
@@ -57,7 +46,7 @@ class DashboardController extends Controller
             ->groupBy('category')
             ->get();
 
-        return view('finance.dashboard', compact('stats', 'recentTransactions', 'recentReceipts', 'dailyIncome', 'incomeByCategory'));
+        return view('finance.dashboard', compact('widgets', 'recentTransactions', 'recentReceipts', 'dailyIncome', 'incomeByCategory'));
     }
 
     public function reports()

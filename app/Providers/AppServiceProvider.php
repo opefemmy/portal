@@ -102,6 +102,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerLabWidgets();
         $this->registerMatronWidgets();
         $this->registerHospitalAdminWidgets();
+        $this->registerFinanceWidgets();
     }
 
     /**
@@ -1980,6 +1981,83 @@ class AppServiceProvider extends ServiceProvider
                 'color' => 'primary',
                 'icon' => 'fas fa-users',
                 'href' => route('hospital.patients.index'),
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register every dashboard widget the system ships with for the
+     * finance audience (the routes/finance.php middleware: super_admin,
+     * admin, finance, finance_officer, accountant, account_officer,
+     * auditor, cashier, hospital_accountant, bursary_officer,
+     * fees_officer, payment_officer, ict_admin).
+     *
+     * Overlaps with the bursar role list intentionally — finance and
+     * bursar are different routes, so the same user never renders both
+     * at once. The 4 stat tiles mirror the 4 large bg-tiles the finance
+     * dashboard used to hand-build. Recent-transactions and
+     * recent-receipts stay in chrome (they have inline match-based
+     * badge colours that don't fit the plain-text table-card partial).
+     */
+    private function registerFinanceWidgets(): void
+    {
+        $financeRoles = [
+            'finance', 'finance_officer', 'accountant', 'account_officer',
+            'cashier', 'hospital_accountant', 'bursary_officer',
+            'fees_officer', 'payment_officer', 'auditor',
+            'bursar', 'audit_bursar', 'audit',
+        ];
+
+        // Mirror of Finance/DashboardController::index() so the resolver
+        // returns the same numbers the controller used to compute. All
+        // currency tiles use 'format: currency' to render the ₦-prefixed
+        // display the shared stat-card partial produces.
+        WidgetRegistry::register(new WidgetDefinition(
+            'finance.today_income', "Today's Income", 'stat', $financeRoles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceReceipt::whereDate('payment_date', today())->sum('amount'),
+                'format' => 'currency',
+                'color' => 'success',
+                'icon' => 'fas fa-cash-register',
+                'href' => route('finance.reports.daily'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'finance.monthly_income', 'Monthly Income', 'stat', $financeRoles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceReceipt::whereMonth('payment_date', date('m'))
+                    ->whereYear('payment_date', date('Y'))->sum('amount'),
+                'format' => 'currency',
+                'color' => 'primary',
+                'icon' => 'fas fa-chart-line',
+                'href' => route('finance.reports.monthly'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'finance.outstanding_invoices', 'Outstanding Invoices', 'stat', $financeRoles,
+            fn() => [
+                'value' => (float) \App\Models\Finance\FinanceInvoice::whereIn('status', ['pending', 'partial'])->sum('balance'),
+                'format' => 'currency',
+                'color' => 'warning',
+                'icon' => 'fas fa-file-invoice-dollar',
+                'href' => route('finance.invoices.index'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'finance.active_budgets', 'Active Budgets', 'stat', $financeRoles,
+            fn() => [
+                'value' => \App\Models\Finance\FinanceBudget::where('status', 'active')->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-wallet',
+                'href' => route('finance.budgets.index'),
             ],
             'widgets.stat-card'
         ));
