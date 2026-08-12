@@ -15,8 +15,10 @@ use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalPayment;
 use App\Models\Hospital\HospitalPrescription;
 use App\Models\Hospital\HospitalStaff;
+use App\Services\Dashboard\DashboardResolver;
 use App\Services\Hospital\AuditTrail;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 /**
  * Cross-cutting hospital_admin dashboard — read-mostly KPIs across every
@@ -34,29 +36,11 @@ class HospitalAdminController extends Controller
     /**
      * Top-level KPIs and activity feed.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->requirePermission('reports.daily-revenue');
 
-        $stats = [
-            'today_appointments'   => HospitalAppointment::whereDate('appointment_date', today())->count(),
-            'pending_appointments' => HospitalAppointment::where('status', 'scheduled')->count(),
-            'inpatients'           => HospitalAdmission::where('status', 'admitted')->count(),
-            'available_beds'       => HospitalBed::where('status', 'available')->count(),
-            'occupied_beds'        => HospitalBed::where('status', 'occupied')->count(),
-            'pending_prescriptions'=> HospitalPrescription::where('status', 'pending')->count(),
-            'pending_lab'          => HospitalLabRequest::whereIn('status', ['pending', 'sample_collected'])->count(),
-            'revenue_today'        => (float) HospitalPayment::where('status', HospitalPayment::STATUS_COMPLETED)
-                ->whereDate('payment_date', today())->sum('total_amount'),
-            'revenue_month'        => (float) HospitalPayment::where('status', HospitalPayment::STATUS_COMPLETED)
-                ->whereBetween('payment_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
-                ->sum('total_amount'),
-            'total_staff'          => HospitalStaff::where('is_active', true)->count(),
-            'staff_available'      => HospitalStaff::where('is_active', true)->where('is_available', true)->count(),
-            'total_patients'       => HospitalPatient::count(),
-            'new_patients_today'   => HospitalPatient::whereDate('created_at', today())->count(),
-            'low_stock_items'      => HospitalDrug::whereColumn('current_stock', '<=', 'reorder_level')->count(),
-        ];
+        $widgets = DashboardResolver::widgetsForUser($request->user());
 
         $recentAdmissions = HospitalAdmission::with(['patient', 'bed.ward', 'doctor'])
             ->latest('admission_date')->limit(8)->get();
@@ -69,7 +53,7 @@ class HospitalAdminController extends Controller
             ->get()
             ->pluck('total', 'day');
 
-        return view('hospital.admin.dashboard', compact('stats', 'recentAdmissions', 'revenueByDay'));
+        return view('hospital.admin.dashboard', compact('widgets', 'recentAdmissions', 'revenueByDay'));
     }
 
     /**

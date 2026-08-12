@@ -18,48 +18,8 @@
     </div>
 </div>
 
-<!-- KPI row -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card stat-card"><div class="card-body">
-            <p class="text-muted mb-1">Today's Appointments</p><h3>{{ $stats['today_appointments'] }}</h3>
-            <small class="text-muted">{{ $stats['pending_appointments'] }} pending</small>
-        </div></div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card"><div class="card-body">
-            <p class="text-muted mb-1">Inpatients</p><h3>{{ $stats['inpatients'] }}</h3>
-            <small class="text-muted">{{ $stats['available_beds'] }} beds available</small>
-        </div></div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card"><div class="card-body">
-            <p class="text-muted mb-1">Revenue Today</p><h3>₦{{ number_format($stats['revenue_today'], 0) }}</h3>
-            <small class="text-muted">Month: ₦{{ number_format($stats['revenue_month'], 0) }}</small>
-        </div></div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card"><div class="card-body">
-            <p class="text-muted mb-1">Staff On-Call</p><h3>{{ $stats['staff_available'] }} / {{ $stats['total_staff'] }}</h3>
-            <small class="text-muted">{{ $stats['new_patients_today'] }} new patients</small>
-        </div></div>
-    </div>
-</div>
-
-<div class="row mt-3">
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body">
-        <p class="text-muted mb-1">Pending Prescriptions</p><h3>{{ $stats['pending_prescriptions'] }}</h3>
-    </div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body">
-        <p class="text-muted mb-1">Pending Lab</p><h3>{{ $stats['pending_lab'] }}</h3>
-    </div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body">
-        <p class="text-muted mb-1">Low-Stock Items</p><h3 class="text-{{ $stats['low_stock_items'] > 0 ? 'danger' : 'success' }}">{{ $stats['low_stock_items'] }}</h3>
-    </div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body">
-        <p class="text-muted mb-1">Total Patients</p><h3>{{ $stats['total_patients'] }}</h3>
-    </div></div></div>
-</div>
+<!-- Stat tiles — widget rendered (hospital_admin / cmd audience) -->
+@include('widgets.render', ['widgets' => $widgets])
 
 <!-- Quick links -->
 <div class="row mb-3 mt-2">

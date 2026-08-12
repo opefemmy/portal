@@ -18,69 +18,8 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Pending Requests</p>
-                        <h3 class="mb-0">{{ $stats['pending_requests'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-warning-light">
-                        <i class="fas fa-hourglass-half text-warning"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">In Progress</p>
-                        <h3 class="mb-0">{{ $stats['in_progress'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-primary-light">
-                        <i class="fas fa-spinner text-primary"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Completed Today</p>
-                        <h3 class="mb-0">{{ $stats['completed_today'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-success-light">
-                        <i class="fas fa-check-circle text-success"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Total Tests</p>
-                        <h3 class="mb-0">{{ $stats['total_tests'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-info-light">
-                        <i class="fas fa-flask text-info"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Stat tiles — widget rendered (lab_scientist / cmd audience) -->
+@include('widgets.render', ['widgets' => $widgets])
 
 <!-- Quick Actions -->
 <div class="row mb-4">

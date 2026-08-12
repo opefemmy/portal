@@ -18,41 +18,8 @@
     </div>
 </div>
 
-<!-- KPIs -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <p class="text-muted mb-1">Inpatients</p>
-                <h3 class="mb-0">{{ $stats['inpatients'] }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <p class="text-muted mb-1">Today's Admissions</p>
-                <h3 class="mb-0">{{ $stats['today_admissions'] }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <p class="text-muted mb-1">Today's Discharges</p>
-                <h3 class="mb-0">{{ $stats['today_discharges'] }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <p class="text-muted mb-1">Available Beds</p>
-                <h3 class="mb-0">{{ $stats['available_beds'] }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Stat tiles — widget rendered (matron / cmd audience) -->
+@include('widgets.render', ['widgets' => $widgets])
 
 <!-- Quick actions -->
 <div class="row mb-3">

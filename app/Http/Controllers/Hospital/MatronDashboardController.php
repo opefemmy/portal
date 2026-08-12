@@ -10,8 +10,10 @@ use App\Models\Hospital\HospitalDutyRoster;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalStaff;
 use App\Models\Hospital\HospitalWard;
+use App\Services\Dashboard\DashboardResolver;
 use App\Services\Hospital\HospitalPermissions;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 /**
  * Matron dashboard — senior-nurse ward operations oversight.
@@ -29,20 +31,11 @@ class MatronDashboardController extends Controller
      * Matron landing page — KPIs, today's discharges, ward occupancy,
      * nurses on duty, recent admissions.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->requirePermission('wards.view');
 
-        $stats = [
-            'inpatients'      => HospitalAdmission::where('status', 'admitted')->count(),
-            'today_admissions'=> HospitalAdmission::whereDate('admission_date', today())->count(),
-            'today_discharges'=> HospitalAdmission::where('status', 'discharged')
-                ->whereDate('discharge_date', today())->count(),
-            'available_beds'  => HospitalBed::where('status', 'available')->count(),
-            'occupied_beds'   => HospitalBed::where('status', 'occupied')->count(),
-            'nurses_on_duty'  => HospitalDutyRoster::whereDate('duty_date', today())
-                ->where('is_active', true)->count(),
-        ];
+        $widgets = DashboardResolver::widgetsForUser($request->user());
 
         $wards = HospitalWard::withCount(['beds', 'availableBeds', 'occupiedBeds'])
             ->where('is_active', true)
@@ -65,7 +58,7 @@ class MatronDashboardController extends Controller
             ->get();
 
         return view('hospital.matron.dashboard', compact(
-            'stats', 'wards', 'recentAdmissions', 'upcomingRoster'
+            'widgets', 'wards', 'recentAdmissions', 'upcomingRoster'
         ));
     }
 

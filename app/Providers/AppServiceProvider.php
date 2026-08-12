@@ -94,6 +94,14 @@ class AppServiceProvider extends ServiceProvider
         $this->registerLecturerWidgets();
         $this->registerHodWidgets();
         $this->registerDeanWidgets();
+        $this->registerHospitalWidgets();
+        $this->registerDoctorWidgets();
+        $this->registerNurseWidgets();
+        $this->registerReceptionistWidgets();
+        $this->registerPharmacistWidgets();
+        $this->registerLabWidgets();
+        $this->registerMatronWidgets();
+        $this->registerHospitalAdminWidgets();
     }
 
     /**
@@ -1325,6 +1333,653 @@ class AppServiceProvider extends ServiceProvider
                 'format' => 'number',
                 'color' => 'warning',
                 'icon' => 'fas fa-graduation-cap',
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the hospital root dashboard
+     * (`/hospital/dashboard`) — the landing page for cmd /
+     * hospital_admin / super_admin / admin.
+     *
+     * Mirrors Hospital\DashboardController::index() exactly for
+     * the five stat tiles. The Today's Appointments + Recent
+     * Patients tables stay in chrome — they use the controller's
+     * eager-loaded $todayAppointments + $recentPatients
+     * collections (which include the patient.full_name join the
+     * widget closure would otherwise have to recreate).
+     */
+    private function registerHospitalWidgets(): void
+    {
+        $hospitalRoles = ['cmd', 'hospital_admin', 'super_admin', 'admin'];
+
+        // --- Stat tiles -------------------------------------------------
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital.today_appointments', "Today's Appointments", 'stat', $hospitalRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-calendar-day',
+                'href' => route('hospital.appointments.index'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital.active_patients', 'Active Patients', 'stat', $hospitalRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::where('is_active', true)->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-users',
+                'href' => route('hospital.patients.index'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital.pending_appointments', 'Pending Appointments', 'stat', $hospitalRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::where('status', 'scheduled')->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-clock',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital.today_patients', 'New Patients Today', 'stat', $hospitalRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::whereDate('created_at', today())->count(),
+                'format' => 'number',
+                'color' => 'secondary',
+                'icon' => 'fas fa-user-plus',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital.total_staff', 'Total Staff', 'stat', $hospitalRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalStaff::count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-user-md',
+                'href' => route('hospital.admin.staff'),
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the doctor audience.
+     *
+     * Role: doctor (cmd also gets them — cmd drops into the doctor
+     * dashboard when they want a clinician's view). All four tiles
+     * are scoped to the auth'd user's HospitalStaff row (`doctor_id`
+     * on HospitalAppointment). When the user has no HospitalStaff
+     * profile (e.g. cmd viewing as admin), tiles degrade to zero.
+     *
+     * Today's Appointments + Active Consultations tables stay in
+     * chrome — they use per-row action buttons (Start / Continue /
+     * View) that the plain-text table-card partial can't render.
+     */
+    private function registerDoctorWidgets(): void
+    {
+        $doctorRoles = ['doctor', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'doctor.today_appointments', "Today's Appointments", 'stat', $doctorRoles,
+            function () {
+                $doctorId = auth()->user()?->hospitalStaff?->id;
+                $count = $doctorId
+                    ? \App\Models\Hospital\HospitalAppointment::where('staff_id', $doctorId)
+                        ->whereDate('appointment_date', today())
+                        ->whereIn('status', ['scheduled', 'in_progress'])
+                        ->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'primary',
+                    'icon' => 'fas fa-calendar-day',
+                    'href' => $doctorId ? route('hospital.appointments.queue') : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'doctor.pending_consultations', 'Pending Consultations', 'stat', $doctorRoles,
+            function () {
+                $doctorId = auth()->user()?->hospitalStaff?->id;
+                $count = $doctorId
+                    ? \App\Models\Hospital\HospitalAppointment::where('staff_id', $doctorId)
+                        ->where('status', 'in_progress')
+                        ->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'warning',
+                    'icon' => 'fas fa-user-clock',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'doctor.completed_today', 'Completed Today', 'stat', $doctorRoles,
+            function () {
+                $doctorId = auth()->user()?->hospitalStaff?->id;
+                $count = $doctorId
+                    ? \App\Models\Hospital\HospitalAppointment::where('staff_id', $doctorId)
+                        ->whereDate('appointment_date', today())
+                        ->where('status', 'completed')
+                        ->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'success',
+                    'icon' => 'fas fa-check-circle',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'doctor.total_patients', 'Total Patients', 'stat', $doctorRoles,
+            function () {
+                $doctorId = auth()->user()?->hospitalStaff?->id;
+                $count = $doctorId
+                    ? \App\Models\Hospital\HospitalAppointment::where('staff_id', $doctorId)
+                        ->distinct('patient_id')->count('patient_id')
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'info',
+                    'icon' => 'fas fa-users',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the nurse audience.
+     *
+     * Roles: nurse, cmd. Two stat tiles for the nurse landing. The
+     * hand-built view references `$stats['admitted_patients']`,
+     * `$stats['vitals_recorded_today']`, `$stats['pending_vitals']`
+     * — keys the controller doesn't pass. That's a pre-existing
+     * data-vs-view mismatch (out of scope); we mirror only the
+     * keys the controller actually populates (`today_appointments`,
+     * `active_patients`).
+     *
+     * The "Patients Waiting for Vitals" and "Admitted Patients"
+     * tables stay in chrome — they carry per-row View action
+     * buttons and conditional rendering based on count.
+     */
+    private function registerNurseWidgets(): void
+    {
+        $nurseRoles = ['nurse', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'nurse.today_appointments', "Today's Appointments", 'stat', $nurseRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())
+                    ->where('status', 'scheduled')
+                    ->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-calendar-day',
+                'href' => route('hospital.appointments.queue'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'nurse.active_patients', 'Active Patients', 'stat', $nurseRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::where('is_active', true)->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-users',
+                'href' => route('hospital.patients.index'),
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the hospital receptionist audience.
+     *
+     * Roles: hospital_receptionist, cmd. Four stat tiles covering
+     * the queue, today's check-ins, total patients, and new
+     * patients today. The Today's Queue table stays in chrome —
+     * it has per-row action buttons (Check In / View).
+     */
+    private function registerReceptionistWidgets(): void
+    {
+        $receptionistRoles = ['hospital_receptionist', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'receptionist.queue_count', 'Queue Count', 'stat', $receptionistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())
+                    ->whereIn('status', ['scheduled'])
+                    ->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-users',
+                'href' => route('hospital.appointments.queue'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'receptionist.checked_in_today', 'Checked In Today', 'stat', $receptionistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())
+                    ->where('status', 'completed')
+                    ->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-check-circle',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'receptionist.total_patients', 'Total Patients', 'stat', $receptionistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-database',
+                'href' => route('hospital.patients.index'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'receptionist.new_patients_today', 'New Patients Today', 'stat', $receptionistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::whereDate('created_at', today())->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-user-plus',
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the pharmacist audience.
+     *
+     * Roles: pharmacist, store_keeper, cmd. Four stat tiles plus
+     * one table for the pending prescriptions list. The Low Stock
+     * Alert panel in chrome (which lists drugs with current_stock
+     * near zero) stays put — it's a richer layout than the
+     * table-card partial supports.
+     */
+    private function registerPharmacistWidgets(): void
+    {
+        $pharmacistRoles = ['pharmacist', 'store_keeper', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'pharmacist.pending_prescriptions', 'Pending Prescriptions', 'stat', $pharmacistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPrescription::where('status', 'pending')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-prescription',
+                'href' => route('hospital.pharmacy.prescriptions'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'pharmacist.dispensed_today', 'Dispensed Today', 'stat', $pharmacistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPrescription::where('status', 'dispensed')
+                    ->whereDate('dispensed_at', today())->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-check-circle',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'pharmacist.low_stock_items', 'Low Stock Items', 'stat', $pharmacistRoles,
+            function () {
+                // NOTE: hand-built controller used `current_stock <= 10`
+                // (a constant threshold) which 500s once any single drug
+                // batch goes negative. Use the proper
+                // `current_stock <= reorder_level` predicate instead,
+                // matching HospitalAdminController::inventory() and
+                // dashboard-widget-foundation-slice decisions.
+                $count = \App\Models\Hospital\HospitalDrug::whereColumn('current_stock', '<=', 'reorder_level')->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => $count > 0 ? 'danger' : 'success',
+                    'icon' => 'fas fa-exclamation-triangle',
+                    'href' => route('hospital.pharmacy.low-stock'),
+                    'cta' => $count > 0 ? [
+                        'label' => 'View Low Stock',
+                        'icon' => 'fas fa-list',
+                        'href' => route('hospital.pharmacy.low-stock'),
+                        'color' => 'danger',
+                    ] : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'pharmacist.total_drugs', 'Total Drugs', 'stat', $pharmacistRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalDrug::count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-pills',
+                'href' => route('hospital.pharmacy.drugs'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'pharmacist.pending_prescriptions_list', 'Pending Prescriptions', 'table', $pharmacistRoles,
+            fn() => [
+                'title' => 'Pending Prescriptions',
+                'icon' => 'fas fa-prescription',
+                'headers' => ['Rx No.', 'Patient', 'Doctor', 'Date', 'Items', 'Status'],
+                'rows' => \App\Models\Hospital\HospitalPrescription::with(['patient', 'doctor', 'items'])
+                    ->where('status', 'pending')
+                    ->latest()
+                    ->limit(10)
+                    ->get()
+                    ->map(fn($p) => [
+                        $p->prescription_number ?? 'N/A',
+                        $p->patient->full_name ?? 'Unknown',
+                        'Dr. ' . ($p->doctor->last_name ?? 'TBA'),
+                        optional($p->created_at)->format('d M, h:i A') ?? 'N/A',
+                        $p->items->count() . ' items',
+                        'Pending',
+                    ])
+                    ->all(),
+                'colspan' => 6,
+                'empty_message' => 'No pending prescriptions',
+            ],
+            'widgets.table-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the lab_scientist audience.
+     *
+     * Roles: lab_scientist, cmd. Four stat tiles. The hand-built
+     * view also references `$stats['today_appointments']` — a key
+     * the controller doesn't pass (pre-existing mismatch, out of
+     * scope); we mirror the four keys it actually populates.
+     *
+     * The "Pending Lab Requests" table stays in chrome — it has
+     * per-row action buttons (Collect Sample / Start Processing /
+     * View) that don't fit the plain-text table-card partial.
+     */
+    private function registerLabWidgets(): void
+    {
+        $labRoles = ['lab_scientist', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lab.pending_requests', 'Pending Requests', 'stat', $labRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalLabRequest::where('status', 'pending')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-hourglass-half',
+                'href' => route('hospital.lab.requests'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lab.in_progress', 'In Progress', 'stat', $labRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalLabRequest::where('status', 'in_progress')->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-spinner',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lab.completed_today', 'Completed Today', 'stat', $labRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalLabRequest::where('status', 'completed')
+                    ->whereDate('completed_at', today())->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-check-circle',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lab.total_tests', 'Total Tests', 'stat', $labRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalLabRequest::count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-flask',
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the matron audience.
+     *
+     * Roles: matron, cmd. Four stat tiles covering ward operations.
+     * The Ward Occupancy progress bars and Upcoming Roster list
+     * stay in chrome — they use progress-bar rendering and custom
+     * two-column list markup that doesn't fit generic widgets yet.
+     */
+    private function registerMatronWidgets(): void
+    {
+        $matronRoles = ['matron', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'matron.inpatients', 'Inpatients', 'stat', $matronRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAdmission::where('status', 'admitted')->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-procedures',
+                'href' => route('hospital.matron.rounds'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'matron.today_admissions', "Today's Admissions", 'stat', $matronRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAdmission::whereDate('admission_date', today())->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-user-plus',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'matron.today_discharges', "Today's Discharges", 'stat', $matronRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAdmission::where('status', 'discharged')
+                    ->whereDate('discharge_date', today())->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-sign-out-alt',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'matron.available_beds', 'Available Beds', 'stat', $matronRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalBed::where('status', 'available')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-bed',
+                'href' => route('hospital.wards.index'),
+            ],
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the hospital_admin audience.
+     *
+     * Roles: hospital_admin, cmd. Eight stat tiles covering every
+     * module the admin dashboard cares about (appointments,
+     * admissions, beds, prescriptions, lab, revenue, low-stock,
+     * patients). The hand-built view had a small helper-text
+     * "<small class="text-muted">…</small>" under each tile (e.g.
+     * "5 pending" under "Today's Appointments"). The generic
+     * stat-card partial doesn't support that subtext; we drop the
+     * subtext and let the value stand on its own. If a tile
+     * genuinely needs a subtext, it's a follow-up partial
+     * extension.
+     *
+     * The revenue tile uses `format: 'currency'` which the
+     * stat-card partial renders as "₦1,234,567". The Low Stock
+     * tile sets `color` conditionally (danger when count > 0,
+     * success otherwise) to mirror the original
+     * `text-{{ $count > 0 ? 'danger' : 'success' }}` override.
+     *
+     * The Revenue sparkline (last 14 days, hand-drawn progress
+     * bars) and Recent Admissions cards stay in chrome.
+     */
+    private function registerHospitalAdminWidgets(): void
+    {
+        $adminRoles = ['hospital_admin', 'cmd'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.today_appointments', "Today's Appointments", 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::whereDate('appointment_date', today())->count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-calendar-day',
+                'href' => route('hospital.appointments.index'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.pending_appointments', 'Pending Appointments', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAppointment::where('status', 'scheduled')->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-clock',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.inpatients', 'Inpatients', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalAdmission::where('status', 'admitted')->count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-procedures',
+                'href' => route('hospital.matron.rounds'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.available_beds', 'Available Beds', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalBed::where('status', 'available')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-bed',
+                'href' => route('hospital.wards.occupancy'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.revenue_today', 'Revenue Today', 'stat', $adminRoles,
+            fn() => [
+                'value' => (float) \App\Models\Hospital\HospitalPayment::where('status', \App\Models\Hospital\HospitalPayment::STATUS_COMPLETED)
+                    ->whereDate('payment_date', today())->sum('total_amount'),
+                'format' => 'currency',
+                'color' => 'success',
+                'icon' => 'fas fa-coins',
+                'href' => route('hospital.admin.revenue'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.pending_prescriptions', 'Pending Prescriptions', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPrescription::where('status', 'pending')->count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-prescription',
+                'href' => route('hospital.pharmacy.prescriptions'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.pending_lab', 'Pending Lab', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalLabRequest::whereIn('status', ['pending', 'sample_collected'])->count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-flask',
+                'href' => route('hospital.lab.requests'),
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.low_stock_items', 'Low-Stock Items', 'stat', $adminRoles,
+            function () {
+                $count = \App\Models\Hospital\HospitalDrug::whereColumn('current_stock', '<=', 'reorder_level')->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => $count > 0 ? 'danger' : 'success',
+                    'icon' => 'fas fa-exclamation-triangle',
+                    'href' => route('hospital.pharmacy.low-stock'),
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hospital_admin.total_patients', 'Total Patients', 'stat', $adminRoles,
+            fn() => [
+                'value' => \App\Models\Hospital\HospitalPatient::count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-users',
+                'href' => route('hospital.patients.index'),
             ],
             'widgets.stat-card'
         ));

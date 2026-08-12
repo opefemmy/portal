@@ -18,69 +18,8 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Queue Count</p>
-                        <h3 class="mb-0">{{ $stats['queue_count'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-primary-light">
-                        <i class="fas fa-users text-primary"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Checked In Today</p>
-                        <h3 class="mb-0">{{ $stats['checked_in_today'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-success-light">
-                        <i class="fas fa-check-circle text-success"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Total Patients</p>
-                        <h3 class="mb-0">{{ $stats['total_patients'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-info-light">
-                        <i class="fas fa-database text-info"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">New Patients Today</p>
-                        <h3 class="mb-0">{{ $stats['new_patients_today'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-warning-light">
-                        <i class="fas fa-user-plus text-warning"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Stat tiles — widget rendered (receptionist / cmd audience) -->
+@include('widgets.render', ['widgets' => $widgets])
 
 <!-- Quick Actions -->
 <div class="row mb-4">

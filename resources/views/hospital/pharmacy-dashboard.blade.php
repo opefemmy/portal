@@ -18,69 +18,8 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Pending Prescriptions</p>
-                        <h3 class="mb-0">{{ $stats['pending_prescriptions'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-warning-light">
-                        <i class="fas fa-prescription text-warning"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Dispensed Today</p>
-                        <h3 class="mb-0">{{ $stats['dispensed_today'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-success-light">
-                        <i class="fas fa-check-circle text-success"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Low Stock Items</p>
-                        <h3 class="mb-0 text-danger">{{ $stats['low_stock_items'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-danger-light">
-                        <i class="fas fa-exclamation-triangle text-danger"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted mb-1">Total Drugs</p>
-                        <h3 class="mb-0">{{ $stats['total_drugs'] }}</h3>
-                    </div>
-                    <div class="stat-icon bg-info-light">
-                        <i class="fas fa-pills text-info"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Stat tiles — widget rendered (pharmacist / cmd audience) -->
+@include('widgets.render', ['widgets' => $widgets])
 
 <!-- Quick Actions -->
 <div class="row mb-4">
