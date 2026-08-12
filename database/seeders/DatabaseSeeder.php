@@ -478,6 +478,12 @@ class DatabaseSeeder extends Seeder
             StatesAndLGAsSeeder::class,
             NationalitiesSeeder::class,
             ERPRolesSeeder::class,
+            // Permissions catalogue + role→permission pivot. Order
+            // matters: ERPRolesSeeder first (so roles exist), then
+            // PermissionsSeeder (creates the rows), then
+            // RolePermissionsSeeder (wires the pivot).
+            PermissionsSeeder::class,
+            RolePermissionsSeeder::class,
             PaymentTypeSeeder::class,
             HospitalModuleSeeder::class,
             DataCleanupSeeder::class,

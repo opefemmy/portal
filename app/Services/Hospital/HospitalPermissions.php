@@ -376,27 +376,38 @@ class HospitalPermissions
 
     /**
      * Resolve the slug of the currently authenticated user, or null if guest.
+     *
+     * Delegates to the cross-domain PermissionService so the same
+     * resolver is used by `EnforcesHospitalPermission`, `@permission`,
+     * the sidebar, and any new code that calls `HospitalPermissions`
+     * directly. The behaviour is unchanged (returns the primary role
+     * slug of the authenticated user).
      */
     public static function currentRole(): ?string
     {
-        $user = Auth::user();
-        return $user && $user->role ? ($user->role->slug ?? null) : null;
+        return \App\Services\Permissions\PermissionService::roleSlugFor();
     }
 
     /**
      * Whether the currently authenticated user has the named permission.
+     *
+     * Backed by the role_permissions pivot (populated by
+     * RolePermissionsSeeder). Wildcards (`'*'` in ROLE_PERMISSIONS)
+     * are honoured by the service — same semantics as the previous
+     * constant-based check, so existing callers see no change.
      */
     public static function allows(string $permission): bool
     {
-        $role = self::currentRole();
-        if (!$role) {
-            return false;
-        }
-        return self::roleAllows($role, $permission);
+        return \App\Services\Permissions\PermissionService::allows($permission);
     }
 
     /**
      * Whether a given role has the named permission.
+     *
+     * Static-role lookup. Reads the primitive `ROLE_PERMISSIONS`
+     * constant directly; does NOT consult the DB pivot. This is the
+     * same behaviour the old implementation had. New code that needs
+     * a user-scoped check should call `allows()` instead.
      */
     public static function roleAllows(string $role, string $permission): bool
     {
@@ -416,12 +427,7 @@ class HospitalPermissions
      */
     public static function allowsAny(array $permissions): bool
     {
-        foreach ($permissions as $permission) {
-            if (self::allows($permission)) {
-                return true;
-            }
-        }
-        return false;
+        return \App\Services\Permissions\PermissionService::allowsAny($permissions);
     }
 
     /**

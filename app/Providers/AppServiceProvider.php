@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Services\Dashboard\WidgetDefinition;
 use App\Services\Dashboard\WidgetRegistry;
-use App\Services\Hospital\HospitalPermissions;
+use App\Services\Permissions\PermissionService;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -56,8 +56,10 @@ class AppServiceProvider extends ServiceProvider
 
         // @permission('patients.create') ... @endpermission
         // Renders the block only if the current user has the named permission.
+        // Resolves via the cross-domain PermissionService so hospital,
+        // bursar, registrar, admin, etc. all work the same way.
         Blade::directive('permission', function (string $expression) {
-            return "<?php if (\\App\\Services\\Hospital\\HospitalPermissions::allows({$expression})): ?>";
+            return "<?php if (\\App\\Services\\Permissions\\PermissionService::allows({$expression})): ?>";
         });
         Blade::directive('endpermission', function () {
             return '<?php endif; ?>';
@@ -66,7 +68,7 @@ class AppServiceProvider extends ServiceProvider
         // @anypermission(['patients.view','pharmacy.view']) ... @endanypermission
         // Renders the block if the user has any of the listed permissions.
         Blade::directive('anypermission', function (string $expression) {
-            return "<?php if (\\App\\Services\\Hospital\\HospitalPermissions::allowsAny([{$expression}])): ?>";
+            return "<?php if (\\App\\Services\\Permissions\\PermissionService::allowsAny([{$expression}])): ?>";
         });
         Blade::directive('endanypermission', function () {
             return '<?php endif; ?>';
