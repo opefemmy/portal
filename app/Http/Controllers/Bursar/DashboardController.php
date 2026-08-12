@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Session;
 use App\Models\School;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +26,12 @@ class DashboardController extends Controller
         $currentSession = Session::getCurrentSession();
         $schools = School::all();
         $paidStatuses = self::PAID_STATUSES;
+
+        // Widget grid (stat tiles + table widgets) — read from the
+        // registry via DashboardResolver. Widgets always show
+        // session-wide totals and ignore ?school_id=, which filters
+        // only the paginated lists below the grid (in the view).
+        $widgets = DashboardResolver::widgetsForUser($request->user());
 
         $totalExpected = Fee::where('session_id', $currentSession->id ?? 0)
             ->sum('amount');
@@ -83,7 +90,7 @@ class DashboardController extends Controller
         ];
 
         return view('bursar.dashboard', compact(
-            'debtors', 'paidStudents', 'paymentStats', 'schools', 'currentSession'
+            'widgets', 'debtors', 'paidStudents', 'paymentStats', 'schools', 'currentSession'
         ));
     }
 

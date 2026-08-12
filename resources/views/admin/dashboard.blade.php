@@ -22,65 +22,19 @@
     </div>
 </div>
 
-@php
-    // Group widgets by type so stat tiles fit 4-per-row (col-xl-3) and
-    // tables fit 2-per-row (col-lg-6). The order the resolver returns
-    // is the order the user sees.
-    $statWidgets   = [];
-    $tableWidgets  = [];
-    $otherWidgets  = [];
-    foreach ($widgets as $entry) {
-        $type = $entry['definition']->type;
-        if ($type === 'stat') {
-            $statWidgets[] = $entry;
-        } elseif ($type === 'table') {
-            $tableWidgets[] = $entry;
-        } else {
-            $otherWidgets[] = $entry;
-        }
-    }
-@endphp
+@include('widgets.render', ['widgets' => $widgets])
 
-{{-- Stat tiles: render in groups of 4 per row --}}
-@if(!empty($statWidgets))
-    @foreach(array_chunk($statWidgets, 4) as $rowGroup)
-        <div class="row mb-4">
-            @foreach($rowGroup as $w)
-                @include($w['definition']->partial, ['data' => $w['data'], 'label' => $w['definition']->label])
-            @endforeach
-        </div>
-    @endforeach
-@endif
-
-{{-- Tables: render in one wide row, two-per-row via the partial's col-lg-6 --}}
-@if(!empty($tableWidgets))
-    <div class="row">
-        @foreach($tableWidgets as $w)
-            @include($w['definition']->partial, ['data' => $w['data']])
-        @endforeach
-    </div>
-@endif
-
-{{-- Anything else (future widget types) renders in its own row --}}
-@if(!empty($otherWidgets))
-    <div class="row mb-4">
-        @foreach($otherWidgets as $w)
-            @includeIf($w['definition']->partial, ['data' => $w['data'], 'label' => $w['definition']->label])
-        @endforeach
-    </div>
-@endif
-
-@if(empty($widgets))
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="fas fa-sliders-h fa-2x mb-3 d-block"></i>
-            <p class="mb-2">No widgets are enabled for your dashboard yet.</p>
-            @if(auth()->user()->role && auth()->user()->role->slug === 'super_admin')
-                <a href="{{ route('admin.dashboard-config.edit', auth()->id()) }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-sliders-h me-1"></i>Customize Dashboard
-                </a>
-            @endif
-        </div>
+{{-- Empty-state CTA: super_admin can reach the configurator even when
+     no widgets are enabled (the shared widgets.render partial shows a
+     generic message in that case). The page-header "Customize
+     Dashboard" link is always visible above; this button is a
+     redundant convenience specifically for the empty-state. --}}
+@if(empty($widgets) && auth()->user()->role && auth()->user()->role->slug === 'super_admin')
+    <div class="text-center mb-4">
+        <a href="{{ route('admin.dashboard-config.edit', auth()->id()) }}"
+           class="btn btn-primary btn-sm">
+            <i class="fas fa-sliders-h me-1"></i>Customize Dashboard
+        </a>
     </div>
 @endif
 

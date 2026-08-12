@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Registrar;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\School;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -72,7 +73,16 @@ class DashboardController extends Controller
             ? School::orderBy('name')->get(['id', 'name'])
             : collect();
 
+        // Widget grid — read from the registry via DashboardResolver.
+        // Stat tiles (Total Applicants / Pending Review / Admitted /
+        // Rejected) come from the registry; the pipeline flow strip
+        // and the recent-apps / recent-admissions tables stay in the
+        // view's chrome (they have inline `match`-based badge colour
+        // logic that doesn't fit the generic table-card partial).
+        $widgets = DashboardResolver::widgetsForUser($request->user());
+
         return view('registrar.dashboard', compact(
+            'widgets',
             'stats',
             'recentApplicants',
             'recentAdmissions',

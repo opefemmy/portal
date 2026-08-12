@@ -7,44 +7,11 @@
     <h4>Bursar Dashboard</h4>
 </div>
 
-{{-- Payment Statistics Cards --}}
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <h6 class="text-muted">Total Expected</h6>
-                <h2>₦{{ number_format($paymentStats['total_expected'] ?? 0, 2) }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card info">
-            <div class="card-body">
-                <h6 class="text-muted">Total Paid</h6>
-                <h2>₦{{ number_format($paymentStats['total_paid'] ?? 0, 2) }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <h6 class="text-muted">Total Pending</h6>
-                <h2>₦{{ number_format($paymentStats['total_pending'] ?? 0, 2) }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card danger">
-            <div class="card-body">
-                <h6 class="text-muted">Debtors Count</h6>
-                <h2>{{ $paymentStats['debtors_count'] ?? 0 }}</h2>
-                <a href="{{ route('bursar.debtors') }}" class="btn btn-sm btn-outline-danger mt-2">
-                    <i class="fas fa-list me-1"></i>View All
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- Widget grid (stat tiles + table widgets) — read from the
+     DashboardResolver. Widgets always show session-wide totals and
+     ignore ?school_id=, which below the grid filters only the
+     paginated Debtors / Paid Students tabs. --}}
+@include('widgets.render', ['widgets' => $widgets])
 
 {{-- Filter by School --}}
 <div class="card mb-4">

@@ -8,6 +8,7 @@ use App\Models\StudentCourse;
 use App\Models\Payment;
 use App\Models\Fee;
 use App\Models\Session;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -43,8 +44,19 @@ class DashboardController extends Controller
     {
         $student = Student::where('user_id', auth()->id())->first();
 
+        // Widget grid (personal-data stat tiles) — read from the
+        // registry via DashboardResolver. Each closure inside
+        // registerStudentWidgets() uses auth()->user()->student to
+        // scope to the auth'd student. When the student row is
+        // missing, the widget closures fall back to a zero-value tile
+        // so the grid still renders.
+        $widgets = auth()->user()
+            ? DashboardResolver::widgetsForUser(auth()->user())
+            : [];
+
         if (!$student) {
             return view('student.dashboard', [
+                'widgets' => $widgets,
                 'student' => null,
                 'registeredCourses' => collect(),
                 'payments' => collect(),
@@ -99,6 +111,6 @@ class DashboardController extends Controller
             });
         }
 
-        return view('student.dashboard', compact('student', 'registeredCourses', 'payments', 'fees', 'unpaidFees', 'profileIncomplete'));
+        return view('student.dashboard', compact('widgets', 'student', 'registeredCourses', 'payments', 'fees', 'unpaidFees', 'profileIncomplete'));
     }
 }

@@ -39,47 +39,12 @@
     </div>
 </div>
 
-{{-- Pipeline Stats Cards --}}
-<div class="row mb-4">
-    <div class="col-md-3 col-6 mb-3">
-        <div class="card stat-card primary h-100">
-            <div class="card-body">
-                <h6 class="text-muted mb-1">Total Applicants</h6>
-                <h2 class="mb-0">{{ number_format($stats['total']) }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-        <div class="card stat-card warning h-100">
-            <div class="card-body">
-                <h6 class="text-muted mb-1">Pending Review</h6>
-                <h2 class="mb-0">{{ number_format($stats['pending']) }}</h2>
-                <a href="{{ route('registrar.applications.index') }}" class="btn btn-sm btn-outline-warning mt-2">
-                    <i class="fas fa-list me-1"></i>Review
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <h6 class="text-muted mb-1">Admitted</h6>
-                <h2 class="mb-0">{{ number_format($stats['admitted']) }}</h2>
-                <a href="{{ route('registrar.applications.admitted') }}" class="btn btn-sm btn-outline-success mt-2">
-                    <i class="fas fa-user-graduate me-1"></i>View
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6 mb-3">
-        <div class="card stat-card danger h-100">
-            <div class="card-body">
-                <h6 class="text-muted mb-1">Rejected</h6>
-                <h2 class="mb-0">{{ number_format($stats['rejected']) }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- Stat tiles (Total Applicants / Pending Review / Admitted / Rejected)
+     — read from the registry via DashboardResolver. The Pending Review
+     and Admitted tiles carry a coloured CTA button. The pipeline flow
+     strip below and the recent-applications / recent-admissions tables
+     stay in chrome. --}}
+@include('widgets.render', ['widgets' => $widgets])
 
 {{-- Pipeline breakdown (small numbers) --}}
 @if($stats['screening'] || $stats['approved'])

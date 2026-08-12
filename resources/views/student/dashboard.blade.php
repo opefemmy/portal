@@ -101,40 +101,11 @@ $user = auth()->user();
 </div>
 @else
 
-<div class="row">
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <h6 class="text-muted">Registered Courses</h6>
-                <h2>{{ $registeredCourses->count() }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card info h-100">
-            <div class="card-body">
-                <h6 class="text-muted">Total Payments</h6>
-                <h2>{{ $payments->count() }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card warning h-100">
-            <div class="card-body">
-                <h6 class="text-muted">Total Fees</h6>
-                <h2>{{ $fees->count() }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xl-3 mb-3">
-        <div class="card stat-card danger h-100">
-            <div class="card-body">
-                <h6 class="text-muted">Unpaid Fees</h6>
-                <h2>{{ $unpaidFees->count() }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- Personal-data stat tiles — read from the registry via
+     DashboardResolver. Each closure inside registerStudentWidgets()
+     scopes to auth()->user()->student so the counts are personal,
+     not session-wide. --}}
+@include('widgets.render', ['widgets' => $widgets])
 
 {{-- Fees Section --}}
 @if($unpaidFees->count() > 0)

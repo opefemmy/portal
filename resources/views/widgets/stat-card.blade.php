@@ -2,11 +2,20 @@
     Stat tile rendered by DashboardResolver.
 
     Expected `$data` shape:
-        value: number
-        format: 'number' | 'currency'
-        color: tailwind-like colour name (default 'primary')
-        icon:  font-awesome class (default 'fas fa-chart-bar')
-        href:  optional URL — when present the title becomes a link
+        value:    number
+        format:   'number' | 'currency'
+        color:    tailwind-like colour name (default 'primary')
+        icon:     font-awesome class (default 'fas fa-chart-bar')
+        href:     optional URL — when present the title becomes a link
+        cta:      optional array describing an in-tile action button:
+                       ['label' => string,
+                        'icon'  => font-awesome class,
+                        'href'  => URL,
+                        'color' => tailwind-like colour (defaults to $color)]
+                  When set, renders a small outline-coloured button
+                  below the value. The button gets `z-index: 2` if
+                  a title href is also present so it stays clickable
+                  above the stretched-link overlay.
 --}}
 @php
     $value  = $data['value']  ?? 0;
@@ -14,6 +23,7 @@
     $color  = $data['color']  ?? 'primary';
     $icon   = $data['icon']   ?? 'fas fa-chart-bar';
     $href   = $data['href']   ?? null;
+    $cta    = $data['cta']    ?? null;
 
     if ($format === 'currency') {
         $display = '₦' . number_format((float) $value, 0);
@@ -34,6 +44,13 @@
                         @endif
                     </h6>
                     <h2 class="mb-0">{{ $display }}</h2>
+                    @if($cta)
+                        <a href="{{ $cta['href'] }}"
+                           class="btn btn-sm btn-outline-{{ $cta['color'] ?? $color }} mt-2 {{ $href ? 'position-relative' : '' }}"
+                           style="{{ $href ? 'z-index: 2' : '' }}">
+                            <i class="{{ $cta['icon'] ?? 'fas fa-arrow-right' }} me-1"></i>{{ $cta['label'] }}
+                        </a>
+                    @endif
                 </div>
                 <div class="icon text-{{ $color }}">
                     <i class="{{ $icon }}"></i>
