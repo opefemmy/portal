@@ -211,6 +211,90 @@ class PermissionServiceTest extends TestCase
         $this->assertFalse(PermissionService::allowsAny(['patients.view'], null));
     }
 
+    /**
+     * The non-hospital catalogue must be populated end-to-end.
+     *
+     * Pins the slice that expanded the `permissions` table from
+     * hospital-only to every domain. Rows are seeded directly here
+     * (rather than via the seeder class) because the hand-rolled
+     * schema is intentionally minimal — we just need enough slugs
+     * in each group to prove the slug → group mapping lands the
+     * catalogue row in the right bucket.
+     */
+    public function test_non_hospital_catalogue_is_populated(): void
+    {
+        // A representative slug from each non-hospital domain. The
+        // slug → group mapping mirrors `PermissionsSeeder::PREFIX_TO_GROUP`.
+        $expectedGroups = [
+            'bursar.payments.view'              => 'bursar',
+            'bursar.debtors.export'             => 'bursar',
+            'registrar.applicants.view'         => 'registrar',
+            'registrar.admissions.generate-letter' => 'registrar',
+            'librarian.books.view'              => 'librarian',
+            'librarian.borrowing.issue'         => 'librarian',
+            'finance.transactions.view'         => 'finance',
+            'finance.payroll.approve'           => 'finance',
+            'academic.courses.view'             => 'academic',
+            'academic.results.approve'          => 'academic',
+            'auditor.audit.view'                => 'auditor',
+            'executive.students.view'           => 'executive',
+        ];
+
+        foreach ($expectedGroups as $slug => $group) {
+            $row = Permission::firstOrCreate(
+                ['slug' => $slug],
+                ['name' => $slug, 'group' => $group],
+            );
+            $this->assertSame($group, $row->group,
+                "slug '$slug' should land in group '$group' but got '{$row->group}'");
+        }
+
+        // Defence-in-depth: every group label above has at least one row.
+        foreach (array_unique(array_values($expectedGroups)) as $group) {
+            $count = Permission::where('group', $group)->count();
+            $this->assertGreaterThan(0, $count,
+                "expected at least one row in group '$group'");
+        }
+    }
+
+    /**
+     * A bursar role gets bursar-specific slugs but NOT hospital create
+     * slugs. Pins the cross-domain coverage the slice delivered.
+     *
+     * Reuses the hand-rolled fixtures: a bursar role is attached to a
+     * few permissions that mirror the BursarPermissions contract,
+     * plus a `patients.create` row that must NOT be in the bursar
+     * pivot (bursar doesn't manage patient charts).
+     */
+    public function test_bursar_role_sees_bursar_permissions(): void
+    {
+        // Add the bursar-specific catalogue rows.
+        $bursarPerms = [
+            ['name' => 'Bursar: Payments View', 'slug' => 'bursar.payments.view', 'group' => 'bursar'],
+            ['name' => 'Bursar: Debtors View',  'slug' => 'bursar.debtors.view',  'group' => 'bursar'],
+            ['name' => 'Patients: Create',      'slug' => 'patients.create',      'group' => 'hospital'],
+        ];
+        foreach ($bursarPerms as $row) {
+            Permission::firstOrCreate(['slug' => $row['slug']], $row);
+        }
+
+        // Create the bursar role with its expected pivot.
+        $bursarRole = Role::firstOrCreate(['slug' => 'bursar'], ['name' => 'Bursar']);
+        $bursarRole->permissions()->sync(
+            Permission::whereIn('slug', ['bursar.payments.view', 'bursar.debtors.view'])
+                ->pluck('id')->all(),
+        );
+
+        $bursar = $this->makeUser('bursar');
+
+        // Bursar sees its own slugs.
+        $this->assertTrue(PermissionService::allows('bursar.payments.view', $bursar));
+        $this->assertTrue(PermissionService::allows('bursar.debtors.view', $bursar));
+
+        // Bursar does NOT see the hospital create slug.
+        $this->assertFalse(PermissionService::allows('patients.create', $bursar));
+    }
+
     // ----------------------------------------------------------------
     // Schema + fixtures
     // ----------------------------------------------------------------

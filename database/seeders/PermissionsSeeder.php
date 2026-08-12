@@ -3,22 +3,25 @@
 namespace Database\Seeders;
 
 use App\Models\Permission;
-use App\Services\Hospital\HospitalPermissions;
+use App\Services\Permissions\PermissionCatalog;
 use Illuminate\Database\Seeder;
 
 /**
- * Populate the `permissions` table from the existing
- * `HospitalPermissions::ROLE_PERMISSIONS` constant.
+ * Populate the `permissions` table from every domain's
+ * `*Permissions::ROLE_PERMISSIONS` constant.
+ *
+ * Iterates `PermissionCatalog::all()` so every domain — hospital,
+ * bursar, registrar, librarian, finance, academic, auditor,
+ * executive — contributes its permission slugs to the catalogue.
+ * The wildcard `'*'` marker is NOT stored as a permission row; it's
+ * a role-level flag honoured by `PermissionService::allPermissionsFor()`.
  *
  * Idempotent: every permission is created with `firstOrCreate` keyed
- * on the slug, so re-running the seeder is a no-op. The wildcard
- * `'*'` marker is NOT stored as a permission row — it's a role-level
- * flag honoured by PermissionService.
+ * on the slug, so re-running the seeder is a no-op.
  *
  * Group inference: every permission slug has a dotted prefix that
- * maps to a domain ("patients." → "hospital", "finance." → "bursar").
- * New domains (e.g. "registrar") only need an entry in the
- * `PREFIX_TO_GROUP` map below.
+ * maps to a domain ("patients." → "hospital", "bursar." → "bursar").
+ * New domains only need an entry in the `PREFIX_TO_GROUP` map below.
  */
 class PermissionsSeeder extends Seeder
 {
@@ -27,9 +30,11 @@ class PermissionsSeeder extends Seeder
      *
      * The first matching prefix wins. Keep this map small and
      * obvious — anything not matched falls through to `null` and
-     * ends up in the ungrouped bucket.
+     * ends up in the ungrouped bucket. New domains added by
+     * `PermissionCatalog::all()` must extend this map.
      */
     private const PREFIX_TO_GROUP = [
+        // Hospital prefixes (existing).
         'patients'           => 'hospital',
         'external-patients'  => 'hospital',
         'appointments'       => 'hospital',
@@ -57,25 +62,76 @@ class PermissionsSeeder extends Seeder
         'search'             => 'hospital',
         'reports'            => 'hospital',
         'audit'              => 'hospital',
+
+        // Bursar prefixes.
+        'payments'           => 'bursar',
+        'fees'               => 'bursar',
+        'debtors'            => 'bursar',
+        'regimes'            => 'bursar',
+        'bursar'             => 'bursar',     // explicit catch-all for bursar-prefixed slugs
+
+        // Registrar prefixes.
+        'applicants'         => 'registrar',
+        'admissions'         => 'registrar',
+        'registrar'          => 'registrar',  // explicit catch-all
+
+        // Librarian prefixes.
+        'books'              => 'librarian',
+        'borrowing'          => 'librarian',
+        'members'            => 'librarian',
+        'library'            => 'librarian',
+        'librarian'          => 'librarian',  // explicit catch-all
+
+        // Finance prefixes.
+        'transactions'       => 'finance',
+        'invoices'           => 'finance',
+        'receipts'           => 'finance',
+        'budgets'            => 'finance',
+        'vendors'            => 'finance',
+        'payroll'            => 'finance',
+        'finance'            => 'finance',    // explicit catch-all
+
+        // Academic prefixes.
+        'students'           => 'academic',
+        'courses'            => 'academic',
+        'results'            => 'academic',
+        'timetables'         => 'academic',
+        'departments'        => 'academic',
+        'lecturers'          => 'academic',
+        'programs'           => 'academic',
+        'academic'           => 'academic',   // explicit catch-all
+
+        // Executive prefixes.
+        'executive'          => 'executive',
+
+        // Auditor prefixes (the auditor.* family — note that the
+        // generic 'audit' prefix above stays in 'hospital' for
+        // backwards-compatibility with HospitalPermissions slugs
+        // like `audit.view`, `audit.logs`).
+        'auditor'            => 'auditor',
     ];
 
     public function run(): void
     {
         $byGroup = [];
 
-        foreach (HospitalPermissions::ROLE_PERMISSIONS as $roleSlug => $perms) {
-            foreach ($perms as $slug) {
-                if ($slug === '*') {
-                    continue;
+        // Iterate every domain's *Permissions class via the catalog
+        // and dedupe slugs into group buckets.
+        foreach (PermissionCatalog::all() as $permissionsClass) {
+            foreach ($permissionsClass::ROLE_PERMISSIONS as $roleSlug => $perms) {
+                foreach ($perms as $slug) {
+                    if ($slug === '*') {
+                        continue;
+                    }
+                    $group = $this->inferGroup($slug);
+                    // Use the slug as the key to dedupe — multiple
+                    // roles may claim the same permission.
+                    $byGroup[$group][$slug] = [
+                        'name' => $slug,
+                        'slug' => $slug,
+                        'group' => $group,
+                    ];
                 }
-                $group = $this->inferGroup($slug);
-                // Use the slug as the key to dedupe — multiple roles
-                // may claim the same permission.
-                $byGroup[$group][$slug] = [
-                    'name' => $slug,
-                    'slug' => $slug,
-                    'group' => $group,
-                ];
             }
         }
 
@@ -88,7 +144,7 @@ class PermissionsSeeder extends Seeder
 
     /**
      * Map a permission slug to a domain group. Uses the dotted prefix
-     * (`patients.create` → `patients` → `hospital`). Unknown prefixes
+     * (`bursar.payments.view` → `bursar` → `bursar`). Unknown prefixes
      * land in the `null` bucket — they're still seeded, just without
      * a group label.
      */
