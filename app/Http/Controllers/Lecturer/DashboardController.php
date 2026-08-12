@@ -4,53 +4,36 @@ namespace App\Http\Controllers\Lecturer;
 
 use App\Http\Controllers\Controller;
 use App\Models\CourseAssignment;
-use App\Models\Course;
-use App\Models\StudentCourse;
-use App\Models\Result;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $userId = auth()->id();
-
         try {
-            // Get assignments with required relationships
-            $assignments = CourseAssignment::where('lecturer_id', $userId)
+            // "My Courses" table stays in the view's chrome — it carries
+            // per-row action buttons (Students / Enter Results / Template)
+            // that the generic table-card partial can't render. The
+            // stat tiles above it are widget-rendered; their closures
+            // already scope by `auth()->id()` so they stay in sync
+            // with this collection.
+            $assignments = CourseAssignment::where('lecturer_id', auth()->id())
                 ->with(['course', 'course.department', 'session', 'studentCourses'])
                 ->get();
-
-            // Pre-compute stats safely
-            $totalStudents = 0;
-            $pendingResults = 0;
-
-            foreach ($assignments as $assignment) {
-                $totalStudents += $assignment->studentCourses->count() ?? 0;
-
-                // Get results for this course safely
-                $courseResults = Result::where('course_id', $assignment->course_id)
-                    ->where('status', 'pending_approval')
-                    ->count();
-                $pendingResults += $courseResults;
-            }
-
-            $stats = [
-                'total_courses' => $assignments->count(),
-                'total_students' => $totalStudents,
-                'pending_results' => $pendingResults,
-            ];
         } catch (\Exception $e) {
-            // If there's any error, use default values
+            // Defensive: hand-built controller used to swallow any
+            // eager-load failure and render zeros. The widget
+            // closures handle their own scoping so we just need to
+            // make sure the chrome table doesn't blow up the whole
+            // page.
+            \Log::error('Lecturer dashboard error: ' . $e->getMessage());
             $assignments = collect([]);
-            $stats = [
-                'total_courses' => 0,
-                'total_students' => 0,
-                'pending_results' => 0,
-            ];
         }
 
-        return view('lecturer.dashboard', compact('assignments', 'stats'));
+        $widgets = DashboardResolver::widgetsForUser($request->user());
+
+        return view('lecturer.dashboard', compact('assignments', 'widgets'));
     }
 
     public function courses()

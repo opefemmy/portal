@@ -3,66 +3,24 @@
 namespace App\Http\Controllers\HOD;
 
 use App\Http\Controllers\Controller;
-use App\Models\Course;
-use App\Models\CourseAssignment;
-use App\Models\Result;
-use App\Models\Student;
-use App\Models\User;
-use App\Models\Role;
+use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
         $departmentId = $user->department_id;
 
-        $stats = [
-            'total_courses' => 0,
-            'total_assignments' => 0,
-            'total_lecturers' => 0,
-            'total_students' => 0,
-            'pending_results' => 0,
-        ];
+        // Stat tiles + the two Recent Assignments / Pending Results
+        // tables are all widget-rendered; their closures already
+        // scope by `auth()->user()->department_id` and degrade to
+        // zero / empty when no department is assigned. The view
+        // still surfaces a "not assigned to any department" alert
+        // and a Quick Actions card — both stay in chrome.
+        $widgets = DashboardResolver::widgetsForUser($user);
 
-        $recentAssignments = collect();
-        $pendingResultsList = collect();
-
-        if ($departmentId) {
-            $courseIds = Course::where('department_id', $departmentId)->pluck('id');
-
-            $stats['total_courses'] = $courseIds->count();
-            $stats['total_assignments'] = CourseAssignment::whereIn('course_id', $courseIds)->count();
-
-            // Count lecturers assigned to courses in this department
-            $stats['total_lecturers'] = CourseAssignment::whereIn('course_id', $courseIds)
-                ->whereNotNull('lecturer_id')
-                ->distinct('lecturer_id')
-                ->count('lecturer_id');
-
-            // Count students in this department
-            $stats['total_students'] = Student::where('department_id', $departmentId)->count();
-
-            // Pending results
-            $stats['pending_results'] = Result::whereIn('course_id', $courseIds)
-                ->where('status', 'pending_approval')
-                ->count();
-
-            $recentAssignments = CourseAssignment::whereIn('course_id', $courseIds)
-                ->with(['course', 'lecturer', 'session'])
-                ->latest()
-                ->limit(5)
-                ->get();
-
-            $pendingResultsList = Result::whereIn('course_id', $courseIds)
-                ->where('status', 'pending_approval')
-                ->with(['course', 'studentCourse.student'])
-                ->latest()
-                ->limit(5)
-                ->get();
-        }
-
-        return view('hod.dashboard', compact('stats', 'recentAssignments', 'pendingResultsList', 'departmentId'));
+        return view('hod.dashboard', compact('widgets', 'departmentId'));
     }
 }

@@ -7,32 +7,7 @@
     <h4>Lecturer Dashboard</h4>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <h6>Assigned Courses</h6>
-                <h2>{{ $stats['total_courses'] ?? 0 }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stat-card info">
-            <div class="card-body">
-                <h6>Total Students</h6>
-                <h2>{{ $stats['total_students'] ?? 0 }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <h6>Pending Results</h6>
-                <h2>{{ $stats['pending_results'] ?? 0 }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
+@include('widgets.render', ['widgets' => $widgets])
 
 <div class="card">
     <div class="card-header">

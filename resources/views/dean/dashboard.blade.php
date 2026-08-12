@@ -7,9 +7,5 @@
     <h4>Dean Dashboard</h4>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <p class="text-muted">Dashboard content coming soon.</p>
-    </div>
-</div>
+@include('widgets.render', ['widgets' => $widgets])
 @endsection

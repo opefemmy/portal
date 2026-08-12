@@ -91,6 +91,9 @@ class AppServiceProvider extends ServiceProvider
         $this->registerStudentWidgets();
         $this->registerAuditorWidgets();
         $this->registerLibrarianWidgets();
+        $this->registerLecturerWidgets();
+        $this->registerHodWidgets();
+        $this->registerDeanWidgets();
     }
 
     /**
@@ -1004,6 +1007,325 @@ class AppServiceProvider extends ServiceProvider
                     ] : null,
                 ];
             },
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the lecturer audience.
+     *
+     * Role: lecturer. All three tiles are scoped to the auth'd
+     * lecturer's own course assignments. Closures run at render time
+     * and read `auth()->user()` directly so the user-scoping matches
+     * the per-user widget row in `dashboard_widgets` when the user
+     * later customises their dashboard.
+     *
+     * The "My Courses" table below the widget grid stays in the view's
+     * chrome — it carries per-row action buttons (Students / Enter
+     * Results / Template) that don't fit the generic table-card
+     * partial, which renders plain text cells.
+     */
+    private function registerLecturerWidgets(): void
+    {
+        $lecturerRoles = ['lecturer'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lecturer.assigned_courses', 'Assigned Courses', 'stat', $lecturerRoles,
+            function () {
+                $userId = auth()->id();
+                $count = $userId
+                    ? \App\Models\CourseAssignment::where('lecturer_id', $userId)->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'success',
+                    'icon' => 'fas fa-chalkboard-teacher',
+                    'href' => $userId ? route('lecturer.courses') : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lecturer.total_students', 'Total Students', 'stat', $lecturerRoles,
+            function () {
+                $userId = auth()->id();
+                if (!$userId) {
+                    return ['value' => 0, 'format' => 'number', 'color' => 'info', 'icon' => 'fas fa-user-graduate'];
+                }
+                // Sum of studentCourses across all of this lecturer's
+                // course assignments. Mirrors the original hand-built
+                // controller: $totalStudents += $assignment->studentCourses->count().
+                $count = \App\Models\StudentCourse::whereIn(
+                        'course_id',
+                        \App\Models\CourseAssignment::where('lecturer_id', $userId)->pluck('course_id')
+                    )
+                    ->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'info',
+                    'icon' => 'fas fa-user-graduate',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'lecturer.pending_results', 'Pending Results', 'stat', $lecturerRoles,
+            function () {
+                $userId = auth()->id();
+                if (!$userId) {
+                    return ['value' => 0, 'format' => 'number', 'color' => 'warning', 'icon' => 'fas fa-clipboard-check'];
+                }
+                // Results awaiting approval across the lecturer's
+                // assigned courses. Matches the original controller's
+                // Result::where('course_id', ...)->where('status',
+                // 'pending_approval') per-assignment sum.
+                $count = \App\Models\Result::whereIn(
+                        'course_id',
+                        \App\Models\CourseAssignment::where('lecturer_id', $userId)->pluck('course_id')
+                    )
+                    ->where('status', 'pending_approval')
+                    ->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'warning',
+                    'icon' => 'fas fa-clipboard-check',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the HOD audience.
+     *
+     * Role: hod. All tiles + tables are scoped to the auth'd HOD's
+     * `department_id`. Closures gracefully degrade to zero / empty
+     * when the HOD has no department assigned — the controller still
+     * surfaces a "not assigned to any department" alert in chrome,
+     * which is the right place to communicate that state rather than
+     * rendering an empty dashboard.
+     *
+     * Quick Actions card stays in the view's chrome — its four
+     * action buttons (Assign Course / Manage Courses / Review Results
+     * / View Timetable) are too narrow to justify a generic
+     * action-list widget type.
+     */
+    private function registerHodWidgets(): void
+    {
+        $hodRoles = ['hod'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.total_courses', 'Department Courses', 'stat', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $count = $departmentId
+                    ? \App\Models\Course::where('department_id', $departmentId)->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'info',
+                    'icon' => 'fas fa-book',
+                    'href' => $departmentId ? route('hod.courses') : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.total_lecturers', 'Lecturers', 'stat', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $count = 0;
+                if ($departmentId) {
+                    $courseIds = \App\Models\Course::where('department_id', $departmentId)->pluck('id');
+                    $count = $courseIds->isNotEmpty()
+                        ? \App\Models\CourseAssignment::whereIn('course_id', $courseIds)
+                            ->whereNotNull('lecturer_id')
+                            ->distinct('lecturer_id')
+                            ->count('lecturer_id')
+                        : 0;
+                }
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'success',
+                    'icon' => 'fas fa-user-tie',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.total_students', 'Students', 'stat', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $count = $departmentId
+                    ? \App\Models\Student::where('department_id', $departmentId)->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'primary',
+                    'icon' => 'fas fa-user-graduate',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.pending_results', 'Pending Results', 'stat', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $count = 0;
+                if ($departmentId) {
+                    $courseIds = \App\Models\Course::where('department_id', $departmentId)->pluck('id');
+                    $count = $courseIds->isNotEmpty()
+                        ? \App\Models\Result::whereIn('course_id', $courseIds)
+                            ->where('status', 'pending_approval')
+                            ->count()
+                        : 0;
+                }
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'warning',
+                    'icon' => 'fas fa-clipboard-check',
+                    'href' => $departmentId ? route('hod.results.index') : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.recent_assignments', 'Recent Assignments', 'table', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $rows = [];
+                if ($departmentId) {
+                    $courseIds = \App\Models\Course::where('department_id', $departmentId)->pluck('id');
+                    $rows = $courseIds->isNotEmpty()
+                        ? \App\Models\CourseAssignment::whereIn('course_id', $courseIds)
+                            ->with(['course', 'lecturer', 'session'])
+                            ->latest()
+                            ->take(5)
+                            ->get()
+                            ->map(fn($a) => [
+                                $a->course->code ?? 'N/A',
+                                $a->lecturer->name ?? 'N/A',
+                                $a->session->name ?? 'N/A',
+                            ])
+                            ->all()
+                        : [];
+                }
+                return [
+                    'title' => 'Recent Assignments',
+                    'icon' => 'fas fa-book-reader',
+                    'headers' => ['Course', 'Lecturer', 'Session'],
+                    'rows' => $rows,
+                    'colspan' => 3,
+                    'empty_message' => 'No course assignments yet.',
+                ];
+            },
+            'widgets.table-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'hod.pending_results_list', 'Pending Results', 'table', $hodRoles,
+            function () {
+                $departmentId = auth()->user()?->department_id;
+                $rows = [];
+                if ($departmentId) {
+                    $courseIds = \App\Models\Course::where('department_id', $departmentId)->pluck('id');
+                    $rows = $courseIds->isNotEmpty()
+                        ? \App\Models\Result::whereIn('course_id', $courseIds)
+                            ->where('status', 'pending_approval')
+                            ->with(['course', 'studentCourse.student'])
+                            ->latest()
+                            ->take(5)
+                            ->get()
+                            ->map(fn($r) => [
+                                $r->course->code ?? 'N/A',
+                                $r->studentCourse->student->matric_number ?? 'N/A',
+                                'Pending',
+                            ])
+                            ->all()
+                        : [];
+                }
+                return [
+                    'title' => 'Pending Results',
+                    'icon' => 'fas fa-tasks',
+                    'headers' => ['Course', 'Student', 'Status'],
+                    'rows' => $rows,
+                    'colspan' => 3,
+                    'empty_message' => 'No pending results for approval.',
+                ];
+            },
+            'widgets.table-card'
+        ));
+    }
+
+    /**
+     * Register widgets for the dean audience.
+     *
+     * Role: dean. The dean dashboard has historically been a
+     * placeholder ("Dashboard content coming soon") so we don't have
+     * a hand-built controller to mirror. These four stat tiles give
+     * the dean an institution-level overview (schools, departments,
+     * students, programmes). Per-school drill-down tables are out of
+     * scope — the existing /dean routes provide that surface; widgets
+     * here are summary only.
+     */
+    private function registerDeanWidgets(): void
+    {
+        $deanRoles = ['dean'];
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.total_schools', 'Schools', 'stat', $deanRoles,
+            fn() => [
+                'value' => \App\Models\School::count(),
+                'format' => 'number',
+                'color' => 'primary',
+                'icon' => 'fas fa-school',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.total_departments', 'Departments', 'stat', $deanRoles,
+            fn() => [
+                'value' => \App\Models\Department::count(),
+                'format' => 'number',
+                'color' => 'info',
+                'icon' => 'fas fa-building-columns',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.total_students', 'Students', 'stat', $deanRoles,
+            fn() => [
+                'value' => \App\Models\Student::count(),
+                'format' => 'number',
+                'color' => 'success',
+                'icon' => 'fas fa-user-graduate',
+            ],
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.total_programmes', 'Programmes', 'stat', $deanRoles,
+            fn() => [
+                'value' => \App\Models\Programme::count(),
+                'format' => 'number',
+                'color' => 'warning',
+                'icon' => 'fas fa-graduation-cap',
+            ],
             'widgets.stat-card'
         ));
     }
