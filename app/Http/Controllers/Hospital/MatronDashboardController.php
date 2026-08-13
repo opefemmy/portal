@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Hospital;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Hospital\HospitalAdmission;
 use App\Models\Hospital\HospitalBed;
 use App\Models\Hospital\HospitalDutyRoster;
@@ -24,7 +24,7 @@ use Illuminate\Http\Request;
  */
 class MatronDashboardController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Matron landing page — KPIs, today's discharges, ward occupancy,

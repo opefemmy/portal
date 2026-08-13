@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceBudget;
 use App\Models\Finance\FinanceBudgetAllocation;
 use App\Models\Finance\FinanceLedger;
@@ -13,8 +14,12 @@ use Illuminate\Support\Facades\Validator;
 
 class BudgetController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.budgets.view');
+
         $query = FinanceBudget::with('department');
 
         if ($request->status) {
@@ -32,6 +37,8 @@ class BudgetController extends Controller
 
     public function create()
     {
+        $this->requirePermission('finance.budgets.create');
+
         $departments = Department::all();
         $ledgers = FinanceLedger::where('is_active', true)->get();
 
@@ -40,6 +47,8 @@ class BudgetController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('finance.budgets.create');
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'fiscal_year' => 'required|string',
@@ -84,6 +93,8 @@ class BudgetController extends Controller
 
     public function show(FinanceBudget $budget)
     {
+        $this->requirePermission('finance.budgets.view');
+
         $budget->load(['department', 'allocations.ledger']);
 
         return view('finance.budgets.show', compact('budget'));
@@ -91,6 +102,8 @@ class BudgetController extends Controller
 
     public function approve(FinanceBudget $budget)
     {
+        $this->requirePermission('finance.budgets.approve');
+
         $budget->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -102,6 +115,8 @@ class BudgetController extends Controller
 
     public function activate(FinanceBudget $budget)
     {
+        $this->requirePermission('finance.budgets.approve');
+
         if ($budget->status !== 'approved') {
             return redirect()->back()->with('error', 'Budget must be approved first');
         }

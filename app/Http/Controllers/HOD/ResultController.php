@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\HOD;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Result;
 use App\Models\Course;
 use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('academic.results.view');
+
         $user = auth()->user();
         $departmentId = $user->department_id;
 
@@ -44,6 +49,7 @@ class ResultController extends Controller
 
     public function approve(Result $result, Request $request)
     {
+        $this->requirePermission('academic.results.approve');
         $this->assertInHodDepartment($result);
         $this->assertCanActOn($result, 'pending_approval');
         $result->update([
@@ -57,6 +63,7 @@ class ResultController extends Controller
 
     public function reject(Result $result, Request $request)
     {
+        $this->requirePermission('academic.results.approve');
         $this->assertInHodDepartment($result);
         $this->assertCanActOn($result, 'pending_approval');
         $result->update([
@@ -75,6 +82,8 @@ class ResultController extends Controller
      */
     public function bulkApprove(Request $request)
     {
+        $this->requirePermission('academic.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',
@@ -102,6 +111,8 @@ class ResultController extends Controller
      */
     public function bulkReject(Request $request)
     {
+        $this->requirePermission('academic.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',

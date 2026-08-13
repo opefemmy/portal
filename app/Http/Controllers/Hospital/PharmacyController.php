@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalDrug;
 use App\Models\Hospital\HospitalDrugBatch;
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Validator;
 
 class PharmacyController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     public function __construct(protected InventoryService $inventory)
     {

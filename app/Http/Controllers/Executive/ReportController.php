@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Executive;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Finance\FinanceReceipt;
@@ -15,8 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    use EnforcesPermission;
+
     public function studentReport()
     {
+        $this->requirePermission('executive.students.view');
         $studentsByDepartment = DB::table('users')
             ->join('departments', 'users.department_id', '=', 'departments.id')
             ->join('roles', 'users.role_id', '=', 'roles.id')
@@ -48,6 +52,8 @@ class ReportController extends Controller
 
     public function financialReport()
     {
+        $this->requirePermission('executive.finance.revenue.view');
+
         $startDate = request()->start_date ?? now()->startOfMonth();
         $endDate = request()->end_date ?? now()->endOfMonth();
 
@@ -74,6 +80,8 @@ class ReportController extends Controller
 
     public function hospitalReport()
     {
+        $this->requirePermission('executive.hospital.admitted.view');
+
         $month = request()->month ?? date('m');
         $year = request()->year ?? date('Y');
 
@@ -100,6 +108,8 @@ class ReportController extends Controller
 
     public function staffReport()
     {
+        $this->requirePermission('executive.staff.view');
+
         $staffByRole = DB::table('users')
             ->join('roles', 'users.role_id', '=', 'roles.id')
             ->whereNotIn('roles.slug', ['student', 'applicant'])

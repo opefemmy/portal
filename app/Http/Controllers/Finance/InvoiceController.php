@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceInvoice;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
@@ -10,8 +11,12 @@ use Illuminate\Support\Facades\Validator;
 
 class InvoiceController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.invoices.view');
+
         $query = FinanceInvoice::with(['student', 'session']);
 
         if ($request->status) {
@@ -33,11 +38,14 @@ class InvoiceController extends Controller
 
     public function create()
     {
+        $this->requirePermission('finance.invoices.create');
         return view('finance.invoices.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('finance.invoices.create');
+
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|exists:users,id',
             'payment_type' => 'required|string',
@@ -71,6 +79,8 @@ class InvoiceController extends Controller
 
     public function show(FinanceInvoice $invoice)
     {
+        $this->requirePermission('finance.invoices.view');
+
         $invoice->load(['student', 'generatedBy', 'receipts']);
 
         return view('finance.invoices.show', compact('invoice'));
@@ -78,11 +88,14 @@ class InvoiceController extends Controller
 
     public function edit(FinanceInvoice $invoice)
     {
+        $this->requirePermission('finance.invoices.edit');
         return view('finance.invoices.edit', compact('invoice'));
     }
 
     public function update(Request $request, FinanceInvoice $invoice)
     {
+        $this->requirePermission('finance.invoices.edit');
+
         $validator = Validator::make($request->all(), [
             'description' => 'required|string',
             'amount' => 'required|numeric|min:0',
@@ -110,6 +123,8 @@ class InvoiceController extends Controller
 
     public function destroy(FinanceInvoice $invoice)
     {
+        $this->requirePermission('finance.invoices.delete');
+
         if ($invoice->status === 'paid') {
             return redirect()->back()->with('error', 'Cannot delete paid invoice');
         }

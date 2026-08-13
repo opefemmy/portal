@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalDutyRoster;
 use App\Models\Hospital\HospitalStaff;
@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 class DutyRosterController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Weekly roster view.

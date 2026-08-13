@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Applicant;
 use App\Models\School;
 use App\Services\Dashboard\DashboardResolver;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Render the registrar dashboard with admission pipeline stats.
      *
@@ -23,6 +26,8 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
+        $this->requirePermission('registrar.dashboard.view');
+
         $schoolId = $request->query('school_id');
 
         // --- Pipeline counts ---

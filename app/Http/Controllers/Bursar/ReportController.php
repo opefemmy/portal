@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bursar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Student;
 use App\Models\Fee;
 use App\Models\Payment;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Bursary reports page. Totals on this page must reconcile with
      * /bursar/payments (PaymentController) and /bursar/paid-students
@@ -24,6 +27,8 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
+        $this->requirePermission('bursar.reports.view');
+
         // Default to the currently-active session when none is picked so the
         // page is meaningful on first load.
         $sessionId = $request->session_id;

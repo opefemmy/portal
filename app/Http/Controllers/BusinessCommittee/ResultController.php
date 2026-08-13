@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\BusinessCommittee;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Result;
 use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('business_committee.results.view');
+
         $query = Result::with(['studentCourse.student.user', 'studentCourse.course'])
             ->where('status', 'approved_by_dean');
 
@@ -25,6 +30,7 @@ class ResultController extends Controller
 
     public function approve(Request $request, Result $result)
     {
+        $this->requirePermission('business_committee.results.approve');
         $this->assertInSameSchool($result);
         $this->assertCanActOn($result, 'approved_by_dean');
         $result->update([
@@ -38,6 +44,7 @@ class ResultController extends Controller
 
     public function reject(Request $request, Result $result)
     {
+        $this->requirePermission('business_committee.results.approve');
         $this->assertInSameSchool($result);
         $this->assertCanActOn($result, 'approved_by_dean');
         $result->update([
@@ -55,6 +62,8 @@ class ResultController extends Controller
      */
     public function bulkApprove(Request $request)
     {
+        $this->requirePermission('business_committee.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',
@@ -71,6 +80,8 @@ class ResultController extends Controller
      */
     public function bulkReject(Request $request)
     {
+        $this->requirePermission('business_committee.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',

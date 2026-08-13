@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bursar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\RegimePayment;
 use App\Models\School;
 use App\Models\Department;
@@ -14,8 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 class RegimeController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('bursar.regimes.view');
+
         $regimes = RegimePayment::with(['school', 'department', 'programme', 'session'])
             ->latest()
             ->get();
@@ -80,6 +85,8 @@ class RegimeController extends Controller
 
     public function create()
     {
+        $this->requirePermission('bursar.regimes.configure');
+
         $schools = School::all();
         $departments = Department::all();
         $programmes = Programme::all();
@@ -90,6 +97,8 @@ class RegimeController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('bursar.regimes.configure');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'student_type' => 'required|in:Indigene,Non-Indigene',
@@ -119,6 +128,7 @@ class RegimeController extends Controller
 
     public function edit(RegimePayment $regime)
     {
+        $this->requirePermission('bursar.regimes.configure');
         $this->assertSameSchool($regime);
         $schools = School::all();
         $departments = Department::all();
@@ -130,6 +140,7 @@ class RegimeController extends Controller
 
     public function update(Request $request, RegimePayment $regime)
     {
+        $this->requirePermission('bursar.regimes.configure');
         $this->assertSameSchool($regime);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -160,6 +171,7 @@ class RegimeController extends Controller
 
     public function destroy(RegimePayment $regime)
     {
+        $this->requirePermission('bursar.regimes.configure');
         $this->assertSameSchool($regime);
         $regime->delete();
         return back()->with('success', 'Regime deleted successfully');

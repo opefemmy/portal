@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\AuditLog;
@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Display a listing of patients.

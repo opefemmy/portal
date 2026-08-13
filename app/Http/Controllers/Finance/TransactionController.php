@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceTransaction;
 use App\Models\Finance\FinanceLedger;
 use App\Models\AuditLog;
@@ -11,8 +12,12 @@ use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.transactions.view');
+
         $query = FinanceTransaction::with(['user']);
 
         if ($request->type) {
@@ -34,6 +39,8 @@ class TransactionController extends Controller
 
     public function create()
     {
+        $this->requirePermission('finance.transactions.create');
+
         $ledgers = FinanceLedger::where('is_active', true)
             ->where('allow_manual_entry', true)
             ->get();
@@ -43,6 +50,8 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('finance.transactions.create');
+
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:credit,debit',
             'category' => 'required|in:income,expense',
@@ -93,6 +102,8 @@ class TransactionController extends Controller
 
     public function show(FinanceTransaction $transaction)
     {
+        $this->requirePermission('finance.transactions.view');
+
         $transaction->load(['user']);
 
         return view('finance.transactions.show', compact('transaction'));

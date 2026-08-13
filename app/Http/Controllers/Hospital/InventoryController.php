@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Hospital;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Hospital\HospitalDrug;
 use App\Services\Hospital\InventoryService;
 use Illuminate\Http\Request;
@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Log;
 /**
  * Inventory operations: receive stock, adjust stock, write off expired stock.
  *
- * Each action is gated by `EnforcesHospitalPermission` (pharmacy.receive /
+ * Each action is gated by `EnforcesPermission` (pharmacy.receive /
  * pharmacy.adjust / pharmacy.expire) and writes the movement through
  * `InventoryService` so the audit trail stays consistent.
  */
 class InventoryController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     public function __construct(protected InventoryService $inventory)
     {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalVisit;
 use App\Models\Hospital\ExternalPrescription;
@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class ExternalVisitController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Edit/Manage a visit

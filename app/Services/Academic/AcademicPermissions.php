@@ -76,6 +76,7 @@ class AcademicPermissions
             'academic.courses.view',
             'academic.results.view',
             'academic.results.export',
+            'academic.results.board-approve',
             'academic.timetables.view',
             'academic.departments.view',
             'academic.lecturers.view',

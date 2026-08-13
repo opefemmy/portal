@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Hospital;
 
 use App\Events\Hospital\BedAssigned;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Hospital\HospitalAdmission;
 use App\Models\Hospital\HospitalBed;
 use App\Models\Hospital\HospitalPatient;
@@ -30,7 +30,7 @@ use Illuminate\Validation\Rule;
  */
 class WardController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Ward list with occupancy percentages.

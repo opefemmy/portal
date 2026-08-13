@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Applicant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,8 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class ApplicantController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('registrar.applicants.view');
+
         // Only show pending and processing applicants, not admitted ones
         $query = Applicant::with('user', 'department', 'programme', 'school', 'session');
 
@@ -49,6 +54,7 @@ class ApplicantController extends Controller
 
     public function show(Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.view');
         $this->assertSameSchool($applicant);
         $applicant->load('user', 'department', 'programme', 'school', 'session', 'state', 'localGovernment');
         // Reuse the existing admission.show view (same Applicant model).
@@ -57,6 +63,7 @@ class ApplicantController extends Controller
 
     public function admit(Applicant $applicant, Request $request)
     {
+        $this->requirePermission('registrar.applicants.status-update');
         $this->assertSameSchool($applicant);
         DB::beginTransaction();
 
@@ -86,6 +93,7 @@ class ApplicantController extends Controller
 
     public function reject(Applicant $applicant, Request $request)
     {
+        $this->requirePermission('registrar.applicants.status-update');
         $this->assertSameSchool($applicant);
         $applicant->update([
             'status' => 'rejected',

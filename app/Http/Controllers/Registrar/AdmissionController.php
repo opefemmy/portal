@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Applicant;
 use App\Models\Setting;
 use App\Models\Student;
@@ -18,8 +19,12 @@ use Illuminate\Support\Facades\Storage;
 class AdmissionController extends Controller
 {
     use ResolvesRegistrarSignature;
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('registrar.admissions.view');
+
         $query = Applicant::with(['user', 'department', 'programme', 'school']);
 
         // Search filter
@@ -52,6 +57,7 @@ class AdmissionController extends Controller
      */
     public function show(Applicant $applicant)
     {
+        $this->requirePermission('registrar.admissions.view');
         $this->assertSameSchool($applicant);
         $applicant->load(['user', 'department', 'programme', 'school', 'session', 'state', 'localGovernment', 'nationalityRecord']);
         return view('registrar.admission.show', compact('applicant'));
@@ -62,6 +68,7 @@ class AdmissionController extends Controller
      */
     public function edit(Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.edit');
         $this->assertSameSchool($applicant);
         $applicant->load(['user', 'department', 'programme', 'school', 'session', 'centre', 'state', 'localGovernment', 'nationalityRecord']);
         $data = [
@@ -82,6 +89,7 @@ class AdmissionController extends Controller
      */
     public function update(Request $request, Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.edit');
         $this->assertSameSchool($applicant);
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
@@ -106,6 +114,7 @@ class AdmissionController extends Controller
      */
     public function destroy(Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.edit');
         $this->assertSameSchool($applicant);
         $applicant->delete();
         return redirect()->route('registrar.admission')->with('success', 'Applicant deleted successfully');
@@ -116,6 +125,7 @@ class AdmissionController extends Controller
      */
     public function resetPassword(Request $request, Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.reset-password');
         $this->assertSameSchool($applicant);
         $request->validate([
             'new_password' => 'required|min:8|confirmed',
@@ -134,6 +144,7 @@ class AdmissionController extends Controller
 
     public function updateStatus(Request $request, Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.status-update');
         $this->assertSameSchool($applicant);
         $request->validate([
             'status' => 'required|in:pending,reviewed,admitted,rejected',
@@ -254,6 +265,8 @@ class AdmissionController extends Controller
 
     public function upload(Request $request)
     {
+        $this->requirePermission('registrar.admissions.bulk-upload');
+
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls',
         ]);
@@ -264,6 +277,8 @@ class AdmissionController extends Controller
 
     public function settings()
     {
+        $this->requirePermission('registrar.settings.view');
+
         // Get system settings for admission (defensive: null if system_settings unavailable)
         $get = function ($key, $default = null) {
             try { return SystemSetting::get($key, $default); }
@@ -286,6 +301,8 @@ class AdmissionController extends Controller
 
     public function updateSettings(Request $request)
     {
+        $this->requirePermission('registrar.settings.edit');
+
         $request->validate([
             'admission_form_open' => 'boolean',
             'admission_form_penalty' => 'boolean',
@@ -315,12 +332,16 @@ class AdmissionController extends Controller
 
     public function print()
     {
+        $this->requirePermission('registrar.admissions.view');
+
         $admitted = Applicant::where('status', 'admitted')->with('user', 'department')->get();
         return view('registrar.admission.print', compact('admitted'));
     }
 
     public function track(Request $request)
     {
+        $this->requirePermission('registrar.admissions.track');
+
         if (!$request->application_number) {
             return view('registrar.admission.track');
         }
@@ -337,6 +358,8 @@ class AdmissionController extends Controller
      */
     public function activateStudent(Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.status-update');
+
         $student = Student::where('matric_number', $applicant->matric_number)->first();
         if (!$student) {
             return back()->with('error', 'Student record not found.');
@@ -353,6 +376,8 @@ class AdmissionController extends Controller
      */
     public function showLetterTemplate()
     {
+        $this->requirePermission('registrar.settings.view');
+
         $template = null;
         try {
             $template = SystemSetting::get('admission_letter_template');
@@ -369,6 +394,8 @@ class AdmissionController extends Controller
      */
     public function uploadLetterTemplate(Request $request)
     {
+        $this->requirePermission('registrar.settings.edit');
+
         try {
             $body = (string) $request->input('template_body', '');
             SystemSetting::set('admission_letter_template', $body);
@@ -385,6 +412,8 @@ class AdmissionController extends Controller
      */
     public function generateLetters(Request $request)
     {
+        $this->requirePermission('registrar.admissions.generate-letter');
+
         $departmentId = $request->department_id;
 
         $query = Applicant::where('status', 'admitted')->with(['user', 'department', 'school', 'programme', 'session']);
@@ -413,6 +442,7 @@ class AdmissionController extends Controller
      */
     public function generateLetter(Applicant $applicant)
     {
+        $this->requirePermission('registrar.admissions.generate-letter');
         $this->assertSameSchool($applicant);
         if ($applicant->status !== 'admitted') {
             return back()->with('error', 'Applicant is not admitted.');
@@ -437,6 +467,8 @@ class AdmissionController extends Controller
      */
     public function uploadAdmissionList(Request $request)
     {
+        $this->requirePermission('registrar.admissions.bulk-upload');
+
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls|max:2048',
             'department_id' => 'required|exists:departments,id',
@@ -495,6 +527,8 @@ class AdmissionController extends Controller
      */
     public function listByDepartment(Request $request)
     {
+        $this->requirePermission('registrar.admissions.view');
+
         $departments = \App\Models\Department::all();
         $departmentId = $request->department_id;
 
@@ -515,6 +549,8 @@ class AdmissionController extends Controller
      */
     public function showUploadByDepartment()
     {
+        $this->requirePermission('registrar.admissions.bulk-upload');
+
         $departments = \App\Models\Department::with('school')->get();
         return view('registrar.admission.upload-list', compact('departments'));
     }
@@ -524,6 +560,7 @@ class AdmissionController extends Controller
      */
     public function showLetterSettings()
     {
+        $this->requirePermission('registrar.settings.view');
         return view('registrar.admission.letters');
     }
 
@@ -532,6 +569,8 @@ class AdmissionController extends Controller
      */
     public function saveLetterSettings(Request $request)
     {
+        $this->requirePermission('registrar.settings.edit');
+
         $request->validate([
             'registrar_name'      => 'nullable|string|max:255',
             'registrar_signature' => 'nullable|file|image|max:2048',
@@ -715,6 +754,8 @@ class AdmissionController extends Controller
      */
     public function saveLetterField(Request $request)
     {
+        $this->requirePermission('registrar.settings.edit');
+
         $payload = $request->validate([
             'field' => 'required|in:registrar_name,fees',
             'value' => 'present',
@@ -789,6 +830,8 @@ class AdmissionController extends Controller
      */
     public function deleteSignature()
     {
+        $this->requirePermission('registrar.settings.edit');
+
         try {
             $existing = SystemSetting::get('registrar_signature_path');
             foreach ($this->signatureCandidatePaths($existing) as $candidate) {

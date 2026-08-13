@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Auditor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\AuditLog;
 use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('auditor.dashboard.view');
+
         // Widget tiles (audit + finance totals) come from the registry.
         $widgets = DashboardResolver::widgetsForUser($request->user());
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Executive;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceReceipt;
 use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
@@ -10,8 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('executive.dashboard.view');
+
         // Stat tiles and the recent-receipts table come from the
         // widget registry; the rest stays in chrome.
         $widgets = DashboardResolver::widgetsForUser($request->user());

@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\HOD;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('academic.dashboard.view');
+
         $user = $request->user();
         $departmentId = $user->department_id;
 

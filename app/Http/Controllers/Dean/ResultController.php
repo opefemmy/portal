@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dean;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Result;
 use App\Models\Course;
 use App\Models\Department;
@@ -10,8 +11,12 @@ use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('academic.results.view');
+
         $user = auth()->user();
         $schoolId = $user->school_id;
 
@@ -51,6 +56,7 @@ class ResultController extends Controller
 
     public function approve(Result $result, Request $request)
     {
+        $this->requirePermission('academic.results.approve');
         $this->assertInDeansSchool($result);
         $result->update([
             'status' => 'approved_by_dean',
@@ -66,6 +72,8 @@ class ResultController extends Controller
      */
     public function bulkApprove(Request $request)
     {
+        $this->requirePermission('academic.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',
@@ -94,6 +102,8 @@ class ResultController extends Controller
      */
     public function bulkReject(Request $request)
     {
+        $this->requirePermission('academic.results.approve');
+
         $request->validate([
             'result_ids' => 'required|array|min:1',
             'result_ids.*' => 'integer|exists:results,id',

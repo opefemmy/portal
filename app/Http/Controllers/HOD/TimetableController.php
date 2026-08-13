@@ -3,19 +3,24 @@
 namespace App\Http\Controllers\HOD;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Timetable;
 use App\Models\Course;
 use Illuminate\Http\Request;
 
 class TimetableController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('academic.timetables.view');
         return view('hod.timetable');
     }
 
     public function approve(Timetable $timetable)
     {
+        $this->requirePermission('academic.timetables.edit');
         $this->assertInHodDepartment($timetable);
         $timetable->update([
             'status' => 'approved',
@@ -27,6 +32,7 @@ class TimetableController extends Controller
 
     public function reject(Timetable $timetable)
     {
+        $this->requirePermission('academic.timetables.edit');
         $this->assertInHodDepartment($timetable);
         $timetable->update(['status' => 'rejected']);
         return back()->with('success', 'Timetable rejected');

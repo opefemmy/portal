@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Bursar;
 
 use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\Fee;
@@ -15,9 +16,12 @@ use Illuminate\Support\Facades\Log;
 class PaymentController extends Controller
 {
     use ResolvesInstitutionLogo;
+    use EnforcesPermission;
 
     public function index(Request $request)
     {
+        $this->requirePermission('bursar.payments.view');
+
         $query = Payment::with(['student.user', 'fee', 'applicant']);
 
         // Filter by status
@@ -84,6 +88,8 @@ class PaymentController extends Controller
 
     public function verify(Payment $payment)
     {
+        $this->requirePermission('bursar.payments.verify');
+
         // Cross-school guard: bursars from school A must not verify/receipt a
         // payment for a student at school B.
         $authUser = auth()->user();
@@ -97,6 +103,8 @@ class PaymentController extends Controller
 
     public function receipt(Payment $payment)
     {
+        $this->requirePermission('bursar.payments.view');
+
         $authUser = auth()->user();
         if ($authUser && $authUser->school_id && $payment->student
             && $payment->student->school_id !== $authUser->school_id) {
@@ -110,11 +118,10 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Show the external payment upload form
-     */
     public function showUploadForm()
     {
+        $this->requirePermission('bursar.payments.create');
+
         // Get all fees to show all payment types
         $fees = Fee::orderBy('name')->get();
         return view('bursar.payments-upload', compact('fees'));
@@ -125,6 +132,8 @@ class PaymentController extends Controller
      */
     public function uploadPayments(Request $request)
     {
+        $this->requirePermission('bursar.payments.create');
+
         $request->validate([
             'payment_file' => 'required|file|mimes:csv,xlsx,xls,txt',
             'fee_id' => 'required|exists:fees,id',

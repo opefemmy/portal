@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceReceipt;
 use App\Models\Finance\FinanceInvoice;
 use App\Models\AuditLog;
@@ -11,8 +12,12 @@ use Illuminate\Support\Facades\Validator;
 
 class ReceiptController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.receipts.view');
+
         $query = FinanceReceipt::with(['student', 'invoice']);
 
         if ($request->status) {
@@ -30,11 +35,14 @@ class ReceiptController extends Controller
 
     public function create()
     {
+        $this->requirePermission('finance.receipts.create');
         return view('finance.receipts.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('finance.receipts.create');
+
         $validator = Validator::make($request->all(), [
             'student_id' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0',
@@ -88,6 +96,8 @@ class ReceiptController extends Controller
 
     public function show(FinanceReceipt $receipt)
     {
+        $this->requirePermission('finance.receipts.view');
+
         $receipt->load(['student', 'invoice', 'generatedBy', 'verifiedBy']);
 
         return view('finance.receipts.show', compact('receipt'));
@@ -95,6 +105,8 @@ class ReceiptController extends Controller
 
     public function verify(FinanceReceipt $receipt)
     {
+        $this->requirePermission('finance.receipts.print');
+
         $receipt->update([
             'is_verified' => true,
             'verified_by' => auth()->id(),

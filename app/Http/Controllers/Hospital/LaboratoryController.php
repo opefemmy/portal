@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalLabRequest;
 use App\Models\Hospital\HospitalLabResult;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 
 class LaboratoryController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Display lab requests.

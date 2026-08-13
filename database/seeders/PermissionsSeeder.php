@@ -109,6 +109,9 @@ class PermissionsSeeder extends Seeder
         // backwards-compatibility with HospitalPermissions slugs
         // like `audit.view`, `audit.logs`).
         'auditor'            => 'auditor',
+
+        // Business committee prefixes (slice 8e).
+        'business_committee' => 'business_committee',
     ];
 
     public function run(): void

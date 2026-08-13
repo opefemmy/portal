@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Lecturer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Course;
 use App\Models\CourseAssignment;
 use App\Models\Department;
@@ -18,6 +19,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
     /**
      * The unique (school_id, department_id, programme_id, level, session_id)
      * tuples the currently-authenticated lecturer is actually assigned to
@@ -160,6 +162,8 @@ class ResultController extends Controller
      */
     public function courseStudents(Course $course)
     {
+        $this->requirePermission('academic.results.view');
+
         try {
             // Verify lecturer is assigned to this course
             $assignment = CourseAssignment::where('course_id', $course->id)
@@ -211,6 +215,8 @@ class ResultController extends Controller
      */
     public function enter(Course $course)
     {
+        $this->requirePermission('academic.results.enter');
+
         try {
             // Verify lecturer is assigned to this course
             $assignment = CourseAssignment::where('course_id', $course->id)
@@ -308,6 +314,8 @@ class ResultController extends Controller
      */
     public function store(Request $request, Course $course)
     {
+        $this->requirePermission('academic.results.enter');
+
         try {
             $assignment = CourseAssignment::where('course_id', $course->id)
                 ->where('lecturer_id', auth()->id())
@@ -381,6 +389,8 @@ class ResultController extends Controller
      */
     public function edit(Result $result)
     {
+        $this->requirePermission('academic.results.edit');
+
         // Verify lecturer owns this result
         $studentCourse = $result->studentCourse;
         $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
@@ -404,6 +414,8 @@ class ResultController extends Controller
      */
     public function update(Request $request, Result $result)
     {
+        $this->requirePermission('academic.results.edit');
+
         try {
             $studentCourse = $result->studentCourse;
             $assignment = CourseAssignment::where('course_id', $studentCourse->course_id)
@@ -461,6 +473,8 @@ class ResultController extends Controller
      */
     public function bulkUpload(Request $request, Course $course)
     {
+        $this->requirePermission('academic.results.enter');
+
         $assignment = CourseAssignment::where('course_id', $course->id)
             ->where('lecturer_id', auth()->id())
             ->first();
@@ -560,6 +574,8 @@ class ResultController extends Controller
      */
     public function downloadTemplate(Course $course)
     {
+        $this->requirePermission('academic.results.enter');
+
         $currentSession = Session::getCurrentSession();
 
         // Get registered students

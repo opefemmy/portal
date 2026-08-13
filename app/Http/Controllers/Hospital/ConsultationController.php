@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalMedicalRecord;
 use App\Models\Hospital\HospitalDiagnosis;
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ConsultationController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * List consultations (records created today, paginated).

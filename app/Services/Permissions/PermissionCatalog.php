@@ -5,6 +5,7 @@ namespace App\Services\Permissions;
 use App\Services\Academic\AcademicPermissions;
 use App\Services\Auditor\AuditorPermissions;
 use App\Services\Bursar\BursarPermissions;
+use App\Services\BusinessCommittee\BusinessCommitteePermissions;
 use App\Services\Executive\ExecutivePermissions;
 use App\Services\Finance\FinancePermissions;
 use App\Services\Hospital\HospitalPermissions;
@@ -45,6 +46,7 @@ final class PermissionCatalog
             AcademicPermissions::class,
             AuditorPermissions::class,
             ExecutivePermissions::class,
+            BusinessCommitteePermissions::class,
         ];
     }
 }

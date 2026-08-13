@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Hospital;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Hospital\HospitalAdmission;
 use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalBed;
@@ -31,7 +31,7 @@ use Illuminate\Http\Request;
  */
 class HospitalAdminController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Top-level KPIs and activity feed.

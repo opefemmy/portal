@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Lecturer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\CourseAssignment;
 use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('academic.dashboard.view');
+
         try {
             // "My Courses" table stays in the view's chrome — it carries
             // per-row action buttons (Students / Enter Results / Template)
@@ -38,6 +43,8 @@ class DashboardController extends Controller
 
     public function courses()
     {
+        $this->requirePermission('academic.courses.view');
+
         try {
             $assignments = CourseAssignment::where('lecturer_id', auth()->id())
                 ->with(['course', 'course.department', 'session'])
@@ -51,12 +58,14 @@ class DashboardController extends Controller
 
     public function courseStudents(\App\Models\Course $course)
     {
+        $this->requirePermission('academic.courses.view');
         // Delegate to LecturerResultController which provides the data needed by the view.
         return app(\App\Http\Controllers\Lecturer\ResultController::class)->courseStudents($course);
     }
 
     public function timetable()
     {
+        $this->requirePermission('academic.timetables.view');
         return view('lecturer.timetable');
     }
 }

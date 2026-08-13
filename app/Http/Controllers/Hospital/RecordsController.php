@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Hospital;
 
 use App\Events\Hospital\PatientArchived;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Hospital\HospitalAuditTrail;
 use App\Models\Hospital\HospitalPatient;
 use App\Models\Hospital\HospitalRecordRequest;
@@ -24,7 +24,7 @@ use Illuminate\Validation\Rule;
  */
 class RecordsController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Default landing page: list of patients with last-visit date and

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Librarian;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Book;
 use App\Models\BookLoan;
 use App\Models\User;
@@ -12,8 +13,12 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('librarian.dashboard.view');
+
         $totalBooks = Book::count();
         // The `books` table has no `status` column — it has
         // `available` (int) + `is_active` (bool). The earlier
@@ -38,17 +43,23 @@ class DashboardController extends Controller
 
     public function books()
     {
+        $this->requirePermission('librarian.books.view');
+
         $books = Book::latest()->paginate(20);
         return view('librarian.books', compact('books'));
     }
 
     public function createBook()
     {
+        $this->requirePermission('librarian.books.create');
+
         return view('librarian.book-create');
     }
 
     public function storeBook(Request $request)
     {
+        $this->requirePermission('librarian.books.create');
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'author' => 'required|string|max:255',
@@ -68,12 +79,16 @@ class DashboardController extends Controller
 
     public function loans()
     {
+        $this->requirePermission('librarian.borrowing.view');
+
         $loans = BookLoan::with(['book', 'user'])->latest()->paginate(20);
         return view('librarian.loans', compact('loans'));
     }
 
     public function issueBook(Request $request)
     {
+        $this->requirePermission('librarian.borrowing.issue');
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'book_id' => 'required|exists:books,id',
@@ -100,6 +115,8 @@ class DashboardController extends Controller
 
     public function returnBook(BookLoan $loan)
     {
+        $this->requirePermission('librarian.borrowing.return');
+
         $loan->update([
             'return_date' => now(),
             'status' => 'returned',

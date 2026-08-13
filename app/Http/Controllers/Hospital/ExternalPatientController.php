@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\ExternalPatient;
@@ -24,7 +24,7 @@ use Carbon\Carbon;
 
 class ExternalPatientController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
     use ResolvesInstitutionLogo;
 
     /**

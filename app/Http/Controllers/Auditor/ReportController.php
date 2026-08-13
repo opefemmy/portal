@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auditor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceReceipt;
 use App\Models\Finance\FinanceTransaction;
 use App\Models\AuditLog;
@@ -11,8 +12,12 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('auditor.finance.receipts.view');
+
         $startDate = $request->start_date ?? now()->startOfMonth();
         $endDate = $request->end_date ?? now()->endOfMonth();
 
@@ -37,6 +42,8 @@ class ReportController extends Controller
 
     public function financialSummary()
     {
+        $this->requirePermission('auditor.finance.transactions.view');
+
         $summary = [
             'total_income' => FinanceTransaction::where('type', 'credit')->sum('amount'),
             'total_expenses' => FinanceTransaction::where('type', 'debit')->sum('amount'),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Applicant;
 use App\Models\School;
 use App\Models\Department;
@@ -13,8 +14,12 @@ use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('registrar.applicants.view');
+
         $query = Applicant::with(['school', 'department', 'programme', 'session']);
 
         if ($request->status) {
@@ -48,6 +53,7 @@ class ApplicationController extends Controller
 
     public function show(Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.view');
         $this->assertSameSchool($applicant);
         $applicant->load(['school', 'department', 'programme', 'session', 'user']);
         return view('registrar.applications.show', compact('applicant'));
@@ -55,6 +61,7 @@ class ApplicationController extends Controller
 
     public function updateStatus(Request $request, Applicant $applicant)
     {
+        $this->requirePermission('registrar.applicants.status-update');
         $this->assertSameSchool($applicant);
         $request->validate([
             'status' => 'required|in:pending,screening,approved,rejected,admitted',
@@ -86,6 +93,8 @@ class ApplicationController extends Controller
 
     public function bulkAction(Request $request)
     {
+        $this->requirePermission('registrar.applicants.status-update');
+
         $request->validate([
             'applications' => 'required|array',
             'action' => 'required|in:screening,approved,rejected,admitted',
@@ -119,6 +128,8 @@ class ApplicationController extends Controller
 
     public function export(Request $request)
     {
+        $this->requirePermission('registrar.reports.export');
+
         $query = Applicant::with(['school', 'department', 'programme']);
 
         if ($request->status) {
@@ -140,6 +151,8 @@ class ApplicationController extends Controller
 
     public function admittedStudents(Request $request)
     {
+        $this->requirePermission('registrar.applicants.view');
+
         $query = Applicant::with(['school', 'department', 'programme', 'session'])
             ->where('status', 'admitted');
 
@@ -165,6 +178,8 @@ class ApplicationController extends Controller
 
     public function statistics()
     {
+        $this->requirePermission('registrar.reports.view');
+
         $stats = [
             'total' => Applicant::count(),
             'pending' => Applicant::where('status', 'pending')->count(),

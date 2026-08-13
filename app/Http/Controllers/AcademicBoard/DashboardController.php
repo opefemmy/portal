@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\AcademicBoard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Result;
 use App\Services\Dashboard\DashboardResolver;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('academic.dashboard.view');
+
         $pendingResults = Result::where('status', 'approved_by_business')->count();
         $finalApproved = Result::where('status', 'approved_final')->count();
 

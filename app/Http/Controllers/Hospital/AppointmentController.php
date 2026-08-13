@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Hospital;
 
-use App\Http\Controllers\Concerns\EnforcesHospitalPermission;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalAppointment;
 use App\Models\Hospital\HospitalPatient;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
-    use EnforcesHospitalPermission;
+    use EnforcesPermission;
 
     /**
      * Display appointment queue.

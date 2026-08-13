@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\HOD;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\CourseAssignment;
 use App\Models\Course;
 use App\Models\User;
@@ -12,8 +13,12 @@ use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('academic.courses.view');
+
         $user = auth()->user();
 
         // Get courses for HOD's department
@@ -29,6 +34,8 @@ class CourseController extends Controller
 
     public function assign()
     {
+        $this->requirePermission('academic.courses.assign');
+
         $user = auth()->user();
 
         // Get courses for HOD's department that don't have lecturer assigned
@@ -54,6 +61,8 @@ class CourseController extends Controller
 
     public function storeAssignment(Request $request)
     {
+        $this->requirePermission('academic.courses.assign');
+
         $request->validate([
             'course_id' => 'required|exists:courses,id',
             'lecturer_id' => 'required|exists:users,id',
@@ -80,6 +89,7 @@ class CourseController extends Controller
 
     public function reassign(CourseAssignment $assignment, Request $request)
     {
+        $this->requirePermission('academic.courses.assign');
         $this->assertInHodDepartment($assignment);
         $request->validate([
             'lecturer_id' => 'required|exists:users,id',
@@ -91,6 +101,7 @@ class CourseController extends Controller
 
     public function removeAssignment(CourseAssignment $assignment)
     {
+        $this->requirePermission('academic.courses.assign');
         $this->assertInHodDepartment($assignment);
         $assignment->delete();
         return back()->with('success', 'Assignment removed successfully');

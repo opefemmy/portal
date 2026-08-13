@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinancePayroll;
 use App\Models\Finance\FinanceAllowance;
 use App\Models\Finance\FinanceDeduction;
@@ -15,8 +16,12 @@ use Illuminate\Support\Facades\Validator;
 
 class PayrollController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.payroll.view');
+
         $query = FinancePayroll::with('staff');
 
         if ($request->month && $request->year) {
@@ -34,6 +39,8 @@ class PayrollController extends Controller
 
     public function create()
     {
+        $this->requirePermission('finance.payroll.create');
+
         $staff = User::whereHas('role', function($q) {
             $q->whereIn('slug', ['staff', 'lecturer', 'hod', 'dean', 'admin']);
         })->where('is_active', true)->get();
@@ -46,6 +53,8 @@ class PayrollController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('finance.payroll.create');
+
         $validator = Validator::make($request->all(), [
             'staff_id' => 'required|exists:users,id',
             'month' => 'required|string',
@@ -129,6 +138,8 @@ class PayrollController extends Controller
 
     public function show(FinancePayroll $payroll)
     {
+        $this->requirePermission('finance.payroll.view');
+
         $payroll->load(['staff', 'allowances.allowance', 'deductions.deduction', 'processedBy']);
 
         return view('finance.payroll.show', compact('payroll'));
@@ -136,6 +147,8 @@ class PayrollController extends Controller
 
     public function approve(FinancePayroll $payroll)
     {
+        $this->requirePermission('finance.payroll.approve');
+
         $payroll->update(['status' => 'approved']);
 
         return redirect()->back()->with('success', 'Payroll approved');
@@ -143,6 +156,8 @@ class PayrollController extends Controller
 
     public function pay(FinancePayroll $payroll)
     {
+        $this->requirePermission('finance.payroll.approve');
+
         $payroll->update(['status' => 'paid']);
 
         AuditLog::log([

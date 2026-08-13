@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Finance\FinanceInvoice;
 use App\Models\Finance\FinanceReceipt;
 use App\Models\Finance\FinanceTransaction;
@@ -13,8 +14,12 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('finance.dashboard.view');
+
         $widgets = DashboardResolver::widgetsForUser($request->user());
 
         // Chrome payload — Recent Transactions + Recent Receipts tables
@@ -51,11 +56,14 @@ class DashboardController extends Controller
 
     public function reports()
     {
+        $this->requirePermission('finance.dashboard.view');
         return view('finance.reports.index');
     }
 
     public function dailyReport()
     {
+        $this->requirePermission('finance.receipts.view');
+
         $date = request()->date ?? today();
 
         $receipts = FinanceReceipt::with('student')
@@ -69,6 +77,8 @@ class DashboardController extends Controller
 
     public function monthlyReport()
     {
+        $this->requirePermission('finance.receipts.view');
+
         $month = request()->month ?? date('m');
         $year = request()->year ?? date('Y');
 
@@ -84,6 +94,8 @@ class DashboardController extends Controller
 
     public function incomeExpenditure()
     {
+        $this->requirePermission('finance.transactions.view');
+
         $startDate = request()->start_date ?? now()->startOfMonth();
         $endDate = request()->end_date ?? now()->endOfMonth();
 

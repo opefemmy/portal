@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bursar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\Student;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Paid statuses — the verify() flow writes 'completed'; some legacy
      * seed rows are 'verified'. Both count as paid so the totals tally
@@ -23,6 +26,8 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+        $this->requirePermission('bursar.dashboard.view');
+
         $currentSession = Session::getCurrentSession();
         $schools = School::all();
         $paidStatuses = self::PAID_STATUSES;
@@ -96,6 +101,8 @@ class DashboardController extends Controller
 
     public function debtors(Request $request)
     {
+        $this->requirePermission('bursar.debtors.view');
+
         $currentSession = Session::getCurrentSession();
 
         // Use the same debtorQuery() the dashboard tile uses so the
@@ -121,6 +128,8 @@ class DashboardController extends Controller
 
     public function paidStudents(Request $request)
     {
+        $this->requirePermission('bursar.payments.view');
+
         $currentSession = Session::getCurrentSession();
         $paidStatuses = self::PAID_STATUSES;
 

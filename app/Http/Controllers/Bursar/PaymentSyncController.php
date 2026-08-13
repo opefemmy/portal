@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bursar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\ExternalPayment;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
@@ -14,11 +15,14 @@ use Illuminate\Validation\Rule;
 
 class PaymentSyncController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Show payment synchronization page
      */
     public function index()
     {
+        $this->requirePermission('bursar.payments.view');
         // Guard against the local-DB drift case where the restore from
         // database_backup_20260724.sql skipped the original
         // 2026_07_23_000001_create_external_payments_table migration.
@@ -61,6 +65,7 @@ class PaymentSyncController extends Controller
      */
     public function showUploadForm()
     {
+        $this->requirePermission('bursar.payments.create');
         return view('bursar.payment-sync-upload');
     }
 
@@ -69,6 +74,8 @@ class PaymentSyncController extends Controller
      */
     public function preview(Request $request)
     {
+        $this->requirePermission('bursar.payments.create');
+
         $request->validate([
             'file' => 'required|file|mimes:csv,xlsx|max:5120', // 5MB max
             'fee_id' => 'required|exists:fees,id',
@@ -166,6 +173,8 @@ class PaymentSyncController extends Controller
      */
     public function previewResults()
     {
+        $this->requirePermission('bursar.payments.create');
+
         $preview = session()->get('payment_sync_preview');
 
         if (!$preview) {
@@ -181,6 +190,8 @@ class PaymentSyncController extends Controller
      */
     public function import(Request $request)
     {
+        $this->requirePermission('bursar.payments.create');
+
         $request->validate([
             'skip_duplicates' => 'boolean',
         ]);
@@ -340,6 +351,8 @@ class PaymentSyncController extends Controller
      */
     public function downloadTemplate()
     {
+        $this->requirePermission('bursar.payments.create');
+
         $headers = ['Transaction ID', 'Applicant Name', 'Email', 'Amount', 'Payment Date', 'Payment Status', 'Payment Channel'];
         $sampleData = [
             ['TXN001', 'John Doe', 'john@example.com', 5000.00, '2026-07-22 10:30:00', 'completed', 'card'],
@@ -354,6 +367,8 @@ class PaymentSyncController extends Controller
      */
     public function logs()
     {
+        $this->requirePermission('bursar.payments.view');
+
         $logs = ActivityLog::where('action', 'payment_import')
             ->orderBy('created_at', 'desc')
             ->limit(50)
