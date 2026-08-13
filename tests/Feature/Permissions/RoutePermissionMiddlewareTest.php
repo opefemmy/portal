@@ -85,6 +85,17 @@ class RoutePermissionMiddlewareTest extends TestCase
         // Slice 8f-web: librarian (librarian.*)
         'librarian.dashboard.view'           => 'librarian',
         'librarian.books.view'               => 'librarian',
+        // Slice 8i-routes: dashboard-config slugs now mirrored onto
+        // the route middleware. The route gate fires BEFORE the
+        // controller body (slice 8i-controller). These slugs match
+        // what each subclass's `dashboardConfigPermissionSlug()`
+        // returns.
+        'bursar.dashboard.configure'              => 'bursar',
+        'registrar.dashboard.configure'           => 'registrar',
+        'business_committee.dashboard.configure' => 'business_committee',
+        'academic.dashboard.configure'            => 'academic',
+        'librarian.dashboard.configure'           => 'librarian',
+        'student.dashboard.configure'             => 'student',
     ];
 
     /**
@@ -108,41 +119,49 @@ class RoutePermissionMiddlewareTest extends TestCase
             'bursar.dashboard.view', 'bursar.payments.view',
             'bursar.payments.verify', 'bursar.regimes.view',
             'bursar.regimes.configure',
+            'bursar.dashboard.configure',
         ],
         // Registrar — has the registrar module slugs (registrar.* only).
         'registrar' => [
             'registrar.dashboard.view', 'registrar.applicants.view',
             'registrar.applicants.status-update',
+            'registrar.dashboard.configure',
         ],
         // Lecturer — academic.* (academic.courses.view / academic.results.view)
         'lecturer' => [
             'academic.dashboard.view', 'academic.courses.view',
             'academic.results.view',
+            'academic.dashboard.configure',
         ],
         // HOD — academic.courses.view / academic.results.view
         'hod' => [
             'academic.dashboard.view', 'academic.courses.view',
             'academic.results.view',
+            'academic.dashboard.configure',
         ],
         // Dean — academic.courses.view / academic.results.view
         'dean' => [
             'academic.dashboard.view', 'academic.courses.view',
             'academic.results.view',
+            'academic.dashboard.configure',
         ],
         // Business committee — only the business_committee.* slugs
         'business_committee' => [
             'business_committee.dashboard.view',
             'business_committee.results.view',
             'business_committee.results.approve',
+            'business_committee.dashboard.configure',
         ],
         // Academic board — academic.* incl. academic.results.board-approve
         'academic_board' => [
             'academic.dashboard.view', 'academic.results.view',
             'academic.results.board-approve',
+            'academic.dashboard.configure',
         ],
         // Librarian — librarian.* slugs (just view + dashboard here)
         'librarian' => [
             'librarian.dashboard.view', 'librarian.books.view',
+            'librarian.dashboard.configure',
         ],
         // Rector — executive only.
         'rector' => [
@@ -579,6 +598,93 @@ class RoutePermissionMiddlewareTest extends TestCase
         $resp = $this->actingAs($bursar)->get('/librarian/books');
         $this->assertSame(403, $resp->getStatusCode(),
             'bursar should be 403 at /librarian/books');
+    }
+
+    // ----------------------------------------------------------------
+    // Slice 8i-routes: dashboard-config routes now gated by
+    // `permission:<slug>.dashboard.configure` middleware.
+    //
+    // Before slice 8i-routes, the dashboard-config routes relied SOLELY
+    // on the controller-trait gate (slice 8i-controller). After this
+    // slice, the route middleware fires FIRST — a user who passes the
+    // `role:` middleware but lacks the slug is now 403'd at the route
+    // layer before the controller body is reached.
+    //
+    // For each test: pick a role chain that admits the user past the
+    // `role:` middleware, but strip the audience's `.dashboard.configure`
+    // slug from their pivot. The reverse case (role has slug => pass)
+    // is already covered by the DashboardConfigControllerGateTest.
+    // ----------------------------------------------------------------
+
+    /**
+     * /bursar/dashboard-config/{user} route now gated by
+     * `bursar.dashboard.configure`. Bursar has it; bursary_officer
+     * (in the bursar role chain but lacking the slug) is 403'd at the
+     * route middleware.
+     */
+    public function test_bursar_dashboard_config_route_gates_on_slug(): void
+    {
+        // Bursary officer — admitted by the bursar role chain but
+        // has NO bursar.* slugs (including no .dashboard.configure).
+        $bursary_officer = $this->makeUser('bursary_officer');
+
+        $resp = $this->actingAs($bursary_officer)
+            ->get('/bursar/dashboard-config/' . $bursary_officer->id);
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursary_officer (lacks bursar.dashboard.configure) should be 403 '
+            . 'at the route layer — even though the role middleware admitted them');
+    }
+
+    /**
+     * /registrar/dashboard-config/{user} gated by
+     * `registrar.dashboard.configure`. Admission_officer is in the
+     * registrar role chain but lacks the slug.
+     */
+    public function test_registrar_dashboard_config_route_gates_on_slug(): void
+    {
+        // Fictitious role for the test — 'admission_officer' isn't in
+        // ROLE_PERMISSIONS so the user has no slugs at all. Strip the
+        // registrar pivot so the user exists without the slug.
+        $reg = Role::firstOrCreate(
+            ['slug' => 'admission_officer'],
+            ['name' => 'Admission Officer'],
+        );
+        $reg->permissions()->detach();
+        // Sync the role's pivot to zero — the user model is created
+        // from this role via the test's makeUser helper.
+        $user = $this->makeUser('admission_officer');
+        // The role middleware on /registrar/dashboard-config admits
+        // admission_officer (it's in the role:registrar chain). The
+        // permission middleware should now deny them.
+
+        $resp = $this->actingAs($user)
+            ->get('/registrar/dashboard-config/' . $user->id);
+        $this->assertSame(403, $resp->getStatusCode(),
+            'admission_officer (lacks registrar.dashboard.configure) should '
+            . 'be 403 at the route layer');
+    }
+
+    /**
+     * /lecturer/dashboard-config/{user} gated by
+     * `academic.dashboard.configure`. A lecturer without the slug
+     * (we strip it from the lecturer role's pivot) is 403'd at the
+     * route middleware, even though the role middleware admits them.
+     */
+    public function test_lecturer_dashboard_config_route_gates_on_slug(): void
+    {
+        $lecturer = $this->makeUser('lecturer');
+        // Strip the lecturer role's pivot so the user still has the
+        // 'lecturer' role (passing role: middleware) but holds no
+        // academic.* slugs.
+        $lecturerRole = Role::where('slug', 'lecturer')->first();
+        $lecturerRole->permissions()->detach();
+        PermissionService::flush();
+
+        $resp = $this->actingAs($lecturer)
+            ->get('/lecturer/dashboard-config/' . $lecturer->id);
+        $this->assertSame(403, $resp->getStatusCode(),
+            'lecturer without academic.dashboard.configure should be 403 '
+            . 'at the route layer');
     }
 
     // ----------------------------------------------------------------

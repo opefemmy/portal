@@ -346,11 +346,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     // only configure their own. The role middleware above already
     // admits those roles, but we additionally gate by a sub-middleware
     // on `super_admin` for the cross-user endpoints.
+    //
+    // Slice 8i-routes: also wire `permission:admin.dashboard.configure`
+    // for defence-in-depth — mirrors the trait-side
+    // `requirePermission()` in AdminDashboardConfigController (slice
+    // 8i-controller).
     Route::get('/dashboard-config/{user}', [AdminDashboardConfigController::class, 'edit'])
-        ->middleware('role:super_admin')
+        ->middleware(['role:super_admin', 'permission:admin.dashboard.configure'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [AdminDashboardConfigController::class, 'update'])
-        ->middleware('role:super_admin')
+        ->middleware(['role:super_admin', 'permission:admin.dashboard.configure'])
         ->name('dashboard-config.update');
 
     // User Unlock / Password Reset (MUST come before resource routes)
@@ -594,10 +599,13 @@ Route::get('/student/auto-login/{user}', [\App\Http\Controllers\Student\AutoLogi
 Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 'student.onboarding'])->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [StudentDashboardConfigController::class, 'edit'])
+        ->middleware('permission:student.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [StudentDashboardConfigController::class, 'update'])
+        ->middleware('permission:student.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/courses', [CourseRegistrationController::class, 'index'])->name('courses');
     Route::get('/courses/register', [CourseRegistrationController::class, 'register'])->name('courses.register');
@@ -701,10 +709,13 @@ Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer
         ->middleware('permission:academic.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'edit'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'update'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/courses', [LecturerDashboardController::class, 'courses'])
         ->middleware('permission:academic.courses.view')
@@ -757,10 +768,13 @@ Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(func
         ->middleware('permission:academic.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [HodDashboardConfigController::class, 'edit'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [HodDashboardConfigController::class, 'update'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/courses', [\App\Http\Controllers\HOD\CourseController::class, 'index'])
         ->middleware('permission:academic.courses.view')
@@ -815,10 +829,13 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
         ->middleware('permission:academic.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'edit'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'update'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])
         ->middleware('permission:academic.departments.view')
@@ -843,10 +860,13 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
         ->middleware('permission:registrar.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'edit'])
+        ->middleware('permission:registrar.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'update'])
+        ->middleware('permission:registrar.dashboard.configure')
         ->name('dashboard-config.update');
 
     // Application Management
@@ -978,10 +998,14 @@ Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursa
         ->middleware('permission:bursar.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate to BursarDashboardConfigController; this
+    // is the route-layer mirror (slice 8i-routes) for defence-in-depth.
     Route::get('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'edit'])
+        ->middleware('permission:bursar.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'update'])
+        ->middleware('permission:bursar.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])
         ->middleware('permission:bursar.debtors.view')
@@ -1071,10 +1095,13 @@ Route::prefix('business-committee')->name('business-committee.')->middleware(['a
         ->middleware('permission:business_committee.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'edit'])
+        ->middleware('permission:business_committee.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'update'])
+        ->middleware('permission:business_committee.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])
         ->middleware('permission:business_committee.results.view')
@@ -1099,10 +1126,13 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
         ->middleware('permission:academic.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'edit'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'update'])
+        ->middleware('permission:academic.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])
         ->middleware('permission:academic.results.view')
@@ -1130,10 +1160,13 @@ Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librar
         ->middleware('permission:librarian.dashboard.view')
         ->name('dashboard');
 
-    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
+    // Per-user dashboard widget configurator. Slice 8i-controller
+    // added the trait gate; slice 8i-routes mirrors onto the route.
     Route::get('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'edit'])
+        ->middleware('permission:librarian.dashboard.configure')
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'update'])
+        ->middleware('permission:librarian.dashboard.configure')
         ->name('dashboard-config.update');
     Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])
         ->middleware('permission:librarian.books.view')
