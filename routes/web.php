@@ -691,79 +691,159 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
 });
 
 // Lecturer Routes
+//
+// Slice 8f-web: every gated route below carries a `permission:slug`
+// middleware. The slug is copied verbatim from the controller method's
+// `requirePermission(...)` call. Dashboard-config routes stay ungated —
+// LecturerDashboardConfigController doesn't call requirePermission.
 Route::prefix('lecturer')->name('lecturer.')->middleware(['auth', 'role:lecturer'])->group(function () {
-    Route::get('/dashboard', [LecturerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [LecturerDashboardController::class, 'index'])
+        ->middleware('permission:academic.dashboard.view')
+        ->name('dashboard');
 
     // Per-user dashboard widget configurator
     Route::get('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [LecturerDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/courses', [LecturerDashboardController::class, 'courses'])->name('courses');
-    Route::get('/courses/{course}/students', [LecturerResultController::class, 'courseStudents'])->name('courses.students');
-    Route::get('/courses/{course}/results', [LecturerResultController::class, 'enter'])->name('courses.results');
-    Route::post('/courses/{course}/results', [LecturerResultController::class, 'store'])->name('courses.results.store');
-    Route::post('/courses/{course}/results/bulk', [LecturerResultController::class, 'bulkUpload'])->name('courses.bulk');
-    Route::get('/courses/{course}/template', [LecturerResultController::class, 'downloadTemplate'])->name('courses.template');
+    Route::get('/courses', [LecturerDashboardController::class, 'courses'])
+        ->middleware('permission:academic.courses.view')
+        ->name('courses');
+    Route::get('/courses/{course}/students', [LecturerResultController::class, 'courseStudents'])
+        ->middleware('permission:academic.results.view')
+        ->name('courses.students');
+    Route::get('/courses/{course}/results', [LecturerResultController::class, 'enter'])
+        ->middleware('permission:academic.results.enter')
+        ->name('courses.results');
+    Route::post('/courses/{course}/results', [LecturerResultController::class, 'store'])
+        ->middleware('permission:academic.results.enter')
+        ->name('courses.results.store');
+    Route::post('/courses/{course}/results/bulk', [LecturerResultController::class, 'bulkUpload'])
+        ->middleware('permission:academic.results.enter')
+        ->name('courses.bulk');
+    Route::get('/courses/{course}/template', [LecturerResultController::class, 'downloadTemplate'])
+        ->middleware('permission:academic.results.enter')
+        ->name('courses.template');
 
     // Edit result before HOD approval
-    Route::get('/result/{result}/edit', [LecturerResultController::class, 'edit'])->name('result.edit');
-    Route::put('/result/{result}', [LecturerResultController::class, 'update'])->name('result.update');
+    Route::get('/result/{result}/edit', [LecturerResultController::class, 'edit'])
+        ->middleware('permission:academic.results.edit')
+        ->name('result.edit');
+    Route::put('/result/{result}', [LecturerResultController::class, 'update'])
+        ->middleware('permission:academic.results.edit')
+        ->name('result.update');
 
-    Route::get('/attendance/{course}', [AttendanceController::class, 'index'])->name('attendance');
-    Route::post('/attendance/{course}', [AttendanceController::class, 'mark']);
-    Route::get('/attendance/{course}/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    Route::get('/attendance/{course}', [AttendanceController::class, 'index'])
+        ->middleware('permission:academic.attendance.view')
+        ->name('attendance');
+    Route::post('/attendance/{course}', [AttendanceController::class, 'mark'])
+        ->middleware('permission:academic.attendance.mark');
+    Route::get('/attendance/{course}/report', [AttendanceController::class, 'report'])
+        ->middleware('permission:academic.attendance.view')
+        ->name('attendance.report');
 
-    Route::get('/timetable', [LecturerDashboardController::class, 'timetable'])->name('timetable');
+    Route::get('/timetable', [LecturerDashboardController::class, 'timetable'])
+        ->middleware('permission:academic.timetables.view')
+        ->name('timetable');
 });
 
 // HOD Routes
+//
+// Slice 8f-web: every gated route below carries a `permission:slug`
+// middleware. Slug copied verbatim from controller method's
+// `requirePermission(...)`. Dashboard-config routes stay ungated.
 Route::prefix('hod')->name('hod.')->middleware(['auth', 'role:hod'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\HOD\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\HOD\DashboardController::class, 'index'])
+        ->middleware('permission:academic.dashboard.view')
+        ->name('dashboard');
 
     // Per-user dashboard widget configurator
     Route::get('/dashboard-config/{user}', [HodDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [HodDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/courses', [\App\Http\Controllers\HOD\CourseController::class, 'index'])->name('courses');
-    Route::get('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'assign'])->name('courses.assign');
-    Route::post('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'storeAssignment'])->name('courses.assign.store');
-    Route::put('/courses/{assignment}/reassign', [\App\Http\Controllers\HOD\CourseController::class, 'reassign'])->name('courses.reassign');
-    Route::delete('/courses/{assignment}/remove', [\App\Http\Controllers\HOD\CourseController::class, 'removeAssignment'])->name('courses.remove');
+    Route::get('/courses', [\App\Http\Controllers\HOD\CourseController::class, 'index'])
+        ->middleware('permission:academic.courses.view')
+        ->name('courses');
+    Route::get('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'assign'])
+        ->middleware('permission:academic.courses.assign')
+        ->name('courses.assign');
+    Route::post('/courses/assign', [\App\Http\Controllers\HOD\CourseController::class, 'storeAssignment'])
+        ->middleware('permission:academic.courses.assign')
+        ->name('courses.assign.store');
+    Route::put('/courses/{assignment}/reassign', [\App\Http\Controllers\HOD\CourseController::class, 'reassign'])
+        ->middleware('permission:academic.courses.assign')
+        ->name('courses.reassign');
+    Route::delete('/courses/{assignment}/remove', [\App\Http\Controllers\HOD\CourseController::class, 'removeAssignment'])
+        ->middleware('permission:academic.courses.assign')
+        ->name('courses.remove');
 
-    Route::get('/timetable', [\App\Http\Controllers\HOD\TimetableController::class, 'index'])->name('timetable');
-    Route::put('/timetable/{timetable}/approve', [\App\Http\Controllers\HOD\TimetableController::class, 'approve'])->name('timetable.approve');
-    Route::put('/timetable/{timetable}/reject', [\App\Http\Controllers\HOD\TimetableController::class, 'reject'])->name('timetable.reject');
+    Route::get('/timetable', [\App\Http\Controllers\HOD\TimetableController::class, 'index'])
+        ->middleware('permission:academic.timetables.view')
+        ->name('timetable');
+    Route::put('/timetable/{timetable}/approve', [\App\Http\Controllers\HOD\TimetableController::class, 'approve'])
+        ->middleware('permission:academic.timetables.edit')
+        ->name('timetable.approve');
+    Route::put('/timetable/{timetable}/reject', [\App\Http\Controllers\HOD\TimetableController::class, 'reject'])
+        ->middleware('permission:academic.timetables.edit')
+        ->name('timetable.reject');
 
-    Route::get('/results', [\App\Http\Controllers\HOD\ResultController::class, 'index'])->name('results.index');
-    Route::put('/results/{result}/approve', [\App\Http\Controllers\HOD\ResultController::class, 'approve'])->name('results.approve');
-    Route::put('/results/{result}/reject', [\App\Http\Controllers\HOD\ResultController::class, 'reject'])->name('results.reject');
-    Route::post('/results/bulk-approve', [\App\Http\Controllers\HOD\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
-    Route::post('/results/bulk-reject', [\App\Http\Controllers\HOD\ResultController::class, 'bulkReject'])->name('results.bulkReject');
+    Route::get('/results', [\App\Http\Controllers\HOD\ResultController::class, 'index'])
+        ->middleware('permission:academic.results.view')
+        ->name('results.index');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\HOD\ResultController::class, 'approve'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\HOD\ResultController::class, 'reject'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\HOD\ResultController::class, 'bulkApprove'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\HOD\ResultController::class, 'bulkReject'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.bulkReject');
 });
 
 // Dean Routes
+//
+// Slice 8f-web: every gated route below carries a `permission:slug`
+// middleware. Slug copied verbatim from controller method's
+// `requirePermission(...)`. Dashboard-config routes stay ungated.
 Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Dean\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Dean\DashboardController::class, 'index'])
+        ->middleware('permission:academic.dashboard.view')
+        ->name('dashboard');
 
     // Per-user dashboard widget configurator
     Route::get('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [DeanDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])->name('departments');
-    Route::get('/results', [\App\Http\Controllers\Dean\ResultController::class, 'index'])->name('results');
-    Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])->name('results.approve');
-    Route::post('/results/bulk-approve', [\App\Http\Controllers\Dean\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
-    Route::post('/results/bulk-reject', [\App\Http\Controllers\Dean\ResultController::class, 'bulkReject'])->name('results.bulkReject');
+    Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])
+        ->middleware('permission:academic.departments.view')
+        ->name('departments');
+    Route::get('/results', [\App\Http\Controllers\Dean\ResultController::class, 'index'])
+        ->middleware('permission:academic.results.view')
+        ->name('results');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.approve');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\Dean\ResultController::class, 'bulkApprove'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\Dean\ResultController::class, 'bulkReject'])
+        ->middleware('permission:academic.results.approve')
+        ->name('results.bulkReject');
 });
 
 // Registrar Routes - accessible by registrar, admin, super_admin, and admission_officer
 Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:registrar,super_admin,admin,admission_officer'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Registrar\DashboardController::class, 'index'])
+        ->middleware('permission:registrar.dashboard.view')
+        ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [RegistrarDashboardConfigController::class, 'update'])
@@ -772,51 +852,118 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     // Application Management
     // Literal sub-paths (statistics, export, bulk) MUST come before /{applicant}
     // wildcard or Laravel will try to match "statistics" as an applicant id.
-    Route::get('/applications', [\App\Http\Controllers\Registrar\ApplicationController::class, 'index'])->name('applications.index');
-    Route::get('/applications/statistics', [\App\Http\Controllers\Registrar\ApplicationController::class, 'statistics'])->name('applications.statistics');
-    Route::get('/applications/export', [\App\Http\Controllers\Registrar\ApplicationController::class, 'export'])->name('applications.export');
-    Route::post('/applications/bulk', [\App\Http\Controllers\Registrar\ApplicationController::class, 'bulkAction'])->name('applications.bulk');
-    Route::get('/admitted-students', [\App\Http\Controllers\Registrar\ApplicationController::class, 'admittedStudents'])->name('applications.admitted');
-    Route::get('/applications/{applicant}', [\App\Http\Controllers\Registrar\ApplicationController::class, 'show'])->name('applications.show');
-    Route::put('/applications/{applicant}/status', [\App\Http\Controllers\Registrar\ApplicationController::class, 'updateStatus'])->name('applications.updateStatus');
+    Route::get('/applications', [\App\Http\Controllers\Registrar\ApplicationController::class, 'index'])
+        ->middleware('permission:registrar.applicants.view')
+        ->name('applications.index');
+    Route::get('/applications/statistics', [\App\Http\Controllers\Registrar\ApplicationController::class, 'statistics'])
+        ->middleware('permission:registrar.reports.view')
+        ->name('applications.statistics');
+    Route::get('/applications/export', [\App\Http\Controllers\Registrar\ApplicationController::class, 'export'])
+        ->middleware('permission:registrar.reports.export')
+        ->name('applications.export');
+    Route::post('/applications/bulk', [\App\Http\Controllers\Registrar\ApplicationController::class, 'bulkAction'])
+        ->middleware('permission:registrar.applicants.status-update')
+        ->name('applications.bulk');
+    Route::get('/admitted-students', [\App\Http\Controllers\Registrar\ApplicationController::class, 'admittedStudents'])
+        ->middleware('permission:registrar.applicants.view')
+        ->name('applications.admitted');
+    Route::get('/applications/{applicant}', [\App\Http\Controllers\Registrar\ApplicationController::class, 'show'])
+        ->middleware('permission:registrar.applicants.view')
+        ->name('applications.show');
+    Route::put('/applications/{applicant}/status', [\App\Http\Controllers\Registrar\ApplicationController::class, 'updateStatus'])
+        ->middleware('permission:registrar.applicants.status-update')
+        ->name('applications.updateStatus');
 
-    Route::get('/applicants', [\App\Http\Controllers\Registrar\ApplicantController::class, 'index'])->name('applicants');
-    Route::get('/applicants/{applicant}', [\App\Http\Controllers\Registrar\ApplicantController::class, 'show'])->name('applicants.show');
-    Route::put('/applicants/{applicant}/admit', [\App\Http\Controllers\Registrar\ApplicantController::class, 'admit'])->name('applicants.admit');
-    Route::put('/applicants/{applicant}/reject', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reject'])->name('applicants.reject');
-    Route::get('/admission-list', [\App\Http\Controllers\Registrar\AdmissionController::class, 'index'])->name('admission');
+    Route::get('/applicants', [\App\Http\Controllers\Registrar\ApplicantController::class, 'index'])
+        ->middleware('permission:registrar.applicants.view')
+        ->name('applicants');
+    Route::get('/applicants/{applicant}', [\App\Http\Controllers\Registrar\ApplicantController::class, 'show'])
+        ->middleware('permission:registrar.applicants.view')
+        ->name('applicants.show');
+    Route::put('/applicants/{applicant}/admit', [\App\Http\Controllers\Registrar\ApplicantController::class, 'admit'])
+        ->middleware('permission:registrar.applicants.status-update')
+        ->name('applicants.admit');
+    Route::put('/applicants/{applicant}/reject', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reject'])
+        ->middleware('permission:registrar.applicants.status-update')
+        ->name('applicants.reject');
+    Route::get('/admission-list', [\App\Http\Controllers\Registrar\AdmissionController::class, 'index'])
+        ->middleware('permission:registrar.admissions.view')
+        ->name('admission');
 
     // Literal sub-paths FIRST so they don't get shadowed by /{applicant} wildcard.
-    Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])->name('admission.settings');
-    Route::put('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateSettings'])->name('admission.updateSettings');
-    Route::get('/admission-list/print', [\App\Http\Controllers\Registrar\AdmissionController::class, 'print'])->name('admission.print');
-    Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])->name('admission.upload');
-    Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])->name('admission.byDepartment');
-    Route::get('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showUploadByDepartment'])->name('admission.uploadByDepartment');
-    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList']);
+    Route::get('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'settings'])
+        ->middleware('permission:registrar.settings.view')
+        ->name('admission.settings');
+    Route::put('/admission-list/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateSettings'])
+        ->middleware('permission:registrar.settings.edit')
+        ->name('admission.updateSettings');
+    Route::get('/admission-list/print', [\App\Http\Controllers\Registrar\AdmissionController::class, 'print'])
+        ->middleware('permission:registrar.admissions.view')
+        ->name('admission.print');
+    Route::post('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'upload'])
+        ->middleware('permission:registrar.admissions.bulk-upload')
+        ->name('admission.upload');
+    Route::get('/admission-list/by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'listByDepartment'])
+        ->middleware('permission:registrar.admissions.view')
+        ->name('admission.byDepartment');
+    Route::get('/admission-list/upload', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showUploadByDepartment'])
+        ->middleware('permission:registrar.admissions.bulk-upload')
+        ->name('admission.uploadByDepartment');
+    Route::post('/admission-list/upload-by-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadAdmissionList'])
+        ->middleware('permission:registrar.admissions.bulk-upload');
 
     // Wildcard /{applicant} routes AFTER the literal ones.
-    Route::get('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'show'])->name('admission.show');
-    Route::get('/admission-list/{applicant}/edit', [\App\Http\Controllers\Registrar\AdmissionController::class, 'edit'])->name('admission.edit');
-    Route::put('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'update'])->name('admission.update');
-    Route::delete('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'destroy'])->name('admission.destroy');
-    Route::post('/admission-list/{applicant}/reset-password', [\App\Http\Controllers\Registrar\AdmissionController::class, 'resetPassword'])->name('admission.resetPassword');
-    Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])->name('admission.updateStatus');
-    Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])->name('admission.track');
+    Route::get('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'show'])
+        ->middleware('permission:registrar.admissions.view')
+        ->name('admission.show');
+    Route::get('/admission-list/{applicant}/edit', [\App\Http\Controllers\Registrar\AdmissionController::class, 'edit'])
+        ->middleware('permission:registrar.applicants.edit')
+        ->name('admission.edit');
+    Route::put('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'update'])
+        ->middleware('permission:registrar.applicants.edit')
+        ->name('admission.update');
+    Route::delete('/admission-list/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'destroy'])
+        ->middleware('permission:registrar.applicants.edit')
+        ->name('admission.destroy');
+    Route::post('/admission-list/{applicant}/reset-password', [\App\Http\Controllers\Registrar\AdmissionController::class, 'resetPassword'])
+        ->middleware('permission:registrar.applicants.reset-password')
+        ->name('admission.resetPassword');
+    Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])
+        ->middleware('permission:registrar.applicants.status-update')
+        ->name('admission.updateStatus');
+    Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])
+        ->middleware('permission:registrar.admissions.track')
+        ->name('admission.track');
 
     // Admission Letters (literal /settings, /template, /generate before /{applicant} wildcard)
-    Route::get('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterSettings'])->name('admission.letters');
-    Route::post('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterSettings'])->name('admission.saveLetterSettings');
-    Route::delete('/admission-letter/signature', [\App\Http\Controllers\Registrar\AdmissionController::class, 'deleteSignature'])->name('admission.deleteSignature');
+    Route::get('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterSettings'])
+        ->middleware('permission:registrar.settings.view')
+        ->name('admission.letters');
+    Route::post('/admission-letter/settings', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterSettings'])
+        ->middleware('permission:registrar.settings.edit')
+        ->name('admission.saveLetterSettings');
+    Route::delete('/admission-letter/signature', [\App\Http\Controllers\Registrar\AdmissionController::class, 'deleteSignature'])
+        ->middleware('permission:registrar.settings.edit')
+        ->name('admission.deleteSignature');
     // Partial auto-save for individual fields (registrar_name, fees).
     // Hit via fetch() on blur of the input — page does not reload.
-    Route::patch('/admission-letter/settings/field', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterField'])->name('admission.saveLetterField');
-    Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])->name('admission.uploadTemplate');
-    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])->name('admission.uploadTemplate.store');
-    Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])->name('admission.generateLetters');
-    Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])->name('admission.generateLetter');
+    Route::patch('/admission-letter/settings/field', [\App\Http\Controllers\Registrar\AdmissionController::class, 'saveLetterField'])
+        ->middleware('permission:registrar.settings.edit')
+        ->name('admission.saveLetterField');
+    Route::get('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'showLetterTemplate'])
+        ->middleware('permission:registrar.settings.view')
+        ->name('admission.uploadTemplate');
+    Route::post('/admission-letter/template', [\App\Http\Controllers\Registrar\AdmissionController::class, 'uploadLetterTemplate'])
+        ->middleware('permission:registrar.settings.edit')
+        ->name('admission.uploadTemplate.store');
+    Route::get('/admission-letter/generate', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetters'])
+        ->middleware('permission:registrar.admissions.generate-letter')
+        ->name('admission.generateLetters');
+    Route::get('/admission-letter/{applicant}', [\App\Http\Controllers\Registrar\AdmissionController::class, 'generateLetter'])
+        ->middleware('permission:registrar.admissions.generate-letter')
+        ->name('admission.generateLetter');
 
-    // Shared test-payment simulator (registrar sees BOTH by default).
+    // Shared test-payment simulator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/payment/test', [TestPaymentController::class, 'show'])->defaults('audience', 'both')->name('payment.test.show');
     Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'both')->name('payment.test.process');
 });
@@ -827,73 +974,151 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
 // paid-students / regimes / payments screens. super_admin and admin
 // are included so the platform admins can debug any bursar flow.
 Route::prefix('bursar')->name('bursar.')->middleware(['auth', 'role:bursar,bursary_officer,fees_officer,payment_officer,cashier,accountant,account_officer,finance_officer,finance,auditor,internal_auditor,external_auditor,ict_admin,hospital_accountant,super_admin,admin'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Bursar\DashboardController::class, 'index'])
+        ->middleware('permission:bursar.dashboard.view')
+        ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [BursarDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])->name('debtors');
-    Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])->name('paid-students');
+    Route::get('/debtors', [\App\Http\Controllers\Bursar\DashboardController::class, 'debtors'])
+        ->middleware('permission:bursar.debtors.view')
+        ->name('debtors');
+    Route::get('/paid-students', [\App\Http\Controllers\Bursar\DashboardController::class, 'paidStudents'])
+        ->middleware('permission:bursar.payments.view')
+        ->name('paid-students');
 
-    // Shared test-payment simulator (bursar sees BOTH catalogue by default).
+    // Shared test-payment simulator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/payment/test', [TestPaymentController::class, 'show'])->defaults('audience', 'both')->name('payment.test.show');
     Route::post('/payment/test/process', [TestPaymentController::class, 'process'])->defaults('audience', 'both')->name('payment.test.process');
-    Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])->name('payments');
-    Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])->name('payments.verify');
-    Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])->name('payments.receipt');
-    Route::get('/reports', [\App\Http\Controllers\Bursar\ReportController::class, 'index'])->name('reports');
+    Route::get('/payments', [\App\Http\Controllers\Bursar\PaymentController::class, 'index'])
+        ->middleware('permission:bursar.payments.view')
+        ->name('payments');
+    Route::get('/payments/{payment}/verify', [\App\Http\Controllers\Bursar\PaymentController::class, 'verify'])
+        ->middleware('permission:bursar.payments.verify')
+        ->name('payments.verify');
+    Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Bursar\PaymentController::class, 'receipt'])
+        ->middleware('permission:bursar.payments.view')
+        ->name('payments.receipt');
+    Route::get('/reports', [\App\Http\Controllers\Bursar\ReportController::class, 'index'])
+        ->middleware('permission:bursar.reports.view')
+        ->name('reports');
 
     // External Payment Upload
-    Route::get('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'showUploadForm'])->name('payments.upload');
-    Route::post('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'uploadPayments'])->name('payments.upload.store');
+    Route::get('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'showUploadForm'])
+        ->middleware('permission:bursar.payments.create')
+        ->name('payments.upload');
+    Route::post('/payments/upload', [\App\Http\Controllers\Bursar\PaymentController::class, 'uploadPayments'])
+        ->middleware('permission:bursar.payments.create')
+        ->name('payments.upload.store');
 
     // Payment Synchronization (New)
     Route::prefix('payments/sync')->name('payments.sync.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'index'])->name('index');
-        Route::get('/upload', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'showUploadForm'])->name('upload');
-        Route::post('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'preview'])->name('preview');
-        Route::get('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'previewResults'])->name('preview.results');
-        Route::post('/import', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'import'])->name('import');
-        Route::get('/template', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'downloadTemplate'])->name('template');
-        Route::get('/logs', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'logs'])->name('logs');
+        Route::get('/', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'index'])
+            ->middleware('permission:bursar.payments.view')
+            ->name('index');
+        Route::get('/upload', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'showUploadForm'])
+            ->middleware('permission:bursar.payments.create')
+            ->name('upload');
+        Route::post('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'preview'])
+            ->middleware('permission:bursar.payments.create')
+            ->name('preview');
+        Route::get('/preview', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'previewResults'])
+            ->middleware('permission:bursar.payments.create')
+            ->name('preview.results');
+        Route::post('/import', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'import'])
+            ->middleware('permission:bursar.payments.create')
+            ->name('import');
+        Route::get('/template', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'downloadTemplate'])
+            ->middleware('permission:bursar.payments.create')
+            ->name('template');
+        Route::get('/logs', [\App\Http\Controllers\Bursar\PaymentSyncController::class, 'logs'])
+            ->middleware('permission:bursar.payments.view')
+            ->name('logs');
     });
 
-    // Regime Payments
-    Route::resource('regimes', RegimeController::class);
+    // Regime Payments — resource rewritten into explicit verb lines so each
+    // can carry its own permission: middleware (no show() method on the
+    // controller; that route 404s today — behaviour preserved).
+    Route::get('/regimes', [RegimeController::class, 'index'])
+        ->middleware('permission:bursar.regimes.view')
+        ->name('regimes.index');
+    Route::get('/regimes/create', [RegimeController::class, 'create'])
+        ->middleware('permission:bursar.regimes.configure')
+        ->name('regimes.create');
+    Route::post('/regimes', [RegimeController::class, 'store'])
+        ->middleware('permission:bursar.regimes.configure')
+        ->name('regimes.store');
+    Route::get('/regimes/{regime}', [RegimeController::class, 'show'])
+        ->middleware('permission:bursar.regimes.view')
+        ->name('regimes.show');
+    Route::get('/regimes/{regime}/edit', [RegimeController::class, 'edit'])
+        ->middleware('permission:bursar.regimes.configure')
+        ->name('regimes.edit');
+    Route::put('/regimes/{regime}', [RegimeController::class, 'update'])
+        ->middleware('permission:bursar.regimes.configure')
+        ->name('regimes.update');
+    Route::delete('/regimes/{regime}', [RegimeController::class, 'destroy'])
+        ->middleware('permission:bursar.regimes.configure')
+        ->name('regimes.destroy');
 });
 
 // Business Committee Routes
 Route::prefix('business-committee')->name('business-committee.')->middleware(['auth', 'role:business_committee'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\BusinessCommittee\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\BusinessCommittee\DashboardController::class, 'index'])
+        ->middleware('permission:business_committee.dashboard.view')
+        ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [BusinessCommitteeDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])->name('results');
-    Route::put('/results/{result}/approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'approve'])->name('results.approve');
-    Route::put('/results/{result}/reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'reject'])->name('results.reject');
-    Route::post('/results/bulk-approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
-    Route::post('/results/bulk-reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkReject'])->name('results.bulkReject');
+    Route::get('/results', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'index'])
+        ->middleware('permission:business_committee.results.view')
+        ->name('results');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'approve'])
+        ->middleware('permission:business_committee.results.approve')
+        ->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'reject'])
+        ->middleware('permission:business_committee.results.approve')
+        ->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkApprove'])
+        ->middleware('permission:business_committee.results.approve')
+        ->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\BusinessCommittee\ResultController::class, 'bulkReject'])
+        ->middleware('permission:business_committee.results.approve')
+        ->name('results.bulkReject');
 });
 
 // Academic Board Routes
 Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'role:academic_board'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\AcademicBoard\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\AcademicBoard\DashboardController::class, 'index'])
+        ->middleware('permission:academic.dashboard.view')
+        ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [AcademicBoardDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])->name('results');
-    Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])->name('results.approve');
-    Route::put('/results/{result}/reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'reject'])->name('results.reject');
-    Route::post('/results/bulk-approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
-    Route::post('/results/bulk-reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkReject'])->name('results.bulkReject');
+    Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])
+        ->middleware('permission:academic.results.view')
+        ->name('results');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])
+        ->middleware('permission:academic.results.board-approve')
+        ->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'reject'])
+        ->middleware('permission:academic.results.board-approve')
+        ->name('results.reject');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkApprove'])
+        ->middleware('permission:academic.results.board-approve')
+        ->name('results.bulkApprove');
+    Route::post('/results/bulk-reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkReject'])
+        ->middleware('permission:academic.results.board-approve')
+        ->name('results.bulkReject');
 });
 
 // Librarian Routes. Library Officer and Library Assistant (seeded by
@@ -901,19 +1126,33 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
 // Librarian — they just have a narrower permission set, enforced
 // in code where it matters (e.g. only Librarian can delete books).
 Route::prefix('librarian')->name('librarian.')->middleware(['auth', 'role:librarian,library_officer,library_assistant'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Librarian\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Librarian\DashboardController::class, 'index'])
+        ->middleware('permission:librarian.dashboard.view')
+        ->name('dashboard');
 
-    // Per-user dashboard widget configurator
+    // Per-user dashboard widget configurator (controller does NOT gate — skip per slice 8f-web decision).
     Route::get('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'edit'])
         ->name('dashboard-config.edit');
     Route::put('/dashboard-config/{user}', [LibrarianDashboardConfigController::class, 'update'])
         ->name('dashboard-config.update');
-    Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])->name('books');
-    Route::get('/books/create', [\App\Http\Controllers\Librarian\DashboardController::class, 'createBook'])->name('books.create');
-    Route::post('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'storeBook'])->name('books.store');
-    Route::get('/loans', [\App\Http\Controllers\Librarian\DashboardController::class, 'loans'])->name('loans');
-    Route::post('/loans/issue', [\App\Http\Controllers\Librarian\DashboardController::class, 'issueBook'])->name('loans.issue');
-    Route::post('/loans/{loan}/return', [\App\Http\Controllers\Librarian\DashboardController::class, 'returnBook'])->name('loans.return');
+    Route::get('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'books'])
+        ->middleware('permission:librarian.books.view')
+        ->name('books');
+    Route::get('/books/create', [\App\Http\Controllers\Librarian\DashboardController::class, 'createBook'])
+        ->middleware('permission:librarian.books.create')
+        ->name('books.create');
+    Route::post('/books', [\App\Http\Controllers\Librarian\DashboardController::class, 'storeBook'])
+        ->middleware('permission:librarian.books.create')
+        ->name('books.store');
+    Route::get('/loans', [\App\Http\Controllers\Librarian\DashboardController::class, 'loans'])
+        ->middleware('permission:librarian.borrowing.view')
+        ->name('loans');
+    Route::post('/loans/issue', [\App\Http\Controllers\Librarian\DashboardController::class, 'issueBook'])
+        ->middleware('permission:librarian.borrowing.issue')
+        ->name('loans.issue');
+    Route::post('/loans/{loan}/return', [\App\Http\Controllers\Librarian\DashboardController::class, 'returnBook'])
+        ->middleware('permission:librarian.borrowing.return')
+        ->name('loans.return');
 });
 
 // Profile Routes (Shared)

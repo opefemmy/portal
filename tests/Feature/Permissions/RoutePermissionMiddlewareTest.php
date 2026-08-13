@@ -48,18 +48,43 @@ class RoutePermissionMiddlewareTest extends TestCase
      * in sync with this fixture map.
      */
     private const CATALOG = [
+        // Finance (slice 8f — pinned)
         'finance.dashboard.view'             => 'finance',
         'finance.invoices.create'            => 'finance',
         'finance.payroll.view'               => 'finance',
         'finance.receipts.view'              => 'finance',
+        // Executive / Auditor (slice 8f — pinned)
         'executive.dashboard.view'           => 'executive',
         'executive.finance.revenue.view'     => 'executive',
         'auditor.audit.logs'                 => 'auditor',
+        // Hospital (slice 8f — pinned)
         'patients.view'                      => 'hospital',
         'wards.view'                         => 'hospital',
         'pharmacy.view'                      => 'hospital',
         'lab.view'                           => 'hospital',
         'pharmacy.dispense'                  => 'hospital',
+        // Slice 8f-web: registrar (registrar.* slugs — see RegistrarPermissions)
+        'registrar.dashboard.view'           => 'registrar',
+        'registrar.applicants.view'          => 'registrar',
+        'registrar.applicants.status-update' => 'registrar',
+        // Slice 8f-web: bursar (bursar.* slugs — see BursarPermissions)
+        'bursar.dashboard.view'              => 'bursar',
+        'bursar.payments.view'               => 'bursar',
+        'bursar.payments.verify'             => 'bursar',
+        'bursar.regimes.view'                => 'bursar',
+        'bursar.regimes.configure'           => 'bursar',
+        // Slice 8f-web: business committee (business_committee.* — see BusinessCommitteePermissions)
+        'business_committee.dashboard.view'  => 'business_committee',
+        'business_committee.results.view'    => 'business_committee',
+        'business_committee.results.approve' => 'business_committee',
+        // Slice 8f-web: academic board + lecturer/hod/dean (academic.*)
+        'academic.dashboard.view'            => 'academic',
+        'academic.courses.view'              => 'academic',
+        'academic.results.view'              => 'academic',
+        'academic.results.board-approve'     => 'academic',
+        // Slice 8f-web: librarian (librarian.*)
+        'librarian.dashboard.view'           => 'librarian',
+        'librarian.books.view'               => 'librarian',
     ];
 
     /**
@@ -78,12 +103,46 @@ class RoutePermissionMiddlewareTest extends TestCase
         // finance slugs. Used to isolate the `permission:` gate from the
         // `role:` gate.
         'accountant' => [],
-        // Bursar — full bursar module access; explicit NO finance.invoices.create
-        // (bursar doesn't write into the finance module).
+        // Bursar — has the bursar module slugs.
         'bursar' => [
-            // We only need ONE cross-check here: that the bursar user
-            // is 403'd on a finance route they don't have permission for.
-            // No slugs from finance.* are granted.
+            'bursar.dashboard.view', 'bursar.payments.view',
+            'bursar.payments.verify', 'bursar.regimes.view',
+            'bursar.regimes.configure',
+        ],
+        // Registrar — has the registrar module slugs (registrar.* only).
+        'registrar' => [
+            'registrar.dashboard.view', 'registrar.applicants.view',
+            'registrar.applicants.status-update',
+        ],
+        // Lecturer — academic.* (academic.courses.view / academic.results.view)
+        'lecturer' => [
+            'academic.dashboard.view', 'academic.courses.view',
+            'academic.results.view',
+        ],
+        // HOD — academic.courses.view / academic.results.view
+        'hod' => [
+            'academic.dashboard.view', 'academic.courses.view',
+            'academic.results.view',
+        ],
+        // Dean — academic.courses.view / academic.results.view
+        'dean' => [
+            'academic.dashboard.view', 'academic.courses.view',
+            'academic.results.view',
+        ],
+        // Business committee — only the business_committee.* slugs
+        'business_committee' => [
+            'business_committee.dashboard.view',
+            'business_committee.results.view',
+            'business_committee.results.approve',
+        ],
+        // Academic board — academic.* incl. academic.results.board-approve
+        'academic_board' => [
+            'academic.dashboard.view', 'academic.results.view',
+            'academic.results.board-approve',
+        ],
+        // Librarian — librarian.* slugs (just view + dashboard here)
+        'librarian' => [
+            'librarian.dashboard.view', 'librarian.books.view',
         ],
         // Rector — executive only.
         'rector' => [
@@ -355,6 +414,171 @@ class RoutePermissionMiddlewareTest extends TestCase
         $this->assertSame(403, $resp->getStatusCode(),
             'accountant (in finance role chain but lacking finance.payroll.view) '
             . 'should be 403 at /finance/payroll');
+    }
+
+    // ----------------------------------------------------------------
+    // Slice 8f-web: routes/web.php gates
+    //
+    // Each test pins one new prefix group at the route layer. Same
+    // hand-rolled schema as the slice 8f tests above.
+    // ----------------------------------------------------------------
+
+    /**
+     * /lecturer/dashboard gated by `permission:academic.dashboard.view`.
+     * Lecturer has it; bursar doesn't.
+     */
+    public function test_lecturer_dashboard_route_gates_on_slug(): void
+    {
+        $lecturer = $this->makeUser('lecturer');
+        $bursar   = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($lecturer)->get('/lecturer/dashboard');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'lecturer should pass /lecturer/dashboard route gate');
+
+        $resp = $this->actingAs($bursar)->get('/lecturer/dashboard');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursar should be 403 at /lecturer/dashboard');
+    }
+
+    /**
+     * /hod/dashboard gated by `permission:academic.dashboard.view`.
+     * HOD has it; bursar doesn't.
+     */
+    public function test_hod_dashboard_route_gates_on_slug(): void
+    {
+        $hod    = $this->makeUser('hod');
+        $bursar = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($hod)->get('/hod/dashboard');
+        $this->assertNotSame(403, $resp->getStatusCode());
+
+        $resp = $this->actingAs($bursar)->get('/hod/dashboard');
+        $this->assertSame(403, $resp->getStatusCode());
+    }
+
+    /**
+     * /dean/dashboard gated by `permission:academic.dashboard.view`.
+     * Dean has it; bursar doesn't.
+     */
+    public function test_dean_dashboard_route_gates_on_slug(): void
+    {
+        $dean   = $this->makeUser('dean');
+        $bursar = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($dean)->get('/dean/dashboard');
+        $this->assertNotSame(403, $resp->getStatusCode());
+
+        $resp = $this->actingAs($bursar)->get('/dean/dashboard');
+        $this->assertSame(403, $resp->getStatusCode());
+    }
+
+    /**
+     * /registrar/applications gated by `permission:registrar.applicants.view`.
+     * Registrar has it; bursar doesn't.
+     */
+    public function test_registrar_applications_route_gates_on_slug(): void
+    {
+        $registrar = $this->makeUser('registrar');
+        $bursar    = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($registrar)->get('/registrar/applications');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'registrar should pass /registrar/applications route gate');
+
+        $resp = $this->actingAs($bursar)->get('/registrar/applications');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursar should be 403 at /registrar/applications');
+    }
+
+    /**
+     * /bursar/dashboard gated by `permission:bursar.dashboard.view`.
+     * Bursar has it; registrar doesn't.
+     */
+    public function test_bursar_dashboard_route_gates_on_slug(): void
+    {
+        $bursar    = $this->makeUser('bursar');
+        $registrar = $this->makeUser('registrar');
+
+        $resp = $this->actingAs($bursar)->get('/bursar/dashboard');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'bursar should pass /bursar/dashboard route gate');
+
+        $resp = $this->actingAs($registrar)->get('/bursar/dashboard');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'registrar should be 403 at /bursar/dashboard');
+    }
+
+    /**
+     * /bursar/regimes gated by `permission:bursar.regimes.view`.
+     * Bursar has it; registrar doesn't.
+     */
+    public function test_bursar_regimes_route_gates_on_slug(): void
+    {
+        $bursar    = $this->makeUser('bursar');
+        $registrar = $this->makeUser('registrar');
+
+        $resp = $this->actingAs($bursar)->get('/bursar/regimes');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'bursar should pass /bursar/regimes route gate');
+
+        $resp = $this->actingAs($registrar)->get('/bursar/regimes');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'registrar should be 403 at /bursar/regimes');
+    }
+
+    /**
+     * /business-committee/results gated by `permission:business_committee.results.view`.
+     * business_committee has it; bursar doesn't.
+     */
+    public function test_business_committee_results_route_gates_on_slug(): void
+    {
+        $committee = $this->makeUser('business_committee');
+        $bursar    = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($committee)->get('/business-committee/results');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'business_committee should pass /business-committee/results route gate');
+
+        $resp = $this->actingAs($bursar)->get('/business-committee/results');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursar should be 403 at /business-committee/results');
+    }
+
+    /**
+     * /academic-board/results gated by `permission:academic.results.view`.
+     * academic_board has it; bursar doesn't.
+     */
+    public function test_academic_board_results_route_gates_on_slug(): void
+    {
+        $board  = $this->makeUser('academic_board');
+        $bursar = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($board)->get('/academic-board/results');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'academic_board should pass /academic-board/results route gate');
+
+        $resp = $this->actingAs($bursar)->get('/academic-board/results');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursar should be 403 at /academic-board/results');
+    }
+
+    /**
+     * /librarian/books gated by `permission:librarian.books.view`.
+     * Librarian has it; bursar doesn't.
+     */
+    public function test_librarian_books_route_gates_on_slug(): void
+    {
+        $librarian = $this->makeUser('librarian');
+        $bursar    = $this->makeUser('bursar');
+
+        $resp = $this->actingAs($librarian)->get('/librarian/books');
+        $this->assertNotSame(403, $resp->getStatusCode(),
+            'librarian should pass /librarian/books route gate');
+
+        $resp = $this->actingAs($bursar)->get('/librarian/books');
+        $this->assertSame(403, $resp->getStatusCode(),
+            'bursar should be 403 at /librarian/books');
     }
 
     // ----------------------------------------------------------------
