@@ -28,4 +28,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'lecturer.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'academic.dashboard.configure';
+    }
 }

@@ -112,6 +112,14 @@ class PermissionsSeeder extends Seeder
 
         // Business committee prefixes (slice 8e).
         'business_committee' => 'business_committee',
+
+        // Cross-cutting prefixes (slice 8i-controller). The admin and
+        // student audiences sit at the top of the academic flow but
+        // don't fit any single domain's bucket — give them their own
+        // group label so `permissions.group` is non-null on rows that
+        // only ever appear in their respective audience's role grants.
+        'admin'              => 'admin',
+        'student'            => 'student',
     ];
 
     public function run(): void

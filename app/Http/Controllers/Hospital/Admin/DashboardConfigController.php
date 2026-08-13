@@ -28,4 +28,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'hospital.admin.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'reports.daily-revenue';
+    }
 }

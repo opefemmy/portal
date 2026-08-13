@@ -81,6 +81,19 @@ class AcademicPermissions
             'academic.departments.view',
             'academic.lecturers.view',
             'academic.dashboard.view',
+            'academic.dashboard.configure',
+        ],
+
+        // Student — limited to dashboard configuration for the
+        // student's own per-user widget configurator. Slice 8i-controller
+        // gated StudentDashboardConfigController with
+        // `student.dashboard.configure`; without an explicit pivot row
+        // the student role has no permissions at all and the gate
+        // would always 403. The `admin`/`super_admin`/`cmd` rows above
+        // cover `admin.dashboard.configure` via the wildcard — no
+        // explicit grant needed for those roles.
+        'student' => [
+            'student.dashboard.configure',
         ],
     ];
 }

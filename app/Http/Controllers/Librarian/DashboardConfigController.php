@@ -28,4 +28,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'librarian.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'librarian.dashboard.configure';
+    }
 }

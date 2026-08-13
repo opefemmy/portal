@@ -23,4 +23,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'admin.dashboard';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'admin.dashboard.configure';
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\DashboardConfig;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\DashboardWidget;
 use App\Models\User;
@@ -33,6 +34,24 @@ use Illuminate\Http\Request;
  */
 abstract class AbstractDashboardConfigController extends Controller
 {
+    use EnforcesPermission;
+
+    /**
+     * Permission slug required to view OR update this audience's
+     * per-user dashboard configuration. Each subclass declares the
+     * slug that matches its audience's permission domain (e.g.
+     * `bursar.dashboard.configure` for the bursar configurator).
+     *
+     * The trait-side `requirePermission()` check is the controller's
+     * defence-in-depth gate; the route's `permission:` middleware is
+     * the matching outer layer (added in slice 8i-routes).
+     *
+     * Wildcard roles (`super_admin`, `admin`, `cmd`, …) bypass this
+     * gate via `HospitalPermissions::ROLE_PERMISSIONS` wildcard
+     * handling — see `PermissionService::allows()`.
+     */
+    abstract protected function dashboardConfigPermissionSlug(): string;
+
     /**
      * Role slugs whose members may use this configurator. The first
      * element is treated as the audience role for resolving widgets
@@ -62,6 +81,8 @@ abstract class AbstractDashboardConfigController extends Controller
      */
     public function edit(User $user)
     {
+        $this->requirePermission($this->dashboardConfigPermissionSlug());
+
         $role = $this->audienceRoleFor($user);
 
         // Eligible widgets for the target user's role. Empty list if
@@ -99,6 +120,8 @@ abstract class AbstractDashboardConfigController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->requirePermission($this->dashboardConfigPermissionSlug());
+
         $role = $this->audienceRoleFor($user);
         $eligible = WidgetRegistry::forRole($role);
 

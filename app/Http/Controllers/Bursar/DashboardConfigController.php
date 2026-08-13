@@ -31,4 +31,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'bursar.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'bursar.dashboard.configure';
+    }
 }

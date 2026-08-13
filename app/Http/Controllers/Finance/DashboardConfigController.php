@@ -31,4 +31,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'finance.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'finance.dashboard.configure';
+    }
 }

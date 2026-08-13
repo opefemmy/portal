@@ -29,4 +29,9 @@ class DashboardConfigController extends AbstractDashboardConfigController
     {
         return 'hospital.dashboard-config.update';
     }
+
+    protected function dashboardConfigPermissionSlug(): string
+    {
+        return 'patients.view';
+    }
 }
