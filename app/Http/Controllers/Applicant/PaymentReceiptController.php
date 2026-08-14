@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
@@ -26,9 +27,15 @@ use Illuminate\View\View;
  *
  * The receipt template (resources/views/applicant/payments/receipt.blade.php)
  * branches on `$isExternal` so a single view renders both flows.
+ *
+ * Slice 8i-applicant: trait gate at the top of show() — the applicant
+ * routes use `auth` (not `role:applicant`), so this is the slug-level
+ * check that protects against non-applicant authenticated users
+ * reaching applicant endpoints.
  */
 class PaymentReceiptController extends Controller
 {
+    use EnforcesPermission;
     use ResolvesInstitutionLogo;
 
     /**
@@ -37,6 +44,7 @@ class PaymentReceiptController extends Controller
      */
     public function show(Request $request, string $payment): View
     {
+        $this->requirePermission('applicant.payments.receipt');
         $applicant = Applicant::where('user_id', $request->user()->id)->firstOrFail();
 
         // Try online Payment first — applicant-payer_id is the

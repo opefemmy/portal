@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\ExternalPayment;
@@ -13,12 +14,20 @@ use Illuminate\Support\Facades\Auth;
 
 class PaymentValidationController extends Controller
 {
+    use EnforcesPermission;
+
     public function __construct(private readonly ApplicantPaymentService $payments)
     {
     }
 
     /**
      * Show payment validation page (the bank-transfer entry point).
+     *
+     * Public route — no auth required. The trait gate is intentionally
+     * NOT called here because guests (pre-registration applicants) need
+     * to reach this page to enter a transaction ID and bootstrap their
+     * applicant record. The downstream `validatePayment` flow asserts
+     * the user is logged in (or creates an Applicant row on the fly).
      */
     public function showValidatePayment()
     {
@@ -50,9 +59,17 @@ class PaymentValidationController extends Controller
      * compulsory fees are validated through the same gateway page's
      * bank-transfer tab, not here — this entry point is the public
      * pre-login flow that already exists.
+     *
+     * Slice 8i-applicant: trait gate added. The route is public but
+     * the body calls Auth::user() — without the gate, an
+     * unauthenticated caller hits a 500 ("Call to a member function
+     * id() on null"). The gate converts that into a clean 403, which
+     * is what the auth middleware would have done anyway if the route
+     * carried it.
      */
     public function validatePayment(Request $request)
     {
+        $this->requirePermission('applicant.payments.validate');
         $request->validate([
             'transaction_id' => 'required|string|min:5|max:100',
         ]);

@@ -120,6 +120,11 @@ class PermissionsSeeder extends Seeder
         // only ever appear in their respective audience's role grants.
         'admin'              => 'admin',
         'student'            => 'student',
+        // Applicant prefix (slice 8i-applicant). The applicant audience
+        // is its own thing — separate from the registrar side which
+        // reviews applicant data, this is the applicant-self-service
+        // surface.
+        'applicant'          => 'applicant',
     ];
 
     public function run(): void

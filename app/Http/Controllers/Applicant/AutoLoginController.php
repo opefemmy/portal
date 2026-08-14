@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\AutoLoginController as StudentAutoLogin;
 use App\Models\Applicant;
@@ -30,12 +31,15 @@ use Illuminate\Http\Request;
  */
 class AutoLoginController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Mint a signed auto-login URL for the current applicant and 302
      * straight into it.
      */
     public function issue(Request $request): RedirectResponse
     {
+        $this->requirePermission('applicant.auto-login.issue');
         $applicant = Applicant::where('user_id', $request->user()->id)->first();
 
         if (! $applicant) {

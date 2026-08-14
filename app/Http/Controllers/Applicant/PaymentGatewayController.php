@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\PaymentType;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 
 class PaymentGatewayController extends Controller
 {
+    use EnforcesPermission;
+
     public function __construct(private readonly ApplicantPaymentService $payments)
     {
     }
@@ -29,6 +32,7 @@ class PaymentGatewayController extends Controller
      */
     public function showPaymentPage(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         try {
             return $this->showPaymentPageInner($request);
         } catch (\Throwable $e) {
@@ -132,6 +136,7 @@ class PaymentGatewayController extends Controller
      */
     public function initiatePayment(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         try {
             return $this->initiatePaymentInner($request);
         } catch (\Throwable $e) {
@@ -246,6 +251,7 @@ class PaymentGatewayController extends Controller
      */
     public function retryPayment(Request $request, string $purpose)
     {
+        $this->requirePermission('applicant.payments.manage');
         try {
             $user = Auth::user();
             $applicant = Applicant::where('user_id', $user->id)->first();
@@ -333,6 +339,7 @@ class PaymentGatewayController extends Controller
      */
     public function paymentCallback(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         try {
             return $this->paymentCallbackInner($request);
         } catch (\Throwable $e) {
@@ -513,6 +520,7 @@ class PaymentGatewayController extends Controller
      */
     public function testPayment(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         $rawPurpose = $request->get('purpose');
         $purpose = $rawPurpose !== null && $rawPurpose !== ''
             ? $rawPurpose
@@ -530,6 +538,7 @@ class PaymentGatewayController extends Controller
      */
     public function processTestPayment(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         // The test handler is a demo simulator — it MUST always end in a success
         // redirect. Wrap the whole body so any uncaught DB / model / redirect
         // exception cannot 500 the endpoint. The error is logged and the user
@@ -795,6 +804,7 @@ class PaymentGatewayController extends Controller
      */
     public function cancelPayment()
     {
+        $this->requirePermission('applicant.payments.manage');
         $paymentId = session()->get('pending_payment_id');
 
         if ($paymentId) {
@@ -827,6 +837,7 @@ class PaymentGatewayController extends Controller
      */
     public function syncPaymentSideEffects(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
 
@@ -902,6 +913,7 @@ class PaymentGatewayController extends Controller
      */
     public function transferToStudentPortal(Request $request)
     {
+        $this->requirePermission('applicant.payments.manage');
         $user = Auth::user();
         $applicant = Applicant::where('user_id', $user->id)->first();
 

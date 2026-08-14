@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Applicant;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
@@ -24,6 +25,7 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
+    use EnforcesPermission;
     use ResolvesRegistrarSignature;
     /**
      * Canonical O'level subject list.
@@ -74,6 +76,7 @@ class ApplicationController extends Controller
      */
     public function dashboard()
     {
+        $this->requirePermission('applicant.application.manage');
         try {
             return $this->dashboardInner();
         } catch (\Throwable $e) {
@@ -106,6 +109,7 @@ class ApplicationController extends Controller
 
     public function showApplicationForm()
     {
+        $this->requirePermission('applicant.application.manage');
         // Check if admission form is open
         if (!SystemSetting::isOpen('admission_form_open')) {
             return view('applicant.closed', [
@@ -175,6 +179,7 @@ class ApplicationController extends Controller
      */
     public function initiateApplicationFee(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
         $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
 
@@ -208,6 +213,7 @@ class ApplicationController extends Controller
      */
     public function showApplyPayment(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         try {
             return $this->showApplyPaymentInner($request);
         } catch (\Throwable $e) {
@@ -253,6 +259,7 @@ class ApplicationController extends Controller
      */
     public function processApplyPayment(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         try {
             return $this->processApplyPaymentInner($request);
         } catch (\Throwable $e) {
@@ -302,6 +309,7 @@ class ApplicationController extends Controller
      */
     public function verifyApplicationFee(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         $paymentRef = $request->get('ref');
         $requireFee = SystemSetting::get(SystemSetting::ADMISSION_REQUIRE_FEE, 'false') === 'true';
         $feeAmount = SystemSetting::get(SystemSetting::ADMISSION_FEE_AMOUNT, 0);
@@ -338,6 +346,7 @@ class ApplicationController extends Controller
 
     public function submitApplication(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         // Check if admission form is open
         if (!SystemSetting::isOpen('admission_form_open')) {
             return back()->with('error', 'Admission form is currently closed.');
@@ -446,6 +455,7 @@ class ApplicationController extends Controller
 
     public function viewApplication()
     {
+        $this->requirePermission('applicant.application.manage');
         // Eager load all relationships to prevent N/A issues
         $applicant = Applicant::with([
             'school',
@@ -485,6 +495,7 @@ class ApplicationController extends Controller
 
     public function printApplication()
     {
+        $this->requirePermission('applicant.application.manage');
         $userId = auth()->id();
 
         // Eager load all relationships to prevent N/A issues
@@ -563,6 +574,7 @@ class ApplicationController extends Controller
      */
     public function editApplication()
     {
+        $this->requirePermission('applicant.application.manage');
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
         if (!$applicant) {
@@ -605,6 +617,7 @@ class ApplicationController extends Controller
      */
     public function updateApplication(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
         if (!$applicant) {
@@ -714,6 +727,7 @@ class ApplicationController extends Controller
      */
     public function verifyExternalPayment(Request $request)
     {
+        $this->requirePermission('applicant.application.manage');
         $request->validate([
             'payment_ref' => 'required|string',
             'amount' => 'required|numeric|min:1',
@@ -777,6 +791,7 @@ class ApplicationController extends Controller
      */
     public function printAdmissionLetter()
     {
+        $this->requirePermission('applicant.application.manage');
         $applicant = Applicant::where('user_id', auth()->id())->first();
 
         if (!$applicant || $applicant->status !== 'admitted') {
@@ -807,6 +822,7 @@ class ApplicationController extends Controller
      */
     public function transactionHistory()
     {
+        $this->requirePermission('applicant.application.manage');
         $applicant = Applicant::where('user_id', auth()->id())->firstOrFail();
         $history = $applicant->transactionHistory();
 
