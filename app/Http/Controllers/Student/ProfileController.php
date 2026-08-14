@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\School;
@@ -13,8 +14,11 @@ use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
+    use EnforcesPermission;
+
     public function edit()
     {
+        $this->requirePermission('student.profile.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $schools = School::all();
         $departments = Department::all();
@@ -26,6 +30,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
+        $this->requirePermission('student.profile.manage');
         $user = Auth::user();
         $student = $user->student;
 
@@ -48,6 +53,7 @@ class ProfileController extends Controller
 
     public function uploadPassport(Request $request)
     {
+        $this->requirePermission('student.profile.manage');
         $request->validate([
             'passport' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use App\Models\Student;
@@ -9,8 +10,11 @@ use Illuminate\Http\Request;
 
 class ComplaintController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('student.complaints.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $complaints = Complaint::where('student_id', $student->id)->latest()->get();
         return view('student.complaints', compact('complaints'));
@@ -18,6 +22,7 @@ class ComplaintController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('student.complaints.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
         $validated = $request->validate([

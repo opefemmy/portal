@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Student;
@@ -14,8 +15,11 @@ use Illuminate\Http\Request;
 
 class CourseRegistrationController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('student.courses.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $courses = StudentCourse::where('student_id', $student->id)
             ->with('course', 'session')
@@ -25,6 +29,7 @@ class CourseRegistrationController extends Controller
 
     public function register()
     {
+        $this->requirePermission('student.courses.manage');
         $student = Student::where('user_id', auth()->id())->first();
 
         if (!$student) {
@@ -99,6 +104,7 @@ class CourseRegistrationController extends Controller
 
     public function storeRegistration(Request $request)
     {
+        $this->requirePermission('student.courses.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
 
@@ -166,6 +172,7 @@ class CourseRegistrationController extends Controller
 
     public function dropCourse(StudentCourse $studentCourse)
     {
+        $this->requirePermission('student.courses.manage');
         // Ownership check: a student can only drop their own registered courses.
         $student = Student::where('user_id', auth()->id())->first();
         if (!$student || $studentCourse->student_id !== $student->id) {
@@ -177,6 +184,7 @@ class CourseRegistrationController extends Controller
 
     public function printForm()
     {
+        $this->requirePermission('student.courses.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
 

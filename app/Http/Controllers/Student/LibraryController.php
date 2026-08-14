@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use App\Models\BookLoan;
@@ -12,8 +13,11 @@ use Illuminate\Support\Facades\Auth;
 
 class LibraryController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('student.library.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
         // Check if library fee is required
@@ -65,6 +69,7 @@ class LibraryController extends Controller
 
     public function search(Request $request)
     {
+        $this->requirePermission('student.library.manage');
         $query = $request->get('q', '');
 
         $books = Book::where('is_active', true)
@@ -87,6 +92,7 @@ class LibraryController extends Controller
 
     public function payLibraryFee()
     {
+        $this->requirePermission('student.library.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $libraryFeeAmount = SystemSetting::get('library_fee_amount', 0);
 
@@ -101,6 +107,7 @@ class LibraryController extends Controller
 
     public function borrowBook(Request $request, Book $book)
     {
+        $this->requirePermission('student.library.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
         // Check if library fee is required

@@ -11,6 +11,7 @@ use App\Services\Finance\FinancePermissions;
 use App\Services\Hospital\HospitalPermissions;
 use App\Services\Librarian\LibrarianPermissions;
 use App\Services\Registrar\RegistrarPermissions;
+use App\Services\Student\StudentPermissions;
 
 /**
  * The complete list of domain-specific `*Permissions` classes.
@@ -47,6 +48,7 @@ final class PermissionCatalog
             AuditorPermissions::class,
             ExecutivePermissions::class,
             BusinessCommitteePermissions::class,
+            StudentPermissions::class,
         ];
     }
 }

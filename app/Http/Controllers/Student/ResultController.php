@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Result;
@@ -13,8 +14,11 @@ use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('student.results.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
         // Get current session
@@ -61,6 +65,7 @@ class ResultController extends Controller
 
     public function show($semesterId)
     {
+        $this->requirePermission('student.results.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $semester = Semester::findOrFail($semesterId);
         $session = Session::where('is_current', true)->first();
@@ -78,6 +83,7 @@ class ResultController extends Controller
 
     public function printResult(Request $request)
     {
+        $this->requirePermission('student.results.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $session = Session::where('is_current', true)->first();
         $semester = Semester::where('is_active', true)->first();
@@ -100,6 +106,7 @@ class ResultController extends Controller
      */
     public function transcript(Request $request)
     {
+        $this->requirePermission('student.results.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
         $sessions = Session::orderBy('name', 'desc')->get();

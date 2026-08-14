@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -9,13 +10,17 @@ use Illuminate\Support\Facades\Auth;
 
 class PasswordChangeController extends Controller
 {
+    use EnforcesPermission;
+
     public function showChangeForm()
     {
+        $this->requirePermission('student.password.change');
         return view('student.auth.change-password');
     }
 
     public function changePassword(Request $request)
     {
+        $this->requirePermission('student.password.change');
         $user = Auth::user();
         $isForcedChange = $user && $user->must_change_password;
 

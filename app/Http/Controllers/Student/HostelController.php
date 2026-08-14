@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hostel;
 use App\Models\HostelRoom;
@@ -11,8 +12,11 @@ use Illuminate\Http\Request;
 
 class HostelController extends Controller
 {
+    use EnforcesPermission;
+
     public function myHostel()
     {
+        $this->requirePermission('student.hostel.manage');
         $student = auth()->user()->student;
         if (!$student) {
             return redirect()->route('student.dashboard')->with('error', 'Student profile not found');
@@ -28,6 +32,7 @@ class HostelController extends Controller
 
     public function availableHostels(Request $request)
     {
+        $this->requirePermission('student.hostel.manage');
         $query = Hostel::where('is_active', true)
             ->with(['rooms' => function ($q) {
                 // Only rooms that still have available beds
@@ -47,6 +52,7 @@ class HostelController extends Controller
 
     public function apply(Request $request)
     {
+        $this->requirePermission('student.hostel.manage');
         $student = auth()->user()->student;
         if (!$student) {
             return redirect()->route('student.dashboard')->with('error', 'Student profile not found');
@@ -91,6 +97,7 @@ class HostelController extends Controller
 
     public function requestChange(Request $request)
     {
+        $this->requirePermission('student.hostel.manage');
         $student = auth()->user()->student;
 
         $request->validate([

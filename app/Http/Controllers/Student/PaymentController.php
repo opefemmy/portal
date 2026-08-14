@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Concerns\ResolvesInstitutionLogo;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
@@ -18,10 +19,12 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    use EnforcesPermission;
     use ResolvesInstitutionLogo;
 
     public function index()
     {
+        $this->requirePermission('student.payments.manage');
         // Check if payment is open
         if (!SystemSetting::isOpen('payment_open')) {
             return view('student.payments', [
@@ -63,6 +66,7 @@ class PaymentController extends Controller
 
     public function pay(Fee $fee)
     {
+        $this->requirePermission('student.payments.manage');
         // Check if payment is open
         if (!SystemSetting::isOpen('payment_open')) {
             return back()->with('error', 'Payment portal is currently closed.');
@@ -107,6 +111,7 @@ class PaymentController extends Controller
      */
     public function retryPayment(Request $request, Payment $payment)
     {
+        $this->requirePermission('student.payments.manage');
         try {
             $student = Student::where('user_id', auth()->id())->firstOrFail();
 
@@ -204,6 +209,7 @@ class PaymentController extends Controller
      */
     public function initiatePayment(Request $request, Fee $fee)
     {
+        $this->requirePermission('student.payments.manage');
         try {
             return $this->initiatePaymentInner($request, $fee);
         } catch (\Throwable $e) {
@@ -228,6 +234,9 @@ class PaymentController extends Controller
      */
     private function initiatePaymentInner(Request $request, Fee $fee)
     {
+        // Note: requirePermission() is enforced at the public entry
+        // point (initiatePayment). This private helper is reached only
+        // after the gate has fired.
         // Check if payment is open
         if (!SystemSetting::isOpen('payment_open')) {
             return back()->with('error', 'Payment portal is currently closed.');
@@ -433,6 +442,7 @@ class PaymentController extends Controller
 
     public function verifyPayment(Request $request)
     {
+        $this->requirePermission('student.payments.manage');
         $reference = $request->reference;
 
         if (!$reference) {
@@ -545,6 +555,7 @@ class PaymentController extends Controller
 
     public function printReceipt(Payment $payment)
     {
+        $this->requirePermission('student.payments.manage');
         // Ownership check: a student must only view their own receipts.
         $student = Student::where('user_id', auth()->id())->first();
         if (!$student || $payment->student_id !== $student->id) {

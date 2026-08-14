@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Fee;
 use App\Models\Payment;
@@ -20,8 +21,11 @@ use Illuminate\Http\Request;
  */
 class ExamClearanceController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('student.exam-clearance.view');
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
         $currentSession = Session::getCurrentSession();
 
@@ -58,6 +62,7 @@ class ExamClearanceController extends Controller
 
     public function print(Request $request)
     {
+        $this->requirePermission('student.exam-clearance.view');
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
         $currentSession = Session::getCurrentSession();
 

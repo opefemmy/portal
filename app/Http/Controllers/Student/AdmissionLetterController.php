@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Concerns\ResolvesRegistrarSignature;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
@@ -31,6 +32,7 @@ use Illuminate\View\View;
  */
 class AdmissionLetterController extends Controller
 {
+    use EnforcesPermission;
     use ResolvesRegistrarSignature;
 
     /**
@@ -41,6 +43,7 @@ class AdmissionLetterController extends Controller
      */
     public function show(Request $request): View
     {
+        $this->requirePermission('student.admission-letter.view');
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
 
         // The Student row must have been linked back to its source

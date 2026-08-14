@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\StudentAttendance;
@@ -12,8 +13,11 @@ use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('student.attendance.view');
         $student = Student::where('user_id', auth()->id())->first();
 
         if (!$student) {
@@ -47,6 +51,7 @@ class AttendanceController extends Controller
 
     public function markAttendance(Request $request)
     {
+        $this->requirePermission('student.attendance.view');
         $request->validate([
             'course_id' => 'required|exists:courses,id',
             'date' => 'required|date',
@@ -95,6 +100,7 @@ class AttendanceController extends Controller
 
     public function myAttendance()
     {
+        $this->requirePermission('student.attendance.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
 

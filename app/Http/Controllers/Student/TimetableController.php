@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Timetable;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class TimetableController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('student.timetables.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
 

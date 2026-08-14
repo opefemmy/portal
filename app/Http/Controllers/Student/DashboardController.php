@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\StudentCourse;
@@ -13,6 +14,8 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Render the student dashboard.
      *
@@ -25,6 +28,7 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $this->requirePermission('student.dashboard.view');
         try {
             return $this->indexInner();
         } catch (\Throwable $e) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -9,13 +10,17 @@ use Illuminate\Support\Facades\Hash;
 
 class SecurityController extends Controller
 {
+    use EnforcesPermission;
+
     public function showSetupForm()
     {
+        $this->requirePermission('student.security.setup');
         return view('student.auth.security-setup');
     }
 
     public function setup(Request $request)
     {
+        $this->requirePermission('student.security.setup');
         $request->validate([
             'security_question' => 'required|string|max:255',
             'security_answer' => 'required|string|max:255',
