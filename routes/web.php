@@ -560,29 +560,81 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 
     // System Maintenance Routes
+    //
+    // Slice 8i-maintenance-routes: each route carries the same
+    // `permission:slug` middleware as the controller's trait gate.
+    // This is the second layer of defence — even if a focused
+    // operator role slips through the `role:` middleware somehow
+    // (e.g. an ad-hoc role grant), the permission:slug middleware
+    // 403s them at the route resolution stage, before the
+    // controller body runs.
     Route::prefix('maintenance')->name('maintenance.')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\MaintenanceController::class, 'dashboard'])->name('dashboard');
-        Route::get('/health', [\App\Http\Controllers\Admin\MaintenanceController::class, 'healthCheck'])->name('health');
-        Route::post('/health/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])->name('health.run');
-        Route::post('/health/repair', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])->name('health.repair');
-        Route::get('/updates', [\App\Http\Controllers\Admin\MaintenanceController::class, 'updateManager'])->name('updates');
-        Route::post('/migrations/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runMigrations'])->name('migrations.run');
-        Route::post('/seeders/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runSeeders'])->name('seeders.run');
-        Route::post('/repairs/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runRepairs'])->name('repairs.run');
-        Route::get('/migrations', [\App\Http\Controllers\Admin\MaintenanceController::class, 'migrations'])->name('migrations');
-        Route::get('/database', [\App\Http\Controllers\Admin\MaintenanceController::class, 'databaseRepair'])->name('database');
-        Route::get('/modules', [\App\Http\Controllers\Admin\MaintenanceController::class, 'moduleScanner'])->name('modules');
-        Route::get('/permissions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'permissionScanner'])->name('permissions');
-        Route::get('/storage', [\App\Http\Controllers\Admin\MaintenanceController::class, 'storageScanner'])->name('storage');
-        Route::get('/cache', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cacheManager'])->name('cache');
-        Route::post('/cache/clear', [\App\Http\Controllers\Admin\MaintenanceController::class, 'clearCaches'])->name('cache.clear');
-        Route::post('/optimize', [\App\Http\Controllers\Admin\MaintenanceController::class, 'optimizeSystem'])->name('optimize');
-        Route::get('/backups', [\App\Http\Controllers\Admin\MaintenanceController::class, 'backupManager'])->name('backups');
-        Route::post('/backup/create', [\App\Http\Controllers\Admin\MaintenanceController::class, 'createBackup'])->name('backup.create');
-        Route::get('/logs', [\App\Http\Controllers\Admin\MaintenanceController::class, 'logViewer'])->name('logs');
-        Route::get('/versions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'versionManager'])->name('versions');
-        Route::post('/version/register', [\App\Http\Controllers\Admin\MaintenanceController::class, 'registerVersion'])->name('version.register');
-        Route::get('/report', [\App\Http\Controllers\Admin\MaintenanceController::class, 'systemReport'])->name('report');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\MaintenanceController::class, 'dashboard'])
+            ->middleware('permission:maintenance.dashboard.view')
+            ->name('dashboard');
+        Route::get('/health', [\App\Http\Controllers\Admin\MaintenanceController::class, 'healthCheck'])
+            ->middleware('permission:maintenance.health.view')
+            ->name('health');
+        Route::post('/health/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])
+            ->middleware('permission:maintenance.health.repair')
+            ->name('health.run');
+        Route::post('/health/repair', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runHealthCheck'])
+            ->middleware('permission:maintenance.health.repair')
+            ->name('health.repair');
+        Route::get('/updates', [\App\Http\Controllers\Admin\MaintenanceController::class, 'updateManager'])
+            ->middleware('permission:maintenance.updates.view')
+            ->name('updates');
+        Route::post('/migrations/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runMigrations'])
+            ->middleware('permission:maintenance.updates.apply')
+            ->name('migrations.run');
+        Route::post('/seeders/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runSeeders'])
+            ->middleware('permission:maintenance.updates.apply')
+            ->name('seeders.run');
+        Route::post('/repairs/run', [\App\Http\Controllers\Admin\MaintenanceController::class, 'runRepairs'])
+            ->middleware('permission:maintenance.repairs.run')
+            ->name('repairs.run');
+        Route::get('/migrations', [\App\Http\Controllers\Admin\MaintenanceController::class, 'migrations'])
+            ->middleware('permission:maintenance.updates.view')
+            ->name('migrations');
+        Route::get('/database', [\App\Http\Controllers\Admin\MaintenanceController::class, 'databaseRepair'])
+            ->middleware('permission:maintenance.repairs.view')
+            ->name('database');
+        Route::get('/modules', [\App\Http\Controllers\Admin\MaintenanceController::class, 'moduleScanner'])
+            ->middleware('permission:maintenance.scanners.view')
+            ->name('modules');
+        Route::get('/permissions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'permissionScanner'])
+            ->middleware('permission:maintenance.scanners.view')
+            ->name('permissions');
+        Route::get('/storage', [\App\Http\Controllers\Admin\MaintenanceController::class, 'storageScanner'])
+            ->middleware('permission:maintenance.scanners.view')
+            ->name('storage');
+        Route::get('/cache', [\App\Http\Controllers\Admin\MaintenanceController::class, 'cacheManager'])
+            ->middleware('permission:maintenance.cache.view')
+            ->name('cache');
+        Route::post('/cache/clear', [\App\Http\Controllers\Admin\MaintenanceController::class, 'clearCaches'])
+            ->middleware('permission:maintenance.cache.manage')
+            ->name('cache.clear');
+        Route::post('/optimize', [\App\Http\Controllers\Admin\MaintenanceController::class, 'optimizeSystem'])
+            ->middleware('permission:maintenance.cache.manage')
+            ->name('optimize');
+        Route::get('/backups', [\App\Http\Controllers\Admin\MaintenanceController::class, 'backupManager'])
+            ->middleware('permission:maintenance.backups.view')
+            ->name('backups');
+        Route::post('/backup/create', [\App\Http\Controllers\Admin\MaintenanceController::class, 'createBackup'])
+            ->middleware('permission:maintenance.backups.create')
+            ->name('backup.create');
+        Route::get('/logs', [\App\Http\Controllers\Admin\MaintenanceController::class, 'logViewer'])
+            ->middleware('permission:maintenance.logs.view')
+            ->name('logs');
+        Route::get('/versions', [\App\Http\Controllers\Admin\MaintenanceController::class, 'versionManager'])
+            ->middleware('permission:maintenance.versions.view')
+            ->name('versions');
+        Route::post('/version/register', [\App\Http\Controllers\Admin\MaintenanceController::class, 'registerVersion'])
+            ->middleware('permission:maintenance.versions.manage')
+            ->name('version.register');
+        Route::get('/report', [\App\Http\Controllers\Admin\MaintenanceController::class, 'systemReport'])
+            ->middleware('permission:maintenance.report.view')
+            ->name('report');
     });
 });
 
