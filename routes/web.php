@@ -194,11 +194,27 @@ Route::get('/applicant/programmes/{departmentId}', [ApplicationController::class
 Route::get('/applicant/lgas/{stateId}', [ApplicationController::class, 'getLGAs']);
 
 // Applicant Routes
+//
+// Slice 8i-applicant-routes: each applicant route inside the
+// `auth` group now carries `->middleware('permission:<slug>')`
+// matching the controller trait gate from slice 8i-applicant.
+// This is the second layer of defence — the route middleware
+// fires BEFORE the controller is resolved, so any user who
+// passes auth but lacks the slug is 403'd at route resolution.
+//
+// The applicant route group uses `auth` (not `role:applicant`),
+// so this slice closes the same threat-model gap that
+// ApplicantControllerGateTest exercises at the controller layer.
 Route::prefix('applicant')->name('applicant.')->group(function () {
 
     // Payment Validation (External Payment System)
     Route::get('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'showValidatePayment'])->name('validate-payment');
-    Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])->name('payment.validate');
+    // The POST validatePayment route is gated — the body calls
+    // Auth::user() and an unauthenticated caller would 500. The
+    // permission: middleware converts that into a clean 403.
+    Route::post('/validate-payment', [\App\Http\Controllers\Applicant\PaymentValidationController::class, 'validatePayment'])
+        ->middleware('permission:applicant.payments.validate')
+        ->name('payment.validate');
 
     // Public status check (no auth required)
     Route::get('/status', [ApplicationController::class, 'checkStatus'])->name('status');
@@ -209,38 +225,69 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::post('/register', [RegisterController::class, 'registerApplicant']);
     });
     Route::middleware('auth')->group(function () {
-        Route::get('/dashboard', [ApplicationController::class, 'dashboard'])->name('dashboard');
-        Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])->name('apply');
-        Route::post('/apply', [ApplicationController::class, 'submitApplication'])->name('apply.submit');
+        Route::get('/dashboard', [ApplicationController::class, 'dashboard'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('dashboard');
+        Route::get('/apply', [ApplicationController::class, 'showApplicationForm'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply');
+        Route::post('/apply', [ApplicationController::class, 'submitApplication'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply.submit');
 
         // Payment routes - application fee
-        Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])->name('apply.fee');
-        Route::get('/apply/payment/verify', [ApplicationController::class, 'verifyApplicationFee'])->name('apply.payment.verify');
-        Route::post('/apply/payment/verify-external', [ApplicationController::class, 'verifyExternalPayment'])->name('payment.verify-external');
+        Route::post('/apply/fee', [ApplicationController::class, 'initiateApplicationFee'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply.fee');
+        Route::get('/apply/payment/verify', [ApplicationController::class, 'verifyApplicationFee'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply.payment.verify');
+        Route::post('/apply/payment/verify-external', [ApplicationController::class, 'verifyExternalPayment'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('payment.verify-external');
 
         // Apply payment - for application fee payment
-        Route::get('/apply/payment', [ApplicationController::class, 'showApplyPayment'])->name('apply.payment');
-        Route::post('/apply/payment', [ApplicationController::class, 'processApplyPayment'])->name('apply.payment.process');
+        Route::get('/apply/payment', [ApplicationController::class, 'showApplyPayment'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply.payment');
+        Route::post('/apply/payment', [ApplicationController::class, 'processApplyPayment'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('apply.payment.process');
 
         // Separate payment page (for applicants to pay now)
-        Route::get('/payment', [PaymentGatewayController::class, 'showPaymentPage'])->name('payment');
+        Route::get('/payment', [PaymentGatewayController::class, 'showPaymentPage'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment');
 
         // Payment Gateway - Pay Now with online payment
-        Route::get('/payment/gateway', [PaymentGatewayController::class, 'showPaymentPage'])->name('payment.gateway');
-        Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePayment'])->name('payment.initiate');
+        Route::get('/payment/gateway', [PaymentGatewayController::class, 'showPaymentPage'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.gateway');
+        Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePayment'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.initiate');
         // Retry the most recent pending/failed attempt for a given purpose.
         // Posted from /applicant/payments/history next to the Requery button
         // on rows whose status is pending or failed — reuses the open row
         // (Payment::refreshForRetry) instead of creating a duplicate.
         Route::post('/payment/{purpose}/retry', [PaymentGatewayController::class, 'retryPayment'])
             ->where('purpose', 'application|acceptance|school_fee|compulsory')
+            ->middleware('permission:applicant.payments.manage')
             ->name('payment.retry');
-        Route::get('/payment/callback', [PaymentGatewayController::class, 'paymentCallback'])->name('payment.callback');
-        Route::get('/payment/cancel', [PaymentGatewayController::class, 'cancelPayment'])->name('payment.cancel');
+        Route::get('/payment/callback', [PaymentGatewayController::class, 'paymentCallback'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.callback');
+        Route::get('/payment/cancel', [PaymentGatewayController::class, 'cancelPayment'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.cancel');
 
         // Test Payment (for demo)
-        Route::get('/payment/test', [PaymentGatewayController::class, 'testPayment'])->name('payment.test');
-        Route::post('/payment/test/process', [PaymentGatewayController::class, 'processTestPayment'])->name('payment.test.process');
+        Route::get('/payment/test', [PaymentGatewayController::class, 'testPayment'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.test');
+        Route::post('/payment/test/process', [PaymentGatewayController::class, 'processTestPayment'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.test.process');
 
         // Re-sync the applicant-side side effects of an existing completed
         // payment. Use case: applicant paid before the markCompleted fix
@@ -249,7 +296,9 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // dashboard still shows "Compulsory Fee: Locked" and the
         // applicant→student migration never ran. POST so it's not CSRF-vulnerable
         // to GET preflight; also reachable from the dashboard button.
-        Route::post('/payment/sync', [PaymentGatewayController::class, 'syncPaymentSideEffects'])->name('payment.sync');
+        Route::post('/payment/sync', [PaymentGatewayController::class, 'syncPaymentSideEffects'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.sync');
 
         // Explicit "Go to Student Portal" route. After the applicant has
         // paid the compulsory fee and `migrateApplicantToStudent` has
@@ -257,7 +306,9 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // even if the auto-redirect from the test handler fired before the
         // migration was visible. We re-run markCompleted → migrateApplicantToStudent
         // defensively before bouncing to the student dashboard.
-        Route::post('/payment/transfer', [PaymentGatewayController::class, 'transferToStudentPortal'])->name('payment.transfer');
+        Route::post('/payment/transfer', [PaymentGatewayController::class, 'transferToStudentPortal'])
+            ->middleware('permission:applicant.payments.manage')
+            ->name('payment.transfer');
 
         // Self-service auto-login to the student portal. Once the applicant
         // has been migrated to a Student row (compulsory fee paid), the
@@ -265,28 +316,41 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // mints a signed URL via the existing student-side AutoLoginController
         // and 302s the applicant straight into the change-password form.
         Route::get('/auto-login', [\App\Http\Controllers\Applicant\AutoLoginController::class, 'issue'])
+            ->middleware('permission:applicant.auto-login.issue')
             ->name('auto-login.issue');
 
         // Shared cross-audience test-payment simulator. Disabled in
         // production by the controller; works for applicant catalogue
         // here. For student + bursar + registrar use the routes at
         // the bottom of this file.
-        Route::get('/payment/test/applicant', [TestPaymentController::class, 'show'])->defaults('audience', 'applicant')->name('test.show.applicant');
-        Route::post('/payment/test/applicant/process', [TestPaymentController::class, 'process'])->defaults('audience', 'applicant')->name('test.process.applicant');
+        Route::get('/payment/test/applicant', [TestPaymentController::class, 'show'])->defaults('audience', 'applicant')
+            ->middleware('permission:applicant.payments.manage')
+            ->name('test.show.applicant');
+        Route::post('/payment/test/applicant/process', [TestPaymentController::class, 'process'])->defaults('audience', 'applicant')
+            ->middleware('permission:applicant.payments.manage')
+            ->name('test.process.applicant');
 
-        Route::get('/application', [ApplicationController::class, 'viewApplication'])->name('application');
-        Route::get('/application/edit', [ApplicationController::class, 'editApplication'])->name('application.edit');
-        Route::put('/application', [ApplicationController::class, 'updateApplication'])->name('application.update');
-        Route::get('/application/print', [ApplicationController::class, 'printApplication'])->name('application.print');
+        Route::get('/application', [ApplicationController::class, 'viewApplication'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('application');
+        Route::get('/application/edit', [ApplicationController::class, 'editApplication'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('application.edit');
+        Route::put('/application', [ApplicationController::class, 'updateApplication'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('application.update');
+        Route::get('/application/print', [ApplicationController::class, 'printApplication'])
+            ->middleware('permission:applicant.application.manage')
+            ->name('application.print');
 
         // Admission letter (post-admit + post-acceptance-fee)
         Route::get('/admission-letter', [ApplicationController::class, 'printAdmissionLetter'])
-            ->middleware('applicant.paid:application')
+            ->middleware(['permission:applicant.application.manage', 'applicant.paid:application'])
             ->name('admission-letter');
 
         // Transaction history — any paid applicant can view their history.
         Route::get('/payments/history', [ApplicationController::class, 'transactionHistory'])
-            ->middleware('applicant.paid:application')
+            ->middleware(['permission:applicant.application.manage', 'applicant.paid:application'])
             ->name('payments.history');
 
         // Authenticated applicant-side payment receipt. The {payment}
@@ -297,6 +361,7 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         // portal" use case (the public route is still used by the
         // gateway's JSON response).
         Route::get('/payments/{payment}/receipt', [\App\Http\Controllers\Applicant\PaymentReceiptController::class, 'show'])
+            ->middleware('permission:applicant.payments.receipt')
             ->name('payments.receipt');
     });
 });
