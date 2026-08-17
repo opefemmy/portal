@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\AdmissionCentre;
 use Illuminate\Http\Request;
 
 class AdmissionCentreController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Display a listing of centres.
      */
     public function index()
     {
+        $this->requirePermission('admin.admission-centres.manage');
         $centres = AdmissionCentre::withCount('applicants')->orderBy('name')->get();
         return view('admin.admission-centres.index', compact('centres'));
     }
@@ -22,6 +26,7 @@ class AdmissionCentreController extends Controller
      */
     public function create()
     {
+        $this->requirePermission('admin.admission-centres.manage');
         return view('admin.admission-centres.create');
     }
 
@@ -30,6 +35,7 @@ class AdmissionCentreController extends Controller
      */
     public function store(Request $request)
     {
+        $this->requirePermission('admin.admission-centres.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:10|unique:admission_centres,code',
@@ -50,6 +56,7 @@ class AdmissionCentreController extends Controller
      */
     public function edit(AdmissionCentre $centre)
     {
+        $this->requirePermission('admin.admission-centres.manage');
         return view('admin.admission-centres.edit', compact('centre'));
     }
 
@@ -58,6 +65,7 @@ class AdmissionCentreController extends Controller
      */
     public function update(Request $request, AdmissionCentre $centre)
     {
+        $this->requirePermission('admin.admission-centres.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:10|unique:admission_centres,code,' . $centre->id,
@@ -78,6 +86,7 @@ class AdmissionCentreController extends Controller
      */
     public function destroy(AdmissionCentre $centre)
     {
+        $this->requirePermission('admin.admission-centres.manage');
         // Check if centre has applicants
         if ($centre->applicants()->count() > 0) {
             return back()->with('error', 'Cannot delete centre with associated applicants.');
@@ -94,6 +103,7 @@ class AdmissionCentreController extends Controller
      */
     public function toggleStatus(AdmissionCentre $centre)
     {
+        $this->requirePermission('admin.admission-centres.manage');
         $centre->update(['is_active' => !$centre->is_active]);
 
         $status = $centre->is_active ? 'activated' : 'deactivated';

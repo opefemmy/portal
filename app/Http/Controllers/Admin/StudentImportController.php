@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Department;
@@ -19,13 +20,17 @@ use Illuminate\Support\Facades\Schema;
 
 class StudentImportController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.student-imports.manage');
         return view('admin.students.import');
     }
 
     public function import(Request $request)
     {
+        $this->requirePermission('admin.student-imports.manage');
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:10240',
         ]);
@@ -209,6 +214,7 @@ class StudentImportController extends Controller
 
     public function downloadTemplate()
     {
+        $this->requirePermission('admin.student-imports.manage');
         $headers = ['MatricNumber', 'FirstName', 'MiddleName', 'LastName', 'YearOfEntry', 'School', 'Department', 'Programme', 'Level', 'StateOfOrigin', 'LGA'];
 
         $filename = 'student_import_template.csv';

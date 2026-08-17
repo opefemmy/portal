@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use Illuminate\Http\Request;
 
 class StudentIdCardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.student-id-cards.manage');
         $query = Student::with(['user', 'department', 'programme', 'school']);
 
         if ($request->search) {
@@ -37,11 +41,13 @@ class StudentIdCardController extends Controller
 
     public function generate(Student $student)
     {
+        $this->requirePermission('admin.student-id-cards.manage');
         return view('admin.id-cards.generate', compact('student'));
     }
 
     public function print(Request $request)
     {
+        $this->requirePermission('admin.student-id-cards.manage');
         $studentIds = $request->student_ids ?? [];
         $students = Student::with(['user', 'department', 'programme', 'school'])
             ->whereIn('id', $studentIds)
@@ -52,6 +58,7 @@ class StudentIdCardController extends Controller
 
     public function bulk(Request $request)
     {
+        $this->requirePermission('admin.student-id-cards.manage');
         $request->validate([
             'department_id' => 'nullable|exists:departments,id',
             'level' => 'nullable|integer|min:1|max:6',

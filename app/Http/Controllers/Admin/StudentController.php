@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\User;
@@ -19,20 +20,25 @@ use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.students.manage');
         $students = Student::with(['user', 'school', 'department', 'programme', 'session'])->latest()->get();
         return view('admin.students.index', compact('students'));
     }
 
     public function show(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $student->load(['user', 'school', 'department', 'programme', 'session']);
         return view('admin.students.show', compact('student'));
     }
 
     public function create()
     {
+        $this->requirePermission('admin.students.manage');
         $data = [
             'schools' => School::all(),
             'departments' => Department::all(),
@@ -47,6 +53,7 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.students.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
@@ -90,6 +97,7 @@ class StudentController extends Controller
 
     public function edit(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $student->loadMissing('user');
         $data = [
             'student' => $student,
@@ -106,6 +114,7 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $validated = $request->validate([
             'matric_number' => ['required', Rule::unique('students')->ignore($student->id)],
             'school_id' => 'required|exists:schools,id',
@@ -154,6 +163,7 @@ class StudentController extends Controller
 
     public function destroy(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $student->user->delete();
         $student->delete();
         return back()->with('success', 'Student deleted successfully');
@@ -161,6 +171,7 @@ class StudentController extends Controller
 
     public function resetPassword(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $newPassword = 'student123'; // Default password
         $student->user->update(['password' => Hash::make($newPassword)]);
         return back()->with('success', 'Password reset to default for ' . $student->matric_number);
@@ -168,12 +179,14 @@ class StudentController extends Controller
 
     public function getLGAs($stateId)
     {
+        $this->requirePermission('admin.students.manage');
         $lgas = LocalGovernment::where('state_id', $stateId)->get();
         return response()->json($lgas);
     }
 
     public function upload(Request $request)
     {
+        $this->requirePermission('admin.students.manage');
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls|max:2048',
         ]);
@@ -256,6 +269,7 @@ class StudentController extends Controller
 
     public function downloadTemplate()
     {
+        $this->requirePermission('admin.students.manage');
         $headers = ['name', 'email', 'matric_number', 'department_id', 'programme_id', 'level', 'state_id', 'lga_id', 'nationality_id'];
         $departments = Department::all()->pluck('id', 'code');
         $programmes = Programme::all()->pluck('id', 'code');
@@ -285,6 +299,7 @@ class StudentController extends Controller
      */
     public function showMeasurements(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $student->load(['user', 'school', 'department', 'programme', 'measuredBy']);
         return view('admin.students.measurements.show', compact('student'));
     }
@@ -294,6 +309,7 @@ class StudentController extends Controller
      */
     public function editMeasurements(Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         return view('admin.students.measurements.edit', compact('student'));
     }
 
@@ -302,6 +318,7 @@ class StudentController extends Controller
      */
     public function updateMeasurements(Request $request, Student $student)
     {
+        $this->requirePermission('admin.students.manage');
         $validated = $request->validate([
             // Uniform
             'uniform_shirt_size' => 'nullable|string|max:50',
@@ -329,6 +346,7 @@ class StudentController extends Controller
      */
     public function exportMeasurements(Request $request)
     {
+        $this->requirePermission('admin.students.manage');
         $students = Student::with(['user', 'school', 'department', 'programme'])
             ->when($request->school_id, function($q) use ($request) {
                 $q->where('school_id', $request->school_id);

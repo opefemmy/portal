@@ -17,9 +17,17 @@ namespace App\Services\Admin;
  * (per-user multi-role assignment), UserUnlockController
  * (admin-only unlock + reset endpoints).
  *
- * Future sub-slices (8i-admin-students, 8i-admin-academic-ops,
- * 8i-admin-fees, 8i-admin-facilities, 8i-admin-misc) will add their
- * slugs here.
+ * Slice 8i-admin-students (sub-slice 3 of 8i-admin):
+ * adds 4 student-management controllers — StudentController
+ * (15 methods: index/show/create/store/edit/update/destroy/
+ * resetPassword/getLGAs/upload/downloadTemplate/
+ * showMeasurements/editMeasurements/updateMeasurements/
+ * exportMeasurements), StudentImportController (3 methods),
+ * StudentIdCardController (4 methods), AdmissionCentreController
+ * (7 methods).
+ *
+ * Future sub-slices (8i-admin-academic-ops, 8i-admin-fees,
+ * 8i-admin-facilities, 8i-admin-misc) will add their slugs here.
  *
  * Per-controller slug shape (one slug covers all CRUD verbs on a
  * single resource) — mirrors Laravel's ResourceController
@@ -66,6 +74,11 @@ class AdminPermissions
             'admin.users.manage',
             'admin.user-roles.manage',
             'admin.user-unlocks.manage',
+            // Sub-slice 3: student management.
+            'admin.students.manage',
+            'admin.student-imports.manage',
+            'admin.student-id-cards.manage',
+            'admin.admission-centres.manage',
         ],
         'staff' => [
             // Sub-slice 1.
@@ -79,6 +92,11 @@ class AdminPermissions
             'admin.users.manage',
             'admin.user-roles.manage',
             'admin.user-unlocks.manage',
+            // Sub-slice 3.
+            'admin.students.manage',
+            'admin.student-imports.manage',
+            'admin.student-id-cards.manage',
+            'admin.admission-centres.manage',
         ],
     ];
 }
