@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -12,8 +13,11 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.users.manage');
         // Filter to only show staff users - exclude students, applicants, parents, visitors
         $roleSlug = $request->get('role', '');
 
@@ -42,6 +46,7 @@ class UserController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.users.manage');
         // Only show staff roles for creation
         $roles = Role::whereNotIn('slug', ['student', 'applicant'])->get();
         return view('admin.users.create', compact('roles'));
@@ -49,6 +54,7 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
+        $this->requirePermission('admin.users.manage');
         $validated = $request->validated();
 
         // Create user with validated data
@@ -70,17 +76,20 @@ class UserController extends Controller
 
     public function show(User $user)
     {
+        $this->requirePermission('admin.users.manage');
         return view('admin.users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $roles = Role::all();
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $validated = $request->validated();
 
         // Update user with validated data
@@ -101,30 +110,35 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $user->delete();
         return back()->with('success', 'User deleted successfully');
     }
 
     public function activate(User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $user->update(['is_active' => true]);
         return back()->with('success', 'User activated');
     }
 
     public function deactivate(User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $user->update(['is_active' => false]);
         return back()->with('success', 'User deactivated');
     }
 
     public function resetPassword(Request $request, User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $user->update(['password' => Hash::make('password')]);
         return back()->with('success', 'Password reset to default');
     }
 
     public function upload()
     {
+        $this->requirePermission('admin.users.manage');
         $roles = Role::all();
         $schools = \App\Models\School::all();
         $departments = \App\Models\Department::all();
@@ -134,6 +148,7 @@ class UserController extends Controller
 
     public function processUpload(Request $request)
     {
+        $this->requirePermission('admin.users.manage');
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls|max:5120',
             'role_id' => 'required|exists:roles,id',
@@ -215,6 +230,7 @@ class UserController extends Controller
 
     public function uploadPassport(Request $request, User $user)
     {
+        $this->requirePermission('admin.users.manage');
         $request->validate([
             'passport' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -234,6 +250,7 @@ class UserController extends Controller
      */
     public function search(Request $request)
     {
+        $this->requirePermission('admin.users.manage');
         $query = $request->get('search', '');
         $role = $request->get('role', '');
 

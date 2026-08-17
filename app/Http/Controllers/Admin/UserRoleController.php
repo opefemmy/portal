@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -22,11 +23,14 @@ use Illuminate\Http\Request;
  */
 class UserRoleController extends Controller
 {
+    use EnforcesPermission;
+
     /**
      * Replace the user's role memberships with the supplied set.
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->requirePermission('admin.user-roles.manage');
         $data = $request->validate([
             'role_ids'        => 'required|array|min:1',
             'role_ids.*'      => 'integer|exists:roles,id',

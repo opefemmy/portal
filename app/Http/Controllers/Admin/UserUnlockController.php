@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -10,19 +11,27 @@ use Illuminate\Support\Str;
 
 class UserUnlockController extends Controller
 {
+    use EnforcesPermission;
+
     /**
-     * Show unlock user form
+     * Show unlock user form — admin-only (auth gate on
+     * `admin/users/unlock`). The same controller method
+     * `showUnlockCode` is also reachable from the PUBLIC
+     * `GET /unlock/{email}/{code}` route and is intentionally
+     * NOT gated — guests need it for password reset.
      */
     public function showUnlockForm()
     {
+        $this->requirePermission('admin.user-unlocks.manage');
         return view('admin.users.unlock');
     }
 
     /**
-     * Generate unlock code for a user
+     * Generate unlock code for a user — admin-only.
      */
     public function generateUnlockCode(Request $request)
     {
+        $this->requirePermission('admin.user-unlocks.manage');
         $request->validate([
             'email' => 'required|email|exists:users,email',
         ]);
@@ -42,7 +51,9 @@ class UserUnlockController extends Controller
     }
 
     /**
-     * Show unlock code display page
+     * Show unlock code display page — DUAL-USE: also reachable
+     * via the PUBLIC `GET /unlock/{email}/{code}` route
+     * (routes/web.php line 160). Intentionally NOT gated.
      */
     public function showUnlockCode(Request $request)
     {
@@ -57,7 +68,10 @@ class UserUnlockController extends Controller
     }
 
     /**
-     * Unlock user with new password
+     * Unlock user with new password — DUAL-USE: also reachable
+     * via the PUBLIC `POST /unlock` route (routes/web.php line
+     * 161). Intentionally NOT gated so guests can reset their
+     * own password.
      */
     public function unlockUser(Request $request)
     {
@@ -86,9 +100,11 @@ class UserUnlockController extends Controller
 
     /**
      * Admin directly reset user password (no unlock code needed)
+     * — admin-only.
      */
     public function resetUserPassword(Request $request)
     {
+        $this->requirePermission('admin.user-unlocks.manage');
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'new_password' => 'required|string|min:8|confirmed',
@@ -108,9 +124,11 @@ class UserUnlockController extends Controller
 
     /**
      * Quick unlock - admin directly sets password
+     * — admin-only.
      */
     public function quickUnlock(Request $request)
     {
+        $this->requirePermission('admin.user-unlocks.manage');
         $request->validate([
             'user_id' => 'required|exists:users,id',
         ]);
