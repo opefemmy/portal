@@ -125,6 +125,12 @@ class PermissionsSeeder extends Seeder
         // reviews applicant data, this is the applicant-self-service
         // surface.
         'applicant'          => 'applicant',
+
+        // Maintenance prefix (slice 8i-maintenance). The system
+        // maintenance surface (run-migrations, clear-cache, create-backup,
+        // etc.) gets its own group label so the permission-scanner UI
+        // can filter by audience.
+        'maintenance'        => 'maintenance',
     ];
 
     public function run(): void

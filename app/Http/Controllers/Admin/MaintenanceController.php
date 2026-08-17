@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Services\SystemMaintenanceService;
 use App\Services\UpdateManagerService;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Artisan;
 
 class MaintenanceController extends Controller
 {
+    use EnforcesPermission;
+
     protected SystemMaintenanceService $maintenance;
     protected UpdateManagerService $updater;
 
@@ -24,6 +27,7 @@ class MaintenanceController extends Controller
      */
     public function dashboard()
     {
+        $this->requirePermission('maintenance.dashboard.view');
         $version = $this->maintenance->getCurrentVersion();
         $health = $this->maintenance->runHealthCheck();
         $backups = $this->updater->getBackups();
@@ -43,6 +47,7 @@ class MaintenanceController extends Controller
      */
     public function healthCheck()
     {
+        $this->requirePermission('maintenance.health.view');
         $results = $this->maintenance->runHealthCheck();
         return view('admin.maintenance.health', compact('results'));
     }
@@ -52,6 +57,7 @@ class MaintenanceController extends Controller
      */
     public function runHealthCheck(Request $request)
     {
+        $this->requirePermission('maintenance.health.repair');
         $checkName = $request->get('check_name');
 
         // Run specific repair based on check name
@@ -79,6 +85,7 @@ class MaintenanceController extends Controller
      */
     public function updateManager()
     {
+        $this->requirePermission('maintenance.updates.view');
         $pendingMigrations = $this->updater->getPendingMigrations();
         $backups = $this->updater->getBackups();
 
@@ -90,6 +97,7 @@ class MaintenanceController extends Controller
      */
     public function runMigrations()
     {
+        $this->requirePermission('maintenance.updates.apply');
         // Try to create backup first (may fail if table doesn't exist)
         try {
             $this->updater->createDatabaseBackup();
@@ -121,6 +129,7 @@ class MaintenanceController extends Controller
      */
     public function runSeeders(Request $request)
     {
+        $this->requirePermission('maintenance.updates.apply');
         $seeder = $request->get('seeder');
         $result = $this->updater->runSeeders($seeder);
 
@@ -132,6 +141,7 @@ class MaintenanceController extends Controller
      */
     public function runRepairs()
     {
+        $this->requirePermission('maintenance.repairs.run');
         // Try to create backup first (may fail if table doesn't exist)
         try {
             $this->updater->createDatabaseBackup();
@@ -158,6 +168,7 @@ class MaintenanceController extends Controller
      */
     public function migrations()
     {
+        $this->requirePermission('maintenance.updates.view');
         $pending = $this->updater->getPendingMigrations();
         $ran = \DB::table('migrations')->pluck('migration')->toArray();
 
@@ -169,6 +180,7 @@ class MaintenanceController extends Controller
      */
     public function databaseRepair()
     {
+        $this->requirePermission('maintenance.repairs.view');
         $tables = $this->maintenance->getDatabaseTables();
 
         return view('admin.maintenance.database', compact('tables'));
@@ -179,6 +191,7 @@ class MaintenanceController extends Controller
      */
     public function moduleScanner()
     {
+        $this->requirePermission('maintenance.scanners.view');
         $modules = [
             'Student Portal' => class_exists(\App\Models\Student::class),
             'Applicant Portal' => class_exists(\App\Models\Applicant::class),
@@ -204,6 +217,7 @@ class MaintenanceController extends Controller
      */
     public function permissionScanner()
     {
+        $this->requirePermission('maintenance.scanners.view');
         $roles = \DB::table('roles')->get();
         $users = \DB::table('users')->with('role')->get();
 
@@ -215,6 +229,7 @@ class MaintenanceController extends Controller
      */
     public function storageScanner()
     {
+        $this->requirePermission('maintenance.scanners.view');
         $directories = [
             'storage/app' => is_dir(base_path('storage/app')),
             'storage/framework/cache' => is_dir(base_path('storage/framework/cache')),
@@ -233,6 +248,7 @@ class MaintenanceController extends Controller
      */
     public function cacheManager()
     {
+        $this->requirePermission('maintenance.cache.view');
         return view('admin.maintenance.cache');
     }
 
@@ -241,6 +257,7 @@ class MaintenanceController extends Controller
      */
     public function clearCaches()
     {
+        $this->requirePermission('maintenance.cache.manage');
         $results = $this->maintenance->clearCaches();
 
         return back()->with('success', implode(', ', $results));
@@ -251,6 +268,7 @@ class MaintenanceController extends Controller
      */
     public function optimizeSystem()
     {
+        $this->requirePermission('maintenance.cache.manage');
         $results = $this->maintenance->optimizeSystem();
 
         return back()->with('success', implode(', ', $results));
@@ -261,6 +279,7 @@ class MaintenanceController extends Controller
      */
     public function backupManager()
     {
+        $this->requirePermission('maintenance.backups.view');
         $backups = $this->updater->getBackups();
 
         return view('admin.maintenance.backups', compact('backups'));
@@ -271,6 +290,7 @@ class MaintenanceController extends Controller
      */
     public function createBackup(Request $request)
     {
+        $this->requirePermission('maintenance.backups.create');
         $type = $request->get('type', 'database');
 
         if ($type === 'database') {
@@ -287,6 +307,7 @@ class MaintenanceController extends Controller
      */
     public function logViewer(Request $request)
     {
+        $this->requirePermission('maintenance.logs.view');
         $logFile = storage_path('logs/laravel.log');
 
         if (!file_exists($logFile)) {
@@ -305,6 +326,7 @@ class MaintenanceController extends Controller
      */
     public function versionManager()
     {
+        $this->requirePermission('maintenance.versions.view');
         $versions = $this->maintenance->getVersions();
         $current = $this->maintenance->getCurrentVersion();
 
@@ -316,6 +338,7 @@ class MaintenanceController extends Controller
      */
     public function registerVersion(Request $request)
     {
+        $this->requirePermission('maintenance.versions.manage');
         $request->validate([
             'version' => 'required|string',
             'release_name' => 'nullable|string',
@@ -334,6 +357,7 @@ class MaintenanceController extends Controller
      */
     public function systemReport()
     {
+        $this->requirePermission('maintenance.report.view');
         $report = $this->maintenance->getSystemReport();
         $tables = $this->maintenance->getDatabaseTables();
 

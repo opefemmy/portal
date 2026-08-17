@@ -3,6 +3,7 @@
 namespace App\Services\Permissions;
 
 use App\Services\Academic\AcademicPermissions;
+use App\Services\Admin\MaintenancePermissions;
 use App\Services\Applicant\ApplicantPermissions;
 use App\Services\Auditor\AuditorPermissions;
 use App\Services\Bursar\BursarPermissions;
@@ -51,6 +52,7 @@ final class PermissionCatalog
             BusinessCommitteePermissions::class,
             StudentPermissions::class,
             ApplicantPermissions::class,
+            MaintenancePermissions::class,
         ];
     }
 }
