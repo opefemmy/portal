@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Grade;
 use App\Models\GradeClassification;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class GradeController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.grades.manage');
         $grades = Grade::orderBy('min_score', 'desc')->get();
         $classifications = GradeClassification::orderBy('sort_order')->get();
         $gradingScales = GradingScale::orderBy('sort_order')->get();
@@ -20,11 +24,13 @@ class GradeController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.grades.manage');
         return view('admin.grades.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.grades.manage');
         $validated = $request->validate([
             'min_score' => 'required|integer|min:0|max:100',
             'max_score' => 'required|integer|min:0|max:100|gte:min_score',
@@ -41,11 +47,13 @@ class GradeController extends Controller
 
     public function edit(Grade $grade)
     {
+        $this->requirePermission('admin.grades.manage');
         return view('admin.grades.edit', compact('grade'));
     }
 
     public function update(Request $request, Grade $grade)
     {
+        $this->requirePermission('admin.grades.manage');
         $validated = $request->validate([
             'min_score' => 'required|integer|min:0|max:100',
             'max_score' => 'required|integer|min:0|max:100|gte:min_score',
@@ -62,6 +70,7 @@ class GradeController extends Controller
 
     public function destroy(Grade $grade)
     {
+        $this->requirePermission('admin.grades.manage');
         $grade->delete();
         return back()->with('success', 'Grade deleted');
     }

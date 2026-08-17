@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\GradeClassification;
 use App\Models\GradingScale;
@@ -9,8 +10,11 @@ use Illuminate\Http\Request;
 
 class GradingController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.grading.manage');
         $classifications = GradeClassification::orderBy('sort_order')->get();
         $gradingScales = GradingScale::orderBy('sort_order')->get();
         return view('admin.grades.index', compact('classifications', 'gradingScales'));
@@ -18,6 +22,7 @@ class GradingController extends Controller
 
     public function updateClassification(Request $request, GradeClassification $classification)
     {
+        $this->requirePermission('admin.grading.manage');
         $validated = $request->validate([
             'min_gpa' => 'required|numeric|min:0|max:5',
             'max_gpa' => 'required|numeric|min:0|max:5',
@@ -30,6 +35,7 @@ class GradingController extends Controller
 
     public function updateScale(Request $request, GradingScale $scale)
     {
+        $this->requirePermission('admin.grading.manage');
         $validated = $request->validate([
             'min_score' => 'required|integer|min:0|max:100',
             'max_score' => 'required|integer|min:0|max:100',
@@ -45,6 +51,7 @@ class GradingController extends Controller
 
     public function storeClassification(Request $request)
     {
+        $this->requirePermission('admin.grading.manage');
         $validated = $request->validate([
             'name' => 'required|string',
             'slug' => 'required|string|unique:grade_classifications,slug',
@@ -60,6 +67,7 @@ class GradingController extends Controller
 
     public function storeScale(Request $request)
     {
+        $this->requirePermission('admin.grading.manage');
         $validated = $request->validate([
             'grade' => 'required|string|unique:grading_scales,grade',
             'min_score' => 'required|integer|min:0|max:100',
@@ -77,12 +85,14 @@ class GradingController extends Controller
 
     public function destroyClassification(GradeClassification $classification)
     {
+        $this->requirePermission('admin.grading.manage');
         $classification->delete();
         return back()->with('success', 'Classification deleted successfully');
     }
 
     public function destroyScale(GradingScale $scale)
     {
+        $this->requirePermission('admin.grading.manage');
         $scale->delete();
         return back()->with('success', 'Grading scale deleted successfully');
     }

@@ -2,25 +2,31 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use Illuminate\Http\Request;
 
 class SchoolController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.schools.manage');
         $schools = School::with('departments')->get();
         return view('admin.schools.index', compact('schools'));
     }
 
     public function create()
     {
+        $this->requirePermission('admin.schools.manage');
         return view('admin.schools.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.schools.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:schools',
@@ -33,16 +39,19 @@ class SchoolController extends Controller
 
     public function show(School $school)
     {
+        $this->requirePermission('admin.schools.manage');
         return view('admin.schools.show', compact('school'));
     }
 
     public function edit(School $school)
     {
+        $this->requirePermission('admin.schools.manage');
         return view('admin.schools.edit', compact('school'));
     }
 
     public function update(Request $request, School $school)
     {
+        $this->requirePermission('admin.schools.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:schools,code,' . $school->id,
@@ -55,6 +64,7 @@ class SchoolController extends Controller
 
     public function destroy(School $school)
     {
+        $this->requirePermission('admin.schools.manage');
         // Block the delete if any related row still references this school.
         // We surface the first blocker in the error message so the admin
         // knows what to clean up first. Cascading would silently destroy

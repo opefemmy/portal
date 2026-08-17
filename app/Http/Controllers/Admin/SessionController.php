@@ -2,25 +2,31 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Session;
 use Illuminate\Http\Request;
 
 class SessionController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.sessions.manage');
         $sessions = Session::latest()->get();
         return view('admin.sessions.index', compact('sessions'));
     }
 
     public function create()
     {
+        $this->requirePermission('admin.sessions.manage');
         return view('admin.sessions.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.sessions.manage');
         $validated = $request->validate([
             'name' => 'required|string|unique:sessions',
             'semester' => 'required|in:First,Second',
@@ -41,11 +47,13 @@ class SessionController extends Controller
 
     public function edit(Session $session)
     {
+        $this->requirePermission('admin.sessions.manage');
         return view('admin.sessions.edit', compact('session'));
     }
 
     public function update(Request $request, Session $session)
     {
+        $this->requirePermission('admin.sessions.manage');
         $validated = $request->validate([
             'name' => 'required|string|unique:sessions,name,' . $session->id,
             'semester' => 'required|in:First,Second',
@@ -66,12 +74,14 @@ class SessionController extends Controller
 
     public function setCurrent(Session $session)
     {
+        $this->requirePermission('admin.sessions.manage');
         Session::setCurrentSession($session->id);
         return back()->with('success', 'Current session set to ' . $session->name);
     }
 
     public function destroy(Session $session)
     {
+        $this->requirePermission('admin.sessions.manage');
         $session->delete();
         return back()->with('success', 'Session deleted');
     }
