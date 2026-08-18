@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Fee;
 use App\Models\School;
@@ -12,14 +13,18 @@ use Illuminate\Http\Request;
 
 class FeeController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.fees.manage');
         $fees = Fee::with('school', 'department', 'programme', 'session')->latest()->get();
         return view('admin.fees.index', compact('fees'));
     }
 
     public function create()
     {
+        $this->requirePermission('admin.fees.manage');
         $data = [
             'schools' => School::all(),
             'departments' => Department::all(),
@@ -31,6 +36,7 @@ class FeeController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.fees.manage');
         $category = $request->input('category', 'both');
 
         // Per-category amount columns are required when the matching
@@ -72,6 +78,7 @@ class FeeController extends Controller
 
     public function edit(Fee $fee)
     {
+        $this->requirePermission('admin.fees.manage');
         $data = [
             'fee' => $fee,
             'schools' => School::all(),
@@ -84,6 +91,7 @@ class FeeController extends Controller
 
     public function update(Request $request, Fee $fee)
     {
+        $this->requirePermission('admin.fees.manage');
         $category = $request->input('category', $fee->category ?? 'both');
 
         $rules = [
@@ -134,6 +142,7 @@ class FeeController extends Controller
 
     public function destroy(Fee $fee)
     {
+        $this->requirePermission('admin.fees.manage');
         $fee->delete();
         return back()->with('success', 'Fee deleted');
     }

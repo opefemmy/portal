@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentType;
 use Illuminate\Http\Request;
@@ -9,8 +10,11 @@ use Illuminate\Support\Facades\Schema;
 
 class PaymentTypeController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.payment-types.manage');
         if (!Schema::hasTable('payment_types')) {
             return view('admin.payment-types.index', ['paymentTypes' => collect([])]);
         }
@@ -21,12 +25,14 @@ class PaymentTypeController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.payment-types.manage');
         $purposes = PaymentType::getPurposes();
         return view('admin.payment-types.create', compact('purposes'));
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.payment-types.manage');
         if (!Schema::hasTable('payment_types')) {
             return back()->with('error', 'Payment types table does not exist. Please run migrations.');
         }
@@ -211,12 +217,14 @@ class PaymentTypeController extends Controller
 
     public function edit(PaymentType $paymentType)
     {
+        $this->requirePermission('admin.payment-types.manage');
         $purposes = PaymentType::getPurposes();
         return view('admin.payment-types.edit', compact('paymentType', 'purposes'));
     }
 
     public function update(Request $request, PaymentType $paymentType)
     {
+        $this->requirePermission('admin.payment-types.manage');
         if (!Schema::hasTable('payment_types')) {
             return back()->with('error', 'Payment types table does not exist.');
         }
@@ -353,6 +361,7 @@ class PaymentTypeController extends Controller
 
     public function destroy(PaymentType $paymentType)
     {
+        $this->requirePermission('admin.payment-types.manage');
         if (!Schema::hasTable('payment_types')) {
             return back()->with('error', 'Payment types table does not exist.');
         }
@@ -363,6 +372,7 @@ class PaymentTypeController extends Controller
 
     public function toggle(PaymentType $paymentType)
     {
+        $this->requirePermission('admin.payment-types.manage');
         if (!Schema::hasTable('payment_types')) {
             return back()->with('error', 'Payment types table does not exist.');
         }

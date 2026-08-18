@@ -37,8 +37,17 @@ namespace App\Services\Admin;
  * reject/release/hide/lock/publish/withdraw/recompute/compute/
  * bulkApprove).
  *
- * Future sub-slices (8i-admin-fees, 8i-admin-facilities,
- * 8i-admin-misc) will add their slugs here.
+ * Slice 8i-admin-fees (sub-slice 5 of 8i-admin):
+ * adds 3 finance-admin controllers — FeeController (6 methods:
+ * index/create/store/edit/update/destroy), PaymentTypeController
+ * (7 methods: index/create/store/edit/update/destroy/toggle —
+ * manages the catalogue of payment types used by the applicant
+ * dashboard + admission flow), PaymentFlowController (2 methods:
+ * edit/update — the combined admin screen for the admission
+ * payment flow, driven from the PaymentType catalogue).
+ *
+ * Future sub-slices (8i-admin-facilities, 8i-admin-misc) will
+ * add their slugs here.
  *
  * Per-controller slug shape (one slug covers all CRUD verbs on a
  * single resource) — mirrors Laravel's ResourceController
@@ -97,6 +106,10 @@ class AdminPermissions
             'admin.exam-timetables.manage',
             'admin.timetables.manage',
             'admin.results.manage',
+            // Sub-slice 5: fees / payment configuration.
+            'admin.fees.manage',
+            'admin.payment-types.manage',
+            'admin.payment-flows.manage',
         ],
         'staff' => [
             // Sub-slice 1.
@@ -122,6 +135,10 @@ class AdminPermissions
             'admin.exam-timetables.manage',
             'admin.timetables.manage',
             'admin.results.manage',
+            // Sub-slice 5.
+            'admin.fees.manage',
+            'admin.payment-types.manage',
+            'admin.payment-flows.manage',
         ],
     ];
 }

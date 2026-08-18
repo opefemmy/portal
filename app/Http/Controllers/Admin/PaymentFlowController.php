@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentType;
 use App\Models\SystemSetting;
@@ -20,8 +21,11 @@ use Illuminate\Http\Request;
  */
 class PaymentFlowController extends Controller
 {
+    use EnforcesPermission;
+
     public function edit(ApplicantPaymentService $payments)
     {
+        $this->requirePermission('admin.payment-flows.manage');
         // Pull every applicant-audience PaymentType row, regardless of
         // purpose. sort by priority then name so the form has the same
         // ordering as the applicant dashboard.
@@ -52,6 +56,7 @@ class PaymentFlowController extends Controller
 
     public function update(Request $request, ApplicantPaymentService $payments)
     {
+        $this->requirePermission('admin.payment-flows.manage');
         $validated = $request->validate([
             'overrides' => 'array',
             'overrides.*' => 'nullable|numeric|min:0',
