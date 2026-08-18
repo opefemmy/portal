@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\CourseAssignment;
 use App\Models\Course;
@@ -11,8 +12,11 @@ use Illuminate\Http\Request;
 
 class CourseAssignmentController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $assignments = CourseAssignment::with(['course', 'lecturer', 'session'])->latest()->get();
         $courses = Course::with(['department', 'school'])->get();
         $sessions = \App\Models\Session::all();
@@ -21,6 +25,7 @@ class CourseAssignmentController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $data = [
             'courses' => Course::with(['department', 'school'])->get(),
             'lecturers' => User::whereHas('role', function($query) {
@@ -33,6 +38,7 @@ class CourseAssignmentController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'lecturer_id' => 'required|exists:users,id',
@@ -46,6 +52,7 @@ class CourseAssignmentController extends Controller
 
     public function edit(CourseAssignment $assignment)
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $data = [
             'assignment' => $assignment,
             'courses' => Course::all(),
@@ -58,6 +65,7 @@ class CourseAssignmentController extends Controller
 
     public function update(Request $request, CourseAssignment $assignment)
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $validated = $request->validate([
             'lecturer_id' => 'required|exists:users,id',
             'semester' => 'required|in:First,Second',
@@ -69,6 +77,7 @@ class CourseAssignmentController extends Controller
 
     public function destroy(CourseAssignment $assignment)
     {
+        $this->requirePermission('admin.course-assignments.manage');
         $assignment->delete();
         return back()->with('success', 'Assignment removed');
     }

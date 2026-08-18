@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\ExamTimetable;
 use App\Models\Course;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class TimetableController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.timetables.manage');
         $query = ExamTimetable::with(['course', 'session']);
 
         if ($request->session_id) {
@@ -30,6 +34,7 @@ class TimetableController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.timetables.manage');
         $data = [
             'courses' => Course::with('department')->get(),
             'sessions' => Session::all(),
@@ -39,6 +44,7 @@ class TimetableController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.timetables.manage');
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'session_id' => 'required|exists:sessions,id',
@@ -55,6 +61,7 @@ class TimetableController extends Controller
 
     public function edit(ExamTimetable $timetable)
     {
+        $this->requirePermission('admin.timetables.manage');
         $data = [
             'timetable' => $timetable,
             'courses' => Course::with('department')->get(),
@@ -65,6 +72,7 @@ class TimetableController extends Controller
 
     public function update(Request $request, ExamTimetable $timetable)
     {
+        $this->requirePermission('admin.timetables.manage');
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'session_id' => 'required|exists:sessions,id',
@@ -82,6 +90,7 @@ class TimetableController extends Controller
 
     public function destroy(ExamTimetable $timetable)
     {
+        $this->requirePermission('admin.timetables.manage');
         $timetable->delete();
         return back()->with('success', 'Timetable deleted');
     }

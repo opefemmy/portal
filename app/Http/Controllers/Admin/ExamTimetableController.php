@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\ExamTimetable;
 use App\Models\Course;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class ExamTimetableController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $query = ExamTimetable::with(['course', 'session']);
 
         if ($request->session_id) {
@@ -30,6 +34,7 @@ class ExamTimetableController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $data = [
             'courses' => Course::with('department')->get(),
             'sessions' => Session::all(),
@@ -39,6 +44,7 @@ class ExamTimetableController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'session_id' => 'required|exists:sessions,id',
@@ -55,6 +61,7 @@ class ExamTimetableController extends Controller
 
     public function edit(ExamTimetable $examTimetable)
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $data = [
             'timetable' => $examTimetable,
             'courses' => Course::with('department')->get(),
@@ -65,6 +72,7 @@ class ExamTimetableController extends Controller
 
     public function update(Request $request, ExamTimetable $examTimetable)
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'session_id' => 'required|exists:sessions,id',
@@ -82,6 +90,7 @@ class ExamTimetableController extends Controller
 
     public function destroy(ExamTimetable $examTimetable)
     {
+        $this->requirePermission('admin.exam-timetables.manage');
         $examTimetable->delete();
         return back()->with('success', 'Exam timetable deleted');
     }

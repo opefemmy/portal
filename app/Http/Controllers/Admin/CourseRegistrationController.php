@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\StudentCourse;
 use App\Models\Session;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class CourseRegistrationController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.course-registrations.manage');
         $query = StudentCourse::with(['student.user', 'course', 'session']);
 
         // Filter by session
@@ -39,6 +43,7 @@ class CourseRegistrationController extends Controller
 
     public function unsubmit(StudentCourse $registration)
     {
+        $this->requirePermission('admin.course-registrations.manage');
         // Only allow unsubmit if status is registered
         if ($registration->status !== 'registered') {
             return back()->with('error', 'Cannot unsubmit this course registration.');
@@ -50,12 +55,14 @@ class CourseRegistrationController extends Controller
 
     public function resubmit(StudentCourse $registration)
     {
+        $this->requirePermission('admin.course-registrations.manage');
         $registration->update(['status' => 'registered']);
         return back()->with('success', 'Course registration resubmitted successfully.');
     }
 
     public function export(Request $request)
     {
+        $this->requirePermission('admin.course-registrations.manage');
         $query = StudentCourse::with(['student.user', 'course', 'session']);
 
         if ($request->session_id) {

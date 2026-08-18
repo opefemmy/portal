@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\School;
@@ -13,8 +14,11 @@ use Illuminate\Support\Str;
 
 class CourseController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.courses.manage');
         $courses = Course::with('school', 'department', 'programme')->get();
         return view('admin.courses.index', compact('courses'));
     }
@@ -24,6 +28,7 @@ class CourseController extends Controller
      */
     public function uploadForm()
     {
+        $this->requirePermission('admin.courses.manage');
         return view('admin.courses.upload');
     }
 
@@ -32,6 +37,7 @@ class CourseController extends Controller
      */
     public function upload(Request $request)
     {
+        $this->requirePermission('admin.courses.manage');
         $request->validate([
             'file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
         ]);
@@ -237,6 +243,7 @@ class CourseController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.courses.manage');
         $data = [
             'schools' => School::all(),
             'departments' => Department::all(),
@@ -247,6 +254,7 @@ class CourseController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.courses.manage');
         $validated = $request->validate([
             'code' => 'required|string',
             'title' => 'required|string|max:255',
@@ -277,6 +285,7 @@ class CourseController extends Controller
 
     public function edit(Course $course)
     {
+        $this->requirePermission('admin.courses.manage');
         $data = [
             'course' => $course,
             'schools' => School::all(),
@@ -288,6 +297,7 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
+        $this->requirePermission('admin.courses.manage');
         $validated = $request->validate([
             'code' => 'required|string',
             'title' => 'required|string|max:255',
@@ -306,6 +316,7 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
+        $this->requirePermission('admin.courses.manage');
         $course->delete();
         return back()->with('success', 'Course deleted');
     }

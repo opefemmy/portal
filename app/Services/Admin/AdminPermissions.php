@@ -26,8 +26,19 @@ namespace App\Services\Admin;
  * StudentIdCardController (4 methods), AdmissionCentreController
  * (7 methods).
  *
- * Future sub-slices (8i-admin-academic-ops, 8i-admin-fees,
- * 8i-admin-facilities, 8i-admin-misc) will add their slugs here.
+ * Slice 8i-admin-academic-ops (sub-slice 4 of 8i-admin):
+ * adds 6 academic-operations controllers — CourseController
+ * (8 methods: index/uploadForm/upload/create/store/edit/update/
+ * destroy), CourseAssignmentController (6 methods),
+ * CourseRegistrationController (4 methods: index/unsubmit/
+ * resubmit/export), ExamTimetableController (6 methods),
+ * TimetableController (6 methods), ResultController
+ * (14 methods: index/show/upload/downloadTemplate/approve/
+ * reject/release/hide/lock/publish/withdraw/recompute/compute/
+ * bulkApprove).
+ *
+ * Future sub-slices (8i-admin-fees, 8i-admin-facilities,
+ * 8i-admin-misc) will add their slugs here.
  *
  * Per-controller slug shape (one slug covers all CRUD verbs on a
  * single resource) — mirrors Laravel's ResourceController
@@ -79,6 +90,13 @@ class AdminPermissions
             'admin.student-imports.manage',
             'admin.student-id-cards.manage',
             'admin.admission-centres.manage',
+            // Sub-slice 4: academic operations.
+            'admin.courses.manage',
+            'admin.course-assignments.manage',
+            'admin.course-registrations.manage',
+            'admin.exam-timetables.manage',
+            'admin.timetables.manage',
+            'admin.results.manage',
         ],
         'staff' => [
             // Sub-slice 1.
@@ -97,6 +115,13 @@ class AdminPermissions
             'admin.student-imports.manage',
             'admin.student-id-cards.manage',
             'admin.admission-centres.manage',
+            // Sub-slice 4.
+            'admin.courses.manage',
+            'admin.course-assignments.manage',
+            'admin.course-registrations.manage',
+            'admin.exam-timetables.manage',
+            'admin.timetables.manage',
+            'admin.results.manage',
         ],
     ];
 }

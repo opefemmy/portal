@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Result;
 use App\Models\StudentCourse;
@@ -15,8 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class ResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $query = Result::with(['studentCourse.student.user', 'studentCourse.course', 'approvedBy']);
 
         if ($request->session_id) {
@@ -42,12 +46,14 @@ class ResultController extends Controller
 
     public function show(Result $result)
     {
+        $this->requirePermission('admin.results.manage');
         $result->load(['studentCourse.student.user', 'studentCourse.course', 'approvedBy']);
         return view('admin.results.show', compact('result'));
     }
 
     public function upload(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls|max:2048',
             'course_id' => 'required|exists:courses,id',
@@ -111,6 +117,7 @@ class ResultController extends Controller
 
     public function downloadTemplate()
     {
+        $this->requirePermission('admin.results.manage');
         $headers = ['matric_number', 'ca_score', 'test_score', 'exam_score'];
         $csv = implode(',', $headers) . "\n";
         $csv .= "20240001,15,10,60\n";
@@ -124,6 +131,7 @@ class ResultController extends Controller
 
     public function approve(Request $request, Result $result)
     {
+        $this->requirePermission('admin.results.manage');
         $result->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -135,6 +143,7 @@ class ResultController extends Controller
 
     public function reject(Request $request, Result $result)
     {
+        $this->requirePermission('admin.results.manage');
         $result->update([
             'status' => 'rejected',
             'remarks' => $request->remarks,
@@ -148,6 +157,7 @@ class ResultController extends Controller
      */
     public function release(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'session_id' => 'required|exists:sessions,id',
             'semester' => 'required',
@@ -166,6 +176,7 @@ class ResultController extends Controller
      */
     public function hide(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'session_id' => 'required|exists:sessions,id',
             'semester' => 'required',
@@ -184,6 +195,7 @@ class ResultController extends Controller
      */
     public function lock(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'session_id' => 'required|exists:sessions,id',
             'semester' => 'required',
@@ -202,6 +214,7 @@ class ResultController extends Controller
      */
     public function publish(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'session_id' => 'required|exists:sessions,id',
             'semester' => 'required',
@@ -220,6 +233,7 @@ class ResultController extends Controller
      */
     public function withdraw(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'session_id' => 'required|exists:sessions,id',
             'semester' => 'required',
@@ -238,6 +252,7 @@ class ResultController extends Controller
      */
     public function recompute(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'student_id' => 'required|exists:students,id',
         ]);
@@ -253,6 +268,7 @@ class ResultController extends Controller
      */
     public function compute(Result $result)
     {
+        $this->requirePermission('admin.results.manage');
         $computed = ResultComputationService::computeResult($result);
 
         return back()->with('success', 'Result computed successfully.');
@@ -263,6 +279,7 @@ class ResultController extends Controller
      */
     public function bulkApprove(Request $request)
     {
+        $this->requirePermission('admin.results.manage');
         $request->validate([
             'results' => 'required|array',
         ]);
