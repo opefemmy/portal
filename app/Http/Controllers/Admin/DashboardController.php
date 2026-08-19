@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Session;
 use App\Services\Dashboard\DashboardResolver;
@@ -9,8 +10,11 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.dashboard.manage');
         // The configurator (when present) dictates which widgets this
         // user sees. When no `dashboard_widgets` row exists for the
         // user, the resolver falls back to the role default — so an

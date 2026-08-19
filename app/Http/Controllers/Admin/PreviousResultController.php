@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\PreviousResult;
 use App\Models\Student;
@@ -19,8 +20,11 @@ use Illuminate\Support\Facades\DB;
  */
 class PreviousResultController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.previous-results.manage');
         $query = PreviousResult::with(['student.user', 'uploader']);
 
         if ($request->student_id) {
@@ -38,11 +42,13 @@ class PreviousResultController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.previous-results.manage');
         return view('admin.previous-results.upload');
     }
 
     public function upload(Request $request, PreviousResultImporter $importer)
     {
+        $this->requirePermission('admin.previous-results.manage');
         $request->validate([
             'file' => 'required|file|mimes:csv,xlsx,xlsm,txt|max:5120', // 5MB
         ]);
@@ -63,6 +69,7 @@ class PreviousResultController extends Controller
 
     public function downloadTemplate(PreviousResultImporter $importer)
     {
+        $this->requirePermission('admin.previous-results.manage');
         $csv = $importer->templateCsv();
         return response($csv, 200, [
             'Content-Type'        => 'text/csv',
@@ -72,6 +79,7 @@ class PreviousResultController extends Controller
 
     public function destroy(PreviousResult $previousResult)
     {
+        $this->requirePermission('admin.previous-results.manage');
         $previousResult->delete();
         return back()->with('success', 'Previous-result row deleted.');
     }
@@ -82,6 +90,7 @@ class PreviousResultController extends Controller
      */
     public function purgeForStudent(Request $request, Student $student)
     {
+        $this->requirePermission('admin.previous-results.manage');
         if (!$request->boolean('confirm')) {
             return back()->with('error', 'Confirmation flag missing. Re-submit with confirm=1.');
         }

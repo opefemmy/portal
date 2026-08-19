@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Models\PaymentGateway;
@@ -9,8 +10,11 @@ use Illuminate\Http\Request;
 
 class SystemSettingController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $settings = SystemSetting::all()->keyBy('key');
         $gateways = PaymentGateway::all();
 
@@ -19,6 +23,7 @@ class SystemSettingController extends Controller
 
     public function updateSettings(Request $request)
     {
+        $this->requirePermission('admin.system-settings.manage');
         $settingsKeys = [
             'admission_form_open',
             'admission_form_penalty',
@@ -90,6 +95,7 @@ class SystemSettingController extends Controller
 
     public function updateGateways(Request $request)
     {
+        $this->requirePermission('admin.system-settings.manage');
         $request->validate([
             'provider' => 'required|string',
             'test_public_key' => 'nullable|string',
@@ -116,6 +122,7 @@ class SystemSettingController extends Controller
 
     public function setActiveGateway(PaymentGateway $gateway)
     {
+        $this->requirePermission('admin.system-settings.manage');
         // Deactivate all other gateways
         PaymentGateway::where('id', '!=', $gateway->id)->update(['is_active' => false]);
 
@@ -128,6 +135,7 @@ class SystemSettingController extends Controller
 
     public function toggleSetting(Request $request)
     {
+        $this->requirePermission('admin.system-settings.manage');
         $key = $request->input('key');
         $value = $request->input('value', 'false');
 
@@ -146,6 +154,7 @@ class SystemSettingController extends Controller
      */
     public function updateBranding(Request $request)
     {
+        $this->requirePermission('admin.system-settings.manage');
         // Validate text fields
         $request->validate([
             'institution_name' => 'nullable|string|max:255',
@@ -236,6 +245,7 @@ class SystemSettingController extends Controller
      */
     public function downloadLogo()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $logo = SystemSetting::get('institution_logo');
 
         if (!$logo) {
@@ -256,6 +266,7 @@ class SystemSettingController extends Controller
      */
     public function downloadIcon()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $icon = SystemSetting::get('institution_icon');
 
         if (!$icon) {
@@ -276,6 +287,7 @@ class SystemSettingController extends Controller
      */
     public function downloadHouseIcon()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $houseIcon = SystemSetting::get('house_icon');
 
         if (!$houseIcon) {
@@ -296,6 +308,7 @@ class SystemSettingController extends Controller
      */
     public function deleteLogo()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $logo = SystemSetting::get('institution_logo');
 
         if ($logo) {
@@ -314,6 +327,7 @@ class SystemSettingController extends Controller
      */
     public function deleteIcon()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $icon = SystemSetting::get('institution_icon');
 
         if ($icon) {
@@ -332,6 +346,7 @@ class SystemSettingController extends Controller
      */
     public function deleteHouseIcon()
     {
+        $this->requirePermission('admin.system-settings.manage');
         $houseIcon = SystemSetting::get('house_icon');
 
         if ($houseIcon) {

@@ -55,7 +55,18 @@ namespace App\Services\Admin;
  * uploadBooks). All routes are auth-admin only — no dual-use
  * carve-outs in this group.
  *
- * Future sub-slice 7 (8i-admin-misc) will add its slugs here.
+ * Slice 8i-admin-misc (sub-slice 7 of 8i-admin):
+ * adds 10 misc controllers — StaffController (8 methods),
+ * ComplaintController (4 methods), PreviousResultController
+ * (6 methods), TranscriptController (3 methods), SystemSettingController
+ * (12 methods — the heavy one: portal toggles + payment-gateway
+ * config + branding + asset download/delete), NotificationController
+ * (2 methods), AnalyticsController (1 method), ReportController
+ * (5 methods — index/students/applications/results/payments),
+ * HospitalServiceController (5 methods — index/store/update/
+ * destroy/toggleStatus), DashboardController (1 method). All
+ * routes are auth-admin only — no dual-use carve-outs in this
+ * group.
  *
  * Per-controller slug shape (one slug covers all CRUD verbs on a
  * single resource) — mirrors Laravel's ResourceController
@@ -121,6 +132,19 @@ class AdminPermissions
             // Sub-slice 6: facilities (hostels + library).
             'admin.hostels.manage',
             'admin.libraries.manage',
+            // Sub-slice 7: misc (staff + complaints + previous-results
+            // + transcripts + system-settings + notifications +
+            // analytics + reports + hospital-services + admin dashboard).
+            'admin.staff.manage',
+            'admin.complaints.manage',
+            'admin.previous-results.manage',
+            'admin.transcripts.manage',
+            'admin.system-settings.manage',
+            'admin.notifications.manage',
+            'admin.analytics.manage',
+            'admin.reports.manage',
+            'admin.hospital-services.manage',
+            'admin.dashboard.manage',
         ],
         'staff' => [
             // Sub-slice 1.
@@ -153,6 +177,17 @@ class AdminPermissions
             // Sub-slice 6.
             'admin.hostels.manage',
             'admin.libraries.manage',
+            // Sub-slice 7.
+            'admin.staff.manage',
+            'admin.complaints.manage',
+            'admin.previous-results.manage',
+            'admin.transcripts.manage',
+            'admin.system-settings.manage',
+            'admin.notifications.manage',
+            'admin.analytics.manage',
+            'admin.reports.manage',
+            'admin.hospital-services.manage',
+            'admin.dashboard.manage',
         ],
     ];
 }

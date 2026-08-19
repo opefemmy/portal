@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\Student;
@@ -11,13 +12,17 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.reports.manage');
         return view('admin.reports.index');
     }
 
     public function students(Request $request)
     {
+        $this->requirePermission('admin.reports.manage');
         $query = Student::with('user', 'department', 'school', 'programme');
 
         if ($request->school_id) {
@@ -39,6 +44,7 @@ class ReportController extends Controller
 
     public function applications(Request $request)
     {
+        $this->requirePermission('admin.reports.manage');
         $query = Applicant::with('school', 'department', 'programme', 'session');
 
         if ($request->school_id) {
@@ -57,6 +63,7 @@ class ReportController extends Controller
 
     public function results(Request $request)
     {
+        $this->requirePermission('admin.reports.manage');
         $results = Result::with('studentCourse.student.user', 'studentCourse.course')
             ->latest()
             ->take(100)
@@ -66,6 +73,7 @@ class ReportController extends Controller
 
     public function payments(Request $request)
     {
+        $this->requirePermission('admin.reports.manage');
         $query = Payment::with('student.user', 'fee');
 
         if ($request->status) {

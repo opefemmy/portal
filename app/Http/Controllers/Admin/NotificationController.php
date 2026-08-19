@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.notifications.manage');
         $data = [
             'scrolling_message' => Setting::get('scrolling_message', ''),
             'login_notification' => Setting::get('login_notification', ''),
@@ -21,6 +25,7 @@ class NotificationController extends Controller
 
     public function update(Request $request)
     {
+        $this->requirePermission('admin.notifications.manage');
         $validated = $request->validate([
             'scrolling_message' => 'nullable|string|max:500',
             'login_notification' => 'nullable|string',

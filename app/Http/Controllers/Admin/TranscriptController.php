@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Result;
@@ -11,8 +12,11 @@ use Illuminate\Http\Request;
 
 class TranscriptController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.transcripts.manage');
         $query = Student::with(['user', 'department', 'programme']);
 
         if ($request->search) {
@@ -30,6 +34,7 @@ class TranscriptController extends Controller
 
     public function show(Student $student)
     {
+        $this->requirePermission('admin.transcripts.manage');
         try {
             $results = Result::whereHas('studentCourse', function($q) use ($student) {
                 $q->where('student_id', $student->id);
@@ -54,6 +59,7 @@ class TranscriptController extends Controller
 
     public function print(Student $student)
     {
+        $this->requirePermission('admin.transcripts.manage');
         try {
             $results = Result::whereHas('studentCourse', function($q) use ($student) {
                 $q->where('student_id', $student->id);

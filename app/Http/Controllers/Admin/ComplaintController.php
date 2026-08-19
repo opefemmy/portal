@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use Illuminate\Http\Request;
 
 class ComplaintController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.complaints.manage');
         $status = $request->status;
 
         $query = Complaint::with('student.user');
@@ -25,12 +29,14 @@ class ComplaintController extends Controller
 
     public function show(Complaint $complaint)
     {
+        $this->requirePermission('admin.complaints.manage');
         $complaint->load('student.user');
         return view('admin.complaints.show', compact('complaint'));
     }
 
     public function update(Request $request, Complaint $complaint)
     {
+        $this->requirePermission('admin.complaints.manage');
         $validated = $request->validate([
             'status' => 'required|in:pending,in_progress,resolved,rejected',
             'admin_response' => 'nullable|string',
@@ -43,6 +49,7 @@ class ComplaintController extends Controller
 
     public function destroy(Complaint $complaint)
     {
+        $this->requirePermission('admin.complaints.manage');
         $complaint->delete();
         return back()->with('success', 'Complaint deleted successfully');
     }

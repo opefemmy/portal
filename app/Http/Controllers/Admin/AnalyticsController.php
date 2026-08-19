@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Payment;
@@ -12,8 +13,11 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    use EnforcesPermission;
+
     public function index()
     {
+        $this->requirePermission('admin.analytics.manage');
         // Student enrollment by level
         $enrollmentByLevel = Student::select('level', DB::raw('count(*) as count'))
             ->groupBy('level')->get();

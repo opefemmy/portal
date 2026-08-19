@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
@@ -11,8 +12,11 @@ use Illuminate\Validation\Rule;
 
 class StaffController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.staff.manage');
         $roleSlug = $request->role_slug;
         $search = $request->search;
 
@@ -46,6 +50,7 @@ class StaffController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.staff.manage');
         $roles = Role::whereNotIn('slug', ['student', 'applicant', 'super_admin'])
             ->orderBy('name')
             ->get();
@@ -54,6 +59,7 @@ class StaffController extends Controller
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.staff.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
@@ -69,11 +75,13 @@ class StaffController extends Controller
 
     public function show(User $staff)
     {
+        $this->requirePermission('admin.staff.manage');
         return view('admin.staff.show', compact('staff'));
     }
 
     public function edit(User $staff)
     {
+        $this->requirePermission('admin.staff.manage');
         $roles = Role::whereNotIn('slug', ['student', 'applicant', 'super_admin'])
             ->orderBy('name')
             ->get();
@@ -82,6 +90,7 @@ class StaffController extends Controller
 
     public function update(Request $request, User $staff)
     {
+        $this->requirePermission('admin.staff.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($staff->id)],
@@ -98,6 +107,7 @@ class StaffController extends Controller
 
     public function destroy(User $staff)
     {
+        $this->requirePermission('admin.staff.manage');
         if ($staff->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account');
         }
@@ -108,6 +118,7 @@ class StaffController extends Controller
 
     public function resetPassword(Request $request, User $staff)
     {
+        $this->requirePermission('admin.staff.manage');
         $newPassword = $request->validate([
             'new_password' => 'required|string|min:6',
         ]);
