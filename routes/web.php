@@ -404,7 +404,9 @@ Route::redirect('/admin', '/admin/dashboard');
 // Admin Dashboard (requires auth and admin role). ICT admin and staff
 // share the same admin dashboard, so include them in the role list.
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin,ict_admin,staff'])->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+        ->middleware('permission:admin.dashboard.manage')
+        ->name('dashboard');
 
     // Per-user dashboard widget configurator. Only super_admin can
     // configure anybody else's dashboard; admin/ict_admin/staff can
@@ -424,153 +426,316 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
         ->name('dashboard-config.update');
 
     // User Unlock / Password Reset (MUST come before resource routes)
-    Route::get('/users/unlock', [UserUnlockController::class, 'showUnlockForm'])->name('users.unlock');
-    Route::post('/users/unlock/generate', [UserUnlockController::class, 'generateUnlockCode'])->name('users.unlock.generate');
-    Route::get('/users/unlock/code', [UserUnlockController::class, 'showUnlockCode'])->name('users.unlock.code');
-    Route::post('/users/unlock', [UserUnlockController::class, 'unlockUser'])->name('users.unlock.process');
-    Route::post('/users/unlock/quick', [UserUnlockController::class, 'quickUnlock'])->name('users.unlock.quick');
-    Route::post('/users/unlock/reset', [UserUnlockController::class, 'resetUserPassword'])->name('users.unlock.reset');
+    Route::get('/users/unlock', [UserUnlockController::class, 'showUnlockForm'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock');
+    Route::post('/users/unlock/generate', [UserUnlockController::class, 'generateUnlockCode'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock.generate');
+    Route::get('/users/unlock/code', [UserUnlockController::class, 'showUnlockCode'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock.code');
+    Route::post('/users/unlock', [UserUnlockController::class, 'unlockUser'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock.process');
+    Route::post('/users/unlock/quick', [UserUnlockController::class, 'quickUnlock'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock.quick');
+    Route::post('/users/unlock/reset', [UserUnlockController::class, 'resetUserPassword'])
+        ->middleware('permission:admin.user-unlocks.manage')
+        ->name('users.unlock.reset');
 
     // User Management
-    Route::resource('users', UserController::class);
-    Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
-    Route::post('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
-    Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
-    Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
-    Route::get('/users/upload', [UserController::class, 'upload'])->name('users.upload');
+    Route::resource('users', UserController::class)
+        ->middleware('permission:admin.users.manage');
+    Route::get('/users/search', [UserController::class, 'search'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.search');
+    Route::post('/users/{user}/activate', [UserController::class, 'activate'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.activate');
+    Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.deactivate');
+    Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.reset_password');
+    Route::get('/users/upload', [UserController::class, 'upload'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.upload');
     // Per-user multi-role assignment (writes to role_user pivot +
     // users.role_id). Used by the modal on admin/users.
     Route::put('/users/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'update'])
+        ->middleware('permission:admin.user-roles.manage')
         ->name('users.roles.update');
 
-    Route::post('/users/upload', [UserController::class, 'processUpload'])->name('users.upload.process');
-    Route::post('/users/{user}/passport', [UserController::class, 'uploadPassport'])->name('users.passport');
+    Route::post('/users/upload', [UserController::class, 'processUpload'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.upload.process');
+    Route::post('/users/{user}/passport', [UserController::class, 'uploadPassport'])
+        ->middleware('permission:admin.users.manage')
+        ->name('users.passport');
 
     // Institution Setup
-    Route::resource('schools', SchoolController::class);
-    Route::resource('departments', DepartmentController::class);
-    Route::resource('programmes', ProgrammeController::class);
-    Route::resource('sessions', SessionController::class);
-    Route::resource('admission-centres', \App\Http\Controllers\Admin\AdmissionCentreController::class);
-    Route::post('/admission-centres/{centre}/toggle', [\App\Http\Controllers\Admin\AdmissionCentreController::class, 'toggleStatus'])->name('admission-centres.toggle');
-    Route::post('/sessions/{session}/set-current', [SessionController::class, 'setCurrent'])->name('sessions.set_current');
+    Route::resource('schools', SchoolController::class)
+        ->middleware('permission:admin.schools.manage');
+    Route::resource('departments', DepartmentController::class)
+        ->middleware('permission:admin.departments.manage');
+    Route::resource('programmes', ProgrammeController::class)
+        ->middleware('permission:admin.programmes.manage');
+    Route::resource('sessions', SessionController::class)
+        ->middleware('permission:admin.sessions.manage');
+    Route::resource('admission-centres', \App\Http\Controllers\Admin\AdmissionCentreController::class)
+        ->middleware('permission:admin.admission-centres.manage');
+    Route::post('/admission-centres/{centre}/toggle', [\App\Http\Controllers\Admin\AdmissionCentreController::class, 'toggleStatus'])
+        ->middleware('permission:admin.admission-centres.manage')
+        ->name('admission-centres.toggle');
+    Route::post('/sessions/{session}/set-current', [SessionController::class, 'setCurrent'])
+        ->middleware('permission:admin.sessions.manage')
+        ->name('sessions.set_current');
 
     // Hospital Services Management
-    Route::resource('hospital-services', \App\Http\Controllers\Admin\HospitalServiceController::class);
-    Route::post('/hospital-services/{service}/toggle', [\App\Http\Controllers\Admin\HospitalServiceController::class, 'toggleStatus'])->name('hospital-services.toggle');
+    Route::resource('hospital-services', \App\Http\Controllers\Admin\HospitalServiceController::class)
+        ->middleware('permission:admin.hospital-services.manage');
+    Route::post('/hospital-services/{service}/toggle', [\App\Http\Controllers\Admin\HospitalServiceController::class, 'toggleStatus'])
+        ->middleware('permission:admin.hospital-services.manage')
+        ->name('hospital-services.toggle');
 
     // Course Management
-    Route::get('/courses/upload', [CourseController::class, 'uploadForm'])->name('courses.upload.form');
-    Route::post('/courses/upload', [CourseController::class, 'upload'])->name('courses.upload');
-    Route::resource('courses', CourseController::class);
+    Route::get('/courses/upload', [CourseController::class, 'uploadForm'])
+        ->middleware('permission:admin.courses.manage')
+        ->name('courses.upload.form');
+    Route::post('/courses/upload', [CourseController::class, 'upload'])
+        ->middleware('permission:admin.courses.manage')
+        ->name('courses.upload');
+    Route::resource('courses', CourseController::class)
+        ->middleware('permission:admin.courses.manage');
 
     // Fee Management
-    Route::resource('fees', FeeController::class);
+    Route::resource('fees', FeeController::class)
+        ->middleware('permission:admin.fees.manage');
 
     // Payment Types Management
-    Route::resource('payment-types', PaymentTypeController::class);
-    Route::post('/payment-types/{paymentType}/toggle', [PaymentTypeController::class, 'toggle'])->name('payment-types.toggle');
+    Route::resource('payment-types', PaymentTypeController::class)
+        ->middleware('permission:admin.payment-types.manage');
+    Route::post('/payment-types/{paymentType}/toggle', [PaymentTypeController::class, 'toggle'])
+        ->middleware('permission:admin.payment-types.manage')
+        ->name('payment-types.toggle');
 
     // Admission Payment Flow — combined config screen (amounts + live overrides + gates)
-    Route::get('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'edit'])->name('admission.payment-flow');
-    Route::put('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'update'])->name('admission.payment-flow.update');
+    Route::get('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'edit'])
+        ->middleware('permission:admin.payment-flows.manage')
+        ->name('admission.payment-flow');
+    Route::put('/admission/payment-flow', [\App\Http\Controllers\Admin\PaymentFlowController::class, 'update'])
+        ->middleware('permission:admin.payment-flows.manage')
+        ->name('admission.payment-flow.update');
 
     // Grade Configuration
-    Route::resource('grades', GradeController::class);
+    Route::resource('grades', GradeController::class)
+        ->middleware('permission:admin.grades.manage');
 
     // Grade Classifications
-    Route::put('/grades/classification/{classification}', [GradingController::class, 'updateClassification'])->name('grades.classification.update');
-    Route::post('/grades/classification', [GradingController::class, 'storeClassification'])->name('grades.classification.store');
-    Route::delete('/grades/classification/{classification}', [GradingController::class, 'destroyClassification'])->name('grades.classification.destroy');
+    Route::put('/grades/classification/{classification}', [GradingController::class, 'updateClassification'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.classification.update');
+    Route::post('/grades/classification', [GradingController::class, 'storeClassification'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.classification.store');
+    Route::delete('/grades/classification/{classification}', [GradingController::class, 'destroyClassification'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.classification.destroy');
 
     // Grading Scales
-    Route::put('/grades/scale/{scale}', [GradingController::class, 'updateScale'])->name('grades.scale.update');
-    Route::post('/grades/scale', [GradingController::class, 'storeScale'])->name('grades.scale.store');
-    Route::delete('/grades/scale/{scale}', [GradingController::class, 'destroyScale'])->name('grades.scale.destroy');
+    Route::put('/grades/scale/{scale}', [GradingController::class, 'updateScale'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.scale.update');
+    Route::post('/grades/scale', [GradingController::class, 'storeScale'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.scale.store');
+    Route::delete('/grades/scale/{scale}', [GradingController::class, 'destroyScale'])
+        ->middleware('permission:admin.grading.manage')
+        ->name('grades.scale.destroy');
 
     // System Settings
-    Route::get('/settings', [SystemSettingController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [SystemSettingController::class, 'updateSettings'])->name('settings.update');
-    Route::post('/settings/gateway', [SystemSettingController::class, 'updateGateways'])->name('settings.gateway');
-    Route::post('/settings/toggle', [SystemSettingController::class, 'toggleSetting'])->name('settings.toggle');
-    Route::post('/settings/branding', [SystemSettingController::class, 'updateBranding'])->name('settings.branding');
+    Route::get('/settings', [SystemSettingController::class, 'index'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.index');
+    Route::put('/settings', [SystemSettingController::class, 'updateSettings'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.update');
+    Route::post('/settings/gateway', [SystemSettingController::class, 'updateGateways'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.gateway');
+    Route::post('/settings/toggle', [SystemSettingController::class, 'toggleSetting'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.toggle');
+    Route::post('/settings/branding', [SystemSettingController::class, 'updateBranding'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.branding');
 
     // Download branding files
-    Route::get('/settings/download/logo', [SystemSettingController::class, 'downloadLogo'])->name('settings.download.logo');
-    Route::get('/settings/download/icon', [SystemSettingController::class, 'downloadIcon'])->name('settings.download.icon');
-    Route::get('/settings/download/house-icon', [SystemSettingController::class, 'downloadHouseIcon'])->name('settings.download.house-icon');
+    Route::get('/settings/download/logo', [SystemSettingController::class, 'downloadLogo'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.download.logo');
+    Route::get('/settings/download/icon', [SystemSettingController::class, 'downloadIcon'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.download.icon');
+    Route::get('/settings/download/house-icon', [SystemSettingController::class, 'downloadHouseIcon'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.download.house-icon');
 
     // Delete branding files
-    Route::delete('/settings/delete/logo', [SystemSettingController::class, 'deleteLogo'])->name('settings.delete.logo');
-    Route::delete('/settings/delete/icon', [SystemSettingController::class, 'deleteIcon'])->name('settings.delete.icon');
-    Route::delete('/settings/delete/house-icon', [SystemSettingController::class, 'deleteHouseIcon'])->name('settings.delete.house-icon');
+    Route::delete('/settings/delete/logo', [SystemSettingController::class, 'deleteLogo'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.delete.logo');
+    Route::delete('/settings/delete/icon', [SystemSettingController::class, 'deleteIcon'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.delete.icon');
+    Route::delete('/settings/delete/house-icon', [SystemSettingController::class, 'deleteHouseIcon'])
+        ->middleware('permission:admin.system-settings.manage')
+        ->name('settings.delete.house-icon');
 
     // Reports
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports');
-    Route::get('/reports/students', [ReportController::class, 'students'])->name('reports.students');
-    Route::get('/reports/applications', [ReportController::class, 'applications'])->name('reports.applications');
-    Route::get('/reports/results', [ReportController::class, 'results'])->name('reports.results');
-    Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('permission:admin.reports.manage')
+        ->name('reports');
+    Route::get('/reports/students', [ReportController::class, 'students'])
+        ->middleware('permission:admin.reports.manage')
+        ->name('reports.students');
+    Route::get('/reports/applications', [ReportController::class, 'applications'])
+        ->middleware('permission:admin.reports.manage')
+        ->name('reports.applications');
+    Route::get('/reports/results', [ReportController::class, 'results'])
+        ->middleware('permission:admin.reports.manage')
+        ->name('reports.results');
+    Route::get('/reports/payments', [ReportController::class, 'payments'])
+        ->middleware('permission:admin.reports.manage')
+        ->name('reports.payments');
 
     // Staff Management
-    Route::resource('staff', StaffController::class);
-    Route::post('/staff/{user}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.reset_password');
+    Route::resource('staff', StaffController::class)
+        ->middleware('permission:admin.staff.manage');
+    Route::post('/staff/{user}/reset-password', [StaffController::class, 'resetPassword'])
+        ->middleware('permission:admin.staff.manage')
+        ->name('staff.reset_password');
 
     // Student Management (literal routes first to avoid conflict with wildcard)
-    Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
-    Route::post('/students/import', [StudentImportController::class, 'import'])->name('students.import.store');
-    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])->name('students.import.template');
-    Route::get('/students/measurements/export', [StudentController::class, 'exportMeasurements'])->name('students.measurements.export');
-    Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs']);
+    Route::get('/students/import', [StudentImportController::class, 'index'])
+        ->middleware('permission:admin.student-imports.manage')
+        ->name('students.import');
+    Route::post('/students/import', [StudentImportController::class, 'import'])
+        ->middleware('permission:admin.student-imports.manage')
+        ->name('students.import.store');
+    Route::get('/students/import/template', [StudentImportController::class, 'downloadTemplate'])
+        ->middleware('permission:admin.student-imports.manage')
+        ->name('students.import.template');
+    Route::get('/students/measurements/export', [StudentController::class, 'exportMeasurements'])
+        ->middleware('permission:admin.students.manage')
+        ->name('students.measurements.export');
+    Route::get('/students/lgas/{stateId}', [StudentController::class, 'getLGAs'])
+        ->middleware('permission:admin.students.manage');
 
-    Route::resource('students', StudentController::class);
-    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset_password');
+    Route::resource('students', StudentController::class)
+        ->middleware('permission:admin.students.manage');
+    Route::post('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])
+        ->middleware('permission:admin.students.manage')
+        ->name('students.reset_password');
 
     // Student Uniform Measurements
-    Route::get('/students/{student}/measurements', [StudentController::class, 'showMeasurements'])->name('students.measurements');
-    Route::get('/students/{student}/measurements/edit', [StudentController::class, 'editMeasurements'])->name('students.measurements.edit');
-    Route::put('/students/{student}/measurements', [StudentController::class, 'updateMeasurements'])->name('students.measurements.update');
+    Route::get('/students/{student}/measurements', [StudentController::class, 'showMeasurements'])
+        ->middleware('permission:admin.students.manage')
+        ->name('students.measurements');
+    Route::get('/students/{student}/measurements/edit', [StudentController::class, 'editMeasurements'])
+        ->middleware('permission:admin.students.manage')
+        ->name('students.measurements.edit');
+    Route::put('/students/{student}/measurements', [StudentController::class, 'updateMeasurements'])
+        ->middleware('permission:admin.students.manage')
+        ->name('students.measurements.update');
 
     // Complaints Management
-    Route::resource('complaints', \App\Http\Controllers\Admin\ComplaintController::class);
+    Route::resource('complaints', \App\Http\Controllers\Admin\ComplaintController::class)
+        ->middleware('permission:admin.complaints.manage');
 
     // Course Assignments (OnCourses)
-    Route::resource('course-assignments', CourseAssignmentController::class);
+    Route::resource('course-assignments', CourseAssignmentController::class)
+        ->middleware('permission:admin.course-assignments.manage');
 
     // Notifications
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::put('/notifications', [NotificationController::class, 'update'])->name('notifications.update');
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->middleware('permission:admin.notifications.manage')
+        ->name('notifications.index');
+    Route::put('/notifications', [NotificationController::class, 'update'])
+        ->middleware('permission:admin.notifications.manage')
+        ->name('notifications.update');
 
     // Course Registration Reports
-    Route::get('/course-registrations', [AdminCourseRegController::class, 'index'])->name('course-registrations.index');
-    Route::get('/course-registrations/export', [AdminCourseRegController::class, 'export'])->name('course-registrations.export');
-    Route::post('/course-registrations/{registration}/unsubmit', [AdminCourseRegController::class, 'unsubmit'])->name('course-registrations.unsubmit');
-    Route::post('/course-registrations/{registration}/resubmit', [AdminCourseRegController::class, 'resubmit'])->name('course-registrations.resubmit');
+    Route::get('/course-registrations', [AdminCourseRegController::class, 'index'])
+        ->middleware('permission:admin.course-registrations.manage')
+        ->name('course-registrations.index');
+    Route::get('/course-registrations/export', [AdminCourseRegController::class, 'export'])
+        ->middleware('permission:admin.course-registrations.manage')
+        ->name('course-registrations.export');
+    Route::post('/course-registrations/{registration}/unsubmit', [AdminCourseRegController::class, 'unsubmit'])
+        ->middleware('permission:admin.course-registrations.manage')
+        ->name('course-registrations.unsubmit');
+    Route::post('/course-registrations/{registration}/resubmit', [AdminCourseRegController::class, 'resubmit'])
+        ->middleware('permission:admin.course-registrations.manage')
+        ->name('course-registrations.resubmit');
 
     // Student ID Cards
-    Route::get('/id-cards', [StudentIdCardController::class, 'index'])->name('id-cards.index');
-    Route::get('/id-cards/{student}/generate', [StudentIdCardController::class, 'generate'])->name('id-cards.generate');
-    Route::get('/id-cards/print', [StudentIdCardController::class, 'print'])->name('id-cards.print');
-    Route::post('/id-cards/bulk', [StudentIdCardController::class, 'bulk'])->name('id-cards.bulk');
+    Route::get('/id-cards', [StudentIdCardController::class, 'index'])
+        ->middleware('permission:admin.student-id-cards.manage')
+        ->name('id-cards.index');
+    Route::get('/id-cards/{student}/generate', [StudentIdCardController::class, 'generate'])
+        ->middleware('permission:admin.student-id-cards.manage')
+        ->name('id-cards.generate');
+    Route::get('/id-cards/print', [StudentIdCardController::class, 'print'])
+        ->middleware('permission:admin.student-id-cards.manage')
+        ->name('id-cards.print');
+    Route::post('/id-cards/bulk', [StudentIdCardController::class, 'bulk'])
+        ->middleware('permission:admin.student-id-cards.manage')
+        ->name('id-cards.bulk');
 
     // Lecture Timetable
-    Route::resource('timetable', \App\Http\Controllers\Admin\TimetableController::class);
+    Route::resource('timetable', \App\Http\Controllers\Admin\TimetableController::class)
+        ->middleware('permission:admin.timetables.manage');
 
     // Transcripts
-    Route::get('/transcripts', [TranscriptController::class, 'index'])->name('transcripts.index');
-    Route::get('/transcripts/{student}', [TranscriptController::class, 'show'])->name('transcripts.show');
-    Route::get('/transcripts/{student}/print', [TranscriptController::class, 'print'])->name('transcripts.print');
+    Route::get('/transcripts', [TranscriptController::class, 'index'])
+        ->middleware('permission:admin.transcripts.manage')
+        ->name('transcripts.index');
+    Route::get('/transcripts/{student}', [TranscriptController::class, 'show'])
+        ->middleware('permission:admin.transcripts.manage')
+        ->name('transcripts.show');
+    Route::get('/transcripts/{student}/print', [TranscriptController::class, 'print'])
+        ->middleware('permission:admin.transcripts.manage')
+        ->name('transcripts.print');
 
     // Hostel Management
-    Route::resource('hostels', AdminHostelController::class);
-    Route::get('/hostels/{hostel}/rooms/create', [AdminHostelController::class, 'createRoom'])->name('hostels.rooms.create');
-    Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])->name('hostels.rooms.store');
-    Route::get('/hostels/allocations', [AdminHostelController::class, 'allocations'])->name('hostels.allocations');
-    Route::get('/hostels/allocations/create', [AdminHostelController::class, 'createAllocation'])->name('hostels.allocations.create');
-    Route::post('/hostels/allocations', [AdminHostelController::class, 'storeAllocation'])->name('hostels.allocations.store');
-    Route::post('/hostels/allocations/{allocation}/checkout', [AdminHostelController::class, 'checkOut'])->name('hostels.allocations.checkout');
-    Route::get('/hostels/rooms/{hostel}/rooms', [AdminHostelController::class, 'getRooms']);
-    Route::get('/hostels/beds/{room}/beds', [AdminHostelController::class, 'getAvailableBeds']);
+    Route::resource('hostels', AdminHostelController::class)
+        ->middleware('permission:admin.hostels.manage');
+    Route::get('/hostels/{hostel}/rooms/create', [AdminHostelController::class, 'createRoom'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.rooms.create');
+    Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.rooms.store');
+    Route::get('/hostels/allocations', [AdminHostelController::class, 'allocations'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.allocations');
+    Route::get('/hostels/allocations/create', [AdminHostelController::class, 'createAllocation'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.allocations.create');
+    Route::post('/hostels/allocations', [AdminHostelController::class, 'storeAllocation'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.allocations.store');
+    Route::post('/hostels/allocations/{allocation}/checkout', [AdminHostelController::class, 'checkOut'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.allocations.checkout');
+    Route::get('/hostels/rooms/{hostel}/rooms', [AdminHostelController::class, 'getRooms'])
+        ->middleware('permission:admin.hostels.manage');
+    Route::get('/hostels/beds/{room}/beds', [AdminHostelController::class, 'getAvailableBeds'])
+        ->middleware('permission:admin.hostels.manage');
 
 // Library
     Route::get('/library/verify', function () {
@@ -587,42 +752,100 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     })->name('library.verify.post');
 
     Route::middleware('library.access')->group(function () {
-        Route::get('/library/books', [LibraryController::class, 'books'])->name('library.books');
-        Route::get('/library/books/create', [LibraryController::class, 'createBook'])->name('library.books.create');
-        Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('library.books.store');
-        Route::post('/library/books/upload', [LibraryController::class, 'uploadBooks'])->name('library.books.upload');
-        Route::get('/library/loans', [LibraryController::class, 'loans'])->name('library.loans');
-        Route::post('/library/loans/issue', [LibraryController::class, 'issueBook'])->name('library.loans.issue');
-        Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnBook'])->name('library.loans.return');
+        Route::get('/library/books', [LibraryController::class, 'books'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.books');
+        Route::get('/library/books/create', [LibraryController::class, 'createBook'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.books.create');
+        Route::post('/library/books', [LibraryController::class, 'storeBook'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.books.store');
+        Route::post('/library/books/upload', [LibraryController::class, 'uploadBooks'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.books.upload');
+        Route::get('/library/loans', [LibraryController::class, 'loans'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.loans');
+        Route::post('/library/loans/issue', [LibraryController::class, 'issueBook'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.loans.issue');
+        Route::post('/library/loans/{loan}/return', [LibraryController::class, 'returnBook'])
+            ->middleware('permission:admin.libraries.manage')
+            ->name('library.loans.return');
     });
 
     // Results Management
-    Route::get('/results', [\App\Http\Controllers\Admin\ResultController::class, 'index'])->name('results.index');
-    Route::get('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'upload'])->name('results.upload');
-    Route::post('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'store'])->name('results.store');
-    Route::get('/results/template', [\App\Http\Controllers\Admin\ResultController::class, 'downloadTemplate'])->name('results.template');
-    Route::get('/results/{result}', [\App\Http\Controllers\Admin\ResultController::class, 'show'])->name('results.show');
-    Route::put('/results/{result}/approve', [\App\Http\Controllers\Admin\ResultController::class, 'approve'])->name('results.approve');
-    Route::put('/results/{result}/reject', [\App\Http\Controllers\Admin\ResultController::class, 'reject'])->name('results.reject');
-    Route::put('/results/{result}/compute', [\App\Http\Controllers\Admin\ResultController::class, 'compute'])->name('results.compute');
-    Route::post('/results/release', [\App\Http\Controllers\Admin\ResultController::class, 'release'])->name('results.release');
-    Route::post('/results/hide', [\App\Http\Controllers\Admin\ResultController::class, 'hide'])->name('results.hide');
-    Route::post('/results/lock', [\App\Http\Controllers\Admin\ResultController::class, 'lock'])->name('results.lock');
-    Route::post('/results/publish', [\App\Http\Controllers\Admin\ResultController::class, 'publish'])->name('results.publish');
-    Route::post('/results/withdraw', [\App\Http\Controllers\Admin\ResultController::class, 'withdraw'])->name('results.withdraw');
-    Route::post('/results/recompute', [\App\Http\Controllers\Admin\ResultController::class, 'recompute'])->name('results.recompute');
-    Route::post('/results/bulk-approve', [\App\Http\Controllers\Admin\ResultController::class, 'bulkApprove'])->name('results.bulkApprove');
+    Route::get('/results', [\App\Http\Controllers\Admin\ResultController::class, 'index'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.index');
+    Route::get('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'upload'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.upload');
+    Route::post('/results/upload', [\App\Http\Controllers\Admin\ResultController::class, 'store'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.store');
+    Route::get('/results/template', [\App\Http\Controllers\Admin\ResultController::class, 'downloadTemplate'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.template');
+    Route::get('/results/{result}', [\App\Http\Controllers\Admin\ResultController::class, 'show'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.show');
+    Route::put('/results/{result}/approve', [\App\Http\Controllers\Admin\ResultController::class, 'approve'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\Admin\ResultController::class, 'reject'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.reject');
+    Route::put('/results/{result}/compute', [\App\Http\Controllers\Admin\ResultController::class, 'compute'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.compute');
+    Route::post('/results/release', [\App\Http\Controllers\Admin\ResultController::class, 'release'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.release');
+    Route::post('/results/hide', [\App\Http\Controllers\Admin\ResultController::class, 'hide'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.hide');
+    Route::post('/results/lock', [\App\Http\Controllers\Admin\ResultController::class, 'lock'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.lock');
+    Route::post('/results/publish', [\App\Http\Controllers\Admin\ResultController::class, 'publish'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.publish');
+    Route::post('/results/withdraw', [\App\Http\Controllers\Admin\ResultController::class, 'withdraw'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.withdraw');
+    Route::post('/results/recompute', [\App\Http\Controllers\Admin\ResultController::class, 'recompute'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.recompute');
+    Route::post('/results/bulk-approve', [\App\Http\Controllers\Admin\ResultController::class, 'bulkApprove'])
+        ->middleware('permission:admin.results.manage')
+        ->name('results.bulkApprove');
 
     // Previous-results upload (historical / pre-portal rows for transcripts).
-    Route::get('/previous-results', [\App\Http\Controllers\Admin\PreviousResultController::class, 'index'])->name('previous-results.index');
-    Route::get('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'create'])->name('previous-results.create');
-    Route::post('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'upload'])->name('previous-results.upload');
-    Route::get('/previous-results/template', [\App\Http\Controllers\Admin\PreviousResultController::class, 'downloadTemplate'])->name('previous-results.template');
-    Route::delete('/previous-results/{previousResult}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'destroy'])->name('previous-results.destroy');
-    Route::post('/previous-results/purge-student/{student}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'purgeForStudent'])->name('previous-results.purge-student');
+    Route::get('/previous-results', [\App\Http\Controllers\Admin\PreviousResultController::class, 'index'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.index');
+    Route::get('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'create'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.create');
+    Route::post('/previous-results/upload', [\App\Http\Controllers\Admin\PreviousResultController::class, 'upload'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.upload');
+    Route::get('/previous-results/template', [\App\Http\Controllers\Admin\PreviousResultController::class, 'downloadTemplate'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.template');
+    Route::delete('/previous-results/{previousResult}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'destroy'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.destroy');
+    Route::post('/previous-results/purge-student/{student}', [\App\Http\Controllers\Admin\PreviousResultController::class, 'purgeForStudent'])
+        ->middleware('permission:admin.previous-results.manage')
+        ->name('previous-results.purge-student');
 
     // Analytics
-    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+    Route::get('/analytics', [AnalyticsController::class, 'index'])
+        ->middleware('permission:admin.analytics.manage')
+        ->name('analytics');
 
     // System Maintenance Routes
     //
