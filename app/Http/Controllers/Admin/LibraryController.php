@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use App\Models\BookLoan;
@@ -10,8 +11,11 @@ use Illuminate\Http\Request;
 
 class LibraryController extends Controller
 {
+    use EnforcesPermission;
+
     public function books(Request $request)
     {
+        $this->requirePermission('admin.libraries.manage');
         $query = Book::query();
         if ($request->search) {
             $query->where(function($q) use ($request) {
@@ -26,11 +30,13 @@ class LibraryController extends Controller
 
     public function createBook()
     {
+        $this->requirePermission('admin.libraries.manage');
         return view('admin.library.book-create');
     }
 
     public function storeBook(Request $request)
     {
+        $this->requirePermission('admin.libraries.manage');
         $validated = $request->validate([
             'isbn' => 'nullable|string|max:20',
             'title' => 'required|string|max:255',
@@ -48,6 +54,7 @@ class LibraryController extends Controller
 
     public function loans(Request $request)
     {
+        $this->requirePermission('admin.libraries.manage');
         $query = BookLoan::with(['book', 'student.user', 'issuedBy']);
         if ($request->status) {
             $query->where('status', $request->status);
@@ -60,6 +67,7 @@ class LibraryController extends Controller
 
     public function issueBook(Request $request)
     {
+        $this->requirePermission('admin.libraries.manage');
         $validated = $request->validate([
             'book_id' => 'required|exists:books,id',
             'student_id' => 'required|exists:students,id',
@@ -87,6 +95,7 @@ class LibraryController extends Controller
 
     public function returnBook(BookLoan $loan)
     {
+        $this->requirePermission('admin.libraries.manage');
         if ($loan->status === 'returned') {
             return back()->with('error', 'Book already returned');
         }
@@ -103,6 +112,7 @@ class LibraryController extends Controller
 
     public function uploadBooks(Request $request)
     {
+        $this->requirePermission('admin.libraries.manage');
         $request->validate([
             'file' => 'required|mimes:csv,xlsx,xls|max:2048',
         ]);

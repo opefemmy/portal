@@ -46,8 +46,16 @@ namespace App\Services\Admin;
  * edit/update — the combined admin screen for the admission
  * payment flow, driven from the PaymentType catalogue).
  *
- * Future sub-slices (8i-admin-facilities, 8i-admin-misc) will
- * add their slugs here.
+ * Slice 8i-admin-facilities (sub-slice 6 of 8i-admin):
+ * adds 2 facilities controllers — HostelController (15 methods:
+ * index/create/store/show/edit/update/destroy + createRoom/
+ * storeRoom/allocations/createAllocation/storeAllocation/getRooms/
+ * getAvailableBeds/checkOut) and LibraryController (8 methods:
+ * books/createBook/storeBook/loans/issueBook/returnBook/
+ * uploadBooks). All routes are auth-admin only — no dual-use
+ * carve-outs in this group.
+ *
+ * Future sub-slice 7 (8i-admin-misc) will add its slugs here.
  *
  * Per-controller slug shape (one slug covers all CRUD verbs on a
  * single resource) — mirrors Laravel's ResourceController
@@ -110,6 +118,9 @@ class AdminPermissions
             'admin.fees.manage',
             'admin.payment-types.manage',
             'admin.payment-flows.manage',
+            // Sub-slice 6: facilities (hostels + library).
+            'admin.hostels.manage',
+            'admin.libraries.manage',
         ],
         'staff' => [
             // Sub-slice 1.
@@ -139,6 +150,9 @@ class AdminPermissions
             'admin.fees.manage',
             'admin.payment-types.manage',
             'admin.payment-flows.manage',
+            // Sub-slice 6.
+            'admin.hostels.manage',
+            'admin.libraries.manage',
         ],
     ];
 }

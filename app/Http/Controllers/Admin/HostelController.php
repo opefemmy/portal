@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hostel;
 use App\Models\HostelRoom;
@@ -12,8 +13,11 @@ use Illuminate\Http\Request;
 
 class HostelController extends Controller
 {
+    use EnforcesPermission;
+
     public function index(Request $request)
     {
+        $this->requirePermission('admin.hostels.manage');
         $query = Hostel::query();
         if ($request->search) {
             $query->where('name', 'like', "%{$request->search}%")
@@ -25,11 +29,13 @@ class HostelController extends Controller
 
     public function create()
     {
+        $this->requirePermission('admin.hostels.manage');
         return view('admin.hostels.create');
     }
 
     public function store(Request $request)
     {
+        $this->requirePermission('admin.hostels.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:hostels',
@@ -49,17 +55,20 @@ class HostelController extends Controller
 
     public function show(Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         $rooms = $hostel->rooms()->latest()->paginate(20);
         return view('admin.hostels.show', compact('hostel', 'rooms'));
     }
 
     public function edit(Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         return view('admin.hostels.edit', compact('hostel'));
     }
 
     public function update(Request $request, Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:hostels,code,' . $hostel->id,
@@ -77,6 +86,7 @@ class HostelController extends Controller
 
     public function destroy(Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         $hostel->delete();
         return back()->with('success', 'Hostel deleted successfully');
     }
@@ -84,11 +94,13 @@ class HostelController extends Controller
     // Room Management
     public function createRoom(Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         return view('admin.hostels.room-create', compact('hostel'));
     }
 
     public function storeRoom(Request $request, Hostel $hostel)
     {
+        $this->requirePermission('admin.hostels.manage');
         $validated = $request->validate([
             'room_number' => 'required|string|max:20',
             'floor' => 'required|integer|min:1',
@@ -119,6 +131,7 @@ class HostelController extends Controller
     // Allocation Management
     public function allocations(Request $request)
     {
+        $this->requirePermission('admin.hostels.manage');
         $query = HostelAllocation::with(['hostel', 'room', 'student.user', 'session']);
         if ($request->status) {
             $query->where('status', $request->status);
@@ -129,6 +142,7 @@ class HostelController extends Controller
 
     public function createAllocation()
     {
+        $this->requirePermission('admin.hostels.manage');
         $hostels = Hostel::where('is_active', true)->get();
         $students = Student::where('status', 'active')->with('user')->get();
         $sessions = Session::all();
@@ -137,6 +151,7 @@ class HostelController extends Controller
 
     public function storeAllocation(Request $request)
     {
+        $this->requirePermission('admin.hostels.manage');
         $validated = $request->validate([
             'hostel_id' => 'required|exists:hostels,id',
             'hostel_room_id' => 'required|exists:hostel_rooms,id',
@@ -185,6 +200,7 @@ class HostelController extends Controller
 
     public function getRooms($hostelId)
     {
+        $this->requirePermission('admin.hostels.manage');
         $rooms = HostelRoom::where('hostel_id', $hostelId)
             ->where('is_active', true)
             ->where('available_beds', '>', 0)
@@ -194,6 +210,7 @@ class HostelController extends Controller
 
     public function getAvailableBeds($roomId)
     {
+        $this->requirePermission('admin.hostels.manage');
         $beds = \App\Models\HostelBed::where('hostel_room_id', $roomId)
             ->where('status', 'available')
             ->get();
@@ -202,6 +219,7 @@ class HostelController extends Controller
 
     public function checkOut(HostelAllocation $allocation)
     {
+        $this->requirePermission('admin.hostels.manage');
         $allocation->update([
             'check_out_date' => now()->toDateString(),
             'status' => 'checked_out'
