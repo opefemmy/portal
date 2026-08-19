@@ -80,6 +80,14 @@ namespace App\Services\Admin;
  * shrink their access; the catalogue rows mirror their current
  * route-level behaviour to avoid a 403 regression.
  *
+ * Slice 8j-audit: ict_admin is also in the /bursar/* and /finance/*
+ * role: middleware lists (routes/web.php:1336, routes/finance.php:23).
+ * The intent documented at routes/finance.php:13-16 is "ICT admin...
+ * need to be able to open finance screens for read-only
+ * reconciliation work." ict_admin's grant list now mirrors that
+ * with the read-only bursar.* and finance.* slugs. The `staff`
+ * role is NOT in those route: lists, so its grants stay admin-only.
+ *
  * ## Dual-use note (UserUnlockController)
  *
  * `UserUnlockController::showUnlockCode` and `::unlockUser` are
@@ -145,6 +153,26 @@ class AdminPermissions
             'admin.reports.manage',
             'admin.hospital-services.manage',
             'admin.dashboard.manage',
+            // Cross-domain read access (slice 8j-audit fix).
+            // `ict_admin` is listed in the /bursar/* (routes/web.php:1336)
+            // and /finance/* (routes/finance.php:23) role: middleware.
+            // The intent at routes/finance.php:13-16 is "ICT admin...
+            // need to be able to open finance screens for read-only
+            // reconciliation work." Without these grants the trait
+            // gate 403s them at the controller body. The grant list
+            // catches up to the documented intent.
+            'bursar.payments.view',
+            'bursar.debtors.view',
+            'bursar.fees.view',
+            'bursar.reports.view',
+            'bursar.dashboard.view',
+            'finance.transactions.view',
+            'finance.invoices.view',
+            'finance.receipts.view',
+            'finance.budgets.view',
+            'finance.vendors.view',
+            'finance.payroll.view',
+            'finance.dashboard.view',
         ],
         'staff' => [
             // Sub-slice 1.
