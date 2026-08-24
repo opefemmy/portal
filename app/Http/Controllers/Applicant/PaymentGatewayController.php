@@ -886,13 +886,60 @@ class PaymentGatewayController extends Controller
         $successMessage = str_replace('payment', 'Test payment', str_replace('.', $refSuffix . '.', $successMessage))
             ?: ('Test payment successful. ' . $refSuffix);
 
-        // Same fallback as the live Paystack callback: if the
-        // applicant→student migration didn't run (matric service down,
-        // FK drift, etc.), don't try to land the user on a route the
-        // role:student middleware will 403. Send them to the applicant
-        // dashboard instead.
+        // Same migration-trigger fallback as the live Paystack callback
+        // path (commit 78c8a892). markCompleted() calls
+        // applyApplicantSideEffects() which in turn calls
+        // migrateApplicantToStudent() — but on live that path can fail
+        // silently inside the DB::transaction if matric-number generation
+        // throws or the user role row is missing, leaving the applicant
+        // paid but not migrated. The user reported seeing exactly this
+        // message on live for the compulsory-fee test path; works fine
+        // on local because the local DB doesn't have whatever drift
+        // (FK / column drift / unrun migration) is breaking the live
+        // path.
+        //
+        // For migration-trigger purposes (compulsory, school_fee) re-run
+        // the migration explicitly right here, then re-check before
+        // choosing the redirect. The migration service is idempotent
+        // (short-circuits when Student row already exists for user_id)
+        // so the retry is cheap and only runs on the unhappy path.
         if ($this->payments->isMigrationTrigger($paymentType)) {
             $freshApplicant = Applicant::find($payment->payer_id);
+            if ($freshApplicant && ! $freshApplicant->isMigrated()) {
+                try {
+                    $this->payments->migrateApplicantToStudent($freshApplicant);
+                    $freshApplicant = Applicant::find($payment->payer_id);
+                } catch (\Throwable $e) {
+                    Log::error('testPayment: synchronous migration retry failed', [
+                        'payment_id' => $payment->id,
+                        'applicant_id' => $freshApplicant->id,
+                        'purpose' => $purpose,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // migrateApplicantToStudent() syncs role_id when it creates
+            // the Student row, but early-returns when the Student row
+            // already exists — even when the legacy migration path that
+            // created it never set role_id. Cover that gap so the
+            // student.dashboard route gate (role:student middleware)
+            // doesn't 403 them right after we redirect.
+            if ($freshApplicant?->isMigrated()
+                && $freshApplicant->user
+                && ! $freshApplicant->user->hasRole('student')
+            ) {
+                $studentRole = \App\Models\Role::where('slug', 'student')->first();
+                if ($studentRole) {
+                    $freshApplicant->user->update(['role_id' => $studentRole->id, 'is_active' => true]);
+                }
+            }
+
+            // student.dashboard is gated by role:student middleware.
+            // If migration still didn't run after the retry, the role
+            // middleware would 403 them on the named route. Fall back
+            // to the applicant dashboard so the user always lands
+            // somewhere — but only AFTER the synchronous retry above.
             if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
                 $redirectRoute = 'applicant.dashboard';
                 $label = $paymentType?->name ?: ($paymentType?->display_label ?? 'Compulsory');
