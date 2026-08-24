@@ -148,9 +148,33 @@ class AdmissionController extends Controller
         $this->assertSameSchool($applicant);
         $request->validate([
             'status' => 'required|in:pending,reviewed,admitted,rejected',
+            // Optional placement override on admit — same shape as
+            // ApplicationController::updateStatus. When the registrar
+            // flips status to 'admitted' AND supplies a new
+            // department/programme/school, we honour the override
+            // before reserving the matric so the eventual Student row
+            // (created lazily by ApplicantPaymentService::
+            // migrateApplicantToStudent) lands in the correct place.
+            'department_id' => 'nullable|exists:departments,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'school_id' => 'nullable|exists:schools,id',
         ]);
 
-        $applicant->update(['status' => $request->status]);
+        $payload = ['status' => $request->status];
+
+        if ($request->status === 'admitted') {
+            if ($request->filled('department_id')) {
+                $payload['department_id'] = $request->department_id;
+            }
+            if ($request->filled('programme_id')) {
+                $payload['programme_id'] = $request->programme_id;
+            }
+            if ($request->filled('school_id')) {
+                $payload['school_id'] = $request->school_id;
+            }
+        }
+
+        $applicant->update($payload);
 
         // If admitted, create student record (will be activated after payment)
         if ($request->status === 'admitted' && !$applicant->student_created) {

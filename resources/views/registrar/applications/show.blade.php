@@ -211,6 +211,82 @@
                         <textarea name="rejection_reason" class="form-control" rows="3">{{ $applicant->rejection_reason }}</textarea>
                     </div>
 
+                    {{-- Reassign-on-Admit panel.
+                         Hidden until the registrar picks status=admitted.
+                         Lets them admit an applicant into a department /
+                         programme / school DIFFERENT from the one they
+                         registered for (e.g. quota in the requested dept
+                         is full, JAMB subject combination didn't match,
+                         etc.). Sends department_id/programme_id/school_id
+                         alongside status; the controller only writes them
+                         when status='admitted'. All three selectors
+                         default to the applicant's registered placement
+                         so the registrar can leave them unchanged by
+                         simply picking 'admitted'. --}}
+                    @php
+                        $schools     = \App\Models\School::orderBy('name')->get(['id', 'name']);
+                        $departments = \App\Models\Department::orderBy('name')->get(['id', 'name', 'school_id']);
+                        $programmes  = \App\Models\Programme::orderBy('name')->get(['id', 'name', 'department_id']);
+                    @endphp
+                    <div class="mb-3 p-3 border rounded bg-light" id="reassignBlock" style="display: {{ $applicant->status == 'admitted' ? 'block' : 'none' }}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="text-primary">
+                                <i class="fas fa-exchange-alt me-1"></i>Reassign Placement on Admit
+                            </strong>
+                            <button type="button" class="btn btn-sm btn-link p-0" id="reassignReset">
+                                Use registered placement
+                            </button>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Optional. Leave as-is to admit into the same
+                            department the applicant registered for; pick
+                            new values below to admit into a different
+                            one (e.g. quota moved, transfer request).
+                        </p>
+
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">School</label>
+                            <select name="school_id" id="reassignSchool" class="form-select form-select-sm">
+                                @foreach($schools as $school)
+                                    <option value="{{ $school->id }}" {{ $applicant->school_id == $school->id ? 'selected' : '' }}>
+                                        {{ $school->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Department</label>
+                            <select name="department_id" id="reassignDepartment" class="form-select form-select-sm">
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}"
+                                            data-school-id="{{ $dept->school_id }}"
+                                            {{ $applicant->department_id == $dept->id ? 'selected' : '' }}>
+                                        {{ $dept->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Programme</label>
+                            <select name="programme_id" id="reassignProgramme" class="form-select form-select-sm">
+                                @foreach($programmes as $prog)
+                                    <option value="{{ $prog->id }}"
+                                            data-department-id="{{ $prog->department_id }}"
+                                            {{ $applicant->programme_id == $prog->id ? 'selected' : '' }}>
+                                        {{ $prog->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="alert alert-warning small py-2 px-2 mb-0 mt-2" id="reassignWarning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Placement differs from what the applicant registered for.
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-save me-2"></i>Update Status
                     </button>
@@ -244,6 +320,67 @@ $('#statusSelect').change(function() {
     } else {
         $('#rejectionReason').hide();
     }
+    if ($(this).val() === 'admitted') {
+        $('#reassignBlock').show();
+    } else {
+        $('#reassignBlock').hide();
+    }
 });
+
+// Cascade: when the registrar picks a new school, narrow the
+// department dropdown to departments belonging to that school.
+$('#reassignSchool').on('change', function () {
+    var schoolId = String($(this).val());
+    var $dept = $('#reassignDepartment');
+    $dept.find('option').each(function () {
+        var matches = !schoolId || $(this).data('school-id') == schoolId;
+        $(this).prop('disabled', !matches);
+    });
+    // If the currently-selected department is now disabled, pick the
+    // first enabled one so the form doesn't submit a hidden value.
+    if ($dept.find('option:selected').prop('disabled')) {
+        $dept.find('option:not(:disabled)').first().prop('selected', true);
+    }
+    $dept.trigger('change');
+});
+
+// Cascade: when the department changes, narrow the programme dropdown
+// to programmes belonging to that department.
+$('#reassignDepartment').on('change', function () {
+    var deptId = String($(this).val());
+    var $prog = $('#reassignProgramme');
+    $prog.find('option').each(function () {
+        var matches = !deptId || $(this).data('department-id') == deptId;
+        $(this).prop('disabled', !matches);
+    });
+    if ($prog.find('option:selected').prop('disabled')) {
+        $prog.find('option:not(:disabled)').first().prop('selected', true);
+    }
+    checkReassignChanged();
+});
+
+// Surface a warning chip whenever any of the three selectors diverges
+// from the applicant's registered placement — keeps the registrar
+// honest about a transfer they're about to commit.
+var registeredSchool     = String({{ (int) ($applicant->school_id ?? 0) }});
+var registeredDepartment = String({{ (int) ($applicant->department_id ?? 0) }});
+var registeredProgramme  = String({{ (int) ($applicant->programme_id ?? 0) }});
+function checkReassignChanged() {
+    var changed =
+        String($('#reassignSchool').val()     || '') !== registeredSchool     ||
+        String($('#reassignDepartment').val() || '') !== registeredDepartment ||
+        String($('#reassignProgramme').val()  || '') !== registeredProgramme;
+    $('#reassignWarning').toggle(changed);
+}
+$('#reassignSchool, #reassignProgramme').on('change', checkReassignChanged);
+$('#reassignReset').on('click', function () {
+    $('#reassignSchool').val(registeredSchool).trigger('change');
+    $('#reassignDepartment').val(registeredDepartment).trigger('change');
+    $('#reassignProgramme').val(registeredProgramme).trigger('change');
+});
+
+// Initial cascade — pick up whatever the controller rendered.
+$('#reassignSchool').trigger('change');
+checkReassignChanged();
 </script>
 @endpush

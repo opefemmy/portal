@@ -76,14 +76,55 @@ class ApplicationController extends Controller
         $request->validate([
             'status' => 'required|in:pending,screening,approved,rejected,admitted',
             'rejection_reason' => 'required_if:status,rejected|nullable|string',
+            // Optional admission re-assignment — when status === 'admitted'
+            // and the registrar picks a different department/programme/school
+            // from what the applicant originally registered for, we honour
+            // that override before reserving the matric number. Without this,
+            // there was no path to admit an applicant into a department
+            // they didn't originally apply to.
+            'department_id' => 'nullable|exists:departments,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'school_id' => 'nullable|exists:schools,id',
         ]);
 
-        $applicant->update([
+        $payload = [
             'status' => $request->status,
             'rejection_reason' => $request->rejection_reason,
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
-        ]);
+        ];
+
+        // Only override the placement fields when the registrar is
+        // admitting AND supplied new values. For every other status
+        // (pending/screening/approved/rejected) we leave the original
+        // school/department/programme alone — those statuses never
+        // reassign placement, and silently rewriting them would be
+        // surprising. If only one of the three is sent, we still
+        // accept it; downstream Student::create uses whichever is set
+        // on the applicant row at migration time.
+        if ($request->status === 'admitted') {
+            if ($request->filled('department_id')) {
+                $payload['department_id'] = $request->department_id;
+            }
+            if ($request->filled('programme_id')) {
+                $payload['programme_id'] = $request->programme_id;
+            }
+            if ($request->filled('school_id')) {
+                $payload['school_id'] = $request->school_id;
+            }
+
+            // Reserve a matric number if one isn't already on the
+            // applicant row. We don't want a fresh matric every time
+            // someone re-saves the form, so this is gated on null.
+            if (empty($applicant->matric_number)) {
+                $matric = \App\Services\MatricNumberService::generate($applicant);
+                if ($matric) {
+                    $payload['matric_number'] = $matric;
+                }
+            }
+        }
+
+        $applicant->update($payload);
 
         return back()->with('success', 'Application status updated successfully!');
     }

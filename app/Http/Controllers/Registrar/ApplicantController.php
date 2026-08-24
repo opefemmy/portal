@@ -65,9 +65,43 @@ class ApplicantController extends Controller
     {
         $this->requirePermission('registrar.applicants.status-update');
         $this->assertSameSchool($applicant);
+        $request->validate([
+            // Same placement override as updateStatus — let the registrar
+            // admit an applicant into a department different from the one
+            // they registered for. The override is applied BEFORE the
+            // matric number is reserved, because MatricNumberService
+            // embeds the department code in the matric prefix; reserving
+            // first would leave us with a matric that doesn't match the
+            // new department.
+            'department_id' => 'nullable|exists:departments,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'school_id' => 'nullable|exists:schools,id',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
         DB::beginTransaction();
 
         try {
+            // Apply the placement override (if any) so the matric number
+            // we generate below reflects the FINAL placement, not the
+            // applicant's original registration choice.
+            $override = [];
+            if ($request->filled('department_id')) {
+                $override['department_id'] = $request->department_id;
+            }
+            if ($request->filled('programme_id')) {
+                $override['programme_id'] = $request->programme_id;
+            }
+            if ($request->filled('school_id')) {
+                $override['school_id'] = $request->school_id;
+            }
+            if ($override !== []) {
+                $applicant->update($override);
+                // Refresh the in-memory copy so MatricNumberService reads
+                // the overridden relations when it builds the prefix.
+                $applicant = $applicant->fresh();
+            }
+
             $matricNumber = \App\Services\MatricNumberService::generate($applicant);
 
             // Reserve the matric number on the applicant row but DO NOT
