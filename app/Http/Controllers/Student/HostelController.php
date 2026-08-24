@@ -33,11 +33,23 @@ class HostelController extends Controller
     public function availableHostels(Request $request)
     {
         $this->requirePermission('student.hostel.manage');
+
+        // Eager-load ALL active rooms (not just those with available beds)
+        // so we can:
+        //   1. Group rooms by floor in the view
+        //   2. Distinguish "no rooms configured" from "Full" — a brand-
+        //      new hostel with zero rooms previously rendered as "Full"
+        //      because the eager-load filtered to `available_beds > 0`
+        //      and the count came back as 0. With all rooms loaded, the
+        //      view can branch on `$rooms->isEmpty()` separately.
+        // We also load `beds` so each room can use the live
+        // `live_available_beds` accessor to render its own "X beds
+        // available" copy — single source of truth, immune to the
+        // denormalised `available_beds` column drifting out of sync.
         $query = Hostel::where('is_active', true)
             ->with(['rooms' => function ($q) {
-                // Only rooms that still have available beds
-                $q->where('available_beds', '>', 0);
-            }]);
+                $q->where('is_active', true)->orderBy('floor')->orderBy('room_number');
+            }, 'rooms.beds']);
 
         if ($request->gender) {
             $query->where(function ($q) use ($request) {
@@ -47,6 +59,7 @@ class HostelController extends Controller
         }
 
         $hostels = $query->latest()->paginate(20);
+
         return view('student.hostel.available', compact('hostels'));
     }
 
@@ -79,6 +92,9 @@ class HostelController extends Controller
 
         // Create application (pending approval)
         $bed = $room->beds()->where('status', 'available')->first();
+        if (! $bed) {
+            return back()->with('error', 'No available beds in this room');
+        }
 
         $session = \App\Models\Session::where('is_current', true)->first();
 
@@ -91,6 +107,21 @@ class HostelController extends Controller
             'check_in_date' => now()->toDateString(),
             'status' => 'pending'
         ]);
+
+        // Hold the bed against the room so the live count drops even
+        // before approval. Mirrors Admin\HostelController::storeAllocation
+        // so the student's self-apply doesn't drift the counters. The
+        // admin can still approve the allocation and the bed is already
+        // marked occupied; check-out frees it again.
+        $bed->update(['status' => 'occupied', 'student_id' => $student->id]);
+        $room->decrement('available_beds');
+
+        // Refresh the hostel's available_rooms count so the student
+        // dashboard (and any other consumers) reflects the new reality.
+        $hostel = Hostel::find($request->hostel_id);
+        if ($hostel) {
+            $hostel->recomputeAndSave();
+        }
 
         return redirect()->route('hostel.my')->with('success', 'Hostel application submitted successfully. Pending approval.');
     }

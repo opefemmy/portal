@@ -27,35 +27,35 @@ class Hostel extends Model
     }
 
     /**
-     * The denormalised `available_rooms` column was historically
-     * written at creation with `0` (HostelController::store()) and
-     * never recomputed when rooms were added or allocations changed.
-     * The result was brand-new hostels showing "Full" even when no
-     * student had applied. We now derive the value at read time from
-     * the rooms / allocations tables — single source of truth.
+     * Computed at read time from the live `hostel_rooms.available_beds`
+     * column (which itself is maintained by HostelController on every
+     * allocation / checkout). The denormalised `hostels.available_rooms`
+     * column was historically written with `0` at creation time and
+     * never refreshed, causing a brand-new hostel to render "Full" on
+     * the student dashboard even when no student had applied.
      *
-     * Override ONLY the read path: any code that still calls
-     * `$hostel->available_rooms = …` should call `recomputeAndSave()`
-     * (or just write to `rooms` / `allocations`) instead.
+     * The accessor also no longer relies on a never-loaded
+     * `rooms_with_beds` relationship — that branch was dead code that
+     * always fell through to the eager-load check below.
+     *
+     * If `rooms` was eager-loaded via `with(['rooms' => …])` (filtered
+     * to rooms with available beds), counting that collection is the
+     * answer; otherwise we issue one COUNT against the database.
      */
     public function getAvailableRoomsAttribute(): int
     {
-        // Has the relationship been eager-loaded? Use it; otherwise
-        // count from the database. Both are cheap (one COUNT query).
-        if (array_key_exists('rooms_with_beds', $this->relations)) {
-            return $this->rooms_with_beds->count();
-        }
         if ($this->relationLoaded('rooms')) {
             return $this->rooms->where('available_beds', '>', 0)->count();
         }
+
         return $this->rooms()->where('available_beds', '>', 0)->count();
     }
 
     /**
-     * Force-recompute and persist the denormalised counter. Called
-     * by HostelController after any change to rooms/allocations so
-     * consumers that bypass the accessor (e.g. raw SQL, exports)
-     * still see a sensible value.
+     * Force-recompute and persist the denormalised counter. Called by
+     * HostelController after any change to rooms/allocations so consumers
+     * that bypass the accessor (raw SQL, exports) still see a sensible
+     * value.
      */
     public function recomputeAndSave(): int
     {
