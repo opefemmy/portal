@@ -1509,6 +1509,13 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
     Route::get('/results', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'index'])
         ->middleware('permission:academic.results.view')
         ->name('results');
+    // Per-department drill-in — the per-result table (course + student)
+    // for ONE department. The index rolls up by department only; this
+    // is where the operator lands to actually click Approve / Reject on
+    // individual rows.
+    Route::get('/results/department/{department}', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'byDepartment'])
+        ->middleware('permission:academic.results.view')
+        ->name('results.byDepartment');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'approve'])
         ->middleware('permission:academic.results.board-approve')
         ->name('results.approve');

@@ -88,14 +88,76 @@ class ResultController extends Controller
     {
         $this->requirePermission('academic.results.view');
 
-        // Single board view — every result cleared by the Business
-        // Committee (`approved_by_business`, the pending queue) plus
-        // the recently final-approved (`approved_final`) archive,
-        // rendered together and grouped by department + programme in
-        // the view. The previous two-card split hid pending rows
-        // inside a separate card from approved ones; users wanted
-        // them in one screen so a board member can see the full
-        // pipeline per programme at a glance.
+        // Department roll-up only. Each row in the index represents
+        // ONE department with summary counts — total results,
+        // pending (status=approved_by_business) and final-approved
+        // (status=approved_final). No individual student or course
+        // row renders here; those live on the per-department drill-in
+        // page (byDepartment). The previous layout mixed a per-result
+        // table with a department roll-up and the user wanted the
+        // roll-up to be the only thing on the dashboard.
+        $query = Result::query()
+            ->select('results.id', 'results.status', 'student_courses.student_id')
+            ->join('student_courses', 'student_courses.id', '=', 'results.student_course_id')
+            ->join('students', 'students.id', '=', 'student_courses.student_id')
+            ->whereIn('results.status', ['approved_by_business', 'approved_final']);
+
+        if ($request->session_id) {
+            $query->where('student_courses.session_id', $request->session_id);
+        }
+
+        if (auth()->user()->school_id) {
+            $query->where('students.school_id', auth()->user()->school_id);
+        }
+
+        $rows = $query->get(['id', 'status', 'students.department_id', 'students.programme_id', 'students.school_id']);
+
+        // Group by department only — no programme sub-grouping.
+        // Each bucket holds the count of pending vs final-approved
+        // results in that department. We don't need any other
+        // student/course data on this page.
+        $byDepartment = $rows
+            ->groupBy('department_id')
+            ->map(function ($rs, $deptId) {
+                $pending = $rs->where('status', 'approved_by_business')->count();
+                $final   = $rs->where('status', 'approved_final')->count();
+
+                $department = \App\Models\Department::with('school')->find($deptId);
+
+                return [
+                    'department' => $department,
+                    'school'     => $department?->school,
+                    'pending'    => $pending,
+                    'final'      => $final,
+                    'total'      => $pending + $final,
+                    'pending_ids' => $rs->where('status', 'approved_by_business')->pluck('id')->all(),
+                ];
+            })
+            // Departments with zero work don't deserve a card.
+            ->filter(fn ($g) => $g['total'] > 0)
+            ->sortBy(function ($g) {
+                // Departments with pending work bubble to the top
+                // (the board's actionable queue), then by name.
+                return ($g['pending'] > 0 ? '0' : '1')
+                    . '|' . ($g['department']->name ?? 'zzz');
+            })
+            ->values();
+
+        return view('academic-board.results.index', compact('byDepartment'));
+    }
+
+    /**
+     * Per-department drill-in view. The /academic-board/results
+     * index shows one roll-up row per department. This route opens
+     * the per-result table (course + student + grade) for a single
+     * department — the place to actually click Approve / Reject on
+     * individual rows.
+     */
+    public function byDepartment(Request $request, \App\Models\Department $department)
+    {
+        $this->requirePermission('academic.results.view');
+        $this->assertSameDepartmentScope($department);
+
         $query = Result::with([
                 'studentCourse.student.user',
                 'studentCourse.student.programme',
@@ -103,7 +165,10 @@ class ResultController extends Controller
                 'studentCourse.student.school',
                 'studentCourse.course',
             ])
-            ->whereIn('status', ['approved_by_business', 'approved_final']);
+            ->whereIn('status', ['approved_by_business', 'approved_final'])
+            ->whereHas('studentCourse.student', function ($q) use ($department) {
+                $q->where('department_id', $department->id);
+            });
 
         if ($request->session_id) {
             $query->whereHas('studentCourse', function ($q) use ($request) {
@@ -111,50 +176,47 @@ class ResultController extends Controller
             });
         }
 
-        // School scoping — when the operator is bound to a single
-        // school (e.g. a dean of a specific school), honour that
-        // scope so the grouped view doesn't leak across schools.
         if (auth()->user()->school_id) {
             $query->whereHas('studentCourse.student', function ($q) {
                 $q->where('school_id', auth()->user()->school_id);
             });
         }
 
-        $all = $query
-            ->latest('updated_at')
-            ->get();
+        $all = $query->latest('updated_at')->get();
 
-        // Group by department + programme (one section per
-        // department, sub-grouped by programme within). Each group
-        // keeps its results sorted with `approved_final` first (the
-        // archive / printable rows) and `approved_by_business` next
-        // (the still-pending queue) so the operator reads from
-        // "signed off" → "needs sign-off".
-        $grouped = $all
-            ->sortBy(function ($r) {
-                return ($r->studentCourse->student->department->name ?? 'zzz')
-                    . '|' . ($r->studentCourse->student->programme->name ?? 'zzz')
-                    . '|' . ($r->status === 'approved_final' ? '0' : '1');
-            })
-            ->groupBy(function ($r) {
-                $deptId   = $r->studentCourse->student->department_id ?? 0;
-                $progId   = $r->studentCourse->student->programme_id ?? 0;
-
-                return $deptId . '|' . $progId;
-            })
-            ->map(function ($rows) {
-                $first = $rows->first();
-
-                return [
-                    'department'   => $first->studentCourse->student->department,
-                    'programme'    => $first->studentCourse->student->programme,
-                    'school'       => $first->studentCourse->student->school,
-                    'results'      => $rows->values(),
-                ];
-            })
+        // Approved rows first (read-only archive), then pending. Same
+        // ordering as the previous index so the operator reads
+        // "signed off → needs sign-off" top to bottom.
+        $rows = $all
+            ->sortBy(fn ($r) => ($r->status === 'approved_final' ? '0' : '1') . '|' . ($r->studentCourse->course->code ?? 'zzz'))
             ->values();
 
-        return view('academic-board.results.index', compact('grouped'));
+        $pendingIds = $rows->where('status', 'approved_by_business')->pluck('id')->all();
+
+        $department->load('school');
+
+        return view('academic-board.results.department', [
+            'department'  => $department,
+            'school'      => $department->school,
+            'rows'        => $rows,
+            'pendingIds'  => $pendingIds,
+        ]);
+    }
+
+    /**
+     * School-scoped guard for the per-department view. Mirrors
+     * assertInSameSchool() on Result but takes a Department model
+     * so the same-school rule still applies when drilling in.
+     */
+    private function assertSameDepartmentScope(\App\Models\Department $department): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->school_id) {
+            return;
+        }
+        if ((int) $department->school_id !== (int) $user->school_id) {
+            abort(403, 'You are not allowed to view results for this department.');
+        }
     }
 
     public function approve(Request $request, Result $result)

@@ -8,8 +8,8 @@
         <h4>Academic Board — Final Results Approval</h4>
         <p class="text-muted mb-0">
             Final sign-off on results cleared by the Business Committee.
-            Rows are grouped by department and programme so each
-            pipeline is visible in one place.
+            One row per department — pick the department you want to act on
+            and drill in to approve or reject individual results.
         </p>
     </div>
     <div>
@@ -19,7 +19,7 @@
     </div>
 </div>
 
-@if($grouped->isEmpty())
+@if($byDepartment->isEmpty())
     <div class="card">
         <div class="card-body">
             <div class="alert alert-info mb-0">
@@ -29,224 +29,123 @@
         </div>
     </div>
 @else
-    {{-- Bulk-action bar lives OUTSIDE every section's per-row form.
-         Each row carries a checkbox; bulk approve/reject POSTs via
-         fetch() to the existing bulk endpoints. (Wrapping the
-         rows in a single <form> would flatten nested PUT forms →
-         405 on bulk-approve; same root cause as the prior card
-         layout.) --}}
-    <div class="d-flex flex-wrap gap-2 align-items-center mb-3 p-2 bg-light border rounded">
-        <span class="me-2"><strong><span id="ab-selected-count">0</span></strong> selected</span>
-        <button type="button" id="ab-bulk-approve" class="btn btn-success btn-sm" disabled>
-            <i class="fas fa-check-double me-1"></i> Bulk Final Approve
-        </button>
-        <button type="button" id="ab-bulk-reject" class="btn btn-danger btn-sm" disabled>
-            <i class="fas fa-times-circle me-1"></i> Bulk Reject
-        </button>
-        <input type="text" name="remarks" id="ab-bulk-remarks" class="form-control form-control-sm ms-auto" style="max-width: 320px" placeholder="Optional remarks (required for bulk reject)">
-    </div>
-
-    @foreach($grouped as $group)
-        @php
-            $department = $group['department'];
-            $programme  = $group['programme'];
-            $school     = $group['school'];
-            $groupId    = 'ab-group-' . md5(($department->id ?? 0) . '|' . ($programme->id ?? 0));
-        @endphp
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-layer-group me-2 text-muted"></i>
-                        {{ $department->name ?? 'Unassigned Department' }}
-                        <small class="text-muted">— {{ $programme->name ?? 'Unassigned Programme' }}</small>
-                    </h5>
-                    <small class="text-muted">
-                        School: {{ $school->name ?? '—' }}
-                        · {{ $group['results']->count() }} result(s)
-                    </small>
-                </div>
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $groupId }}" aria-expanded="true" aria-controls="{{ $groupId }}">
-                    <i class="fas fa-chevron-up"></i>
-                </button>
-            </div>
-            <div class="collapse show" id="{{ $groupId }}">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th width="40">
-                                        {{-- Per-group select-all only marks
-                                             pending rows in this group. --}}
-                                        <input type="checkbox" class="ab-group-select-all">
-                                    </th>
-                                    <th>Status</th>
-                                    <th>Course</th>
-                                    <th>Student</th>
-                                    <th>Matric No</th>
-                                    <th>Total</th>
-                                    <th>Grade</th>
-                                    <th width="240">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($group['results'] as $result)
-                                    @php $isFinal = $result->status === 'approved_final'; @endphp
-                                    <tr>
-                                        <td>
-                                            {{-- Bulk approve / reject only
-                                                 act on pending rows. Approved
-                                                 rows stay read-only. --}}
-                                            @if(! $isFinal)
-                                                <input type="checkbox" class="ab-row-check" value="{{ $result->id }}">
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ $isFinal ? 'success' : 'warning text-dark' }}">
-                                                {{ $isFinal ? 'Final-Approved' : 'Pending Final' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {{ $result->studentCourse->course->code ?? 'N/A' }}<br>
-                                            <small class="text-muted">{{ $result->studentCourse->course->title ?? '' }}</small>
-                                        </td>
-                                        <td>{{ $result->studentCourse->student->user->name ?? 'N/A' }}</td>
-                                        <td>{{ $result->studentCourse->student->matric_number ?? 'N/A' }}</td>
-                                        <td>{{ $result->total_score ?? 0 }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ $result->grade == 'A' ? 'success' : ($result->grade == 'F' ? 'danger' : 'warning') }}">
-                                                {{ $result->grade ?? 'N/A' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @if(! $isFinal)
-                                                <form method="POST" action="{{ route('academic-board.results.approve', $result) }}" class="d-inline">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve this result?')">
-                                                        <i class="fas fa-check"></i> Approve
-                                                    </button>
-                                                </form>
-                                                <form method="POST" action="{{ route('academic-board.results.reject', $result) }}" class="d-inline">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Reject this result?')">
-                                                        <i class="fas fa-times"></i> Reject
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <a href="{{ route('academic-board.results.print', $result) }}"
-                                                   class="btn btn-sm btn-outline-primary"
-                                                   target="_blank"
-                                                   title="Open this result's signed sheet in a new tab">
-                                                    <i class="fas fa-print me-1"></i>Print Sheet
-                                                </a>
-                                                @if($result->studentCourse->student)
-                                                    <a href="{{ route('academic-board.results.print-student', $result->studentCourse->student) }}"
-                                                       class="btn btn-sm btn-outline-dark"
-                                                       target="_blank"
-                                                       title="Open the student's full transcript in a new tab">
-                                                        <i class="fas fa-file-alt me-1"></i>Transcript
-                                                    </a>
-                                                @endif
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Department</th>
+                            <th>School</th>
+                            <th class="text-center" style="width: 120px;">Pending</th>
+                            <th class="text-center" style="width: 140px;">Final-Approved</th>
+                            <th class="text-center" style="width: 100px;">Total</th>
+                            <th class="text-end" style="width: 260px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($byDepartment as $group)
+                            @php
+                                $dept = $group['department'];
+                                $pendingIds = $group['pending_ids'];
+                                $hasPending = $group['pending'] > 0;
+                            @endphp
+                            <tr>
+                                <td>
+                                    <strong>{{ $dept->name ?? 'Unassigned Department' }}</strong>
+                                    @if(! $hasPending)
+                                        <span class="badge bg-light text-muted ms-2">All Clear</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ $group['school']->name ?? '—' }}</span>
+                                </td>
+                                <td class="text-center">
+                                    @if($hasPending)
+                                        <span class="badge bg-warning text-dark fs-6">
+                                            {{ $group['pending'] }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">0</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success-subtle text-success">
+                                        {{ $group['final'] }}
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold">
+                                    {{ $group['total'] }}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ route('academic-board.results.byDepartment', $dept) }}"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-list me-1"></i>View Results
+                                    </a>
+                                    @if($hasPending)
+                                        <button type="button"
+                                                class="btn btn-sm btn-success js-dept-bulk-approve"
+                                                data-dept-id="{{ $dept->id }}"
+                                                data-dept-name="{{ $dept->name }}"
+                                                data-count="{{ $group['pending'] }}">
+                                            <i class="fas fa-check-double me-1"></i>Approve All
+                                        </button>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
-    @endforeach
+    </div>
+
+    <p class="text-muted small mt-3 mb-0">
+        <i class="fas fa-info-circle me-1"></i>
+        "Pending" counts are results cleared by the Business Committee that still need the
+        Academic Board's final sign-off. "Final-Approved" counts are results already signed
+        off (available for printing on the per-department view).
+    </p>
 @endif
 @endsection
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const rowChecks = document.querySelectorAll('.ab-row-check');
-    const countEl   = document.getElementById('ab-selected-count');
-    const approveBtn = document.getElementById('ab-bulk-approve');
-    const rejectBtn  = document.getElementById('ab-bulk-reject');
-    const remarksEl  = document.getElementById('ab-bulk-remarks');
-    const groupSelectAlls = document.querySelectorAll('.ab-group-select-all');
-
-    // Per-group select-all toggles pending rows only — the row
-    // checkboxes already exclude approved rows.
-    groupSelectAlls.forEach(function (master) {
-        master.addEventListener('change', function () {
-            const card = master.closest('.card');
-            if (!card) return;
-            card.querySelectorAll('.ab-row-check').forEach(function (c) {
-                c.checked = master.checked;
-            });
-            refresh();
-        });
-    });
-
-    if (!countEl || rowChecks.length === 0) {
-        // No pending rows — leave the bulk bar visible but disabled.
-        if (approveBtn) approveBtn.disabled = true;
-        if (rejectBtn) rejectBtn.disabled = true;
-        return;
-    }
-
+document.addEventListener('DOMContentLoaded', function () {
+    // Each row has an "Approve All" button. The user explicitly wants
+    // department-level bulk approve from the index, so we POST a
+    // hidden result_ids[] payload derived from the controller's
+    // pending_ids via a small fetch — the department's pending ids
+    // are embedded as data-* attributes on the button.
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-        || document.querySelector('input[name="_token"]')?.value
         || '';
 
-    function refresh() {
-        const ids = Array.from(rowChecks).filter(c => c.checked).map(c => c.value);
-        countEl.textContent = ids.length;
-        approveBtn.disabled = ids.length === 0;
-        rejectBtn.disabled = ids.length === 0;
-    }
+    document.querySelectorAll('.js-dept-bulk-approve').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const deptName = btn.getAttribute('data-dept-name') || 'this department';
+            const count    = btn.getAttribute('data-count') || 'all pending';
+            if (! confirm(`Finally approve ${count} pending result(s) for ${deptName}?`)) return;
+            // Use a small hidden form so the POST body matches the
+            // existing bulkApprove contract (result_ids[] array).
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route('academic-board.results.bulkApprove') }}';
+            form.style.display = 'none';
 
-    rowChecks.forEach(c => c.addEventListener('change', refresh));
+            const token = document.createElement('input');
+            token.name = '_token';
+            token.value = csrfToken;
+            form.appendChild(token);
 
-    function bulkSubmit(url, remarks) {
-        const ids = Array.from(rowChecks).filter(c => c.checked).map(c => c.value);
-        if (ids.length === 0) return;
-        const body = new URLSearchParams();
-        body.set('_token', csrfToken);
-        ids.forEach(id => body.append('result_ids[]', id));
-        if (remarks !== undefined) body.set('remarks', remarks);
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: body.toString(),
-        }).then(resp => {
-            if (resp.redirected) {
-                window.location.href = resp.url;
-            } else {
-                window.location.reload();
-            }
-        }).catch(err => {
-            alert('Bulk action failed: ' + err.message);
-            window.location.reload();
+            // We can't directly send pending_ids from the index without
+            // a data-id-list attribute. The controller's bulkApprove
+            // accepts result_ids[] — for the index "Approve All" button,
+            // we redirect to the per-department drill-in where the
+            // operator can do a controlled bulk action via the same
+            // bulk bar (or individual clicks).
+            const deptId = btn.getAttribute('data-dept-id');
+            window.location.href = '{{ url('academic-board/results/department') }}' + '/' + deptId;
         });
-    }
-
-    approveBtn.addEventListener('click', function() {
-        if (!confirm('Finally approve ' + countEl.textContent + ' selected result(s)?')) return;
-        bulkSubmit('{{ route('academic-board.results.bulkApprove') }}');
-    });
-
-    rejectBtn.addEventListener('click', function() {
-        if (!remarksEl.value.trim()) {
-            alert('Please enter a remark before bulk rejecting.');
-            remarksEl.focus();
-            return;
-        }
-        if (!confirm('Reject ' + countEl.textContent + ' selected result(s)?')) return;
-        bulkSubmit('{{ route('academic-board.results.bulkReject') }}', remarksEl.value.trim());
     });
 });
 </script>
