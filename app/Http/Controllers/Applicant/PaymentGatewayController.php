@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Applicant;
 
 use App\Http\Controllers\Concerns\EnforcesPermission;
+use App\Http\Controllers\Concerns\QueriesPaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
+use App\Models\PaymentGateway;
 use App\Models\PaymentType;
 use App\Models\SystemSetting;
 use App\Models\Payment;
@@ -12,11 +14,13 @@ use App\Models\User;
 use App\Services\ApplicantPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PaymentGatewayController extends Controller
 {
     use EnforcesPermission;
+    use QueriesPaymentGateway;
 
     public function __construct(private readonly ApplicantPaymentService $payments)
     {
@@ -373,8 +377,51 @@ class PaymentGatewayController extends Controller
         }
 
         $verified = $this->verifyPaystackPayment($reference);
+        $verifiedOk = $verified && ($verified['status'] ?? null) === 'success';
 
-        if ($verified && ($verified['status'] ?? null) === 'success') {
+        // Live-key fallback: if the env-var path failed (or returned a
+        // status != 'success') but this is a migration-trigger payment
+        // (compulsory, school_fee), requery through the QueriesPaymentGateway
+        // trait, which reads the secret from the payment_gateways table —
+        // the same live key the admin UI configures. On live the env-var
+        // PAYSTACK_SECRET_KEY is often stale; the table is the source of
+        // truth.
+        if (! $verifiedOk
+            && $payment->status === 'pending'
+            && in_array($payment->payment_purpose, [
+                PaymentType::PURPOSE_SCHOOL_FEE,
+                PaymentType::PURPOSE_COMPULSORY,
+            ], true)
+        ) {
+            $fallback = $this->verifyWithGateway($payment);
+            if ($fallback['success'] ?? false) {
+                Log::info('paymentCallback: live-key fallback verified migration-trigger payment', [
+                    'payment_id' => $payment->id,
+                    'reference'  => $reference,
+                    'purpose'    => $payment->payment_purpose,
+                ]);
+                // Synthesize a Paystack-shaped envelope so the existing
+                // markCompleted($payment, $verified) call below picks up
+                // the same data it would have parsed from a real Paystack
+                // response. amount_kobo in the trait's normalised shape is
+                // already in the same unit Paystack uses.
+                $verified = [
+                    'status' => true,
+                    'message' => 'Verification succeeded via live-key requery',
+                    'data' => [
+                        'reference'      => $reference,
+                        'transaction_id' => $fallback['transaction_id'] ?? null,
+                        'amount'         => $fallback['amount_kobo'] ?? null,
+                        'currency'       => $fallback['currency'] ?? null,
+                        'status'         => 'success',
+                        'via'            => 'live_key_fallback',
+                    ],
+                ];
+                $verifiedOk = true;
+            }
+        }
+
+        if ($verifiedOk) {
             // markCompleted stamps applicant.application_paid_at (etc.) and
             // triggers applicant→student migration for school_fee. wrap in
             // try/catch so a downstream failure (e.g. unrun migration, FK drift)
@@ -403,14 +450,38 @@ class PaymentGatewayController extends Controller
             $paymentType = \App\Models\PaymentType::findByPurpose($purpose);
             [$redirectRoute, $successMessage] = $this->resolveSuccessRouteAndMessage($payment, $paymentType);
 
-            // student.dashboard is gated by role:student middleware. If the
-            // applicant→student migration didn't fully run (e.g. matric
-            // number generation failed and the user's role is still
-            // applicant), the named route exists but the role middleware
-            // would 403 them. Fall back to the applicant dashboard so the
-            // user always lands somewhere with the success flash.
+            // Synchronous migration retry. markCompleted() calls
+            // applyApplicantSideEffects() which in turn calls
+            // migrateApplicantToStudent() — but on live that path can fail
+            // silently inside the DB::transaction if matric-number
+            // generation throws or the user role row is missing, leaving
+            // the applicant paid but not migrated. For migration-trigger
+            // purposes (compulsory, school_fee) re-run the migration
+            // explicitly right here, then re-check before choosing the
+            // redirect. The migration service is idempotent (it short-
+            // circuits if a Student row already exists for user_id).
             if ($this->payments->isMigrationTrigger($paymentType ?? null)) {
                 $freshApplicant = Applicant::find($payment->payer_id);
+                if ($freshApplicant && ! $freshApplicant->isMigrated()) {
+                    try {
+                        $this->payments->migrateApplicantToStudent($freshApplicant);
+                        $freshApplicant = Applicant::find($payment->payer_id);
+                    } catch (\Throwable $e) {
+                        Log::error('paymentCallback: synchronous migration retry failed', [
+                            'payment_id' => $payment->id,
+                            'reference'  => $reference,
+                            'applicant_id' => $freshApplicant->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                // student.dashboard is gated by role:student middleware.
+                // If the migration still didn't run after the retry
+                // (matric service down, applicant not yet admitted, etc.)
+                // the role middleware would 403 them on the named route.
+                // Fall back to the applicant dashboard so the user always
+                // lands somewhere with the success flash.
                 if (! $freshApplicant?->isMigrated() || ! $freshApplicant->user?->hasRole('student')) {
                     $redirectRoute = 'applicant.dashboard';
                     $successMessage = (($paymentType?->name ?: $paymentType?->display_label) ?? 'Migration') . ' verified. Your student record is being prepared — please check back in a moment.';
@@ -481,32 +552,65 @@ class PaymentGatewayController extends Controller
     /**
      * Verify Paystack payment. Public-facing on the gateway — for live use
      * this should be the only network call the controller makes.
+     *
+     * Source of truth for the secret key is the `payment_gateways` table —
+     * the env-var path (`config('services.paystack.secret_key')`) is kept
+     * as a fallback because some test envs don't seed the table, but on
+     * live the env-var is often stale and the table is what the admin UI
+     * writes through. See memory entry on gateway-empty-body-throwable.
+     *
+     * Catches \Throwable (not \Exception): an empty/non-JSON body from
+     * Paystack throws \Error under PHP 8 when we read ->status, which
+     * \Exception would not catch.
+     *
+     * On any failure returns `status: false` with a clear message — the
+     * caller (`paymentCallbackInner`) treats that as "not verified" and
+     * does NOT trigger markCompleted. The old code returned a fake
+     * `status: 'success'` envelope here, which silently accepted payments
+     * that the gateway had actually rejected.
      */
     private function verifyPaystackPayment($reference)
     {
-        try {
-            $secretKey = config('services.paystack.secret_key', 'sk_test_xxxxxxxxxxxxxxxx');
+        $gateway = PaymentGateway::where('provider', PaymentGateway::PROVIDER_PAYSTACK)
+            ->where('is_active', true)
+            ->first();
+        $secretKey = $gateway?->getSecretKey() ?: (string) config('services.paystack.secret_key');
 
+        if ($secretKey === '' || $secretKey === null) {
+            Log::error('paymentCallback: no Paystack secret key configured', [
+                'reference' => $reference,
+                'has_db_gateway' => (bool) $gateway,
+            ]);
+            return ['status' => false, 'message' => 'Paystack is not configured on this server.'];
+        }
+
+        try {
             $client = new \GuzzleHttp\Client();
             $response = $client->get('https://api.paystack.co/transaction/verify/' . $reference, [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $secretKey,
                     'Content-Type' => 'application/json',
                 ],
+                'timeout' => 15,
             ]);
 
-            return json_decode($response->getBody(), true);
-        } catch (\Exception $e) {
-            // Demo fallback — keep the existing offline simulation so tests pass.
-            return [
-                'status' => 'success',
-                'data' => [
+            $decoded = json_decode($response->getBody(), true);
+            if (! is_array($decoded)) {
+                Log::error('paymentCallback: Paystack returned non-JSON / empty body', [
                     'reference' => $reference,
-                    'transaction_id' => 'TXN-' . Str::upper(Str::random(10)),
-                    'amount' => 500000,
-                    'currency' => 'NGN',
-                ],
-            ];
+                    'http_status' => $response->getStatusCode(),
+                ]);
+                return ['status' => false, 'message' => 'Paystack returned an empty / non-JSON response.'];
+            }
+
+            return $decoded;
+        } catch (\Throwable $e) {
+            Log::error('paymentCallback: Paystack verify threw', [
+                'reference' => $reference,
+                'error' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
+            return ['status' => false, 'message' => 'Could not reach Paystack: ' . $e->getMessage()];
         }
     }
 
