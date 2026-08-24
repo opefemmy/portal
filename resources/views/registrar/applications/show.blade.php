@@ -306,11 +306,187 @@
                 <p><strong>Session:</strong> {{ $applicant->session->name ?? 'N/A' }}</p>
                 <p><strong>Mode of Study:</strong> {{ $applicant->mode_of_study }}</p>
                 <p><strong>Entry Level:</strong> {{ $applicant->entry_level }}</p>
+
+                {{-- One-click Reassign Department shortcut.
+                     Distinct from the Update Status card above (which
+                     also lets you pick placement on admit) — this one
+                     is for applicants who are ALREADY in the system
+                     (admitted or not) and need to be moved to a
+                     different department without touching personal
+                     info. Posts to a dedicated route so the matric
+                     number is regenerated to match the new dept code.
+                     Gated by registrar.applicants.edit; admission
+                     officer does NOT have access. --}}
+                @can('registrar.applicants.edit')
+                <hr>
+                <button type="button"
+                        class="btn btn-warning w-100"
+                        data-bs-toggle="modal"
+                        data-bs-target="#reassignModal">
+                    <i class="fas fa-exchange-alt me-2"></i>Reassign Department
+                </button>
+                @endcan
             </div>
         </div>
     </div>
 </div>
-@endsection
+
+{{-- Reassign Department modal.
+     Single-purpose shortcut for "I admitted this student, but they
+     need to move to a different department". Posts to
+     registrar.applications.reassignDepartment (or, if the registrar
+     arrived via /applicants/, registrar.applicants.reassignDepartment
+     — both routes share the same controller method). The cascade
+     logic mirrors the Reassign-on-Admit panel above so the same JS
+     file works for both. --}}
+@can('registrar.applicants.edit')
+@php
+    $reassignRoute = Route::has('registrar.applications.reassignDepartment')
+        ? route('registrar.applications.reassignDepartment', $applicant)
+        : (Route::has('registrar.applicants.reassignDepartment')
+            ? route('registrar.applicants.reassignDepartment', $applicant)
+            : null);
+    $rsSchools = \App\Models\School::orderBy('name')->get(['id', 'name']);
+    $rsDepts   = \App\Models\Department::orderBy('name')->get(['id', 'name', 'school_id']);
+    $rsProgs   = \App\Models\Programme::orderBy('name')->get(['id', 'name', 'department_id']);
+@endphp
+@if($reassignRoute)
+<div class="modal fade" id="reassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ $reassignRoute }}" id="reassignForm">
+                @csrf
+                @method('PUT')
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="reassignModalLabel">
+                        <i class="fas fa-exchange-alt me-2"></i>Reassign Department
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Move <strong>{{ $applicant->first_name }} {{ $applicant->surname }}</strong>
+                        (App #{{ $applicant->application_number }}) to a different department.
+                        The matric number will be regenerated so the prefix matches the new
+                        department code.
+                    </p>
+
+                    <div class="alert alert-info small py-2 mb-3">
+                        <strong>Current placement:</strong>
+                        {{ $applicant->school->name ?? '—' }}
+                        › {{ $applicant->department->name ?? '—' }}
+                        › {{ $applicant->programme->name ?? '—' }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rsSchool" class="form-label">New School <span class="text-danger">*</span></label>
+                        <select name="school_id" id="rsSchool" class="form-select" required>
+                            @foreach($rsSchools as $school)
+                                <option value="{{ $school->id }}" {{ $applicant->school_id == $school->id ? 'selected' : '' }}>
+                                    {{ $school->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rsDept" class="form-label">New Department <span class="text-danger">*</span></label>
+                        <select name="department_id" id="rsDept" class="form-select" required>
+                            @foreach($rsDepts as $dept)
+                                <option value="{{ $dept->id }}"
+                                        data-school-id="{{ $dept->school_id }}"
+                                        {{ $applicant->department_id == $dept->id ? 'selected' : '' }}>
+                                    {{ $dept->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rsProg" class="form-label">New Programme <span class="text-danger">*</span></label>
+                        <select name="programme_id" id="rsProg" class="form-select" required>
+                            @foreach($rsProgs as $prog)
+                                <option value="{{ $prog->id }}"
+                                        data-department-id="{{ $prog->department_id }}"
+                                        {{ $applicant->programme_id == $prog->id ? 'selected' : '' }}>
+                                    {{ $prog->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="rsRemarks" class="form-label small">Reason / Remarks (optional)</label>
+                        <textarea name="remarks" id="rsRemarks" class="form-control" rows="2" maxlength="1000"
+                                  placeholder="e.g. Quota rebalance, JAMB subject mismatch, transfer request"></textarea>
+                    </div>
+
+                    <div class="alert alert-warning small py-2 px-2 mb-0 mt-2" id="rsWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        This will move the applicant to a different placement.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-exchange-alt me-1"></i>Reassign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+@endcan
+
+@push('scripts')
+<script>
+// Reassign modal cascade — independent of the Update Status cascade
+// above (different DOM ids, scoped to #reassignModal).
+$('#reassignModal').on('shown.bs.modal', function () {
+    var $modal = $(this);
+    var $school = $modal.find('#rsSchool');
+    var $dept   = $modal.find('#rsDept');
+    var $prog   = $modal.find('#rsProg');
+
+    function cascade() {
+        var schoolId = String($school.val() || '');
+        var deptId   = String($dept.val()   || '');
+
+        $dept.find('option').each(function () {
+            var matches = !schoolId || $(this).data('school-id') == schoolId;
+            $(this).prop('disabled', !matches);
+        });
+        if ($dept.find('option:selected').prop('disabled')) {
+            $dept.find('option:not(:disabled)').first().prop('selected', true);
+        }
+
+        var newDeptId = String($dept.val() || '');
+        $prog.find('option').each(function () {
+            var matches = !newDeptId || $(this).data('department-id') == newDeptId;
+            $(this).prop('disabled', !matches);
+        });
+        if ($prog.find('option:selected').prop('disabled')) {
+            $prog.find('option:not(:disabled)').first().prop('selected', true);
+        }
+
+        var regSchool = String({{ (int) ($applicant->school_id ?? 0) }});
+        var regDept   = String({{ (int) ($applicant->department_id ?? 0) }});
+        var regProg   = String({{ (int) ($applicant->programme_id ?? 0) }});
+        var changed =
+            String($school.val() || '') !== regSchool ||
+            String($dept.val()   || '') !== regDept   ||
+            String($prog.val()   || '') !== regProg;
+        $modal.find('#rsWarning').toggle(changed);
+    }
+
+    $school.off('change.rsCascade').on('change.rsCascade', cascade);
+    $dept.off('change.rsCascade').on('change.rsCascade', cascade);
+    $prog.off('change.rsCascade').on('change.rsCascade', cascade);
+    cascade();
+});
+</script>
+@endpush
 
 @push('scripts')
 <script>
@@ -384,3 +560,4 @@ $('#reassignSchool').trigger('change');
 checkReassignChanged();
 </script>
 @endpush
+@endsection

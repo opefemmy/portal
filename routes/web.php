@@ -1263,6 +1263,12 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/applicants/{applicant}/reject', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reject'])
         ->middleware('permission:registrar.applicants.status-update')
         ->name('applicants.reject');
+    // Same Reassign Department shortcut under the /applicants/ prefix
+    // so the button works whether the registrar arrived from
+    // /registrar/applicants/ or /registrar/admission-list/.
+    Route::put('/applicants/{applicant}/reassign-department', [\App\Http\Controllers\Registrar\ApplicantController::class, 'reassignDepartment'])
+        ->middleware('permission:registrar.applicants.edit')
+        ->name('applicants.reassignDepartment');
     Route::get('/admission-list', [\App\Http\Controllers\Registrar\AdmissionController::class, 'index'])
         ->middleware('permission:registrar.admissions.view')
         ->name('admission');
@@ -1308,6 +1314,15 @@ Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'role:regist
     Route::put('/admission-list/{applicant}/status', [\App\Http\Controllers\Registrar\AdmissionController::class, 'updateStatus'])
         ->middleware('permission:registrar.applicants.status-update')
         ->name('admission.updateStatus');
+    // Focused "Reassign Department" action — separate from the full
+    // Edit form so a registrar can move an admitted applicant into a
+    // different department without touching personal info, and so the
+    // matric number can be regenerated to match the new department
+    // code. Gated by registrar.applicants.edit (super_admin +
+    // registrar have it; admission_officer does not).
+    Route::put('/admission-list/{applicant}/reassign-department', [\App\Http\Controllers\Registrar\AdmissionController::class, 'reassignDepartment'])
+        ->middleware('permission:registrar.applicants.edit')
+        ->name('admission.reassignDepartment');
     Route::get('/admission-track', [\App\Http\Controllers\Registrar\AdmissionController::class, 'track'])
         ->middleware('permission:registrar.admissions.track')
         ->name('admission.track');

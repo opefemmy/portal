@@ -138,6 +138,74 @@ class ApplicantController extends Controller
         return back()->with('success', 'Applicant rejected');
     }
 
+    /**
+     * Reassign Department shortcut — same logic as
+     * AdmissionController::reassignDepartment. Lives here too so the
+     * /registrar/applicants/{id}/* route family owns its own
+     * endpoints (the /admission-list/ family has the same method on
+     * AdmissionController). Both write the new placement, keep the
+     * already-migrated Student row in sync, and regenerate the
+     * matric so the prefix matches the new department code.
+     */
+    public function reassignDepartment(Request $request, Applicant $applicant)
+    {
+        $this->requirePermission('registrar.applicants.edit');
+        $this->assertSameSchool($applicant);
+
+        $validated = $request->validate([
+            'school_id'     => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id'  => 'required|exists:programmes,id',
+            'remarks'       => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            DB::transaction(function () use ($applicant, $validated) {
+                $applicant->update([
+                    'school_id'     => $validated['school_id'],
+                    'department_id' => $validated['department_id'],
+                    'programme_id'  => $validated['programme_id'],
+                    'remarks'       => $validated['remarks'] ?? $applicant->remarks,
+                ]);
+
+                if ($applicant->student_id) {
+                    $student = \App\Models\Student::find($applicant->student_id);
+                    if ($student) {
+                        $student->update([
+                            'school_id'     => $validated['school_id'],
+                            'department_id' => $validated['department_id'],
+                            'programme_id'  => $validated['programme_id'],
+                        ]);
+                    }
+                }
+
+                if (! empty($applicant->matric_number)) {
+                    $newMatric = \App\Services\MatricNumberService::generate($applicant->fresh());
+                    if ($newMatric && $newMatric !== $applicant->matric_number) {
+                        $applicant->update(['matric_number' => $newMatric]);
+                    }
+                }
+
+                \Log::info('applicants:reassignDepartment', [
+                    'applicant_id' => $applicant->id,
+                    'to_school_id' => $validated['school_id'],
+                    'to_dept_id'   => $validated['department_id'],
+                    'to_prog_id'   => $validated['programme_id'],
+                    'actor_id'     => auth()->id(),
+                ]);
+            });
+
+            return back()->with('success', 'Applicant reassigned to the new department. Matric number has been updated to match.');
+        } catch (\Throwable $e) {
+            \Log::error('applicants:reassignDepartment failed', [
+                'applicant_id' => $applicant->id,
+                'error'        => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to reassign applicant: ' . $e->getMessage());
+        }
+    }
+
     private function assertSameSchool(Applicant $applicant): void
     {
         $authUser = auth()->user();

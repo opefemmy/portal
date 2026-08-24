@@ -398,6 +398,107 @@ class AdmissionController extends Controller
     /**
      * Show admission letter template editor
      */
+    /**
+     * Reassign an applicant to a different department/programme/school.
+     *
+     * Single-purpose shortcut for "I admitted this student, but they
+     * need to move to a different department". Distinct from the
+     * full Edit form (which also rewrites name/email/phone/etc.) so a
+     * registrar can land on the applicant record, click one button,
+     * pick the new placement, and submit without touching personal
+     * info. The matric number is regenerated AFTER the placement is
+     * written so the matric prefix (which MatricNumberService builds
+     * from the department code) matches the new department.
+     *
+     * Gated by registrar.applicants.edit — super_admin and registrar
+     * have it; admission_officer does not, by design (admission
+     * officers can change status, but reassigning placement is
+     * treated as an edit-class action).
+     */
+    public function reassignDepartment(Request $request, Applicant $applicant)
+    {
+        $this->requirePermission('registrar.applicants.edit');
+        $this->assertSameSchool($applicant);
+
+        $validated = $request->validate([
+            'school_id'     => 'required|exists:schools,id',
+            'department_id' => 'required|exists:departments,id',
+            'programme_id'  => 'required|exists:programmes,id',
+            'remarks'       => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            DB::transaction(function () use ($applicant, $validated) {
+                // Capture the original placement so we can surface it
+                // in the success flash — the registrar wants to see
+                // where the applicant CAME from in the audit trail.
+                $fromDept = $applicant->department?->name ?? '—';
+                $fromProg = $applicant->programme?->name ?? '—';
+                $fromSchool = $applicant->school?->name ?? '—';
+
+                // Write the new placement first so MatricNumberService
+                // reads the overridden relations when it builds the
+                // prefix. Same ordering pattern as ApplicantController::
+                // admit (commit ef618688).
+                $applicant->update([
+                    'school_id'     => $validated['school_id'],
+                    'department_id' => $validated['department_id'],
+                    'programme_id'  => $validated['programme_id'],
+                    'remarks'       => $validated['remarks'] ?? $applicant->remarks,
+                ]);
+
+                // If a Student row already exists (the applicant has
+                // paid the compulsory fee and been migrated), keep it
+                // in sync too — otherwise the Student record would
+                // still point at the old department while the Applicant
+                // row points at the new one, and /student/dashboard
+                // would render the wrong department.
+                if ($applicant->student_id) {
+                    $student = \App\Models\Student::find($applicant->student_id);
+                    if ($student) {
+                        $student->update([
+                            'school_id'     => $validated['school_id'],
+                            'department_id' => $validated['department_id'],
+                            'programme_id'  => $validated['programme_id'],
+                        ]);
+                    }
+                }
+
+                // Regenerate the matric number so the prefix matches
+                // the new department code. Only do this if the
+                // applicant already has a matric — pre-admit applicants
+                // (status=pending) get one reserved for the first time
+                // when they're flipped to admitted, not here.
+                if (! empty($applicant->matric_number)) {
+                    $newMatric = \App\Services\MatricNumberService::generate($applicant->fresh());
+                    if ($newMatric && $newMatric !== $applicant->matric_number) {
+                        $applicant->update(['matric_number' => $newMatric]);
+                    }
+                }
+
+                \Log::info('registrar:reassignDepartment', [
+                    'applicant_id' => $applicant->id,
+                    'from_school'  => $fromSchool,
+                    'from_dept'    => $fromDept,
+                    'from_prog'    => $fromProg,
+                    'to_school_id' => $validated['school_id'],
+                    'to_dept_id'   => $validated['department_id'],
+                    'to_prog_id'   => $validated['programme_id'],
+                    'actor_id'     => auth()->id(),
+                ]);
+            });
+
+            return back()->with('success', 'Applicant reassigned to the new department. Matric number has been updated to match.');
+        } catch (\Throwable $e) {
+            \Log::error('registrar:reassignDepartment failed', [
+                'applicant_id' => $applicant->id,
+                'error'        => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to reassign applicant: ' . $e->getMessage());
+        }
+    }
+
     public function showLetterTemplate()
     {
         $this->requirePermission('registrar.settings.view');
