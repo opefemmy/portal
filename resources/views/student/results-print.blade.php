@@ -17,6 +17,10 @@
     </style>
 </head>
 <body>
+    @if(isset($student))
+        @include('partials.print.student-watermark')
+    @endif
+    @include('partials.print.institution-header')
     <h1>Academic Results</h1>
 
     @if(isset($student))

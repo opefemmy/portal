@@ -167,11 +167,18 @@
         ->get();
     $session = \App\Models\Session::getCurrentSession();
 
-    // Resolve institution info
-    $institutionName    = \App\Models\SystemSetting::get('institution_name', 'Institution Management Portal');
-    $institutionAddress = \App\Models\SystemSetting::get('institution_address', 'University Road, City, State');
-    $institutionPhone   = \App\Models\SystemSetting::get('institution_phone', '+2348000000000');
-    $institutionEmail   = \App\Models\SystemSetting::get('institution_email', 'info@portal.edu');
+    // Resolve institution info — use the canonical SystemSetting
+    // helpers (with their built-in "Ekiti State College of Technology"
+    // / "Ijero-Ekiti, Ekiti State, Nigeria" fallbacks) instead of
+    // bare-string SystemSetting::get() calls with stale placeholder
+    // defaults. The previous fallbacks ("University Road, City, State"
+    // and "+2348000000000") were rendering on installs where the
+    // system_settings row was missing. See plan: Part B.
+    $institutionName    = \App\Models\SystemSetting::getInstitutionName();
+    $institutionAddress = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_ADDRESS);
+    $institutionPhone   = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_PHONE);
+    $institutionEmail   = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_EMAIL);
+    $institutionWebsite = \App\Models\SystemSetting::get(\App\Models\SystemSetting::INSTITUTION_WEBSITE);
 
     // Resolve logo URL (prefer public/images/logo.png, fall back to storage)
     $logoUrl = null;
@@ -195,29 +202,15 @@
                 @endif
             </div>
 
-            {{-- Letterhead --}}
-            <div class="invoice-header">
-                @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Institution Logo" class="logo">
-                @else
-                    <div class="logo" style="background:#e9ecef;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#999;">
-                        <i class="fas fa-university fa-3x"></i>
-                    </div>
-                @endif
-                <div class="institution">
-                    <h1>{{ $institutionName }}</h1>
-                    @if($institutionAddress)
-                        <p>{{ $institutionAddress }}</p>
-                    @endif
-                    <p>Phone: {{ $institutionPhone }} | Email: {{ $institutionEmail }}</p>
-                </div>
-                {{-- Visual filler to keep the institution name centered --}}
-                @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="" class="logo" aria-hidden="true" style="visibility:hidden;">
-                @else
-                    <div class="logo-spacer" aria-hidden="true"></div>
-                @endif
-            </div>
+            {{-- Canonical letterhead — every printout routes through
+                 this partial so the address/logo are locked to
+                 system_settings. Don't reintroduce inline letterheads. --}}
+            @include('partials.print.institution-header')
+
+            {{-- Anti-fraud watermark: name + department + level + matric
+                 tiled across the page so the slip can't be photocopied
+                 and re-used. --}}
+            @include('partials.print.student-watermark')
 
             <h3 class="text-center mb-4">COURSE REGISTRATION FORM</h3>
 

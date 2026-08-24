@@ -75,13 +75,26 @@
                         </td>
                         <td>
                             @if($result)
-                                @if($result->status === 'approved')
-                                    <span class="badge bg-success">Approved</span>
-                                @elseif($result->status === 'pending_approval')
-                                    <span class="badge bg-warning">Pending HOD</span>
-                                @else
-                                    <span class="badge bg-secondary">{{ $result->status }}</span>
-                                @endif
+                                @php
+                                    // Slice D — surface every pipeline stage
+                                    // so the lecturer can see WHERE their
+                                    // re-upload will land. The badge text
+                                    // must mirror the approval chain
+                                    // (HOD → Dean → BC → Academic Board).
+                                    $badge = match($result->status) {
+                                        'pending_approval'   => ['warning', 'Pending HOD'],
+                                        'approved'           => ['info',    'Pending Dean'],
+                                        'approved_by_dean'   => ['primary', 'Pending Business Committee'],
+                                        'approved_by_business' => ['primary', 'Pending Academic Board'],
+                                        'approved_final'     => ['success', 'Final Approved'],
+                                        'rejected'           => ['danger',  'Rejected (HOD/Dean)'],
+                                        'rejected_by_business' => ['danger', 'Rejected (BC)'],
+                                        'rejected_final'     => ['danger',  'Rejected (Academic Board)'],
+                                        'released', 'locked', 'withdrawn' => ['dark',   ucfirst($result->status)],
+                                        default              => ['secondary', $result->status],
+                                    };
+                                @endphp
+                                <span class="badge bg-{{ $badge[0] }}">{{ $badge[1] }}</span>
                             @else
                                 <span class="badge bg-danger">Not Entered</span>
                             @endif
@@ -95,12 +108,32 @@
                             @endif
                         </td>
                         <td>
-                            @if($result && $result->status !== 'approved')
-                            <a href="{{ route('lecturer.result.edit', $result) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                            {{-- Slice D — show Upload / Re-upload at every
+                                 non-terminal stage. The previous gate
+                                 `status !== 'approved'` locked the icon
+                                 once HOD signed off, so the lecturer
+                                 couldn't correct a row that BC or the
+                                 Academic Board had already sent past
+                                 approval. We now hide the icon only
+                                 when the row is finally approved,
+                                 rejected-final, or admin-locked. The
+                                 Lecturer\ResultController::update()
+                                 method resets status to 'pending_approval'
+                                 on save, so re-uploading re-enters the
+                                 pipeline cleanly. --}}
+                            @php
+                                $finalStatuses = ['approved_final', 'rejected_final', 'released', 'locked', 'withdrawn'];
+                            @endphp
+                            @if($result && !in_array($result->status, $finalStatuses, true))
+                                <a href="{{ route('lecturer.result.edit', $result) }}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Upload / Re-upload result">
+                                    <i class="fas fa-upload"></i>
+                                </a>
                             @else
-                            <span class="text-muted"><i class="fas fa-lock"></i></span>
+                                <span class="text-muted" title="Locked — final approval">
+                                    <i class="fas fa-lock"></i>
+                                </span>
                             @endif
                         </td>
                     </tr>

@@ -35,39 +35,39 @@
             overflow: hidden;
         }
 
-        /* Watermark layer — logo image + rotated student name text */
+        /* Watermark layer — tiled name + dept + level + matric across
+           the whole page. Used as an anti-fraud measure so a cleared
+           printout can't be photocopied and re-used by another
+           student. The same watermark styles are shared by every
+           print template that needs them. */
         .letter .watermark {
             position: absolute;
             inset: 0;
             pointer-events: none;
             z-index: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 1fr;
+            gap: 0;
         }
-        .letter .watermark .watermark-logo {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60%;
-            max-width: 480px;
-            opacity: 0.07;
-            filter: grayscale(100%);
-        }
-        .letter .watermark .watermark-name {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 96pt;
-            font-weight: 800;
+        .letter .watermark .watermark-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(-30deg);
+            font-size: 14pt;
+            font-weight: 700;
             color: #1a237e;
-            opacity: 0.05;
+            opacity: 0.06;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            white-space: nowrap;
+            letter-spacing: 1px;
             font-family: 'Segoe UI', Arial, sans-serif;
             text-align: center;
-            width: 90%;
+            padding: 0 4px;
+            line-height: 1.15;
         }
+        .letter .watermark .watermark-cell .wm-name { font-size: 16pt; }
+        .letter .watermark .watermark-cell .wm-line { font-size: 11pt; font-weight: 600; }
         .letter > * { position: relative; z-index: 1; }
 
         .letter-header {
@@ -191,11 +191,8 @@
                 width: 210mm !important;
                 max-width: 210mm !important;
             }
-            .letter .watermark .watermark-logo {
+            .letter .watermark .watermark-cell {
                 opacity: 0.08 !important;
-            }
-            .letter .watermark .watermark-name {
-                opacity: 0.06 !important;
             }
             @page { size: A4 portrait; margin: 0; }
         }
@@ -220,6 +217,17 @@
     if ($studentFullName === '') {
         $studentFullName = $student->matric_number ?? 'Student';
     }
+
+    // Watermark payload — name + department + level + matric number.
+    // Tiled across the whole page so a cleared printout cannot be
+    // photocopied and re-used by anyone else.
+    $watermarkName = $studentFullName;
+    $watermarkDept = $student->department->name ?? '';
+    $watermarkLevel = $student->level_display ?? ($student->level ?? '');
+    $watermarkMatric = $student->matric_number ?? '';
+    // 9 cells = 3x3 grid — enough to tile an A4 page without making
+    // any single cell distracting when read normally.
+    $watermarkCells = array_fill(0, 9, true);
 @endphp
 
 <div class="letter-actions">
@@ -231,33 +239,23 @@
 
 <div class="letter-wrap">
     <div class="letter">
-        {{-- Watermark layer: logo image + rotated student name --}}
+        {{-- Watermark layer: tiled name + department + level +
+             matric number across the page. Anti-fraud: a copy
+             can't be re-used by another student. --}}
         <div class="watermark" aria-hidden="true">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="" class="watermark-logo">
-            @endif
-            <div class="watermark-name">{{ $studentFullName }}</div>
+            @foreach($watermarkCells as $_)
+                <div class="watermark-cell">
+                    <div>
+                        <div class="wm-name">{{ $watermarkName }}</div>
+                        @if($watermarkDept)<div class="wm-line">{{ $watermarkDept }}</div>@endif
+                        @if($watermarkLevel)<div class="wm-line">{{ $watermarkLevel }}</div>@endif
+                        @if($watermarkMatric)<div class="wm-line">{{ $watermarkMatric }}</div>@endif
+                    </div>
+                </div>
+            @endforeach
         </div>
 
-        <div class="letter-header">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="Institution Logo" class="logo">
-            @else
-                <div class="logo" style="background:#e9ecef;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#999;">
-                    <i class="fas fa-university fa-2x"></i>
-                </div>
-            @endif
-            <div class="institution">
-                <div class="institution-name">{{ \App\Models\SystemSetting::get('institution_name', config('app.name', 'Institution Portal')) }}</div>
-                <div class="address">{{ \App\Models\SystemSetting::get('institution_address', 'Official Address on File') }}</div>
-            </div>
-            {{-- Visual filler to keep the institution name centered --}}
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="" class="logo" aria-hidden="true" style="visibility:hidden;">
-            @else
-                <div class="logo-spacer" aria-hidden="true"></div>
-            @endif
-        </div>
+        @include('partials.print.institution-header')
 
         <h1>Examination Clearance Certificate</h1>
 

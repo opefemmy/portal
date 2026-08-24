@@ -948,6 +948,21 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('dean.results') }}" class="nav-link {{ request()->is('dean/results*') ? 'active' : '' }}">
+        <i class="fas fa-clipboard-check"></i> Results Approval
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('dean.departments') }}" class="nav-link {{ request()->is('dean/departments*') ? 'active' : '' }}">
+        <i class="fas fa-building-columns"></i> Departments
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('dean.students') }}" class="nav-link {{ request()->is('dean/students*') ? 'active' : '' }}">
+        <i class="fas fa-user-graduate"></i> Students
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('dean.dashboard-config.edit', auth()->id()) }}"
        class="nav-link {{ request()->is('dean/dashboard-config*') ? 'active' : '' }}">
         <i class="fas fa-sliders-h"></i> Customize Dashboard

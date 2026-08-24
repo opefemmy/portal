@@ -24,6 +24,7 @@
     $icon   = $data['icon']   ?? 'fas fa-chart-bar';
     $href   = $data['href']   ?? null;
     $cta    = $data['cta']    ?? null;
+    $labelExtra = $data['label_extra'] ?? null;
 
     if ($format === 'currency') {
         $display = '₦' . number_format((float) $value, 0);
@@ -44,6 +45,9 @@
                         @endif
                     </h6>
                     <h2 class="mb-0">{{ $display }}</h2>
+                    @if($labelExtra)
+                        <small class="text-muted d-block mt-1">{{ $labelExtra }}</small>
+                    @endif
                     @if($cta)
                         <a href="{{ $cta['href'] }}"
                            class="btn btn-sm btn-outline-{{ $cta['color'] ?? $color }} mt-2 {{ $href ? 'position-relative' : '' }}"
