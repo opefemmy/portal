@@ -454,25 +454,39 @@ class PaymentGatewayController extends Controller
             // applyApplicantSideEffects() which in turn calls
             // migrateApplicantToStudent() — but on live that path can fail
             // silently inside the DB::transaction if matric-number
-            // generation throws or the user role row is missing, leaving
-            // the applicant paid but not migrated. For migration-trigger
-            // purposes (compulsory, school_fee) re-run the migration
-            // explicitly right here, then re-check before choosing the
-            // redirect. The migration service is idempotent (it short-
-            // circuits if a Student row already exists for user_id).
+            // generation throws, the user role row is missing, OR the
+            // applicant is still status='approved' (registrar hasn't
+            // flipped them to 'admitted' yet). ApplicantPaymentService
+            // short-circuits with return null for non-admitted applicants.
+            // For migration-trigger purposes (compulsory, school_fee) we
+            // autopromote status='approved' → 'admitted' here, then re-run
+            // the migration, then re-check before choosing the redirect.
+            // The migration service is idempotent (it short-circuits if a
+            // Student row already exists for user_id).
             if ($this->payments->isMigrationTrigger($paymentType ?? null)) {
                 $freshApplicant = Applicant::find($payment->payer_id);
                 if ($freshApplicant && ! $freshApplicant->isMigrated()) {
-                    try {
-                        $this->payments->migrateApplicantToStudent($freshApplicant);
+                    if ($freshApplicant->status === 'approved') {
+                        $freshApplicant->update(['status' => 'admitted']);
                         $freshApplicant = Applicant::find($payment->payer_id);
-                    } catch (\Throwable $e) {
-                        Log::error('paymentCallback: synchronous migration retry failed', [
-                            'payment_id' => $payment->id,
-                            'reference'  => $reference,
+                        Log::info('paymentCallback: autopromoted status=approved → admitted (compulsory paid)', [
                             'applicant_id' => $freshApplicant->id,
-                            'error' => $e->getMessage(),
+                            'reference'    => $reference,
                         ]);
+                    }
+
+                    if ($freshApplicant && $freshApplicant->status === 'admitted') {
+                        try {
+                            $this->payments->migrateApplicantToStudent($freshApplicant);
+                            $freshApplicant = Applicant::find($payment->payer_id);
+                        } catch (\Throwable $e) {
+                            Log::error('paymentCallback: synchronous migration retry failed', [
+                                'payment_id' => $payment->id,
+                                'reference'  => $reference,
+                                'applicant_id' => $freshApplicant->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
 
@@ -903,19 +917,37 @@ class PaymentGatewayController extends Controller
         // choosing the redirect. The migration service is idempotent
         // (short-circuits when Student row already exists for user_id)
         // so the retry is cheap and only runs on the unhappy path.
+        //
+        // Autopromote status='approved' → 'admitted' first because
+        // ApplicantPaymentService::migrateApplicantToStudent line 786
+        // short-circuits with return null for any status other than
+        // 'admitted'. On live, applicants paid the compulsory fee
+        // before the registrar could promote them to admitted — the
+        // migration never ran and the user kept seeing "Your student
+        // record is being prepared".
         if ($this->payments->isMigrationTrigger($paymentType)) {
             $freshApplicant = Applicant::find($payment->payer_id);
             if ($freshApplicant && ! $freshApplicant->isMigrated()) {
-                try {
-                    $this->payments->migrateApplicantToStudent($freshApplicant);
+                if ($freshApplicant->status === 'approved') {
+                    $freshApplicant->update(['status' => 'admitted']);
                     $freshApplicant = Applicant::find($payment->payer_id);
-                } catch (\Throwable $e) {
-                    Log::error('testPayment: synchronous migration retry failed', [
-                        'payment_id' => $payment->id,
+                    Log::info('testPayment: autopromoted status=approved → admitted (compulsory paid)', [
                         'applicant_id' => $freshApplicant->id,
-                        'purpose' => $purpose,
-                        'error' => $e->getMessage(),
                     ]);
+                }
+
+                if ($freshApplicant && $freshApplicant->status === 'admitted') {
+                    try {
+                        $this->payments->migrateApplicantToStudent($freshApplicant);
+                        $freshApplicant = Applicant::find($payment->payer_id);
+                    } catch (\Throwable $e) {
+                        Log::error('testPayment: synchronous migration retry failed', [
+                            'payment_id' => $payment->id,
+                            'applicant_id' => $freshApplicant->id,
+                            'purpose' => $purpose,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 
@@ -1033,23 +1065,36 @@ class PaymentGatewayController extends Controller
         // Defensive migration retry. markCompleted() above calls
         // applyApplicantSideEffects() which in turn calls
         // migrateApplicantToStudent() inside DB::transaction — but on
-        // live that path can fail silently if matric generation throws
-        // or a user role row is missing, leaving the applicant paid
-        // but not migrated. The user reported this exact symptom for
-        // the compulsory-fee path: dashboard shows "Locked", payment
-        // was successful, but no Student row was ever created. The
-        // same defensive retry pattern lives in processTestPaymentInner
-        // (commit 6ed08a22) and paymentCallbackInner (commit 78c8a892)
-        // — extending it here covers the manual-sync path too.
-        if ($applicant && ! $applicant->isMigrated() && $applicant->status === 'admitted') {
-            try {
-                $this->payments->migrateApplicantToStudent($applicant);
+        // live that path can fail silently if matric generation throws,
+        // a user role row is missing, OR the applicant is still
+        // status='approved' (registrar hasn't flipped them to 'admitted'
+        // yet). ApplicantPaymentService::migrateApplicantToStudent line
+        // 786 short-circuits with return null for any status other than
+        // 'admitted', so a paid applicant whose registrar workflow
+        // stopped at 'approved' never gets migrated. The user's
+        // reported "Your student record is being prepared" flash comes
+        // from this exact path. Autopromote status='approved' → 'admitted'
+        // (the registrar would have done this manually anyway once they
+        // noticed the payment landed), then retry.
+        if ($applicant && ! $applicant->isMigrated()) {
+            if ($applicant->status === 'approved') {
+                $applicant->update(['status' => 'admitted']);
                 $applicant = $applicant->fresh();
-            } catch (\Throwable $e) {
-                Log::error('syncPaymentSideEffects: synchronous migration retry failed', [
+                Log::info('syncPaymentSideEffects: autopromoted status=approved → admitted (compulsory paid)', [
                     'applicant_id' => $applicant->id,
-                    'error' => $e->getMessage(),
                 ]);
+            }
+
+            if ($applicant->status === 'admitted') {
+                try {
+                    $this->payments->migrateApplicantToStudent($applicant);
+                    $applicant = $applicant->fresh();
+                } catch (\Throwable $e) {
+                    Log::error('syncPaymentSideEffects: synchronous migration retry failed', [
+                        'applicant_id' => $applicant->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 
@@ -1144,6 +1189,61 @@ class PaymentGatewayController extends Controller
 
         $applicant = $applicant->fresh();
 
+        // Explicit synchronous migration retry. Mirrors the pattern in
+        // processTestPaymentInner (commit 6ed08a22), paymentCallbackInner
+        // (commit 78c8a892), and syncPaymentSideEffects (commit f4ddb8c7).
+        // markCompleted() above calls applyApplicantSideEffects() →
+        // migrateApplicantToStudent() inside DB::transaction — but on
+        // live that path can fail silently if matric-number generation
+        // throws, a role row is missing, or the applicant is still
+        // status='approved' (registrar hasn't flipped them to 'admitted'
+        // yet). The ApplicantPaymentService::migrateApplicantToStudent
+        // guard returns null immediately for non-admitted applicants
+        // (line 786). On live, applicants paid the compulsory fee before
+        // the registrar could promote them to admitted — so the migration
+        // never ran and the user keeps seeing "Your student record is
+        // being prepared".
+        //
+        // For an applicant who has a completed migration-trigger payment
+        // AND status='approved', autopromote to 'admitted' (the registrar
+        // would have done this manually anyway once they noticed the
+        // payment landed) and retry. For status='pending'/'screening'/
+        // 'rejected' we don't autopromote — those should remain a
+        // registrar decision.
+        if ($applicant && ! $applicant->isMigrated()) {
+            if ($applicant->status === 'approved') {
+                $applicant->update(['status' => 'admitted']);
+                $applicant = $applicant->fresh();
+                Log::info('transferToStudentPortal: autopromoted status=approved → admitted (compulsory paid)', [
+                    'applicant_id' => $applicant->id,
+                ]);
+            }
+
+            if ($applicant->status === 'admitted') {
+                try {
+                    $this->payments->migrateApplicantToStudent($applicant);
+                    $applicant = $applicant->fresh();
+                } catch (\Throwable $e) {
+                    Log::error('transferToStudentPortal: synchronous migration retry failed', [
+                        'applicant_id' => $applicant->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Cover the legacy migration gap. If the service's early-return
+        // branch hit (a Student row already existed for this user_id
+        // before we got here), role_id may not have been promoted. Force
+        // the promotion so /student/dashboard's role:student middleware
+        // passes after the redirect.
+        if ($applicant?->isMigrated() && $applicant->user && ! $applicant->user->hasRole('student')) {
+            $studentRole = \App\Models\Role::where('slug', 'student')->first();
+            if ($studentRole) {
+                $applicant->user->update(['role_id' => $studentRole->id, 'is_active' => true]);
+            }
+        }
+
         // After the migration the user has role=student. The student
         // dashboard route is gated by role:student middleware, so we
         // need the session's user record to reflect the new role before
@@ -1161,7 +1261,10 @@ class PaymentGatewayController extends Controller
         // message instead of letting the role middleware 403.
         $hasCompulsory = $applicant->payments()
             ->where('status', 'completed')
-            ->where('payment_purpose', PaymentType::PURPOSE_COMPULSORY)
+            ->whereIn('payment_purpose', [
+                PaymentType::PURPOSE_COMPULSORY,
+                PaymentType::PURPOSE_SCHOOL_FEE,
+            ])
             ->exists();
 
         if (! $hasCompulsory) {
