@@ -15,6 +15,40 @@
     </div>
 </div>
 
+{{-- Filter row — `active=1` shows only is_active rows (default: all,
+     so deactivated users are still visible to admins). The previous
+     version hid them entirely. --}}
+<form method="GET" action="{{ route('admin.users.index') }}" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+        <label class="form-label small mb-1">Role</label>
+        <select name="role" class="form-select form-select-sm">
+            <option value="">All roles</option>
+            @foreach($roles as $r)
+                <option value="{{ $r->slug }}" {{ request('role') === $r->slug ? 'selected' : '' }}>{{ $r->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Status</label>
+        <select name="active" class="form-select form-select-sm">
+            <option value="0" {{ empty($onlyActive) ? 'selected' : '' }}>All (active + deactivated)</option>
+            <option value="1" {{ !empty($onlyActive) ? 'selected' : '' }}>Active only</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-filter me-1"></i>Filter
+        </button>
+    </div>
+    @if(request('role') || !empty($onlyActive))
+        <div class="col-md-2 d-grid">
+            <a href="{{ route('admin.users.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Clear
+            </a>
+        </div>
+    @endif
+</form>
+
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show">
         <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
@@ -55,9 +89,19 @@
                                 fn($r) => $primaryRole && $r->id === $primaryRole->id
                             );
                         @endphp
-                        <tr>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ $user->name }}</td>
+                        <tr class="{{ $user->is_active ? '' : 'table-secondary' }}">
+                            <td>
+                                {{ $user->email }}
+                                @if(! $user->is_active)
+                                    <span class="badge bg-secondary ms-1" title="This account is deactivated and cannot log in.">Deactivated</span>
+                                @endif
+                            </td>
+                            <td>
+                                {{ $user->name }}
+                                @if($user->staff_id)
+                                    <small class="text-muted d-block">{{ $user->staff_id }}</small>
+                                @endif
+                            </td>
                             <td>
                                 @if($primaryRole)
                                     <span class="badge bg-primary me-1" title="Primary role — drives login redirect">
@@ -68,7 +112,9 @@
                                     <span class="badge bg-light text-dark border me-1">{{ $r->name }}</span>
                                 @endforeach
                                 @if(!$primaryRole && $additionalRoles->isEmpty())
-                                    <span class="text-muted">No role</span>
+                                    <span class="badge bg-warning text-dark" title="This user has no role assigned — likely a bad seed or deleted role. Edit to assign a role.">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Missing role
+                                    </span>
                                 @endif
                             </td>
                             <td>
@@ -87,6 +133,21 @@
                                 <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Edit this user">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                @if($user->is_active)
+                                    <form method="POST" action="{{ route('admin.users.deactivate', $user) }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Deactivate this user (they cannot log in but the row is preserved)">
+                                            <i class="fas fa-toggle-off"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip" title="Reactivate this user">
+                                            <i class="fas fa-toggle-on"></i>
+                                        </button>
+                                    </form>
+                                @endif
                                 <form method="POST" action="{{ route('admin.users.reset_password', $user) }}" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" title="Reset password to default" onclick="return confirm('Reset password to default (password)?')">
@@ -96,7 +157,16 @@
                                 <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete this user" onclick="return confirm('Delete this user?')">
+                                    {{-- The User model has no SoftDeletes trait, so
+                                         this is a HARD delete. The email /
+                                         staff_id / matric_number unique indexes
+                                         are immediately freed for re-use. Strengthen
+                                         the confirm prompt so admins know. --}}
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="tooltip"
+                                            title="PERMANENTLY delete this user"
+                                            onclick="return confirm('⚠ PERMANENT DELETE ⚠\n\nThis will HARD-delete {{ addslashes($user->name) }} ({{ $user->email }}).\n\nThe email, staff ID and matric number will be FREE for re-use — you can immediately add a new user with the same credentials.\n\nContinue?')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
