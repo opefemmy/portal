@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.hostels.storeAllocation') }}">
+        <form method="POST" action="{{ route('admin.hostels.allocations.store') }}">
             @csrf
             <div class="row g-3">
                 <div class="col-md-6">
