@@ -111,6 +111,12 @@
             </div>
         </div>
 
+        {{-- Standard multi-signatory block (HOD · Dean · BC ·
+             Academic Board · Registrar · Rector). Same partial used
+             on every printable result sheet so signatures stay
+             consistent across audiences. --}}
+        @include('admin.transcripts._signing_block')
+
         <div class="footer">
             <p>Generated on: {{ date('d M Y, h:i A') }}</p>
             <p>This is a computer-generated document.</p>

@@ -88,37 +88,73 @@ class ResultController extends Controller
     {
         $this->requirePermission('academic.results.view');
 
-        $pending = Result::with(['studentCourse.student.user', 'studentCourse.course'])
-            ->where('status', 'approved_by_business');
+        // Single board view — every result cleared by the Business
+        // Committee (`approved_by_business`, the pending queue) plus
+        // the recently final-approved (`approved_final`) archive,
+        // rendered together and grouped by department + programme in
+        // the view. The previous two-card split hid pending rows
+        // inside a separate card from approved ones; users wanted
+        // them in one screen so a board member can see the full
+        // pipeline per programme at a glance.
+        $query = Result::with([
+                'studentCourse.student.user',
+                'studentCourse.student.programme',
+                'studentCourse.student.department',
+                'studentCourse.student.school',
+                'studentCourse.course',
+            ])
+            ->whereIn('status', ['approved_by_business', 'approved_final']);
 
         if ($request->session_id) {
-            $pending->whereHas('studentCourse', function($q) use ($request) {
+            $query->whereHas('studentCourse', function ($q) use ($request) {
                 $q->where('session_id', $request->session_id);
             });
         }
 
-        $results = $pending->latest()->paginate(20);
+        // School scoping — when the operator is bound to a single
+        // school (e.g. a dean of a specific school), honour that
+        // scope so the grouped view doesn't leak across schools.
+        if (auth()->user()->school_id) {
+            $query->whereHas('studentCourse.student', function ($q) {
+                $q->where('school_id', auth()->user()->school_id);
+            });
+        }
 
-        // Recently final-approved results — what the board can
-        // print on demand. Distinct from `pending` so the page
-        // doubles as an approval queue + a printable archive.
-        $finalApproved = Result::with(['studentCourse.student.user', 'studentCourse.course', 'studentCourse.student.school'])
-            ->where('status', 'approved_final')
-            ->when($request->session_id, function($q) use ($request) {
-                $q->whereHas('studentCourse', function($sub) use ($request) {
-                    $sub->where('session_id', $request->session_id);
-                });
-            })
-            ->when(auth()->user()->school_id, function($q) {
-                $q->whereHas('studentCourse.student', function($sub) {
-                    $sub->where('school_id', auth()->user()->school_id);
-                });
-            })
-            ->latest('approved_at')
-            ->limit(50)
+        $all = $query
+            ->latest('updated_at')
             ->get();
 
-        return view('academic-board.results.index', compact('results', 'finalApproved'));
+        // Group by department + programme (one section per
+        // department, sub-grouped by programme within). Each group
+        // keeps its results sorted with `approved_final` first (the
+        // archive / printable rows) and `approved_by_business` next
+        // (the still-pending queue) so the operator reads from
+        // "signed off" → "needs sign-off".
+        $grouped = $all
+            ->sortBy(function ($r) {
+                return ($r->studentCourse->student->department->name ?? 'zzz')
+                    . '|' . ($r->studentCourse->student->programme->name ?? 'zzz')
+                    . '|' . ($r->status === 'approved_final' ? '0' : '1');
+            })
+            ->groupBy(function ($r) {
+                $deptId   = $r->studentCourse->student->department_id ?? 0;
+                $progId   = $r->studentCourse->student->programme_id ?? 0;
+
+                return $deptId . '|' . $progId;
+            })
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return [
+                    'department'   => $first->studentCourse->student->department,
+                    'programme'    => $first->studentCourse->student->programme,
+                    'school'       => $first->studentCourse->student->school,
+                    'results'      => $rows->values(),
+                ];
+            })
+            ->values();
+
+        return view('academic-board.results.index', compact('grouped'));
     }
 
     public function approve(Request $request, Result $result)

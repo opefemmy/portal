@@ -65,6 +65,12 @@
 <body>
 <div class="actions">
     <button type="button" class="btn btn-secondary" onclick="window.close()">Close</button>
+    <a href="{{ route('academic-board.results.print-student', $student) }}"
+       class="btn btn-outline-dark"
+       target="_blank"
+       title="Open the student's full transcript in a new tab">
+        <i class="fas fa-file-alt me-1"></i>View Full Transcript
+    </a>
     <button type="button" class="btn btn-primary" onclick="window.print()">
         <i class="fas fa-print me-1"></i>Print
     </button>
