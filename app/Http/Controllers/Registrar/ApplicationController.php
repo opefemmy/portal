@@ -138,10 +138,20 @@ class ApplicationController extends Controller
 
         $applications = $query->get();
 
-        // Simple CSV export
+        // Simple CSV export. school/department/programme are BelongsTo
+        // and any of them can be null if the FK row was deleted (e.g.
+        // a school that was retired while applications still referenced
+        // it). Use null-safe access with an 'N/A' fallback so a single
+        // orphaned applicant row doesn't 500 the whole export — the
+        // registrar still gets every other row. PHP's string-interpolation
+        // parser doesn't accept `?->` mid-interpolation, so resolve the
+        // names to local vars first.
         $csv = "Application Number,Name,Email,Phone,Gender,School,Department,Programme,Status\n";
         foreach ($applications as $app) {
-            $csv .= "{$app->application_number},{$app->first_name} {$app->surname},{$app->email},{$app->phone},{$app->gender},{$app->school->name},{$app->department->name},{$app->programme->name},{$app->status}\n";
+            $schoolName     = $app->school?->name ?? 'N/A';
+            $departmentName = $app->department?->name ?? 'N/A';
+            $programmeName  = $app->programme?->name ?? 'N/A';
+            $csv .= "{$app->application_number},{$app->first_name} {$app->surname},{$app->email},{$app->phone},{$app->gender},{$schoolName},{$departmentName},{$programmeName},{$app->status}\n";
         }
 
         return response()->streamDownload(function () use ($csv) {
