@@ -172,7 +172,7 @@ class AdminPermissions
             'finance.budgets.view',
             'finance.vendors.view',
             'finance.payroll.view',
-            'finance.dashboard.view',cu
+            'finance.dashboard.view',
         ],
         'staff' => [
             // Sub-slice 1.
