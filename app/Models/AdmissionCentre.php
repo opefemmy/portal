@@ -23,7 +23,13 @@ class AdmissionCentre extends Model
 
     public function applicants(): HasMany
     {
-        return $this->hasMany(Applicant::class, 'admission_centre_id');
+        // applicants.centre_id is the actual FK column added by
+        // migration 2026_07_23_000002 — using 'admission_centre_id'
+        // here caused AdmissionCentreController::index() to fail
+        // with `Unknown column 'applicants.admission_centre_id'` from
+        // the withCount('applicants') subquery. See plan:
+        // "Multi-area Portal Updates — Part A".
+        return $this->hasMany(Applicant::class, 'centre_id');
     }
 
     public function scopeActive($query)

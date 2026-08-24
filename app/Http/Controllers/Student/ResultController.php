@@ -24,7 +24,11 @@ class ResultController extends Controller
         // Get current session
         $currentSession = Session::where('is_current', true)->first();
 
-        // Get results for all semesters
+        // Get results for all semesters — exclude the raw 'pending'
+        // sentinel (no CA/exam uploaded yet) but DO include every
+        // other approval-stage row, so the student sees main score
+        // progress as it moves through HOD → Dean → Business →
+        // Academic Board. Final-approval gate is applied below.
         $query = Result::whereHas('studentCourse', function ($query) use ($student) {
             $query->where('student_id', $student->id);
         })->where('status', '!=', 'pending');
@@ -37,6 +41,20 @@ class ResultController extends Controller
 
         $results = $query->with(['studentCourse.course', 'studentCourse.session'])->get();
 
+        // Slice N — Gate GPA + classification behind final approval
+        // (Academic Board). Until a result reaches `approved_final`
+        // it contributes only its main score (CA + Exam + Total) to
+        // the view — no grade point, no GPA contribution, no class
+        // badge. Once the Academic Board approves, the row joins
+        // `approvedResults` and is summed into the live GPA.
+        //
+        // We split here rather than masking the badge in the view so
+        // the controller-owned number is the one the student sees,
+        // and so /transcript /print can read the same `$approvedResults`.
+        $approvedResults = $results->where('status', 'approved_final');
+        $pendingResults  = $results->where('status', '!=', 'approved_final');
+        $gpaUnlocked     = $approvedResults->isNotEmpty();
+
         // Calculate current semester stats
         $currentStats = ResultComputationService::calculateSemesterResults(
             $student,
@@ -44,17 +62,31 @@ class ResultController extends Controller
             Semester::first()
         );
 
-        // Calculate cumulative stats
-        $cumulativeStats = ResultComputationService::calculateCumulativeResults($student);
+        // Calculate cumulative stats — only relevant once at least
+        // one result is finally approved. Until then we ship empty
+        // stats so the view shows '--' rather than a misleading
+        // figure built from un-approved scores.
+        $cumulativeStats = $gpaUnlocked
+            ? ResultComputationService::calculateCumulativeResults($student)
+            : ['cgpa' => null, 'tlu' => null, 'totalPoints' => null, 'totalUnits' => null];
 
-        // Get failed courses
-        $failedCourses = ResultComputationService::getFailedCourses($student);
+        // Get failed courses (from approved rows only — pending
+        // failures don't count toward carry-over status until the
+        // result is finally approved).
+        $failedCourses = $gpaUnlocked
+            ? ResultComputationService::getFailedCourses($student)
+            : collect();
 
-        // Get academic remark
-        $academicRemark = ResultComputationService::getAcademicRemark($cumulativeStats['cgpa']);
+        // Get academic remark (only if we have a real CGPA).
+        $academicRemark = $gpaUnlocked
+            ? ResultComputationService::getAcademicRemark($cumulativeStats['cgpa'])
+            : null;
 
         return view('student.results', compact(
             'results',
+            'approvedResults',
+            'pendingResults',
+            'gpaUnlocked',
             'student',
             'currentStats',
             'cumulativeStats',
@@ -124,10 +156,18 @@ class ResultController extends Controller
                 })->with('studentCourse.course')->get();
 
                 if ($results->count() > 0) {
-                    $stats = ResultComputationService::calculateSemesterResults($student, $session, $semester);
+                    // Slice N — transcript only counts finally-approved
+                    // results toward GPA. Pending rows still render
+                    // in the per-semester table but flagged.
+                    $approved = $results->where('status', 'approved_final');
+                    $stats = $approved->isNotEmpty()
+                        ? ResultComputationService::calculateSemesterResults($student, $session, $semester)
+                        : ['gpa' => null, 'tlu' => null];
+
                     $sessionResults[] = [
                         'semester' => $semester,
                         'results' => $results,
+                        'approvedResults' => $approved,
                         'stats' => $stats,
                     ];
                 }
@@ -141,8 +181,15 @@ class ResultController extends Controller
             }
         }
 
-        $cumulative = ResultComputationService::calculateCumulativeResults($student);
-        $academicRemark = ResultComputationService::getAcademicRemark($cumulative['cgpa']);
+        // Same gate as index — CGPA + remark only when at least one
+        // result on the transcript is finally approved.
+        $hasApproved = collect($allResults)->flatten(1)->pluck('approvedResults')->flatten()->isNotEmpty();
+        $cumulative = $hasApproved
+            ? ResultComputationService::calculateCumulativeResults($student)
+            : ['cgpa' => null, 'tlu' => null];
+        $academicRemark = $hasApproved
+            ? ResultComputationService::getAcademicRemark($cumulative['cgpa'])
+            : null;
 
         return view('student.transcript', compact('student', 'allResults', 'cumulative', 'academicRemark'));
     }

@@ -11,10 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Run NoCacheAuthPages AFTER StartSession so the
+        // response we wrap has session-aware state baked in.
+        // It strips browser/proxy caches from HTML pages so role
+        // changes (or any sidebar-gated permission) show up on the
+        // next request without forcing a hard reload.
         $middleware->web(append: [
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\NoCacheAuthPages::class,
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

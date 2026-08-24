@@ -445,12 +445,16 @@ class DatabaseSeeder extends Seeder
         );
 
         // Create Settings
-        Setting::set('institution_name', 'Ekiti State College of Technology, Ijero-Ekiti');
+        // Canonical address & contact details — every printout
+        // reads from these keys via the institution-header partial.
+        // Edit here ONLY; the seeded defaults match the locked
+        // canonical string the admin wanted on every printout.
+        Setting::set('institution_name', 'Ekiti State College of Technology');
         Setting::set('institution_short_name', 'EKSCOTECH');
-        Setting::set('institution_address', 'Ijero-Ekiti, Ekiti State, Nigeria');
-        Setting::set('institution_email', 'info@ekticotech.edu.ng');
-        Setting::set('institution_phone', '08012345678');
-        Setting::set('institution_website', 'www.ekticotech.edu.ng');
+        Setting::set('institution_address', 'P.M.B 316, EPE/ARA ROAD IJERO - EKITI');
+        Setting::set('institution_email', 'admin@ekscotech.edu.ng');
+        Setting::set('institution_phone', '08034410595');
+        Setting::set('institution_website', 'www.ekscotech.edu.ng');
         Setting::set('institution_tagline', 'Excellence in Technical Education');
         Setting::set('session_id', $session->id);
         Setting::set('max_course_units', 24);
@@ -472,6 +476,17 @@ class DatabaseSeeder extends Seeder
         if (SystemSetting::where('key', 'payment_open')->doesntExist()) {
             SystemSetting::set('payment_open', '0');
         }
+
+        // Result-approval signing role names — Slice E of the multi-area
+        // plan. Each key populates a placeholder on the printable
+        // signing page (HOD · Dean · BC · Academic Board · Registrar ·
+        // Rector). Admins can override these via the System Settings UI.
+        SystemSetting::set('hod_name', 'Head of Department');
+        SystemSetting::set('dean_name', 'Dean of School');
+        SystemSetting::set('business_committee_name', 'Business Committee');
+        SystemSetting::set('academic_board_name', 'Academic Board');
+        SystemSetting::set('registrar_name', 'Registrar');
+        SystemSetting::set('rector_name', 'Rector / President');
 
         // Seed States and Local Governments
         $this->call([

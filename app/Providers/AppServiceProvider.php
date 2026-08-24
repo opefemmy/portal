@@ -877,6 +877,81 @@ class AppServiceProvider extends ServiceProvider
             },
             'widgets.stat-card'
         ));
+
+        // --- Currency totals (Part C of the multi-area plan) -------
+        // The four count-based widgets above answer "how many". These
+        // three answer "how much", which is what the student actually
+        // asks when they look at their dashboard. `format: currency`
+        // is honoured by widgets/stat-card.blade.php (same precedent
+        // as bursar.total_paid at line 430-447).
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'student.registered_courses_count', 'Registered Courses', 'stat', $studentRoles,
+            function () {
+                $student = auth()->user()?->student;
+                $value = $student
+                    ? \App\Models\StudentCourse::where('student_id', $student->id)
+                        ->where('status', 'registered')->count()
+                    : 0;
+                return [
+                    'value' => $value,
+                    'format' => 'number',
+                    'color' => 'success',
+                    'icon'  => 'fas fa-book',
+                    'href'  => $student ? route('student.courses') : null,
+                    'label_extra' => 'this session',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'student.fee_paid', 'Fee Paid', 'stat', $studentRoles,
+            function () use ($paidStatuses) {
+                $student = auth()->user()?->student;
+                $sum = 0;
+                if ($student) {
+                    $sum = (float) \App\Models\Payment::where('student_id', $student->id)
+                        ->whereIn('status', $paidStatuses)
+                        ->sum('amount');
+                }
+                return [
+                    'value' => $sum,
+                    'format' => 'currency',
+                    'color' => 'success',
+                    'icon'  => 'fas fa-coins',
+                    'href'  => $student ? route('student.payments') : null,
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'student.fee_outstanding', 'Fee Outstanding', 'stat', $studentRoles,
+            function () use ($paidStatuses) {
+                $student = auth()->user()?->student;
+                if (!$student) {
+                    return [
+                        'value' => 0, 'format' => 'currency', 'color' => 'danger',
+                        'icon' => 'fas fa-exclamation-circle',
+                    ];
+                }
+                $sessionId = $student->session_id;
+                $expected = (float) \App\Models\Fee::where('session_id', $sessionId)->sum('amount');
+                $paid = (float) \App\Models\Payment::where('student_id', $student->id)
+                    ->whereIn('status', $paidStatuses)
+                    ->sum('amount');
+                $outstanding = max(0, $expected - $paid);
+                return [
+                    'value'  => $outstanding,
+                    'format' => 'currency',
+                    'color'  => $outstanding > 0 ? 'danger' : 'success',
+                    'icon'   => 'fas fa-exclamation-circle',
+                    'href'   => route('student.payments'),
+                ];
+            },
+            'widgets.stat-card'
+        ));
     }
 
     /**
@@ -1531,47 +1606,113 @@ class AppServiceProvider extends ServiceProvider
     {
         $deanRoles = ['dean'];
 
+        // The Dean role is bound to exactly one school (`users.school_id`).
+        // A Dean should never see the institution-wide totals — they
+        // oversee *their* school. Each tile is scoped via the closure so
+        // a super_admin who happens to be on the dean audience sees their
+        // own scope, not the global count. The fallback for users without
+        // a `school_id` is 0 so a misconfigured dean never sees the wrong
+        // number.
         WidgetRegistry::register(new WidgetDefinition(
-            'dean.total_schools', 'Schools', 'stat', $deanRoles,
-            fn() => [
-                'value' => \App\Models\School::count(),
-                'format' => 'number',
-                'color' => 'primary',
-                'icon' => 'fas fa-school',
-            ],
+            'dean.my_school', 'My School', 'stat', $deanRoles,
+            function () {
+                $user = auth()->user();
+                if (!$user || !$user->school_id) {
+                    return ['value' => '—', 'format' => 'text', 'color' => 'secondary',
+                            'icon' => 'fas fa-school'];
+                }
+                $school = \App\Models\School::find($user->school_id);
+                return [
+                    'value' => $school?->name ?? '—',
+                    'format' => 'text',
+                    'color' => 'primary',
+                    'icon' => 'fas fa-school',
+                ];
+            },
             'widgets.stat-card'
         ));
 
         WidgetRegistry::register(new WidgetDefinition(
             'dean.total_departments', 'Departments', 'stat', $deanRoles,
-            fn() => [
-                'value' => \App\Models\Department::count(),
-                'format' => 'number',
-                'color' => 'info',
-                'icon' => 'fas fa-building-columns',
-            ],
-            'widgets.stat-card'
-        ));
-
-        WidgetRegistry::register(new WidgetDefinition(
-            'dean.total_students', 'Students', 'stat', $deanRoles,
-            fn() => [
-                'value' => \App\Models\Student::count(),
-                'format' => 'number',
-                'color' => 'success',
-                'icon' => 'fas fa-user-graduate',
-            ],
+            function () {
+                $user = auth()->user();
+                $count = $user && $user->school_id
+                    ? \App\Models\Department::where('school_id', $user->school_id)->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'info',
+                    'icon' => 'fas fa-building-columns',
+                    'href' => $user && $user->school_id ? route('dean.departments') : null,
+                    'label_extra' => 'in my school',
+                ];
+            },
             'widgets.stat-card'
         ));
 
         WidgetRegistry::register(new WidgetDefinition(
             'dean.total_programmes', 'Programmes', 'stat', $deanRoles,
-            fn() => [
-                'value' => \App\Models\Programme::count(),
-                'format' => 'number',
-                'color' => 'warning',
-                'icon' => 'fas fa-graduation-cap',
-            ],
+            function () {
+                $user = auth()->user();
+                if (!$user || !$user->school_id) {
+                    return ['value' => 0, 'format' => 'number', 'color' => 'warning',
+                            'icon' => 'fas fa-graduation-cap'];
+                }
+                $departmentIds = \App\Models\Department::where('school_id', $user->school_id)->pluck('id');
+                $count = \App\Models\Programme::whereIn('department_id', $departmentIds)->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'warning',
+                    'icon' => 'fas fa-graduation-cap',
+                    'label_extra' => 'across my departments',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.total_students', 'Students', 'stat', $deanRoles,
+            function () {
+                $user = auth()->user();
+                $count = $user && $user->school_id
+                    ? \App\Models\Student::where('school_id', $user->school_id)->count()
+                    : 0;
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => 'success',
+                    'icon' => 'fas fa-user-graduate',
+                    'href' => $user && $user->school_id ? route('dean.students') : null,
+                    'label_extra' => 'in my school',
+                ];
+            },
+            'widgets.stat-card'
+        ));
+
+        WidgetRegistry::register(new WidgetDefinition(
+            'dean.pending_results', 'Pending Results', 'stat', $deanRoles,
+            function () {
+                $user = auth()->user();
+                if (!$user || !$user->school_id) {
+                    return ['value' => 0, 'format' => 'number', 'color' => 'warning',
+                            'icon' => 'fas fa-hourglass-half'];
+                }
+                $departmentIds = \App\Models\Department::where('school_id', $user->school_id)->pluck('id');
+                $courseIds = \App\Models\Course::whereIn('department_id', $departmentIds)->pluck('id');
+                $count = \App\Models\Result::whereIn('course_id', $courseIds)
+                    ->where('status', 'approved')
+                    ->count();
+                return [
+                    'value' => $count,
+                    'format' => 'number',
+                    'color' => $count > 0 ? 'warning' : 'success',
+                    'icon' => 'fas fa-hourglass-half',
+                    'href' => route('dean.results'),
+                    'label_extra' => 'awaiting my approval',
+                ];
+            },
             'widgets.stat-card'
         ));
     }

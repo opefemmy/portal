@@ -21,7 +21,8 @@ class ProgrammeController extends Controller
     public function create()
     {
         $this->requirePermission('admin.programmes.manage');
-        return view('admin.programmes.create');
+        $departments = \App\Models\Department::orderBy('name')->pluck('name', 'id');
+        return view('admin.programmes.create', compact('departments'));
     }
 
     public function store(Request $request)
@@ -31,6 +32,7 @@ class ProgrammeController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:programmes',
             'type' => 'required|in:ND,HND,Degree,PGD,Masters,PhD',
+            'department_id' => 'nullable|integer|exists:departments,id',
         ]);
 
         Programme::create($validated);
@@ -40,7 +42,8 @@ class ProgrammeController extends Controller
     public function edit(Programme $programme)
     {
         $this->requirePermission('admin.programmes.manage');
-        return view('admin.programmes.edit', compact('programme'));
+        $departments = \App\Models\Department::orderBy('name')->pluck('name', 'id');
+        return view('admin.programmes.edit', compact('programme', 'departments'));
     }
 
     public function update(Request $request, Programme $programme)
@@ -50,6 +53,7 @@ class ProgrammeController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:programmes,code,' . $programme->id,
             'type' => 'required|in:ND,HND,Degree,PGD,Masters,PhD',
+            'department_id' => 'nullable|integer|exists:departments,id',
         ]);
 
         $programme->update($validated);

@@ -111,6 +111,20 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Student::class);
     }
 
+    /**
+     * Convenience singular accessor for the (usually one) Student row
+     * linked to this user. The student-audience dashboard widgets
+     * (`App\Providers\AppServiceProvider::registerStudentWidgets`)
+     * call `auth()->user()->student` to scope counts/payments to the
+     * signed-in student; without this `hasOne` the call returns null
+     * and every student tile renders zero, even when `StudentCourse`
+     * rows exist for that student.
+     */
+    public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Student::class);
+    }
+
     public function applicants(): HasMany
     {
         return $this->hasMany(Applicant::class);

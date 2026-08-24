@@ -34,8 +34,10 @@ class DepartmentController extends Controller
             'code' => 'required|string|unique:departments',
             'school_id' => 'required|exists:schools,id',
             'description' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ]);
 
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
         Department::create($validated);
         return redirect()->route('admin.departments.index')->with('success', 'Department created');
     }
@@ -55,8 +57,10 @@ class DepartmentController extends Controller
             'code' => 'required|string|unique:departments,code,' . $department->id,
             'school_id' => 'required|exists:schools,id',
             'description' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ]);
 
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $department->update($validated);
         return redirect()->route('admin.departments.index')->with('success', 'Department updated');
     }

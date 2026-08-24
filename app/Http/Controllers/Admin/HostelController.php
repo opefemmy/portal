@@ -46,10 +46,14 @@ class HostelController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        // `available_rooms` is now derived from `hostel_rooms.available_beds > 0`
+        // via Hostel::getAvailableRoomsAttribute(). Don't write a stale value
+        // here — a brand-new hostel with zero rooms must NOT show as "Full".
         $validated['available_rooms'] = 0;
         $validated['is_active'] = $request->is_active ?? true;
 
-        Hostel::create($validated);
+        $hostel = Hostel::create($validated);
+        $hostel->recomputeAndSave();
         return redirect()->route('admin.hostels.index')->with('success', 'Hostel created successfully');
     }
 
@@ -122,8 +126,11 @@ class HostelController extends Controller
             ]);
         }
 
-        // Update hostel available rooms
-        $hostel->increment('available_rooms');
+        // Recompute the hostel's available_rooms from the rooms
+        // table — the previous `$hostel->increment('available_rooms')`
+        // could undercount after the hostel's available_rooms was
+        // hard-set to 0 by `store()` and never refreshed.
+        $hostel->recomputeAndSave();
 
         return redirect()->route('admin.hostels.show', $hostel)->with('success', 'Room created with ' . $validated['capacity'] . ' beds');
     }
@@ -195,6 +202,15 @@ class HostelController extends Controller
         $room = HostelRoom::find($validated['hostel_room_id']);
         $room->decrement('available_beds');
 
+        // Refresh the hostel's `available_rooms` so the student
+        // dashboard reflects the new reality. Without this, the
+        // counter only changes when a room is added, never when
+        // a bed is filled.
+        $hostel = Hostel::find($validated['hostel_id']);
+        if ($hostel) {
+            $hostel->recomputeAndSave();
+        }
+
         return redirect()->route('admin.hostels.allocations')->with('success', 'Student allocated to hostel successfully');
     }
 
@@ -225,12 +241,19 @@ class HostelController extends Controller
             'status' => 'checked_out'
         ]);
 
+        $hostel = $allocation->hostel;
         if ($allocation->bed_id) {
             $bed = \App\Models\HostelBed::find($allocation->bed_id);
             if ($bed) {
                 $bed->update(['status' => 'available', 'student_id' => null]);
                 $bed->room->increment('available_beds');
             }
+        }
+
+        // Same reason as storeAllocation — keep the hostel's
+        // available_rooms counter in sync with reality.
+        if ($hostel) {
+            $hostel->recomputeAndSave();
         }
 
         return back()->with('success', 'Student checked out successfully');

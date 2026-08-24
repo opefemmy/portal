@@ -108,9 +108,14 @@ class CourseRegistrationController extends Controller
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
 
+        // Course type whitelist. Lets the student pick carry_over / main
+        // / elective per course. Carry-over is the only path that the
+        // carry_over_courses row follows back to a status update below.
         $request->validate([
             'courses' => 'required|array',
             'courses.*' => 'exists:courses,id',
+            'course_types' => 'array',
+            'course_types.*' => 'in:main,elective,carry_over',
         ]);
 
         // Re-check the gate at write-time too — students could submit a
@@ -126,38 +131,46 @@ class CourseRegistrationController extends Controller
 
         $courseTypes = $request->input('course_types', []);
 
-        // If the student is only 60% paid, reject any second-semester
-        // course silently rather than letting it land with the wrong
-        // semester tag.
-        if (!$fullyPaid) {
-            $blocked = Course::whereIn('id', $request->courses)
-                ->where('semester', 'second')
-                ->pluck('code')
-                ->all();
-            if (!empty($blocked)) {
-                return back()->with(
-                    'error',
-                    'Second-semester courses are locked until you pay the remaining 40%: ' . implode(', ', $blocked)
-                );
-            }
-        }
-
-        // All cleared courses get the same semester tag, since fees
-        // cover either 'first' (60% paid) or 'both' (100% paid).
-        $registrationSemester = $fullyPaid ? 'both' : 'first';
+        // Look up the courses once so we know their declared semester
+        // (first / second) — we tag each StudentCourse row by the
+        // course's own semester, not a blanket "first" or "both"
+        // label. The 'both' label the old code used is not a valid
+        // ENUM on the live DB (`enum('first','second')`); collapsing
+        // all rows under one semester lost the second-semester
+        // distinction once the unique key was relaxed to allow two
+        // rows per (student, course, session).
+        $courseRows = Course::whereIn('id', $request->courses)
+            ->get()
+            ->keyBy('id');
 
         foreach ($request->courses as $courseId) {
+            $course = $courseRows->get($courseId);
+            if (!$course) {
+                continue; // validated above; defensive only
+            }
+
+            $courseSemester = $course->semester;
             $type = $courseTypes[$courseId] ?? 'main';
 
-            StudentCourse::firstOrCreate([
-                'student_id' => $student->id,
-                'course_id' => $courseId,
-                'session_id' => $currentSession->id,
-            ], [
-                'semester' => $registrationSemester,
-                'status' => 'registered',
-                'course_type' => $type,
-            ]);
+            // 60%-paid students are blocked from second-semester
+            // courses entirely (the view disables those checkboxes;
+            // this is the write-side guard).
+            if (!$fullyPaid && $courseSemester === 'second') {
+                continue;
+            }
+
+            StudentCourse::updateOrCreate(
+                [
+                    'student_id' => $student->id,
+                    'course_id'  => $courseId,
+                    'session_id' => $currentSession->id,
+                    'semester'   => $courseSemester,
+                ],
+                [
+                    'status'      => 'registered',
+                    'course_type' => $type,
+                ]
+            );
 
             // If carry over, update the carry over status
             if ($type === 'carry_over') {
@@ -195,5 +208,70 @@ class CourseRegistrationController extends Controller
             ->get();
 
         return view('student.courses-print', compact('courses', 'student'));
+    }
+
+    /**
+     * AJAX search across a student's past failed courses for
+     * carry-over re-registration. Returns courses the student
+     * previously registered for and either scored F or has
+     * `pass_status = 'fail'` — i.e. courses they owe and should
+     * re-take. The search box matches code / title prefix so a
+     * student typing "MTH" can find "MTH 101 — General Maths"
+     * from their year-1 results even though no CarryOverCourse
+     * row exists yet (carry-over rows are an admin convenience,
+     * not the source of truth — the source of truth is the
+     * student's past failed Result).
+     */
+    public function searchCarryOvers(Request $request)
+    {
+        $this->requirePermission('student.courses.manage');
+        $student = Student::where('user_id', auth()->id())->firstOrFail();
+
+        $term = trim((string) $request->input('q', ''));
+
+        $query = Result::query()
+            ->whereHas('studentCourse', function ($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })
+            ->where(function ($q) {
+                $q->where('grade', 'F')
+                  ->orWhere('pass_status', 'fail')
+                  ->orWhere('total_score', '<', 40);
+            })
+            ->with(['studentCourse.course.department', 'studentCourse.session']);
+
+        if ($term !== '') {
+            $query->whereHas('studentCourse.course', function ($q) use ($term) {
+                $q->where('code', 'like', "%{$term}%")
+                  ->orWhere('title', 'like', "%{$term}%");
+            });
+        }
+
+        $results = $query->orderByDesc('created_at')->limit(20)->get();
+
+        // De-duplicate by course id — the same course may have
+        // been failed across multiple sittings. Keep the most
+        // recent failure.
+        $byCourse = [];
+        foreach ($results as $r) {
+            $course = $r->studentCourse->course ?? null;
+            if (!$course) continue;
+            if (isset($byCourse[$course->id])) continue;
+            $byCourse[$course->id] = [
+                'id' => $course->id,
+                'code' => $course->code,
+                'title' => $course->title,
+                'units' => $course->units,
+                'semester' => $course->semester,
+                'department' => $course->department->name ?? '',
+                'failed_session' => $r->studentCourse->session->name ?? '',
+                'last_grade' => $r->grade,
+                'last_total' => $r->total_score,
+            ];
+        }
+
+        return response()->json([
+            'carry_overs' => array_values($byCourse),
+        ]);
     }
 }

@@ -953,6 +953,14 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::delete('/courses/{studentCourse}/drop', [CourseRegistrationController::class, 'dropCourse'])->name('courses.drop');
     Route::get('/courses/print', [CourseRegistrationController::class, 'printForm'])->name('courses.print');
 
+    // AJAX carry-over picker — searches the student's past failed
+    // results so they can re-register for a course they failed
+    // even if no CarryOverCourse row exists yet. The CarryOverCourse
+    // table is an admin convenience; this is the real source of
+    // truth (past Result rows with grade F or pass_status='fail').
+    Route::get('/courses/carryover-search', [CourseRegistrationController::class, 'searchCarryOvers'])
+        ->name('courses.carryover-search');
+
     Route::get('/results', [ResultController::class, 'index'])->name('results');
     Route::get('/results/{semester}', [ResultController::class, 'show'])->name('results.show');
     Route::get('/results/print', [ResultController::class, 'printResult'])->name('results.print');
@@ -1180,12 +1188,21 @@ Route::prefix('dean')->name('dean.')->middleware(['auth', 'role:dean'])->group(f
     Route::get('/departments', [\App\Http\Controllers\Dean\DepartmentController::class, 'index'])
         ->middleware('permission:academic.departments.view')
         ->name('departments');
+    Route::get('/students', [\App\Http\Controllers\Dean\StudentController::class, 'index'])
+        ->middleware('permission:academic.students.view')
+        ->name('students');
     Route::get('/results', [\App\Http\Controllers\Dean\ResultController::class, 'index'])
         ->middleware('permission:academic.results.view')
         ->name('results');
     Route::put('/results/{result}/approve', [\App\Http\Controllers\Dean\ResultController::class, 'approve'])
         ->middleware('permission:academic.results.approve')
         ->name('results.approve');
+    Route::put('/results/{result}/reject', [\App\Http\Controllers\Dean\ResultController::class, 'reject'])
+        ->middleware('permission:academic.results.reject')
+        ->name('results.reject');
+    Route::get('/results/signing-page', [\App\Http\Controllers\Dean\ResultController::class, 'signingPage'])
+        ->middleware('permission:academic.results.view')
+        ->name('results.signing-page');
     Route::post('/results/bulk-approve', [\App\Http\Controllers\Dean\ResultController::class, 'bulkApprove'])
         ->middleware('permission:academic.results.approve')
         ->name('results.bulkApprove');
@@ -1489,6 +1506,29 @@ Route::prefix('academic-board')->name('academic-board.')->middleware(['auth', 'r
     Route::post('/results/bulk-reject', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'bulkReject'])
         ->middleware('permission:academic.results.board-approve')
         ->name('results.bulkReject');
+
+    // Combined signing page — Slice E of the multi-area plan.
+    // Renders every approved_by_business row, filterable by
+    // school/department/programme/session, followed by the six-
+    // signature block (HOD · Dean · BC · AB · Registrar · Rector).
+    Route::get('/results/signing-page', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'signingPage'])
+        ->middleware('permission:academic.results.view')
+        ->name('signing-page');
+
+    // Per-student printable transcript — every final-approved result
+    // for one student on a single signed page. Registered BEFORE
+    // the {result}/print route so Laravel doesn't try to interpret
+    // 'student' as a result id.
+    // GET /academic-board/results/student/{student}/print
+    Route::get('/results/student/{student}/print', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'printStudent'])
+        ->middleware('permission:academic.results.view')
+        ->name('results.print-student');
+
+    // Per-result printable sheet — final-approved results only.
+    // GET /academic-board/results/{result}/print
+    Route::get('/results/{result}/print', [\App\Http\Controllers\AcademicBoard\ResultController::class, 'printResult'])
+        ->middleware('permission:academic.results.view')
+        ->name('results.print');
 });
 
 // Librarian Routes. Library Officer and Library Assistant (seeded by

@@ -19,19 +19,35 @@ class UserController extends Controller
     {
         $this->requirePermission('admin.users.manage');
         // Filter to only show staff users - exclude students, applicants, parents, visitors
-        $roleSlug = $request->get('role', '');
+        $roleSlug    = $request->get('role', '');
+        $onlyActive  = $request->boolean('active');
 
-        $users = User::with(['role', 'roles', 'department'])
-            ->whereHas('role', function($query) use ($roleSlug) {
-                // Exclude student, applicant roles from the users page
-                $query->whereNotIn('slug', ['student', 'applicant']);
+        $query = User::with(['role', 'roles', 'department'])
+            // The user complained that "some users had been created
+            // but hidden". The previous whereHas('role') clause
+            // silently dropped any user whose `users.role_id`
+            // looked up to nothing — orphan rows from a bad seed
+            // or a deleted role. Use a LEFT JOIN style by
+            // `with('role')` and a NULL-aware whereHas; the simple
+            // fix is to drop the whereHas('role') requirement and
+            // filter the role column in a way that ALSO keeps
+            // orphan rows visible (we want to surface them, not
+            // hide them).
+            ->leftJoin('roles', 'roles.id', '=', 'users.role_id')
+            ->select('users.*')
+            ->where(function ($q) use ($roleSlug) {
+                // Exclude student/applicant roles when their primary
+                // role resolves; include rows where the role is
+                // missing so admins can see & clean them up.
+                $q->whereNull('roles.slug')
+                  ->orWhereNotIn('roles.slug', ['student', 'applicant']);
 
-                // Apply additional role filter if specified
                 if ($roleSlug) {
-                    $query->where('slug', $roleSlug);
+                    $q->where('roles.slug', $roleSlug);
                 }
             })
-            ->latest()
+            ->when($onlyActive, fn ($q) => $q->where('users.is_active', true))
+            ->latest('users.created_at')
             ->paginate(20);
 
         // Roles available to attach. We exclude `student` and
@@ -41,7 +57,7 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.users.index', compact('users', 'roles'));
+        return view('admin.users.index', compact('users', 'roles', 'onlyActive'));
     }
 
     public function create()
