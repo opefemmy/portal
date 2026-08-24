@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.hostels.storeRoom', $hostel) }}">
+        <form method="POST" action="{{ route('admin.hostels.rooms.store', $hostel) }}">
             @csrf
             <div class="row g-3">
                 <div class="col-md-4">

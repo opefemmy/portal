@@ -6,7 +6,7 @@
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4><i class="fas fa-bed me-2"></i>{{ $hostel->name }}</h4>
     <div>
-        <a href="{{ route('admin.hostels.createRoom', $hostel) }}" class="btn btn-success">
+        <a href="{{ route('admin.hostels.rooms.create', $hostel) }}" class="btn btn-success">
             <i class="fas fa-plus me-2"></i>Add Room
         </a>
         <a href="{{ route('admin.hostels.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
