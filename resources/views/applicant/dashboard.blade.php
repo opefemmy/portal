@@ -219,12 +219,21 @@
                 @endif
 
                 {{--
-                    Transfer to Student Portal — only visible once the
-                    applicant has actually been migrated to a Student row
-                    AND the user has role=student. The role middleware on
-                    /student/dashboard checks this; the button here gives
-                    the user a friendly way to claim the portal instead of
-                    hitting a 403 by typing the URL.
+                    Transfer to Student Portal. Two render paths:
+                      1. Already migrated + role=student — primary "Go to
+                         Student Portal" button (the happy path).
+                      2. Paid the compulsory fee but not yet migrated —
+                         "stuck applicant" path. Rendered whenever the
+                         user has a completed migration-trigger payment
+                         but isMigrated() is still false. Clicking it
+                         POSTs to applicant.payment.transfer which calls
+                         transferToStudentPortal() — that method already
+                         runs markCompleted() defensively + the
+                         synchronous migrateApplicantToStudent() retry +
+                         redirects to student.dashboard on success. Gives
+                         stuck applicants an inline path forward instead
+                         of telling them to "contact the admissions
+                         office".
                 --}}
                 @if($applicant->isMigrated() && $applicant->user?->hasRole('student'))
                     <form method="POST" action="{{ route('applicant.payment.transfer') }}" class="mt-2">
@@ -232,6 +241,16 @@
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-external-link-alt me-2"></i>Go to Student Portal
                         </button>
+                    </form>
+                @elseif($hasCompletedCompulsory && ! $applicant->isMigrated())
+                    <form method="POST" action="{{ route('applicant.payment.transfer') }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>Migrate to Student Portal
+                        </button>
+                        <small class="text-muted d-block mt-1 text-center">
+                            Your compulsory payment is recorded. Click to complete your migration to the student portal.
+                        </small>
                     </form>
                 @endif
             </div>

@@ -1029,17 +1029,61 @@ class PaymentGatewayController extends Controller
         }
 
         $applicant = $applicant->fresh();
+
+        // Defensive migration retry. markCompleted() above calls
+        // applyApplicantSideEffects() which in turn calls
+        // migrateApplicantToStudent() inside DB::transaction — but on
+        // live that path can fail silently if matric generation throws
+        // or a user role row is missing, leaving the applicant paid
+        // but not migrated. The user reported this exact symptom for
+        // the compulsory-fee path: dashboard shows "Locked", payment
+        // was successful, but no Student row was ever created. The
+        // same defensive retry pattern lives in processTestPaymentInner
+        // (commit 6ed08a22) and paymentCallbackInner (commit 78c8a892)
+        // — extending it here covers the manual-sync path too.
+        if ($applicant && ! $applicant->isMigrated() && $applicant->status === 'admitted') {
+            try {
+                $this->payments->migrateApplicantToStudent($applicant);
+                $applicant = $applicant->fresh();
+            } catch (\Throwable $e) {
+                Log::error('syncPaymentSideEffects: synchronous migration retry failed', [
+                    'applicant_id' => $applicant->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         if ($applicant && $applicant->isMigrated()) {
             $migrated = true;
+
+            // migrateApplicantToStudent() syncs role_id when it creates
+            // the Student row, but early-returns when the Student row
+            // already exists without touching role_id. Cover that gap
+            // so the student.dashboard route gate (role:student
+            // middleware) doesn't 403 right after we redirect.
+            if ($applicant->user && ! $applicant->user->hasRole('student')) {
+                $studentRole = \App\Models\Role::where('slug', 'student')->first();
+                if ($studentRole) {
+                    $applicant->user->update(['role_id' => $studentRole->id, 'is_active' => true]);
+                }
+            }
         }
 
         if ($migrated) {
-            return redirect()->route('applicant.dashboard')
+            // Migration just ran — refresh the in-memory user so the
+            // student.dashboard route gate (role:student middleware)
+            // sees the promotion, then send them straight to the
+            // student portal. The user already paid; no point making
+            // them click a second button to land where they belong.
+            if ($applicant->user) {
+                Auth::setUser($applicant->user->fresh());
+            }
+            return redirect()->route('student.dashboard')
                 ->with(
                     'success',
                     "Payment status synced ({$synced} payment"
                     . ($synced === 1 ? '' : 's')
-                    . "). Your student record is ready — use the button below to transfer to the student portal."
+                    . "). Your student record is ready — welcome to the student portal."
                 );
         }
 
