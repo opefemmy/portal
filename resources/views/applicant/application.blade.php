@@ -67,7 +67,12 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Application Details</h5>
         <div>
-            @if($applicant->status === 'pending' || $applicant->status === 'draft')
+            {{-- Edit button while the applicant is still mid-flow
+                 (status='pending' and the form hasn't actually been
+                 submitted yet — application_number IS NULL is the
+                 canonical "draft" sentinel because production's
+                 applicants.status ENUM has no 'draft' value). --}}
+            @if($applicant->status === 'pending' && empty($applicant->application_number))
             <a href="{{ route('applicant.application.edit') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-edit me-1"></i> Edit Application
             </a>

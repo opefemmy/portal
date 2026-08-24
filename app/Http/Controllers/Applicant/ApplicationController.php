@@ -137,11 +137,16 @@ class ApplicationController extends Controller
         // verifyExternalPayment without ever filling the form — those
         // fields will be NULL. Allow them to come back and fill in the
         // form until they actually do.
+        // Canonical "submitted" sentinel is application_number NOT NULL
+        // — submitApplication() generates it on first real submission,
+        // and signup-time seeding leaves it NULL. (Production's
+        // applicants.status ENUM has no 'draft' value.)
+        $submitted = $applicant && ! empty($applicant->application_number);
         $formIsFilled = $applicant
             && !empty($applicant->gender)
             && !empty($applicant->date_of_birth)
             && !empty($applicant->address);
-        if ($applicant && $applicant->status !== 'draft' && $formIsFilled) {
+        if ($submitted && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot apply again.');
         }
@@ -469,10 +474,14 @@ class ApplicationController extends Controller
         ])->where('user_id', auth()->id())->first();
 
         // Block direct URL hits before the form has been submitted. The
-        // dashboard disables the View button while in draft, but a
-        // bookmarked link could bypass that. Sending them back to the
-        // apply form keeps the path visible-and-meaningful.
-        if ($applicant && $applicant->status === 'draft') {
+        // dashboard disables the View button while the form is empty,
+        // but a bookmarked link could bypass that. Sending them back to
+        // the apply form keeps the path visible-and-meaningful.
+        //
+        // The canonical "haven't submitted" signal is application_number
+        // IS NULL — production's applicants.status ENUM has no 'draft'
+        // value, so the previous status='draft' check would never match.
+        if ($applicant && empty($applicant->application_number)) {
             return redirect()->route('applicant.apply')
                 ->with('error', 'Please complete and submit your application form before viewing it.');
         }
@@ -517,8 +526,10 @@ class ApplicationController extends Controller
 
         // Same guard as viewApplication: nothing to print until the form
         // has been submitted. Stops a bookmarked /applicant/application/print
-        // URL from rendering a half-filled draft as a printable document.
-        if ($applicant->status === 'draft') {
+        // URL from rendering a half-filled record as a printable document.
+        // The canonical "not submitted yet" signal is application_number
+        // IS NULL (see viewApplication for the full rationale).
+        if (empty($applicant->application_number)) {
             return redirect()->route('applicant.apply')
                 ->with('error', 'Please complete and submit your application form before printing it.');
         }
@@ -582,17 +593,18 @@ class ApplicationController extends Controller
         }
 
         // Only allow editing while the application is still a draft.
-        // Once submitted (status='pending', 'admitted', or 'rejected')
-        // the applicant is sent to the read-only view — the form cannot
-        // be reopened. This matches the same status check on the apply
-        // route so re-apply and re-edit are blocked together.
+        // Once submitted (application_number NOT NULL) the applicant is
+        // sent to the read-only view — the form cannot be reopened.
+        // This matches the same check on the apply route so re-apply
+        // and re-edit are blocked together.
         // Exception: if payment was completed but the form has never
         // actually been filled in (gender / DOB / address are NULL), the
         // applicant can still come back to fill it in.
+        $submitted = ! empty($applicant->application_number);
         $formIsFilled = !empty($applicant->gender)
             && !empty($applicant->date_of_birth)
             && !empty($applicant->address);
-        if ($applicant->status !== 'draft' && $formIsFilled) {
+        if ($submitted && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot edit it.');
         }
@@ -629,10 +641,11 @@ class ApplicationController extends Controller
         // the same rule so the route can't be hit directly either.
         // Exception (same as editApplication): if the form has not been
         // actually filled in yet, allow the submit to populate it.
+        $submitted = ! empty($applicant->application_number);
         $formIsFilled = !empty($applicant->gender)
             && !empty($applicant->date_of_birth)
             && !empty($applicant->address);
-        if ($applicant->status !== 'draft' && $formIsFilled) {
+        if ($submitted && $formIsFilled) {
             return redirect()->route('applicant.application')
                 ->with('info', 'You have already submitted your application. You cannot edit it.');
         }

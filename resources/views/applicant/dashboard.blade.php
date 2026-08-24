@@ -243,10 +243,11 @@
 <div class="row mt-3">
     @php
         // View/print only become active once the applicant has actually
-        // submitted the form (status flips from 'draft' to 'pending' on
-        // submit). Before submission there is nothing worth viewing or
-        // printing — the apply form is still the place to be.
-        $canViewOrPrint = $applicant && !in_array($applicant->status, ['draft'], true);
+        // submitted the form (application_number is filled by
+        // submitApplication on first real submit). Production's
+        // applicants.status ENUM has no 'draft' value, so the canonical
+        // "not submitted yet" sentinel is empty application_number.
+        $canViewOrPrint = $applicant && ! empty($applicant->application_number);
     @endphp
     <div class="col-md-4 mb-3">
         <div class="card h-100">
@@ -531,7 +532,7 @@
                         <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success btn-lg">
                             <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
                         </a>
-                    @elseif($applicant && !in_array($applicant->status, ['draft', 'pending']))
+                    @elseif($applicant && !in_array($applicant->status, ['pending']) && ! empty($applicant->application_number))
                         <a href="{{ route('applicant.application') }}" class="btn btn-primary btn-lg">
                             <i class="fas fa-eye me-2"></i>View Submitted Application
                         </a>
@@ -545,7 +546,7 @@
                         <a href="{{ route('applicant.payment.gateway') }}?purpose=acceptance" class="btn btn-success btn-lg">
                             <i class="fas fa-credit-card me-2"></i>Pay Acceptance Fee
                         </a>
-                    @elseif($applicant && !in_array($applicant->status, ['draft', 'pending']))
+                    @elseif($applicant && !in_array($applicant->status, ['pending']) && ! empty($applicant->application_number))
                         <a href="{{ route('applicant.application') }}" class="btn btn-primary btn-lg">
                             <i class="fas fa-eye me-2"></i>View Submitted Application
                         </a>

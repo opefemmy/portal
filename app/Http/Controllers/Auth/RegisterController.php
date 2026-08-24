@@ -103,19 +103,29 @@ class RegisterController extends Controller
         // can pre-fill and lock them. The Applicant record is created
         // here at signup (typically created later, on first payment), but
         // doing it now lets us enforce the name-once contract early.
+        // Seed a draft Applicant row with the split name parts so the
+        // apply form can pre-fill and lock them. The Applicant record is
+        // created here at signup (typically created later, on first
+        // payment), but doing it now lets us enforce the name-once
+        // contract early.
+        //
+        // NOTE: do NOT set status='draft' — production applicants.status
+        // is ENUM('pending','reviewing','admitted','rejected') and any
+        // value outside the set triggers "Data truncated for column
+        // 'status'". The canonical "haven't submitted yet" signal
+        // across the applicant flow is `application_number IS NULL`;
+        // signup-time seeding therefore leaves application_number NULL
+        // and lets submitApplication() generate + assign it on first
+        // real submission.
         Applicant::firstOrCreate(
             ['user_id' => $user->id],
             [
-                // application_number has no default in production and the
-                // applicants table is unique-indexed on it, so we must
-                // always provide one when seeding a fresh row.
-                'application_number' => Applicant::generateApplicationNumber(),
                 'email' => $validated['email'],
                 'surname' => $validated['surname'],
                 'first_name' => $validated['first_name'],
                 'middle_name' => $validated['middle_name'] ?? null,
                 'phone' => $validated['phone'] ?? null,
-                'status' => 'draft',
+                'status' => 'pending',
             ]
         );
 
