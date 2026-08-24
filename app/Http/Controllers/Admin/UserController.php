@@ -50,6 +50,12 @@ class UserController extends Controller
             ->latest('users.created_at')
             ->paginate(20);
 
+        // Bind the paginator to $users so the view's compact() picks
+        // it up. (Bug fixed: previously the local was named $query,
+        // so compact('users', ...) raised "Undefined variable $users"
+        // and /admin/users 500'd on PHP 8.2.)
+        $users = $query;
+
         // Roles available to attach. We exclude `student` and
         // `applicant` to match the index's user scope — students are
         // managed on a separate page; same for applicants.
