@@ -4,14 +4,18 @@ namespace App\Services;
 
 use App\Models\Applicant;
 use App\Models\ExternalPayment;
+use App\Models\LocalGovernment;
+use App\Models\Nationality;
 use App\Models\Payment;
 use App\Models\PaymentType;
+use App\Models\State;
 use App\Models\Student;
 use App\Models\SystemSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -783,7 +787,19 @@ class ApplicantPaymentService
      */
     public function migrateApplicantToStudent(Applicant $applicant): ?Student
     {
-        if (! $applicant || $applicant->status !== 'admitted') {
+        if (! $applicant) {
+            Log::warning('migrateApplicantToStudent: applicant is null');
+
+            return null;
+        }
+
+        if ($applicant->status !== 'admitted') {
+            Log::warning('migrateApplicantToStudent: applicant status is not admitted, skipping', [
+                'applicant_id' => $applicant->id,
+                'status'       => $applicant->status,
+                'user_id'      => $applicant->user_id,
+            ]);
+
             return null;
         }
 
@@ -809,52 +825,168 @@ class ApplicantPaymentService
 
         $matricNumber = MatricNumberService::generate($applicant);
         if (! $matricNumber) {
-            Log::error("Failed to generate matric number for applicant {$applicant->id}");
+            Log::error("migrateApplicantToStudent: MatricNumberService returned empty for applicant {$applicant->id}");
 
             return null;
         }
 
-        return DB::transaction(function () use ($applicant, $matricNumber) {
-            $student = Student::create([
-                'user_id'        => $applicant->user_id,
-                'matric_number'  => $matricNumber,
-                'school_id'      => $applicant->school_id,
-                'department_id'  => $applicant->department_id,
-                'programme_id'   => $applicant->programme_id,
-                'session_id'     => $applicant->session_id,
-                'level'          => $applicant->entry_level ?: 1,
-                'status'         => 'active',
-                'state_id'       => $applicant->state_id,
-                'lga_id'         => $applicant->lga_id,
-                'nationality_id' => $applicant->nationality_id,
-                'from_application' => true,
-                'applicant_id'     => $applicant->id,
-            ]);
+        // Build the Student::create payload defensively. The original
+        // 2024_01_01_000009_create_students_table migration only declares
+        // user_id, matric_number, school_id, department_id, programme_id,
+        // session_id, level, status. The other columns (state_id, lga_id,
+        // nationality_id, from_application, applicant_id) are added by
+        // later migrations (2026_07_27_000007_ensure_critical_columns_exist
+        // + 2026_07_29_000001_add_student_source_to_students_table) — and
+        // on live those migrations may not have run yet (this repo has a
+        // repeated DB-drift pattern — see memory notes for hospital_patients
+        // / external_payments / admissions_centres etc.). Without the
+        // Schema::hasColumn guards, Student::create() throws "Unknown
+        // column 'state_id'/'lga_id'/'nationality_id'/'from_application'/
+        // 'applicant_id'" and the whole migration silently returns null.
+        $candidate = [
+            'user_id'        => $applicant->user_id,
+            'matric_number'  => $matricNumber,
+            'school_id'      => $applicant->school_id,
+            'department_id'  => $applicant->department_id,
+            'programme_id'   => $applicant->programme_id,
+            'session_id'     => $applicant->session_id,
+            'status'         => 'active',
+            'from_application' => true,
+            'applicant_id'     => $applicant->id,
+        ];
 
-            $studentRole = \App\Models\Role::where('slug', 'student')->first();
-            if ($studentRole) {
-                $applicant->user?->update([
-                    'role_id'  => $studentRole->id,
-                    'is_active' => true,
+        // applicants.entry_level is a string ('UTME' by default) but
+        // students.level is an integer column. Coerce to int — non-numeric
+        // values fall back to 1 (entry-level default). Without this, MySQL
+        // strict mode rejects the insert.
+        $levelRaw = $applicant->entry_level;
+        if (is_numeric($levelRaw)) {
+            $candidate['level'] = (int) $levelRaw;
+        } else {
+            $candidate['level'] = 1;
+        }
+
+        // Only include the optional columns that exist on the live
+        // students table. Mirrors the local-DB-drift safety-net pattern
+        // from migrations 2026_08_09_000001, 2026_08_09_000002, and
+        // 2026_08_11_000001.
+        if (Schema::hasColumn('students', 'state_id')) {
+            // FK constraint: a NULL state_id is fine (column is nullable),
+            // but a non-null state_id must reference an existing states row.
+            // If the applicant's state_id points to a missing/deleted row,
+            // null it out so the FK doesn't reject the insert.
+            $stateId = $applicant->state_id;
+            if ($stateId !== null && ! \App\Models\State::where('id', $stateId)->exists()) {
+                Log::warning('migrateApplicantToStudent: applicants.state_id references missing State row, dropping FK', [
+                    'applicant_id' => $applicant->id,
+                    'missing_state_id' => $stateId,
                 ]);
+                $stateId = null;
             }
+            $candidate['state_id'] = $stateId;
+        }
 
-            $applicant->update([
-                'student_id' => $student->id,
+        if (Schema::hasColumn('students', 'lga_id')) {
+            $lgaId = $applicant->lga_id;
+            if ($lgaId !== null && ! LocalGovernment::where('id', $lgaId)->exists()) {
+                Log::warning('migrateApplicantToStudent: applicants.lga_id references missing LGA row, dropping FK', [
+                    'applicant_id' => $applicant->id,
+                    'missing_lga_id' => $lgaId,
+                ]);
+                $lgaId = null;
+            }
+            $candidate['lga_id'] = $lgaId;
+        }
+
+        if (Schema::hasColumn('students', 'nationality_id')) {
+            $nationalityId = $applicant->nationality_id;
+            if ($nationalityId !== null && ! Nationality::where('id', $nationalityId)->exists()) {
+                Log::warning('migrateApplicantToStudent: applicants.nationality_id references missing Nationality row, dropping FK', [
+                    'applicant_id' => $applicant->id,
+                    'missing_nationality_id' => $nationalityId,
+                ]);
+                $nationalityId = null;
+            }
+            $candidate['nationality_id'] = $nationalityId;
+        }
+
+        try {
+            return DB::transaction(function () use ($applicant, $candidate, $matricNumber) {
+                $student = Student::create($candidate);
+
+                // Promote role=student. Separate try/catch so a missing
+                // roles table on live doesn't tank the Student row we
+                // already created — the Student row is the load-bearing
+                // piece; the role row can be patched later.
+                try {
+                    $studentRole = \App\Models\Role::where('slug', 'student')->first();
+                    if ($studentRole) {
+                        $applicant->user?->update([
+                            'role_id'  => $studentRole->id,
+                            'is_active' => true,
+                        ]);
+                    } else {
+                        Log::warning('migrateApplicantToStudent: student role row not found, skipping role promotion', [
+                            'applicant_id' => $applicant->id,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('migrateApplicantToStudent: role promotion failed (student row already created)', [
+                        'applicant_id' => $applicant->id,
+                        'student_id'   => $student->id,
+                        'error'        => $e->getMessage(),
+                    ]);
+                }
+
+                // Stamp the applicant with the new student_id + matric
+                // + migration timestamp. Separate try/catch — if this
+                // fails (column missing on applicants) the Student row
+                // is still usable; we can back-fill the applicant columns
+                // manually.
+                try {
+                    $applicant->update([
+                        'student_id' => $student->id,
+                        'matric_number' => $matricNumber,
+                        'status' => 'admitted',
+                        'migrated_to_student_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('migrateApplicantToStudent: applicant columns update failed (student row already created)', [
+                        'applicant_id' => $applicant->id,
+                        'student_id'   => $student->id,
+                        'error'        => $e->getMessage(),
+                    ]);
+                }
+
+                // Back-fill applicant-side payment rows. Non-fatal — a
+                // missing payments.student_id column doesn't kill the
+                // migration, the student portal just won't surface the
+                // applicant's payment history until the column exists.
+                try {
+                    $this->relinkApplicantPayments($applicant, $student);
+                } catch (\Throwable $e) {
+                    Log::error('migrateApplicantToStudent: relinkApplicantPayments failed (student row already created)', [
+                        'applicant_id' => $applicant->id,
+                        'student_id'   => $student->id,
+                        'error'        => $e->getMessage(),
+                    ]);
+                }
+
+                return $student;
+            });
+        } catch (\Throwable $e) {
+            // The Student::create threw — log the actual underlying error
+            // so the operator can see whether it was a missing column,
+            // FK violation, unique-index collision on matric_number, etc.
+            Log::error('migrateApplicantToStudent: Student::create failed', [
+                'applicant_id'  => $applicant->id,
                 'matric_number' => $matricNumber,
-                'status' => 'admitted',
-                'migrated_to_student_at' => now(),
+                'error'         => $e->getMessage(),
+                'sqlstate'      => $e instanceof \PDOException ? $e->getCode() : null,
             ]);
 
-            // Back-fill applicant-side payment rows so they appear in
-            // /student/payments. Safe inside the same transaction — the
-            // update publishes on commit. The whereNull('student_id')
-            // guard means a re-run of migrateApplicantToStudent against
-            // this applicant touches zero rows.
-            $this->relinkApplicantPayments($applicant, $student);
-
-            return $student;
-        });
+            return null;
+        }
     }
 
     /**
