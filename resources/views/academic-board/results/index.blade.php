@@ -49,7 +49,13 @@
                                 $dept = $group['department'];
                                 $pendingIds = $group['pending_ids'];
                                 $hasPending = $group['pending'] > 0;
+                                // Defence-in-depth: controller already filters
+                                // orphaned department ids, but a stale
+                                // byDepartment group with $dept=null would
+                                // crash route() with UrlGenerationException.
+                                // Skip the row rather than 500.
                             @endphp
+                            @continue(is_null($dept))
                             <tr>
                                 <td>
                                     <strong>{{ $dept->name ?? 'Unassigned Department' }}</strong>

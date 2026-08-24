@@ -133,6 +133,12 @@ class ResultController extends Controller
                     'pending_ids' => $rs->where('status', 'approved_by_business')->pluck('id')->all(),
                 ];
             })
+            // Drop buckets whose department row was deleted (orphaned
+            // results pointing at a department_id that no longer exists).
+            // Without this the view's route('academic-board.results.
+            // byDepartment', $dept) explodes with UrlGenerationException
+            // because the parameter is null.
+            ->filter(fn ($g) => $g['department'] !== null)
             // Departments with zero work don't deserve a card.
             ->filter(fn ($g) => $g['total'] > 0)
             ->sortBy(function ($g) {
