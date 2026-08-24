@@ -46,7 +46,17 @@ class ApplicationController extends Controller
 
         $applications = $query->latest()->paginate(20);
         $schools = School::all();
-        $departments = Department::all();
+
+        // Cascade Departments to the selected School. Without this the
+        // dropdown lists every department across every school, which makes
+        // picking a department under a specific school ambiguous. When no
+        // school is selected, show every department. ordered by name to
+        // match the existing admitted.blade.php convention.
+        $departmentsQuery = Department::query();
+        if ($request->school_id) {
+            $departmentsQuery->where('school_id', $request->school_id);
+        }
+        $departments = $departmentsQuery->orderBy('name')->get();
 
         return view('registrar.applications.index', compact('applications', 'schools', 'departments'));
     }
@@ -132,11 +142,34 @@ class ApplicationController extends Controller
 
         $query = Applicant::with(['school', 'department', 'programme']);
 
+        // Apply every filter the index form exposes so the CSV matches
+        // what the registrar sees on screen. Previously this method only
+        // honoured `status` — clicking "Export CSV" from a filtered view
+        // returned the entire table. The Export link on the index view
+        // forwards these four keys as a querystring.
         if ($request->status) {
             $query->where('status', $request->status);
         }
 
-        $applications = $query->get();
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('application_number', 'like', "%{$request->search}%")
+                  ->orWhere('surname', 'like', "%{$request->search}%")
+                  ->orWhere('first_name', 'like', "%{$request->search}%")
+                  ->orWhere('email', 'like', "%{$request->search}%")
+                  ->orWhere('phone', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->school_id) {
+            $query->where('school_id', $request->school_id);
+        }
+
+        if ($request->department_id) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        $applications = $query->latest()->get();
 
         // Simple CSV export. school/department/programme are BelongsTo
         // and any of them can be null if the FK row was deleted (e.g.

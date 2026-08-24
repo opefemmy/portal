@@ -6,7 +6,7 @@
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4>Application Management</h4>
     <div>
-        <a href="{{ route('registrar.applications.export') }}" class="btn btn-success">
+        <a href="{{ route('registrar.applications.export', request()->only(['search', 'status', 'school_id', 'department_id'])) }}" class="btn btn-success">
             <i class="fas fa-download me-2"></i>Export CSV
         </a>
     </div>
@@ -82,7 +82,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="school_id" class="form-select">
+                <select name="school_id" id="school_id" class="form-select">
                     <option value="">All Schools</option>
                     @foreach($schools as $school)
                         <option value="{{ $school->id }}" {{ request('school_id') == $school->id ? 'selected' : '' }}>{{ $school->name }}</option>
@@ -90,7 +90,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="department_id" class="form-select">
+                <select name="department_id" id="department_id" class="form-select">
                     <option value="">All Departments</option>
                     @foreach($departments as $dept)
                         <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
@@ -219,5 +219,45 @@ function bulkAction(action) {
         $('#bulkForm').submit();
     }
 }
+
+// Cascade Departments to the selected School. Reuses the public
+// /applicant/departments/{schoolId} endpoint (already JSON, no auth
+// gate). When a school is picked, fetch its departments, replace the
+// options in #department_id, and auto-submit the filter form so the
+// table narrows without an extra click. When "All Schools" is picked,
+// strip school_id and department_id from the querystring and reload so
+// the dropdowns don't stay narrowed from the previous selection.
+$('#school_id').on('change', function () {
+    var schoolId = $(this).val();
+    var $dept = $('#department_id');
+
+    if (!schoolId) {
+        var params = {};
+        var search = window.location.search.replace(/^\?/, '');
+        if (search) {
+            search.split('&').forEach(function (kv) {
+                var parts = kv.split('=');
+                var k = parts[0];
+                if (k !== 'school_id' && k !== 'department_id') {
+                    params[k] = decodeURIComponent(parts[1] || '');
+                }
+            });
+        }
+        var qs = $.param(params);
+        window.location = window.location.pathname + (qs ? '?' + qs : '');
+        return;
+    }
+
+    $.getJSON('/applicant/departments/' + schoolId, function (rows) {
+        var current = $dept.val();
+        $dept.empty().append('<option value="">All Departments</option>');
+        $.each(rows, function (_, row) {
+            var sel = String(row.id) === String(current) ? ' selected' : '';
+            $dept.append('<option value="' + row.id + '"' + sel + '>' + row.name + '</option>');
+        });
+        // Auto-submit so the table narrows without an extra click.
+        $dept.closest('form').submit();
+    });
+});
 </script>
 @endpush
