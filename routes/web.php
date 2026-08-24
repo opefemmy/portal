@@ -712,14 +712,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
         ->name('transcripts.print');
 
     // Hostel Management
-    Route::resource('hostels', AdminHostelController::class)
-        ->middleware('permission:admin.hostels.manage');
-    Route::get('/hostels/{hostel}/rooms/create', [AdminHostelController::class, 'createRoom'])
-        ->middleware('permission:admin.hostels.manage')
-        ->name('hostels.rooms.create');
-    Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])
-        ->middleware('permission:admin.hostels.manage')
-        ->name('hostels.rooms.store');
+    //
+    // The allocations/* routes MUST be registered BEFORE the
+    // `Route::resource('hostels', ...)` block — Laravel evaluates
+    // routes in registration order and `GET /hostels/{hostel}` (the
+    // resource `show` route) would otherwise eat the literal string
+    // "allocations" as a hostel id and dispatch to `HostelController@show`
+    // with `hostel='allocations'`, which throws ModelNotFoundException
+    // and renders as 404. Same trap applies to `/{hostel}/rooms/create`
+    // and `/{hostel}/rooms` — they're declared AFTER the resource too,
+    // but their `/{hostel}/rooms/...` path is safe because the second
+    // segment disambiguates from the resource's `show` (which has
+    // nothing after the {hostel}).
     Route::get('/hostels/allocations', [AdminHostelController::class, 'allocations'])
         ->middleware('permission:admin.hostels.manage')
         ->name('hostels.allocations');
@@ -732,6 +736,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/hostels/allocations/{allocation}/checkout', [AdminHostelController::class, 'checkOut'])
         ->middleware('permission:admin.hostels.manage')
         ->name('hostels.allocations.checkout');
+    Route::resource('hostels', AdminHostelController::class)
+        ->middleware('permission:admin.hostels.manage');
+    Route::get('/hostels/{hostel}/rooms/create', [AdminHostelController::class, 'createRoom'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.rooms.create');
+    Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.rooms.store');
     Route::get('/hostels/rooms/{hostel}/rooms', [AdminHostelController::class, 'getRooms'])
         ->middleware('permission:admin.hostels.manage');
     Route::get('/hostels/beds/{room}/beds', [AdminHostelController::class, 'getAvailableBeds'])

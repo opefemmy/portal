@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4><i class="fas fa-bed me-2"></i>Hostel Allocations</h4>
-    <a href="{{ route('admin.hostels.createAllocation') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Allocate Room</a>
+    <a href="{{ route('admin.hostels.allocations.create') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Allocate Room</a>
 </div>
 
 @if(session('success'))
