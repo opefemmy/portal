@@ -88,11 +88,11 @@ $departmentName= $applicant->department?->name;
 $schoolName    = $applicant->school?->name;
 $sessionName   = $applicant->session?->name;
 
-// Level of entry is always "100 Level" per admissions policy. The raw
-// applicants.entry_level field is "UTME" or "DE" and was previously
-// concatenated with "00 Level" producing "UTME00 Level" — keep this
-// hard-coded so future changes to entry_level don't break the letter.
-$levelOfEntry = '100 Level';
+// Level of entry is always "ND 1" per admissions policy (Nigerian polytechnic
+// ND-I terminology). The raw applicants.entry_level field is "UTME" or "DE"
+// and was previously concatenated with "00 Level" producing "UTME00 Level" —
+// keep this hard-coded so future changes to entry_level don't break the letter.
+$levelOfEntry = 'ND 1';
 @endphp
 <!DOCTYPE html>
 <html lang="en">
