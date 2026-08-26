@@ -92,7 +92,7 @@ $sessionName   = $applicant->session?->name;
 // ND-I terminology). The raw applicants.entry_level field is "UTME" or "DE"
 // and was previously concatenated with "00 Level" producing "UTME00 Level" —
 // keep this hard-coded so future changes to entry_level don't break the letter.
-$levelOfEntry = 'ND 1';
+$levelOfEntry = 'ND I';
 @endphp
 <!DOCTYPE html>
 <html lang="en">
