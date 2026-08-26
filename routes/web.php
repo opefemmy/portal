@@ -744,6 +744,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/hostels/{hostel}/rooms', [AdminHostelController::class, 'storeRoom'])
         ->middleware('permission:admin.hostels.manage')
         ->name('hostels.rooms.store');
+    // Per-room occupant view: shows every bed in the room and who (if
+    // anyone) currently occupies it. Must be declared BEFORE the
+    // `hostels` resource route below to avoid Laravel matching
+    // `/hostels/{hostel}/rooms/{room}` to `hostels.show` with the wrong
+    // `hostel` param — see memory `route-order-resource-shadowing`.
+    Route::get('/hostels/{hostel}/rooms/{room}', [AdminHostelController::class, 'showRoom'])
+        ->middleware('permission:admin.hostels.manage')
+        ->name('hostels.rooms.show');
     Route::get('/hostels/rooms/{hostel}/rooms', [AdminHostelController::class, 'getRooms'])
         ->middleware('permission:admin.hostels.manage');
     Route::get('/hostels/beds/{room}/beds', [AdminHostelController::class, 'getAvailableBeds'])
@@ -977,6 +985,10 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'role:student', 
     Route::get('/results/{semester}', [ResultController::class, 'show'])->name('results.show');
     Route::get('/results/print', [ResultController::class, 'printResult'])->name('results.print');
     Route::get('/results/transcript', [ResultController::class, 'transcript'])->name('results.transcript');
+    // DOMPDF stream of the same transcript view. Same gate, same data
+    // build — only the response is a `application/pdf` stream instead
+    // of HTML.
+    Route::get('/results/transcript/print', [ResultController::class, 'printTranscript'])->name('results.transcript.print');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{fee}/pay', [PaymentController::class, 'pay'])->name('payments.pay');

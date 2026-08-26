@@ -113,6 +113,92 @@
         off (available for printing on the per-department view).
     </p>
 @endif
+
+{{-- Final-Approved Results archive — read-only list of every result the
+     Academic Board has signed off (status=approved_final). Lets the
+     operator audit the board's historical decisions without drilling
+     into a department. The table is capped at 100 rows; the most
+     recent sign-offs come first so the freshest approvals are visible
+     on page load. A Print link is provided per row so the operator can
+     also generate the per-result A4 sheet directly from here. --}}
+<div class="card mt-4">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-check-circle me-2"></i>Final-Approved Results
+            <span class="badge bg-light text-success ms-2">{{ $approvedResults->count() }}</span>
+        </h5>
+        <small>Most recent 100 sign-offs</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student</th>
+                        <th>Matric No.</th>
+                        <th>Department</th>
+                        <th>Course</th>
+                        <th class="text-center">Score</th>
+                        <th class="text-center">Grade</th>
+                        <th>Session</th>
+                        <th>Approved By</th>
+                        <th>Approved On</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($approvedResults as $r)
+                        @php
+                            $course   = $r->studentCourse->course ?? null;
+                            $student  = $r->studentCourse->student ?? null;
+                            $session  = $r->studentCourse->session ?? null;
+                            $approver = $r->approvedBy ?? null;
+                        @endphp
+                        <tr>
+                            <td>{{ $student->user->name ?? '—' }}</td>
+                            <td><span class="badge bg-light text-dark">{{ $student->matric_number ?? '—' }}</span></td>
+                            <td>{{ $student->department->name ?? '—' }}</td>
+                            <td>
+                                <strong>{{ $course->code ?? '—' }}</strong>
+                                <span class="text-muted d-block small">{{ $course->title ?? '' }}</span>
+                            </td>
+                            <td class="text-center">{{ $r->total_score ?? '—' }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ $r->grade === 'F' ? 'danger' : 'success' }}">
+                                    {{ $r->grade ?? '—' }}
+                                </span>
+                            </td>
+                            <td>{{ $session->name ?? '—' }}</td>
+                            <td>{{ $approver->name ?? '—' }}</td>
+                            <td>
+                                @if($r->approved_at)
+                                    <small class="text-muted">{{ $r->approved_at->format('M d, Y') }}</small>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('academic-board.results.print', $r) }}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Print per-result A4 sheet"
+                                   target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                No final-approved results yet. Results the Academic Board has signed off
+                                will appear here for auditing and printing.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')

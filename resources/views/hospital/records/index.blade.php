@@ -24,6 +24,52 @@
     </div>
 </div>
 
+<div class="card mb-3">
+    <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-clipboard-list me-2"></i>Awaiting Records Certification
+            @if(($pendingCertifications ?? collect())->count() > 0)
+                <span class="badge bg-warning text-dark ms-2">{{ $pendingCertifications->count() }}</span>
+            @endif
+        </h5>
+        <small class="text-muted">Today's appointments still waiting for the records officer to certify the chart.</small>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Time</th>
+                    <th>Patient</th>
+                    <th>Number</th>
+                    <th>Doctor</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($pendingCertifications ?? collect() as $a)
+                    <tr>
+                        <td>{{ $a->appointment_time ?? '—' }}</td>
+                        <td>{{ $a->patient?->full_name ?? '—' }}</td>
+                        <td><code>{{ $a->patient?->patient_number ?? '—' }}</code></td>
+                        <td>{{ $a->doctor ? 'Dr. ' . $a->doctor->full_name : '—' }}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $a->status ?? 'scheduled')) }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ route('hospital.appointments.show', $a->id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-folder-open"></i> Open &amp; Certify
+                            </a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="text-center text-muted py-3">No appointments awaiting certification.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h5 class="card-title"><i class="fas fa-users me-2"></i>All Patients</h5>

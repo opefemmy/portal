@@ -21,6 +21,17 @@ class ResultController extends Controller
         $this->requirePermission('student.results.view');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
 
+        // Tuition gate. The result checker is the surface the
+        // student uses to see their scores for the current term —
+        // they're not allowed to view those until they've paid
+        // tuition (otherwise they could view results for courses
+        // they're not officially sitting).
+        if (! \App\Services\SchoolFeeCalculator::hasPaidTuition($student)) {
+            return redirect()
+                ->route('student.payments')
+                ->with('error', 'You must pay your school fees before checking your results.');
+        }
+
         // Get current session
         $currentSession = Session::where('is_current', true)->first();
 
@@ -139,7 +150,58 @@ class ResultController extends Controller
     public function transcript(Request $request)
     {
         $this->requirePermission('student.results.view');
+        $data = $this->buildTranscriptData();
+        return view('student.transcript', $data);
+    }
+
+    /**
+     * Stream the transcript as a DOMPDF-rendered A4 PDF.
+     *
+     * Reuses `buildTranscriptData()` so the printed copy is bit-for-bit
+     * identical to the on-screen view — same biodata, same per-session
+     * tables, same cumulative block. The view itself carries the
+     * `@page { size: A4 portrait }` CSS and `.page-break` divs the
+     * reference layout needs.
+     */
+    public function printTranscript(Request $request)
+    {
+        $this->requirePermission('student.results.view');
+        $data = $this->buildTranscriptData();
+
+        // Suppress the on-screen "Download as PDF / Print" buttons in
+        // the rendered PDF — the user is already viewing the PDF.
+        $data['pdfMode'] = true;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('student.transcript', $data)
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'transcript_' . ($data['student']->matric_number ?? $data['student']->id) . '.pdf';
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Build the data array shared by the on-screen transcript and the
+     * DOMPDF-rendered PDF. Eager-loads the relations the view touches
+     * (user, applicant, applicant.session, programme, department,
+     * department.school) so the rendered HTML never triggers N+1.
+     */
+    private function buildTranscriptData(): array
+    {
         $student = Student::where('user_id', auth()->id())->firstOrFail();
+
+        // Single round-trip for every relation the new view reads.
+        // `Student->applicant` is the inverse of `Applicant::student()`
+        // — populated by the migration flow that creates the student
+        // row from the applicant row, so the relation is set for any
+        // student that was admitted through the application pipeline.
+        $student->load([
+            'user',
+            'applicant',
+            'applicant.session',
+            'programme',
+            'department',
+            'department.school',
+        ]);
 
         $sessions = Session::orderBy('name', 'desc')->get();
         $allResults = [];
@@ -162,7 +224,7 @@ class ResultController extends Controller
                     $approved = $results->where('status', 'approved_final');
                     $stats = $approved->isNotEmpty()
                         ? ResultComputationService::calculateSemesterResults($student, $session, $semester)
-                        : ['gpa' => null, 'tlu' => null];
+                        : ['gpa' => null, 'tlu' => null, 'tcp' => null];
 
                     $sessionResults[] = [
                         'semester' => $semester,
@@ -186,11 +248,11 @@ class ResultController extends Controller
         $hasApproved = collect($allResults)->flatten(1)->pluck('approvedResults')->flatten()->isNotEmpty();
         $cumulative = $hasApproved
             ? ResultComputationService::calculateCumulativeResults($student)
-            : ['cgpa' => null, 'tlu' => null];
+            : ['cgpa' => null, 'tlu' => null, 'tcp' => null, 'tup' => null];
         $academicRemark = $hasApproved
             ? ResultComputationService::getAcademicRemark($cumulative['cgpa'])
             : null;
 
-        return view('student.transcript', compact('student', 'allResults', 'cumulative', 'academicRemark'));
+        return compact('student', 'allResults', 'cumulative', 'academicRemark');
     }
 }

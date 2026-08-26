@@ -47,10 +47,14 @@ class RolePermissionsSeeder extends Seeder
         $allPermissionIds = Permission::pluck('id')->all();
 
         foreach ($accum as $roleSlug => $perms) {
-            $role = Role::where('slug', $roleSlug)->first();
-            if (!$role) {
-                continue;
-            }
+            // Auto-create professional role rows that the catalogue
+            // declares but which haven't been seeded into `roles`
+            // yet (e.g. consultant, radiographer, pharmacy_technician
+            // added in the 2026-08 hospital patient-flow slice).
+            $role = Role::firstOrCreate(
+                ['slug' => $roleSlug],
+                ['name' => ucwords(str_replace('_', ' ', $roleSlug))]
+            );
 
             $isWildcard = in_array('*', $perms, true);
 

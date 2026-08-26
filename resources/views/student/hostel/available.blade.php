@@ -12,12 +12,49 @@
 
 <div class="card mb-4">
     <div class="card-body">
+        {{-- Shown only when the student's own gender is unknown.
+             Without this banner, students whose profile never had
+             `users.gender` populated (a common data-entry gap on
+             legacy accounts) saw an empty page with no explanation.
+             The controller now widens the listing to all active
+             hostels in this case so they can apply; the banner
+             nudges them to update their profile so the server-side
+             gender filter engages for subsequent visits. --}}
+        @isset($showGenderWarning)
+            @if($showGenderWarning)
+                <div class="alert alert-warning mb-3" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Your gender isn't set on your profile yet.</strong>
+                    We're showing every active hostel so you can apply,
+                    but please update your profile so we can filter to
+                    hostels that match your gender going forward.
+                </div>
+            @endif
+        @endisset
+
         <form method="GET" class="row g-3">
             <div class="col-md-4">
+                {{-- The dropdown is now a *restrictive* filter on top
+                     of the controller's automatic gender scoping. The
+                     controller already guarantees only hostels matching
+                     the student's gender (plus "Both") are listed, so
+                     the only legitimate options here are the student's
+                     own gender and "All eligible" (no narrowing). The
+                     opposite gender is deliberately not offered — the
+                     server would reject it as a no-op anyway. --}}
+                @php
+                    $userGender = auth()->user()->gender ?? null;
+                    $normalized = strtolower(trim((string) $userGender));
+                    $isMale   = in_array($normalized, ['male', 'm'], true);
+                    $isFemale = in_array($normalized, ['female', 'f'], true);
+                @endphp
                 <select name="gender" class="form-select">
-                    <option value="">All Genders</option>
-                    <option value="Male" {{ request('gender') === 'Male' ? 'selected' : '' }}>Male</option>
-                    <option value="Female" {{ request('gender') === 'Female' ? 'selected' : '' }}>Female</option>
+                    <option value="">All eligible hostels</option>
+                    @if($isMale)
+                        <option value="Male" {{ request('gender') === 'Male' ? 'selected' : '' }}>Male only</option>
+                    @elseif($isFemale)
+                        <option value="Female" {{ request('gender') === 'Female' ? 'selected' : '' }}>Female only</option>
+                    @endif
                 </select>
             </div>
             <div class="col-md-4">

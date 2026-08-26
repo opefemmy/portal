@@ -64,6 +64,37 @@ class HostelController extends Controller
         return view('admin.hostels.show', compact('hostel', 'rooms'));
     }
 
+    /**
+     * Per-room occupant view. Lists every bed in the room with the
+     * student currently occupying it (or "Available" if the bed is free).
+     *
+     * Eager-loads the bed → allocation → student → user chain in one
+     * round-trip so the table doesn't N+1 the database. The "active"
+     * status on `hostel_allocations` is the source of truth here —
+     * checked-out / cancelled rows are filtered out so a previous
+     * occupant doesn't appear after they've moved out.
+     */
+    public function showRoom(Hostel $hostel, HostelRoom $room)
+    {
+        $this->requirePermission('admin.hostels.manage');
+
+        // Scope the room to the hostel — passing a room from a different
+        // hostel would 404 silently otherwise.
+        abort_unless($room->hostel_id === $hostel->id, 404);
+
+        $beds = $room->beds()
+            ->with([
+                'student.user',
+                'allocations' => function ($q) {
+                    $q->where('status', 'active')->with('session');
+                },
+            ])
+            ->orderBy('bed_number')
+            ->get();
+
+        return view('admin.hostels.room-show', compact('hostel', 'room', 'beds'));
+    }
+
     public function edit(Hostel $hostel)
     {
         $this->requirePermission('admin.hostels.manage');

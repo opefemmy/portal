@@ -24,6 +24,9 @@ use App\Http\Controllers\Hospital\WardController;
 use App\Http\Controllers\Hospital\HospitalAdminController;
 use App\Http\Controllers\Hospital\Admin\DashboardConfigController as HospitalAdminDashboardConfigController;
 use App\Http\Controllers\Hospital\RecordsController;
+use App\Http\Controllers\Hospital\StaffNoteController;
+use App\Http\Controllers\Hospital\ReferralController;
+use App\Http\Controllers\Hospital\SignOutController;
 
 // Public Patient Portal Routes (for outsiders)
 //
@@ -221,7 +224,17 @@ Route::prefix('hospital')->name('hospital.')->middleware(['auth'])->group(functi
     });
 
     // Hospital Appointments
-    Route::prefix('appointments')->name('appointments.')->middleware(['role:cmd,doctor,nurse,hospital_receptionist,super_admin,admin'])->group(function () {
+    //
+    // Patient-flow chain-of-custody: book → records-officer certifies
+    // (appointments.certify) → records-officer assigns a doctor on
+    // duty (appointments.assign-doctor) → nurse takes vitals
+    // (appointments.vitals) → doctor starts the consultation
+    // (appointments.start).
+    //
+    // medical_records_officer is added to the role middleware so the
+    // records-officer desk can see + act on the queue; nurse is
+    // already present (slice 8f).
+    Route::prefix('appointments')->name('appointments.')->middleware(['role:cmd,doctor,nurse,hospital_receptionist,medical_records_officer,super_admin,admin'])->group(function () {
         Route::get('/', [AppointmentController::class, 'index'])
             ->middleware('permission:appointments.view')
             ->name('index');
@@ -246,6 +259,17 @@ Route::prefix('hospital')->name('hospital.')->middleware(['auth'])->group(functi
         Route::post('/{appointment}/start', [AppointmentController::class, 'start'])
             ->middleware('permission:appointments.start')
             ->name('start');
+        // Records-officer desk endpoints.
+        Route::post('/{appointment}/certify', [AppointmentController::class, 'certify'])
+            ->middleware('permission:appointments.certify')
+            ->name('certify');
+        Route::post('/{appointment}/assign-doctor', [AppointmentController::class, 'assignDoctor'])
+            ->middleware('permission:appointments.assign-doctor')
+            ->name('assign-doctor');
+        // Nurse vitals stamping.
+        Route::post('/{appointment}/vitals', [AppointmentController::class, 'recordVitals'])
+            ->middleware('permission:appointments.vitals')
+            ->name('vitals');
         Route::get('/queue', [AppointmentController::class, 'queue'])
             ->middleware('permission:appointments.view')
             ->name('queue');
@@ -502,5 +526,55 @@ Route::prefix('hospital')->name('hospital.')->middleware(['auth'])->group(functi
         Route::post('/requests/{recordRequest}/reject',  [RecordsController::class, 'rejectRequest'])
             ->middleware('permission:records.request')
             ->name('requests.reject');
+    });
+
+    // === Staff notes (handover / instruction / commentary / alert) ===
+    // Any clinical or administrative staff can post a note on a
+    // patient file. The note is timestamped, attributed, and shows up
+    // on the patient timeline for downstream staff to read.
+    Route::prefix('patients/{patient}/notes')->name('patients.notes.')->group(function () {
+        Route::post('/', [StaffNoteController::class, 'store'])
+            ->middleware('permission:notes.create')
+            ->name('store');
+        Route::post('/{note}/pin', [StaffNoteController::class, 'togglePin'])
+            ->middleware('permission:notes.pin')
+            ->name('pin');
+        Route::delete('/{note}', [StaffNoteController::class, 'destroy'])
+            ->middleware('permission:notes.delete')
+            ->name('destroy');
+    });
+
+    // === Doctor referrals (send to lab / pharmacy / x-ray / nurse) ===
+    // A doctor, after seeing a patient, can refer them onward: order
+    // a lab test, prescribe a drug, send them to x-ray, send them
+    // back to a nurse for a procedure, or set a follow-up date.
+    // Each referral drops a staff note on the chart so the receiving
+    // team sees it without leaving their normal queue.
+    Route::prefix('patients/{patient}/referrals')->name('patients.referrals.')->group(function () {
+        Route::post('/lab',       [ReferralController::class, 'toLab'])
+            ->middleware('permission:referrals.send.lab')
+            ->name('lab');
+        Route::post('/pharmacy',  [ReferralController::class, 'toPharmacy'])
+            ->middleware('permission:referrals.send.pharmacy')
+            ->name('pharmacy');
+        Route::post('/radiology', [ReferralController::class, 'toRadiology'])
+            ->middleware('permission:referrals.send.radiology')
+            ->name('radiology');
+        Route::post('/nurse',     [ReferralController::class, 'toNurse'])
+            ->middleware('permission:referrals.send.nurse')
+            ->name('nurse');
+        Route::post('/follow-up', [ReferralController::class, 'followUp'])
+            ->middleware('permission:appointments.create')
+            ->name('follow-up');
+    });
+
+    // === End-of-day sign-out (records officer closes the day's visit) ===
+    // The records officer signs the patient out at the end of the
+    // day: locks the chart from further edits, writes a discharge
+    // summary, marks the appointment completed.
+    Route::prefix('appointments/{appointment}')->name('appointments.')->group(function () {
+        Route::post('/sign-out', [SignOutController::class, 'store'])
+            ->middleware('permission:signout.complete')
+            ->name('sign-out');
     });
 });

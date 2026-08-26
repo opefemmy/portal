@@ -75,13 +75,20 @@ class DashboardController extends Controller
 
     /**
      * Nurse dashboard.
+     *
+     * The "Patients Waiting for Vitals" tile is the nurse's primary
+     * queue: today's appointments that have been records-certified
+     * (chart on file) but have not yet had vitals taken.
      */
     public function nurseDashboard(Request $request)
     {
-        $todayAppointments = HospitalAppointment::with(['patient', 'staff'])
+        // Records-certified today, no vitals yet → nurse's queue.
+        $todayAppointments = HospitalAppointment::with(['patient', 'staff', 'doctor'])
             ->whereDate('appointment_date', today())
-            ->where('status', 'scheduled')
-            ->orderBy('appointment_date')
+            ->whereNotNull('certified_at')
+            ->whereNull('vitals_recorded_at')
+            ->whereIn('status', ['records_certified', 'checked_in', 'scheduled'])
+            ->orderBy('appointment_time')
             ->get();
 
         $admittedPatients = HospitalAdmission::with(['patient', 'bed.ward', 'doctor'])

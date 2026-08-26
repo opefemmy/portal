@@ -16,6 +16,10 @@ class HospitalAppointment extends Model
 
     protected $fillable = [
         'patient_id', 'doctor_id', 'scheduled_by',
+        'certified_by', 'certified_at',
+        'assigned_by', 'assigned_doctor_at',
+        'vitals_recorded_by', 'vitals_recorded_at',
+        'sign_out_by', 'sign_out_at', 'sign_out_summary',
         'appointment_date', 'appointment_time',
         'status', 'complaint', 'notes',
     ];

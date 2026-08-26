@@ -123,6 +123,11 @@ class PatientController extends Controller
             'admissions.doctor',
             'vitalSigns.recordedBy',
             'referrals.referrer',
+            // Staff notes (handover / instruction / commentary / alert).
+            'staffNotes' => function ($q) {
+                $q->orderByDesc('is_pinned')->orderByDesc('created_at');
+            },
+            'staffNotes.author',
         ]);
 
         return view('hospital.patients.show', compact('patient'));

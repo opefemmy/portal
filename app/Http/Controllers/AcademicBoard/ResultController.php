@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Http\Controllers\AcademicBoard;
@@ -149,7 +150,39 @@ class ResultController extends Controller
             })
             ->values();
 
-        return view('academic-board.results.index', compact('byDepartment'));
+        // Approved-results archive — the read-only list of every
+        // `approved_final` result so the operator can see what the
+        // board has already signed off without drilling into a
+        // department. Eager-loads the full chain (student + course +
+        // session + department + approver) so the rendered table is
+        // a single round-trip. Same school-scope + session filter
+        // as the roll-up above.
+        $approvedQuery = Result::with([
+                'studentCourse.student.user',
+                'studentCourse.student.department',
+                'studentCourse.course',
+                'studentCourse.session',
+                'approvedBy',
+            ])
+            ->where('status', 'approved_final');
+
+        if ($request->session_id) {
+            $approvedQuery->whereHas('studentCourse', function ($q) use ($request) {
+                $q->where('session_id', $request->session_id);
+            });
+        }
+        if (auth()->user()->school_id) {
+            $approvedQuery->whereHas('studentCourse.student', function ($q) {
+                $q->where('school_id', auth()->user()->school_id);
+            });
+        }
+
+        $approvedResults = $approvedQuery
+            ->latest('approved_at')
+            ->limit(100)
+            ->get();
+
+        return view('academic-board.results.index', compact('byDepartment', 'approvedResults'));
     }
 
     /**

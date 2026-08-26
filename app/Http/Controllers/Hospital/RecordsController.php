@@ -29,6 +29,10 @@ class RecordsController extends Controller
     /**
      * Default landing page: list of patients with last-visit date and
      * archive state. Acts as the records officer's "today's queue".
+     *
+     * The page also surfaces today's appointments that still need
+     * records-officer certification — that's the records officer's
+     * primary job in the patient flow.
      */
     public function index()
     {
@@ -41,7 +45,19 @@ class RecordsController extends Controller
 
         $pendingRequests = HospitalRecordRequest::where('status', HospitalRecordRequest::STATUS_PENDING)->count();
 
-        return view('hospital.records.index', compact('patients', 'pendingRequests'));
+        // Today's appointment queue that still needs records-officer action:
+        //   - scheduled today but not yet certified
+        //   - checked-in today but not yet certified
+        $pendingCertifications = \App\Models\Hospital\HospitalAppointment::with(['patient', 'doctor'])
+            ->whereIn('status', ['scheduled', 'confirmed', 'checked_in'])
+            ->whereNull('certified_at')
+            ->whereDate('appointment_date', today())
+            ->orderBy('appointment_time')
+            ->get();
+
+        return view('hospital.records.index', compact(
+            'patients', 'pendingRequests', 'pendingCertifications'
+        ));
     }
 
     /**

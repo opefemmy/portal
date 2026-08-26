@@ -156,30 +156,22 @@ $user = auth()->user();
 @php
     $studentRow = \App\Models\Student::where('user_id', auth()->id())->first();
     $paidPercent = $studentRow ? \App\Services\SchoolFeeCalculator::maxPercentPaidAcrossRequiredFees($studentRow) : 0;
-    $paymentBadge = match(true) {
-        $paidPercent >= 100 => ['success', '100% paid', 'Both semesters + exam clearance enabled.'],
-        $paidPercent >= 60  => ['warning', '60% paid', 'First semester enabled. Pay the 40% balance to unlock second semester.'],
-        default             => ['danger',  'School fee unpaid', 'Course registration is locked until you pay.'],
-    };
+    // Tuition gate — the binary "have you paid tuition at all" check
+    // that the three downstream controllers (ExamClearance, CourseRegistration,
+    // Result) enforce. Distinct from $paidPercent: a student can have
+    // $paidPercent = 100 (paid all their department fees in full) without
+    // ever paying tuition if those fees were application / acceptance /
+    // compulsory. Those purposes don't unlock exam clearance / course form
+    // / result surfaces, and the badge here must reflect that.
+    $tuitionPaid = $studentRow
+        ? \App\Services\SchoolFeeCalculator::hasPaidTuition($studentRow)
+        : false;
 @endphp
-<div class="card mt-4 border-{{ $paymentBadge[0] }}">
-    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div>
-            <span class="badge bg-{{ $paymentBadge[0] }} mb-2">{{ $paymentBadge[1] }}</span>
-            <div class="text-muted small">{{ $paymentBadge[2] }}</div>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('student.payments') }}" class="btn btn-outline-{{ $paymentBadge[0] }}">
-                <i class="fas fa-dollar-sign me-1"></i>Pay Fees
-            </a>
-            @if($paidPercent >= 100)
-                <a href="{{ route('student.exam-clearance') }}" class="btn btn-{{ $paymentBadge[0] }}">
-                    <i class="fas fa-file-alt me-1"></i>Exam Clearance
-                </a>
-            @endif
-        </div>
-    </div>
-</div>
+@include('partials.student.tuition-badge', [
+    'student'     => $studentRow,
+    'paidPercent' => $paidPercent,
+    'tuitionPaid' => $tuitionPaid,
+])
 
 <div class="card mt-4">
     <div class="card-header">
@@ -187,15 +179,37 @@ $user = auth()->user();
     </div>
     <div class="card-body">
         <div class="row g-3">
+            {{-- Course registration is gated by tuition: an unpaid student
+                 clicking this link lands on the courses list, but every
+                 action under it (register, print form) redirects them back
+                 to /student/payments. Disable the button up front so the
+                 gate matches what the controller enforces. --}}
             <div class="col-md-4">
-                <a href="{{ route('student.courses') }}" class="btn btn-outline-primary w-100">
-                    <i class="fas fa-book me-2"></i>My Courses
-                </a>
+                @if($tuitionPaid)
+                    <a href="{{ route('student.courses') }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-book me-2"></i>My Courses
+                    </a>
+                @else
+                    <button type="button" disabled
+                            class="btn btn-outline-secondary w-100"
+                            title="Pay tuition first to unlock course registration">
+                        <i class="fas fa-lock me-2"></i>My Courses <span class="badge bg-danger ms-2">Tuition required</span>
+                    </button>
+                @endif
             </div>
+            {{-- Result checker is gated by tuition — same logic. --}}
             <div class="col-md-4">
-                <a href="{{ route('student.results') }}" class="btn btn-outline-success w-100">
-                    <i class="fas fa-chart-line me-2"></i>My Results
-                </a>
+                @if($tuitionPaid)
+                    <a href="{{ route('student.results') }}" class="btn btn-outline-success w-100">
+                        <i class="fas fa-chart-line me-2"></i>My Results
+                    </a>
+                @else
+                    <button type="button" disabled
+                            class="btn btn-outline-secondary w-100"
+                            title="Pay tuition first to view results">
+                        <i class="fas fa-lock me-2"></i>My Results <span class="badge bg-danger ms-2">Tuition required</span>
+                    </button>
+                @endif
             </div>
             <div class="col-md-4">
                 <a href="{{ route('student.payments') }}" class="btn btn-outline-warning w-100">

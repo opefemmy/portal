@@ -29,6 +29,17 @@ class ExamClearanceController extends Controller
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
         $currentSession = Session::getCurrentSession();
 
+        // Tuition gate: exam clearance is meaningless without a paid
+        // tuition fee (the exam itself is what the clearance authorises
+        // the student to sit). Without this redirect a student can
+        // navigate to /student/exam-clearance directly and view the
+        // page even when the dashboard says "School fee unpaid".
+        if (! SchoolFeeCalculator::hasPaidTuition($student)) {
+            return redirect()
+                ->route('student.payments')
+                ->with('error', 'You must pay your school fees before accessing exam clearance.');
+        }
+
         $requiredFees = $this->requiredFeesFor($student, $currentSession);
 
         $perFeeStatus = $requiredFees->map(function (Fee $fee) use ($student) {

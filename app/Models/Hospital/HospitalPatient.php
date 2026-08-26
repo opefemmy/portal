@@ -15,7 +15,7 @@ class HospitalPatient extends Model
     protected $table = 'hospital_patients';
 
     protected $fillable = [
-        'user_id', 'patient_number', 'registered_by',
+        'user_id', 'patient_number', 'registered_by', 'patient_type',
         'first_name', 'last_name', 'other_name', 'gender',
         'date_of_birth', 'blood_group', 'genotype',
         'phone', 'email', 'address', 'state', 'lga',
@@ -71,6 +71,15 @@ class HospitalPatient extends Model
     public function referrals(): HasMany
     {
         return $this->hasMany(HospitalReferral::class, 'patient_id');
+    }
+
+    /**
+     * Free-form staff notes / handovers / instructions attached to
+     * this patient's chart. Pinned notes float to the top.
+     */
+    public function staffNotes(): HasMany
+    {
+        return $this->hasMany(HospitalStaffNote::class, 'patient_id');
     }
 
     public function getFullNameAttribute(): string

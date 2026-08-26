@@ -33,20 +33,25 @@
         <div class="table-responsive">
             <table class="table datatable">
                 <thead class="table-light">
-                    <tr><th>Room #</th><th>Floor</th><th>Type</th><th>Capacity</th><th>Available Beds</th><th>Status</th></tr>
+                    <tr><th>Room #</th><th>Floor</th><th>Type</th><th>Capacity</th><th>Available Beds</th><th>Status</th><th>Occupants</th></tr>
                 </thead>
                 <tbody>
                     @forelse($rooms as $r)
                         <tr>
                             <td><strong>{{ $r->room_number }}</strong></td>
-                            <td>{{ $r->floor ?? '—' }}</td>
+                            <td>{{ \App\Models\HostelRoom::floorName((int) ($r->floor ?? 1)) }}</td>
                             <td>{{ $r->type ?? '—' }}</td>
                             <td>{{ $r->capacity }}</td>
                             <td><span class="badge bg-{{ $r->available_beds > 0 ? 'success' : 'danger' }}">{{ $r->available_beds }}</span></td>
                             <td><span class="badge bg-{{ $r->is_active ? 'success' : 'secondary' }}">{{ $r->is_active ? 'Active' : 'Inactive' }}</span></td>
+                            <td>
+                                <a href="{{ route('admin.hostels.rooms.show', [$hostel, $r]) }}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-users me-1"></i>View Occupants
+                                </a>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-center py-4 text-muted">No rooms yet — click "Add Room" to create the first one.</td></tr>
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No rooms yet — click "Add Room" to create the first one.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -79,6 +79,20 @@ class Student extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Inverse of `Applicant::student()` — populated when the applicant
+     * is migrated into the students table by ApplicantPaymentService
+     * (compulsory fee paid → record copied, `students.applicant_id`
+     * written). Used by the transcript and other student-facing
+     * surfaces that need to read fields the Applicant table owns
+     * (state_of_origin, jamb_registration_number, mode_of_study,
+     * admission session, etc.).
+     */
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(Applicant::class, 'applicant_id');
+    }
+
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

@@ -921,10 +921,25 @@ class ApplicantPaymentService
                 try {
                     $studentRole = \App\Models\Role::where('slug', 'student')->first();
                     if ($studentRole) {
-                        $applicant->user?->update([
+                        // Promote to student role and, when the
+                        // applicant recorded a gender, mirror it on the
+                        // User row. The student-side hostel filter
+                        // (`Student\HostelController::availableHostels`)
+                        // reads `users.gender` to decide which hostels
+                        // to surface; without this mirror a student
+                        // who only ever set gender on the application
+                        // form would see no hostels on first login.
+                        // We only overwrite when the user row's gender
+                        // is missing — never clobber a value the user
+                        // may have updated in their portal profile.
+                        $userUpdate = [
                             'role_id'  => $studentRole->id,
                             'is_active' => true,
-                        ]);
+                        ];
+                        if ($applicant->gender && ! $applicant->user?->gender) {
+                            $userUpdate['gender'] = $applicant->gender;
+                        }
+                        $applicant->user?->update($userUpdate);
                     } else {
                         Log::warning('migrateApplicantToStudent: student role row not found, skipping role promotion', [
                             'applicant_id' => $applicant->id,

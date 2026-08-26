@@ -128,6 +128,33 @@ class SchoolFeeCalculator
         };
     }
 
+    /**
+     * Has this student paid any tuition (school_fees) payment?
+     *
+     * Used as the binary gate for student-facing surfaces — exam
+     * clearance, course registration form, result checker — that
+     * should be unreachable until a tuition payment is on file. The
+     * check accepts both the legacy (`school_fee`) and production
+     * ENUM (`school_fees`) spellings so legacy payments written
+     * before the rename still count.
+     *
+     * Returns `true` if at least one completed Payment row exists with
+     * purpose = school_fee/school_fees and `percent_paid > 0`. A row
+     * with `percent_paid = 0` (initialised but unpaid) does NOT
+     * count — it's a placeholder, not a receipt.
+     */
+    public static function hasPaidTuition(Student $student): bool
+    {
+        return Payment::where('student_id', $student->id)
+            ->where('status', 'completed')
+            ->whereIn('payment_purpose', [
+                \App\Models\PaymentType::PURPOSE_SCHOOL_FEE,
+                \App\Models\PaymentType::PURPOSE_SCHOOL_FEE_PRODUCTION,
+            ])
+            ->where('percent_paid', '>', 0)
+            ->exists();
+    }
+
     private static function categoryFor(Student $student): string
     {
         // Delegate to IndigeneResolver so the Ekiti keyword test lives in

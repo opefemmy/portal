@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Result;
 use App\Models\Student;
 use App\Models\StudentCourse;
 use App\Models\Session;
@@ -200,6 +201,15 @@ class CourseRegistrationController extends Controller
         $this->requirePermission('student.courses.manage');
         $student = Student::where('user_id', auth()->id())->firstOrFail();
         $currentSession = Session::getCurrentSession();
+
+        // Tuition gate. Without this a student with no tuition
+        // payment could still download a printable course form — the
+        // form is meaningless when they're not cleared to register.
+        if (! SchoolFeeCalculator::hasPaidTuition($student)) {
+            return redirect()
+                ->route('student.payments')
+                ->with('error', 'You must pay your school fees before downloading the course form.');
+        }
 
         $courses = StudentCourse::where('student_id', $student->id)
             ->where('session_id', $currentSession->id ?? 0)

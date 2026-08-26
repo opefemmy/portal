@@ -123,6 +123,17 @@
                 <i class="fas fa-notes-medical me-1"></i>Clinical Notes
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#staff-notes" type="button">
+                <i class="fas fa-comments me-1"></i>Staff Notes
+                <span class="badge bg-secondary">{{ $patient->staffNotes->count() }}</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#referrals" type="button">
+                <i class="fas fa-share me-1"></i>Referrals
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -337,6 +348,235 @@
                         <p class="text-muted mb-0">No clinical notes yet.</p>
                     @endforelse
                 </div>
+            </div>
+        </div>
+
+        <!-- Staff Notes (handover / instruction / commentary / alert) -->
+        <div class="tab-pane fade" id="staff-notes">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add a Staff Note</h5>
+                </div>
+                <div class="card-body">
+                    @permission('notes.create')
+                        <form method="POST" action="{{ route('hospital.patients.notes.store', $patient->id) }}">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Audience</label>
+                                    <select name="audience" class="form-select">
+                                        @foreach(\App\Models\Hospital\HospitalStaffNote::AUDIENCES as $aud)
+                                            <option value="{{ $aud }}">{{ ucfirst($aud) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Note Type</label>
+                                    <select name="note_type" class="form-select">
+                                        @foreach(\App\Models\Hospital\HospitalStaffNote::NOTE_TYPES as $key => $label)
+                                            <option value="{{ $key }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Note</label>
+                                    <textarea name="body" class="form-control" rows="2" required
+                                        placeholder="e.g. 'Nurse Mary — please recheck BP in 30 minutes.'"></textarea>
+                                </div>
+                                <div class="col-md-12 mt-2 d-flex gap-2 align-items-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_pinned" value="1" id="pinNote">
+                                        <label class="form-check-label" for="pinNote">Pin to top</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Save Note
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    @else
+                        <div class="alert alert-secondary mb-0">
+                            You do not have permission to add staff notes.
+                        </div>
+                    @endpermission
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Notes on this patient</h5>
+                </div>
+                <div class="card-body">
+                    @forelse($patient->staffNotes as $note)
+                        <div class="border-start border-3 ps-3 mb-3 {{ $note->is_pinned ? 'border-warning bg-warning-subtle' : 'border-secondary' }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ $note->author?->name ?? 'Unknown' }}</strong>
+                                    <span class="text-muted small ms-2">{{ $note->created_at->format('d M Y, h:i A') }}</span>
+                                    <span class="badge bg-info ms-1">@ {{ ucfirst($note->audience) }}</span>
+                                    <span class="badge bg-secondary ms-1">{{ \App\Models\Hospital\HospitalStaffNote::NOTE_TYPES[$note->note_type] ?? $note->note_type }}</span>
+                                    @if($note->is_pinned)
+                                        <span class="badge bg-warning text-dark ms-1"><i class="fas fa-thumbtack"></i> Pinned</span>
+                                    @endif
+                                </div>
+                                <div class="d-flex gap-1">
+                                    @permission('notes.pin')
+                                        <form method="POST" action="{{ route('hospital.patients.notes.pin', [$patient->id, $note->id]) }}">
+                                            @csrf
+                                            <button class="btn btn-sm btn-link" title="{{ $note->is_pinned ? 'Unpin' : 'Pin' }}">
+                                                <i class="fas fa-thumbtack"></i>
+                                            </button>
+                                        </form>
+                                    @endpermission
+                                    @permission('notes.delete')
+                                        <form method="POST" action="{{ route('hospital.patients.notes.destroy', [$patient->id, $note->id]) }}">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-link text-danger" title="Delete"
+                                                onclick="return confirm('Delete this note?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endpermission
+                                </div>
+                            </div>
+                            <p class="mb-0 mt-1">{{ $note->body }}</p>
+                        </div>
+                    @empty
+                        <p class="text-muted mb-0">No staff notes on this patient yet.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctor referrals (lab / pharmacy / x-ray / nurse / follow-up) -->
+        <div class="tab-pane fade" id="referrals">
+            <div class="row">
+                @permission('referrals.send.lab')
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white"><i class="fas fa-vial me-1"></i> Send to Lab</div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ route('hospital.patients.referrals.lab', $patient->id) }}">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label">Test Type *</label>
+                                        <input name="test_type" class="form-control" placeholder="e.g. CBC, Urinalysis" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Clinical Notes</label>
+                                        <textarea name="clinical_notes" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <button class="btn btn-info"><i class="fas fa-paper-plane"></i> Send to Lab</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endpermission
+
+                @permission('referrals.send.pharmacy')
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white"><i class="fas fa-pills me-1"></i> Prescribe</div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ route('hospital.patients.referrals.pharmacy', $patient->id) }}">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label">Drug Name *</label>
+                                        <input name="drug_name" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Dosage *</label>
+                                            <input name="dosage" class="form-control" placeholder="500mg" required>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Frequency *</label>
+                                            <input name="frequency" class="form-control" placeholder="3x daily" required>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Duration *</label>
+                                            <input name="duration" class="form-control" placeholder="5 days" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Notes</label>
+                                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <button class="btn btn-success"><i class="fas fa-paper-plane"></i> Send to Pharmacy</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endpermission
+
+                @permission('referrals.send.radiology')
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white"><i class="fas fa-x-ray me-1"></i> Send to X-Ray / Radiology</div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ route('hospital.patients.referrals.radiology', $patient->id) }}">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label">Imaging Type *</label>
+                                        <input name="imaging_type" class="form-control" placeholder="e.g. Chest X-Ray" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Clinical Notes</label>
+                                        <textarea name="clinical_notes" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <button class="btn btn-secondary"><i class="fas fa-paper-plane"></i> Send to Radiology</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endpermission
+
+                @permission('referrals.send.nurse')
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white"><i class="fas fa-user-nurse me-1"></i> Send Back to Nurse</div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ route('hospital.patients.referrals.nurse', $patient->id) }}">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <label class="form-label">Instruction *</label>
+                                        <textarea name="instruction" class="form-control" rows="2" required
+                                            placeholder="e.g. Recheck BP in 30 minutes, then re-route."></textarea>
+                                    </div>
+                                    <button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Return to Nurse</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endpermission
+
+                @permission('appointments.create')
+                    <div class="col-md-12 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark"><i class="fas fa-calendar-plus me-1"></i> Schedule Follow-Up Appointment</div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ route('hospital.patients.referrals.follow-up', $patient->id) }}" class="row g-2">
+                                    @csrf
+                                    <div class="col-md-3">
+                                        <label class="form-label">Date *</label>
+                                        <input type="date" name="appointment_date" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Time *</label>
+                                        <input type="time" name="appointment_time" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Notes</label>
+                                        <input name="notes" class="form-control" placeholder="Reason for follow-up">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button class="btn btn-warning w-100"><i class="fas fa-calendar-check"></i> Schedule</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endpermission
             </div>
         </div>
     </div>

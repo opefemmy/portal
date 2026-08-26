@@ -112,7 +112,27 @@
       "Bash(powershell -Command \"Select-String -Path database_backup_20260724.sql -Pattern 'payment_types' | Select-Object -First 5\")",
       "Bash(powershell -Command \"Get-ChildItem database/migrations/2026_07_24_000001_add_purpose* ; Get-ChildItem database/migrations/*purpose*\")",
       "Bash(git stash *)",
-      "Bash(amount)"
+      "Bash(amount)",
+      "PowerShell(php artisan test --filter=HostelAvailabilityTest 2>&1 | Select-Object -Last 100)",
+      "PowerShell(php artisan test --filter=HostelAvailabilityTest 2>&1 | Select-Object -Last 80)",
+      "PowerShell(php artisan test --filter=HostelAvailabilityTest 2>&1 | Select-Object -Last 50)",
+      "PowerShell(php artisan test --filter=StudentControllerGateTest 2>&1 | Select-Object -Last 30)",
+      "PowerShell(php artisan migrate --force)",
+      "PowerShell(php artisan db:seed --class=RolePermissionsSeeder --force)",
+      "Bash(awk NR>=185 && NR<=222 *)",
+      "PowerShell(php -l \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\")",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\"\\); $start = 0; for \\($i=0; $i -lt 200; $i++\\) { if \\($bytes[$i] -eq 0x0A\\) { $start = $i+1; } if \\($i -ge $start\\) { $line++; if \\($line -ge 218 -and $line -le 220\\) { Write-Host \"Line $line bytes: $\\($bytes[$i]\\) \\('$\\([char]$bytes[$i]\\)'\\)\" } } })",
+      "PowerShell($file = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; $opens = \\([regex]::Matches\\($file, '\\\\[\\(?!\\\\w\\)'\\) \\).Count; $closes = \\([regex]::Matches\\($file, '\\\\]'\\) \\).Count; Write-Host \"Opens: $opens, Closes: $closes\")",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; $pos = $content.IndexOf\\(\"'medical_records_officer' =>\"\\); Write-Host \"Position: $pos\"; Write-Host \"Context:\"; Write-Host $content.Substring\\($pos, 1000\\))",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; $lines = $content -split \"`n\"; $balanced = 0; $firstNeg = -1; for \\($i = 0; $i -lt $lines.Length; $i++\\) { $line = $lines[$i]; for \\($j = 0; $j -lt $line.Length; $j++\\) { $c = $line[$j]; if \\($c -eq '['\\) { $balanced++ } elseif \\($c -eq ']'\\) { $balanced-- } } if \\($balanced -lt 0 -and $firstNeg -lt 0\\) { $firstNeg = $i+1; Write-Host \"First negative at line $firstNeg : $line\" } }; Write-Host \"Final balance: $balanced\")",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; $idx = $content.IndexOf\\(\"'signout.complete'\"\\); Write-Host \"Found at: $idx\"; Write-Host $content.Substring\\($idx-50, 200\\))",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Pattern \"signout\\\\.complete\" | ForEach-Object { $_.LineNumber })",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\"\\)[200..220])",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; $lines = $content -split \"`n\"; $balanced = 0; for \\($i = 0; $i -lt $lines.Length; $i++\\) { $line = $lines[$i]; $opens = \\([regex]::Matches\\($line, '\\\\['\\) \\).Count; $closes = \\([regex]::Matches\\($line, '\\\\]'\\) \\).Count; $balanced += $opens - $closes }; Write-Host \"Final: $balanced\")",
+      "PowerShell(php -r \"require 'vendor/autoload.php'; require 'app/Services/Hospital/HospitalPermissions.php';\" 2>&1 | Select-Object -First 10)",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php\" -Raw; for \\($i = 0; $i -lt $content.Length; $i++\\) { $code = [int]$content[$i]; if \\($code -gt 127\\) { $lines = \\($content.Substring\\(0, $i\\) -split \"`n\"\\).Count; Write-Host \"Non-ASCII at line $lines, char $i : U+$\\($code.ToString\\('X4'\\)\\) '$\\($content[$i]\\)'\"; if \\($lines -gt 220\\) { break } } })",
+      "PowerShell(php -l C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal\\\\app\\\\Services\\\\Hospital\\\\HospitalPermissions.php)",
+      "PowerShell(cd C:\\\\Users\\\\HP\\\\OneDrive\\\\Documents\\\\Portal; php artisan tinker --execute=\"\\\\$newIds = \\\\App\\\\Models\\\\Permission::whereIn\\('slug', ['appointments.certify','appointments.assign-doctor','appointments.vitals','notes.create','notes.pin','notes.delete','signout.complete','referrals.send.lab','referrals.send.pharmacy','referrals.send.radiology','referrals.send.nurse']\\)->pluck\\('id'\\); echo DB::table\\('role_permissions'\\)->whereIn\\('permission_id', \\\\$newIds\\)->count\\(\\) . ' new pivot rows\\\\n';\")"
     ]
   }
 }

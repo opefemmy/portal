@@ -36,18 +36,27 @@ class HospitalPermissions
             'discharge.recommend',
             'vitals.view', 'vitals.chart',
             'timeline.view', 'timeline.export',
+            'notes.create', 'notes.pin', 'notes.delete',
+            'referrals.send.lab', 'referrals.send.pharmacy',
+            'referrals.send.radiology', 'referrals.send.nurse',
+            'signout.complete',
         ],
 
         'nurse' => [
             'patients.view',
             'appointments.view', 'appointments.check-in',
-            'visits.vitals', 'vitals.create', 'vitals.view', 'vitals.chart',
+            // Nurse logs vitals during the records → nurse → doctor
+            // patient flow. `appointments.vitals` stamps the appointment
+            // (records who took vitals + when), `vitals.create` writes
+            // the clinical row.
+            'appointments.vitals', 'visits.vitals', 'vitals.create', 'vitals.view', 'vitals.chart',
             'pharmacy.view',
             'prescriptions.view',
             'wards.view', 'beds.assign', 'beds.manage',
             'timeline.view',
             'medications.administer',
             'monitoring.notes',
+            'notes.create', 'notes.pin',
         ],
 
         'hospital_receptionist' => [
@@ -58,6 +67,7 @@ class HospitalPermissions
             'appointments.queue', 'appointments.check-in',
             'billing.invoice', 'billing.payment', 'billing.refund',
             'search.advanced',
+            'notes.create',
         ],
 
         'pharmacist' => [
@@ -67,6 +77,7 @@ class HospitalPermissions
             'prescriptions.view', 'prescriptions.dispense',
             'patients.view',
             'reports.dispensation',
+            'notes.create',
         ],
 
         'lab_scientist' => [
@@ -74,6 +85,7 @@ class HospitalPermissions
             'lab.approve', 'lab.print', 'lab.export',
             'patients.view',
             'reports.lab',
+            'notes.create',
         ],
 
         'store_keeper' => [
@@ -97,6 +109,10 @@ class HospitalPermissions
             'discharge.recommend',
             'vitals.view', 'vitals.chart',
             'timeline.view', 'timeline.export',
+            'notes.create', 'notes.pin', 'notes.delete',
+            'referrals.send.lab', 'referrals.send.pharmacy',
+            'referrals.send.radiology', 'referrals.send.nurse',
+            'signout.complete',
         ],
 
         'matron' => [
@@ -107,27 +123,33 @@ class HospitalPermissions
             'monitoring.notes',
             'timeline.view',
             'reports.ward',
+            'notes.create', 'notes.pin', 'notes.delete',
+            'signout.complete',
         ],
 
         'pharmacy_technician' => [
             'pharmacy.view', 'pharmacy.dispense',
             'prescriptions.view',
             'patients.view',
+            'notes.create',
         ],
 
         'lab_technician' => [
             'lab.view', 'lab.collect',
             'patients.view',
+            'notes.create',
         ],
 
         'radiographer' => [
             'radiology.view', 'radiology.image.upload',
             'patients.view',
+            'notes.create',
         ],
 
         'radiologist' => [
             'radiology.view', 'radiology.report', 'radiology.approve',
             'patients.view',
+            'notes.create',
         ],
 
         'cashier' => [
@@ -142,12 +164,14 @@ class HospitalPermissions
             'records.folder', 'records.transfer',
             'patients.view',
             'timeline.view',
+            'notes.create', 'notes.delete',
         ],
 
         'ward_manager' => [
             'wards.view', 'wards.manage', 'beds.assign', 'beds.manage',
             'patients.view',
             'reports.ward',
+            'notes.create',
         ],
 
         'inventory_officer' => [
@@ -173,13 +197,24 @@ class HospitalPermissions
 
         // Records officer: confidentiality guardian. Read-only over charts,
         // plus archive / transfer / chart-request queue / full audit log.
+        // Also runs the records-officer desk in the patient flow:
+        // certify the chart is on file, then assign an available doctor
+        // to the patient — patients never pick a doctor themselves.
+        // `patients.edit` lets the records officer correct demographic
+        // data (phone, address, NOK) on the chart without needing a
+        // receptionist.
         'medical_records_officer' => [
             'records.view', 'records.edit', 'records.archive',
             'records.transfer', 'records.request',
             'records.audit',
-            'patients.view',
+            'patients.view', 'patients.search', 'patients.edit',
+            'appointments.view', 'appointments.create',
+            'appointments.certify', 'appointments.assign-doctor',
             'audit.view',
             'timeline.view', 'timeline.export',
+            'notes.create', 'notes.pin', 'notes.delete',
+            // Records officer closes out the day's visit.
+            'signout.complete',
         ],
     ];
 

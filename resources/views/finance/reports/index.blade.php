@@ -21,7 +21,7 @@
         </a>
     </div>
     <div class="col-md-3 mb-3">
-        <a href="{{ route('finance.reports.income-expenditure') }}" class="card text-center p-3 text-decoration-none shadow-sm h-100">
+        <a href="{{ route('finance.reports.ie') }}" class="card text-center p-3 text-decoration-none shadow-sm h-100">
             <i class="fas fa-balance-scale fa-2x text-info mb-2"></i>
             <strong>Income vs Expenditure</strong><br>
             <small class="text-muted">Side-by-side comparison</small>

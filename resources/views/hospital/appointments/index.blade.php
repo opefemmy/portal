@@ -32,7 +32,7 @@
                     <label class="form-label small">Status</label>
                     <select name="status" class="form-select">
                         <option value="">All Statuses</option>
-                        @foreach(['scheduled', 'confirmed', 'checked_in', 'in_progress', 'completed', 'cancelled'] as $status)
+                        @foreach(['scheduled', 'confirmed', 'checked_in', 'records_certified', 'awaiting_doctor', 'in_progress', 'completed', 'cancelled'] as $status)
                             <option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                         @endforeach
                     </select>
