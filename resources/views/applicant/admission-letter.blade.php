@@ -92,8 +92,46 @@ $sessionName   = $applicant->session?->name;
 // ND-I terminology). The raw applicants.entry_level field is "UTME" or "DE"
 // and was previously concatenated with "00 Level" producing "UTME00 Level" —
 // keep this hard-coded so future changes to entry_level don't break the letter.
-$levelOfEntry = 'ND I';
-@endphp
+	$levelOfEntry = 'ND I';
+
+	// Resolve dynamic body content from system settings.
+	// Fallback to the original hard-coded text if the setting is empty.
+	$bodyContent = SystemSetting::get('admission_letter_body');
+	if (! $bodyContent) {
+		$bodyContent = "On behalf of the {institutionName}, I am pleased to inform
+		you that you have been offered provisional admission into the
+		following programme for the {sessionName} academic session.
+
+		Your acceptance fee payment has been verified and confirmed. You are required to
+		present this letter together with your original credentials (O'Level certificate,
+		birth certificate, and any other relevant documents) to the Admissions Office on
+		or before the resumption date to complete your registration formalities.
+
+		Please note that this admission is subject to the verification of all credentials
+		submitted during your application. Any discrepancy found may lead to the withdrawal
+		of this offer.
+
+		We congratulate you on this achievement and wish you a successful academic career
+		at {institutionShort}.";
+	}
+
+	// Perform placeholder replacements
+	$replacements = [
+		'{fullName}'            => $fullName,
+		'{application_number}'    => $applicant->application_number,
+		'{school}'               => $schoolName ?? 'N/A',
+		'{department}'           => $departmentName ?? 'N/A',
+		'{programme}'            => $programmeName ?? 'N/A',
+		'{session}'              => $sessionName ?? 'current',
+		'{sessionName}'          => $sessionName ?? 'current',
+		'{institutionName}'      => $institutionName,
+		'{institutionShort}'     => $institutionShort,
+		'{level}'                => $levelOfEntry,
+		'{matric}'               => $matricNumber ?? 'N/A',
+	];
+	$renderedBody = strtr($bodyContent, $replacements);
+	$renderedBody = nl2br(trim($renderedBody));
+	@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -385,44 +423,9 @@ $levelOfEntry = 'ND I';
 
                 <p><strong>Dear {{ $applicant->first_name ?: $fullName }},</strong></p>
 
-                <p>
-                    On behalf of the <strong>{{ $institutionName }}</strong>, I am pleased to inform
-                    you that you have been offered <strong>provisional admission</strong> into the
-                    following programme for the <strong>{{ $sessionName ?? 'current' }} academic session</strong>.
-                </p>
+                <p>{!! $renderedBody !!}</p>
 
-                <table class="admission-details">
-                    <tr>
-                        <th>School / Faculty</th>
-                        <td>{{ $schoolName ?? 'N/A' }}</td>
-                    </tr>
-                    <tr>
-                        <th>Department</th>
-                        <td>{{ $departmentName ?? 'N/A' }}</td>
-                    </tr>
-                    <tr>
-                        <th>Programme</th>
-                        <td>{{ $programmeName ?? 'N/A' }}</td>
-                    </tr>
-                    <tr>
-                        <th>Level of Entry</th>
-                        <td>{{ $levelOfEntry }}</td>
-                    </tr>
-                    <tr>
-                        <th>Mode of Study</th>
-                        <td>{{ ucfirst($applicant->mode_of_study ?? 'Full-time') }}</td>
-                    </tr>
-                    @if($matricNumber)
-                    <tr>
-                        <th>Matriculation Number</th>
-                        <td><code>{{ $matricNumber }}</code></td>
-                    </tr>
-                    @endif
-                    <tr>
-                        <th>Session</th>
-                        <td>{{ $sessionName ?? 'N/A' }}</td>
-                    </tr>
-                </table>
+                <p>{!! $renderedBody !!}</p>
 
                 <p>
                     Your acceptance fee payment has been verified and confirmed. You are required to

@@ -5,6 +5,14 @@
 @section('content')
 <div class="page-header"><h4><i class="fas fa-hospital me-2"></i>Health Portal</h4></div>
 
+@if(isset($warning) || session('warning'))
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Medical Profile Incomplete:</strong> {{ $warning ?? session('warning') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="row">
     <div class="col-md-4 mb-3">
         <a href="{{ route('student.medical.book') }}" class="card text-center p-4 text-decoration-none shadow-sm h-100">

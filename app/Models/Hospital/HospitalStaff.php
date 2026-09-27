@@ -16,7 +16,7 @@ class HospitalStaff extends Model
 
     protected $fillable = [
         'user_id', 'staff_number', 'first_name', 'last_name', 'staff_type',
-        'phone', 'email', 'is_active', 'is_available'
+        'phone', 'email', 'is_active', 'is_available', 'license_number', 'license_expiry', 'specialization'
     ];
 
     protected $casts = [
@@ -32,7 +32,7 @@ class HospitalStaff extends Model
 
     public function appointments(): HasMany
     {
-        return $this->hasMany(HospitalAppointment::class, 'staff_id');
+        return $this->hasMany(HospitalAppointment::class, 'doctor_id');
     }
 
     public function medicalRecords(): HasMany

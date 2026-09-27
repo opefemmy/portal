@@ -25,7 +25,10 @@ class ProfileController extends Controller
         $programmes = Programme::all();
         $sessions = Session::where('is_current', true)->get();
 
-        return view('student.profile', compact('student', 'schools', 'departments', 'programmes', 'sessions'));
+        // Load the hospital patient record to allow editing medical info
+        $patient = \App\Models\Hospital\HospitalPatient::where('user_id', auth()->id())->first();
+
+        return view('student.profile', compact('student', 'schools', 'departments', 'programmes', 'sessions', 'patient'));
     }
 
     public function update(Request $request)
@@ -39,16 +42,27 @@ class ProfileController extends Controller
             'guidance_name' => 'nullable|string|max:255',
             'guidance_phone' => 'nullable|string|max:20',
             'guidance_address' => 'nullable|string',
+            'blood_group' => 'nullable|string|max:10',
+            'allergies' => 'nullable|string|max:500',
         ]);
 
-        // Update only user guidance details - academic details are managed by institution
+        // Update user guidance details
         $user->update([
             'guidance_name' => $request->guidance_name,
             'guidance_phone' => $request->guidance_phone,
             'guidance_address' => $request->guidance_address,
         ]);
 
-        return redirect()->route('student.dashboard')->with('success', 'Guidance details saved successfully!');
+        // Update medical information in HospitalPatient model
+        $patient = \App\Models\Hospital\HospitalPatient::where('user_id', $user->id)->first();
+        if ($patient) {
+            $patient->update([
+                'blood_group' => $request->blood_group,
+                'allergies' => $request->allergies,
+            ]);
+        }
+
+        return redirect()->route('student.dashboard')->with('success', 'Profile details updated successfully!');
     }
 
     public function uploadPassport(Request $request)

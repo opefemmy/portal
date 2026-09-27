@@ -103,6 +103,11 @@ $role = $user->role->slug ?? '';
     </a>
 </li>
 <li class="nav-item">
+    <a href="{{ route('admin.hospital-staff.index') }}" class="nav-link {{ request()->is('admin/hospital-staff*') ? 'active' : '' }}">
+        <i class="fas fa-user-md"></i> Hospital Staff
+    </a>
+</li>
+<li class="nav-item">
     <a href="{{ route('admin.users.unlock') }}" class="nav-link {{ request()->is('admin/users/unlock*') ? 'active' : '' }}">
         <i class="fas fa-unlock-alt"></i> Unlock Users
     </a>
@@ -811,12 +816,26 @@ $role = $user->role->slug ?? '';
         <i class="fas fa-gavel"></i> Final Approval
     </a>
 </li>
-{{-- HOSPITAL MODULE --}}
-@if(\App\Services\Hospital\HospitalPermissions::isHospitalStaff())
+{{-- HOSPITAL MODULE — covers every hospital role (cmd, doctor, nurse, matron,
+     pharmacist, lab_scientist, records officer, receptionist, etc). The
+     menu items come from HospitalPermissions::menuFor() so they always
+     mirror the role's permission set + dashboard route. --}}
+@elseif(\App\Services\Hospital\HospitalPermissions::isHospitalStaff())
 @php
     $hospitalMenu = \App\Services\Hospital\HospitalPermissions::menuFor();
     $currentPath = trim(request()->path(), '/');
+    $dashboardUrl = '#';
+    try {
+        $dashboardUrl = route(\App\Services\Hospital\HospitalPermissions::dashboardFor());
+    } catch (\Throwable $e) {
+        // Route not registered for the current app context.
+    }
 @endphp
+<li class="nav-item">
+    <a href="{{ $dashboardUrl }}" class="nav-link {{ $currentPath === trim(str_replace(url('/'), '', $dashboardUrl), '/') ? 'active' : '' }}">
+        <i class="fas fa-hospital"></i> Hospital Dashboard
+    </a>
+</li>
 @foreach($hospitalMenu as $item)
     @php
         [$routeName, $icon, $label] = $item;
@@ -837,7 +856,6 @@ $role = $user->role->slug ?? '';
         </a>
     </li>
 @endforeach
-@endif
 {{-- FINANCE MODULE --}}
 @elseif(in_array($role, ['accountant', 'cashier', 'cmd', 'super_admin']))
 <li class="nav-item">
@@ -987,6 +1005,128 @@ $role = $user->role->slug ?? '';
 <li class="nav-item">
     <a href="{{ route('applicant.payment') }}" class="nav-link {{ request()->is('applicant/payment*') ? 'active' : '' }}">
         <i class="fas fa-credit-card"></i> Make Payment
+    </a>
+</li>
+{{-- BURSARY SUB-ROLES — share the bursar dashboard with a narrower menu. --}}
+@elseif(in_array($role, ['bursary_officer', 'fees_officer', 'payment_officer'], true))
+<li class="nav-item">
+    <a href="{{ route('bursar.dashboard') }}" class="nav-link {{ request()->is('bursar/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url('/bursar/payments') }}" class="nav-link {{ request()->is('bursar/payments*') ? 'active' : '' }}">
+        <i class="fas fa-dollar-sign"></i> Payments
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url('/bursar/reports') }}" class="nav-link {{ request()->is('bursar/reports*') ? 'active' : '' }}">
+        <i class="fas fa-chart-bar"></i> Reports
+    </a>
+</li>
+{{-- FINANCE / ACCOUNTING SUB-ROLES — share the finance dashboard. --}}
+@elseif(in_array($role, ['finance', 'finance_officer', 'account_officer'], true))
+<li class="nav-item">
+    <a href="{{ route('finance.dashboard') }}" class="nav-link {{ request()->is('finance*') ? 'active' : '' }}">
+        <i class="fas fa-chart-line"></i> Finance Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.invoices.index') }}" class="nav-link {{ request()->is('finance/invoices*') ? 'active' : '' }}">
+        <i class="fas fa-file-invoice"></i> Invoices
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.receipts.index') }}" class="nav-link {{ request()->is('finance/receipts*') ? 'active' : '' }}">
+        <i class="fas fa-receipt"></i> Receipts
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.transactions.index') }}" class="nav-link {{ request()->is('finance/transactions*') ? 'active' : '' }}">
+        <i class="fas fa-exchange-alt"></i> Transactions
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('finance.payroll.index') }}" class="nav-link {{ request()->is('finance/payroll*') ? 'active' : '' }}">
+        <i class="fas fa-money-bill-wave"></i> Payroll
+    </a>
+</li>
+{{-- EXECUTIVE (rector + executive role slug) — already covered above by the
+     rector/super_admin branch; this catches the executive slug specifically. --}}
+@elseif($role === 'executive')
+<li class="nav-item">
+    <a href="{{ route('executive.dashboard') }}" class="nav-link {{ request()->is('executive*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Executive Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('executive.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('executive/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('executive.reports.students') }}" class="nav-link {{ request()->is('executive/reports*') ? 'active' : '' }}">
+        <i class="fas fa-chart-bar"></i> Reports
+    </a>
+</li>
+{{-- INTERNAL / EXTERNAL AUDITOR SUB-ROLES — share auditor screens. --}}
+@elseif(in_array($role, ['internal_auditor', 'external_auditor'], true))
+<li class="nav-item">
+    <a href="{{ route('auditor.dashboard') }}" class="nav-link {{ request()->is('auditor/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('auditor.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('auditor/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('auditor.audit-logs') }}" class="nav-link {{ request()->is('auditor/audit-logs*') ? 'active' : '' }}">
+        <i class="fas fa-history"></i> Audit Logs
+    </a>
+</li>
+{{-- LIBRARIAN SUB-ROLES — share librarian screens. --}}
+@elseif(in_array($role, ['library_officer', 'library_assistant'], true))
+<li class="nav-item">
+    <a href="{{ route('librarian.dashboard') }}" class="nav-link {{ request()->is('librarian/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.dashboard-config.edit', auth()->id()) }}"
+       class="nav-link {{ request()->is('librarian/dashboard-config*') ? 'active' : '' }}">
+        <i class="fas fa-sliders-h"></i> Customize Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.books') }}" class="nav-link {{ request()->is('librarian/books*') ? 'active' : '' }}">
+        <i class="fas fa-book"></i> Books
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('librarian.loans') }}" class="nav-link {{ request()->is('librarian/loans*') ? 'active' : '' }}">
+        <i class="fas fa-exchange-alt"></i> Loans
+    </a>
+</li>
+{{-- ICT ADMIN — has admin rights but not a staff role per se; route them to
+     the admin dashboard so they see Users / Permissions / Maintenance. --}}
+@elseif($role === 'ict_admin')
+<li class="nav-item">
+    <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->is('admin/dashboard*') ? 'active' : '' }}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
+        <i class="fas fa-users"></i> Users
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ route('admin.maintenance.dashboard') }}" class="nav-link {{ request()->is('admin/maintenance*') ? 'active' : '' }}">
+        <i class="fas fa-tools"></i> System Maintenance
     </a>
 </li>
 @endif

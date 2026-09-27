@@ -6,6 +6,14 @@
 <div class="container-fluid">
     <h4 class="mb-4"><i class="fas fa-hospital me-2"></i>Medical Portal</h4>
 
+    @if(isset($warning) || session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Medical Profile Incomplete:</strong> {{ $warning ?? session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Quick Actions -->
     <div class="row mb-4">
         <div class="col-md-12">

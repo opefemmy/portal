@@ -26,6 +26,19 @@ class PatientPortalController extends Controller
             $patient = $this->createPatientForUser($user);
         }
 
+        // Safety check: Prompt user to complete medical profile if critical info is missing.
+        if ($patient) {
+            $bloodGroup = trim($patient->blood_group ?? '');
+            $allergies = trim($patient->allergies ?? '');
+
+            $missingBloodGroup = empty($bloodGroup) || strcasecmp($bloodGroup, 'Not Set') === 0;
+            $missingAllergies = empty($allergies) || strcasecmp($allergies, 'None') === 0;
+
+            if ($missingBloodGroup || $missingAllergies) {
+                session()->flash('warning', 'Your medical profile is incomplete. Please update your Blood Type and Allergies to ensure patient safety.');
+            }
+        }
+
         $appointments = collect();
         if ($patient) {
             try {
@@ -59,21 +72,21 @@ class PatientPortalController extends Controller
         }
 
         $request->validate([
-            'doctor_id' => 'required|exists:hospital_staff,id',
             'appointment_date' => 'required|date|after_or_equal:today',
             'symptoms' => 'required|string',
         ]);
 
-        // Schema note: `hospital_appointments` does NOT have an
-        // `appointment_number` or `symptoms` column — appointment
-        // number is synthesized in the views from the row id, and the
-        // patient's free-text reason lives in `complaint`. The model
-        // also has `doctor_id` (not `staff_id`) and `scheduled_by` /
-        // `appointment_time` are NOT NULL FK / time columns the
-        // booking flow must populate or the INSERT will fail.
+        // Automatic Doctor Allocation
+        $doctorId = $this->pickAvailableDoctorId();
+
+        if (!$doctorId) {
+            return redirect()->route('student.medical.index')
+                ->with('error', 'No available doctors on duty. Please try again later or contact the medical center.');
+        }
+
         $appointment = HospitalAppointment::create([
             'patient_id'       => $patient->id,
-            'doctor_id'        => $request->doctor_id,
+            'doctor_id'        => $doctorId,
             'scheduled_by'     => $user->id,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => '09:00:00',
@@ -83,6 +96,24 @@ class PatientPortalController extends Controller
 
         return redirect()->route('student.medical.appointments')
             ->with('success', 'Appointment booked successfully');
+    }
+
+    /**
+     * Pick the doctor with the lightest in-progress load who is also
+     * marked `is_available = true` on the staff table. Returns null
+     * if no doctor is on duty.
+     */
+    private function pickAvailableDoctorId(): ?int
+    {
+        return HospitalStaff::where('staff_type', 'doctor')
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->withCount(['appointments as in_progress_count' => function ($q) {
+                $q->whereIn('status', ['in_progress', 'awaiting_doctor', 'records_certified']);
+            }])
+            ->orderBy('in_progress_count')
+            ->orderBy('id')
+            ->value('id');
     }
 
     /**

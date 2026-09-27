@@ -17,6 +17,7 @@
                 <tr>
                     <th>Date</th>
                     <th>Appointment No.</th>
+                    <th>Allocated Doctor</th>
                     <th>Symptoms</th>
                     <th>Status</th>
                 </tr>
@@ -26,6 +27,13 @@
                 <tr>
                     <td>{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d M Y') }}</td>
                     <td>APT-{{ str_pad($appointment->id, 6, '0', STR_PAD_LEFT) }}</td>
+                    <td>
+                        @if($appointment->doctor)
+                            <span class="text-primary fw-bold">Dr. {{ $appointment->doctor->first_name }} {{ $appointment->doctor->last_name }}</span>
+                        @else
+                            <span class="text-muted">Pending Allocation</span>
+                        @endif
+                    </td>
                     <td>{{ Str::limit($appointment->complaint, 50) }}</td>
                     <td>
                         @switch($appointment->status)
@@ -45,7 +53,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="text-center">No appointments found</td>
+                    <td colspan="5" class="text-center">No appointments found</td>
                 </tr>
                 @endforelse
             </tbody>

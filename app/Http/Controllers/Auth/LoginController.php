@@ -121,30 +121,43 @@ class LoginController extends Controller
         // roles seeded by ERPRolesSeeder route to the same dashboard as
         // their senior counterpart — they share the screens, just with a
         // narrower permission set enforced inside controllers.
-        $redirectTo = match ($roleSlug) {
-            'super_admin', 'admin', 'ict_admin', 'staff' => '/admin/dashboard',
-            'lecturer' => '/lecturer/dashboard',
-            'hod' => '/hod/dashboard',
-            'dean' => '/dean/dashboard',
-            'registrar', 'admission_officer' => '/registrar/dashboard',
-            'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier' => '/bursar/dashboard',
-            'librarian', 'library_officer', 'library_assistant' => '/librarian/dashboard',
-            'rector' => '/executive/dashboard',
-            'cmd', 'doctor', 'nurse', 'pharmacist', 'lab_scientist',
-                'hospital', 'hospital_receptionist',
-                'hospital_accountant', 'hospital_admin',
-                'hospital_store_manager' => '/hospital/dashboard',
-            'store_keeper' => '/hospital/pharmacy/dashboard',
-            'matron', 'ward_manager' => '/hospital/matron/dashboard',
-            'medical_records_officer' => '/hospital/records',
-            'executive' => '/executive/dashboard',
-            'finance', 'finance_officer', 'accountant', 'account_officer',
-                'auditor', 'internal_auditor', 'external_auditor' => '/bursar/dashboard',
-            'business_committee' => '/business-committee/dashboard',
-            'academic_board' => '/academic-board/dashboard',
-            'applicant' => '/applicant/dashboard',
-            default => '/dashboard',
-        };
+        //
+        // Hospital staff (cmd, doctor, nurse, matron, pharmacist, records
+        // officer, etc.) go through HospitalPermissions::dashboardFor()
+        // which already maps every hospital role slug to its dedicated
+        // dashboard URL — `hospital.dashboard` for cmd/super_admin,
+        // `hospital.nurse.dashboard` for nurses, `hospital.records` for
+        // records officers, etc. Using the catalogue keeps this switch
+        // and the role-dashboard map in sync.
+        if (\App\Services\Hospital\HospitalPermissions::isHospitalStaff()) {
+            // dashboardFor() returns a route name (e.g. 'hospital.nurse.dashboard');
+            // route() with absolute=false yields the relative URL like
+            // '/hospital/nurse/dashboard' which we can hand straight to
+            // redirect() without re-prefixing.
+            $redirectTo = route(
+                \App\Services\Hospital\HospitalPermissions::dashboardFor(),
+                [],
+                false
+            );
+        } else {
+            $redirectTo = match ($roleSlug) {
+                'super_admin', 'admin', 'ict_admin', 'staff' => '/admin/dashboard',
+                'lecturer' => '/lecturer/dashboard',
+                'hod' => '/hod/dashboard',
+                'dean' => '/dean/dashboard',
+                'registrar', 'admission_officer' => '/registrar/dashboard',
+                'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier' => '/bursar/dashboard',
+                'librarian', 'library_officer', 'library_assistant' => '/librarian/dashboard',
+                'rector' => '/executive/dashboard',
+                'executive' => '/executive/dashboard',
+                'finance', 'finance_officer', 'accountant', 'account_officer' => '/finance/dashboard',
+                'auditor', 'internal_auditor', 'external_auditor' => '/auditor/dashboard',
+                'business_committee' => '/business-committee/dashboard',
+                'academic_board' => '/academic-board/dashboard',
+                'applicant' => '/applicant/dashboard',
+                default => '/dashboard',
+            };
+        }
 
         return redirect($redirectTo)->with('success', 'Welcome back, ' . $user->name);
     }

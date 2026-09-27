@@ -149,6 +149,21 @@ class AuthService
     {
         $roleSlug = $user->role?->slug ?? 'student';
 
+        // Hospital staff (cmd, doctor, nurse, matron, pharmacist, lab,
+        // records officer, etc.) are routed via the HospitalPermissions
+        // dashboard catalogue so every role lands on its own dedicated
+        // dashboard URL — `hospital.dashboard` for cmd/super_admin,
+        // `hospital.nurse.dashboard` for nurses, `hospital.records` for
+        // records officers, etc. The match below handles the non-hospital
+        // modules where no per-role catalogue exists.
+        if (\App\Services\Hospital\HospitalPermissions::isHospitalStaff()) {
+            return route(
+                \App\Services\Hospital\HospitalPermissions::dashboardFor(),
+                [],
+                false
+            );
+        }
+
         return match ($roleSlug) {
             'super_admin', 'admin', 'ict_admin', 'staff' => '/admin/dashboard',
             'student' => '/student/dashboard',
@@ -158,7 +173,6 @@ class AuthService
             'registrar', 'admission_officer' => '/registrar/dashboard',
             'bursar', 'bursary_officer', 'fees_officer', 'payment_officer', 'cashier', 'finance', 'finance_officer', 'accountant', 'account_officer', 'auditor', 'internal_auditor', 'external_auditor', 'hospital_accountant' => '/bursar/dashboard',
             'librarian', 'library_officer', 'library_assistant' => '/librarian/dashboard',
-            'doctor', 'nurse', 'pharmacist', 'lab_scientist', 'cmd', 'hospital_admin', 'hospital_receptionist', 'medical_records_officer', 'hospital_store_manager' => '/hospital/dashboard',
             'store_keeper' => '/hospital/pharmacy/dashboard',
             'rector', 'executive' => '/executive/dashboard',
             'business_committee' => '/business-committee/dashboard',

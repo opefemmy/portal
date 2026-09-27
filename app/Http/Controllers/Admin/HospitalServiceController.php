@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Htttp\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\EnforcesPermission;
 use App\Http\Controllers\Controller;
 use App\Models\Hospital\HospitalServiceType;
+use App\Models\Hospital\HospitalStaff;
 use Illuminate\Http\Request;
 
 class HospitalServiceController extends Controller
@@ -16,6 +17,17 @@ class HospitalServiceController extends Controller
         $this->requirePermission('admin.hospital-services.manage');
         $services = HospitalServiceType::orderBy('category')->orderBy('name')->get();
         return view('admin.hospital-services.index', compact('services'));
+    }
+
+    public function indexDoctors()
+    {
+        $this->requirePermission('admin.hospital-services.manage');
+        $doctors = HospitalStaff::where('staff_type', 'doctor')
+            ->where('is_active', true)
+            ->orderBy('first_name')
+            ->get();
+
+        return view('admin.hospital.doctors', compact('doctors'));
     }
 
     public function store(Request $request)

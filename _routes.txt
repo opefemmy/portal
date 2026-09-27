@@ -1,0 +1,772 @@
+﻿
+  GET|HEAD        / ................................................................................................... home
+  GET|HEAD        academic-board/dashboard .............. academic-board.dashboard › AcademicBoard\DashboardController@index
+  GET|HEAD        academic-board/dashboard-config/{user} academic-board.dashboard-config.edit › AcademicBoard\DashboardConf…
+  PUT             academic-board/dashboard-config/{user} academic-board.dashboard-config.update › AcademicBoard\DashboardCo…
+  GET|HEAD        academic-board/results ..................... academic-board.results › AcademicBoard\ResultController@index
+  POST            academic-board/results/bulk-approve academic-board.results.bulkApprove › AcademicBoard\ResultController@b…
+  POST            academic-board/results/bulk-reject academic-board.results.bulkReject › AcademicBoard\ResultController@bul…
+  GET|HEAD        academic-board/results/department/{department} academic-board.results.byDepartment › AcademicBoard\Result…
+  GET|HEAD        academic-board/results/signing-page academic-board.signing-page › AcademicBoard\ResultController@signingP…
+  GET|HEAD        academic-board/results/student/{student}/print academic-board.results.print-student › AcademicBoard\Resul…
+  PUT             academic-board/results/{result}/approve academic-board.results.approve › AcademicBoard\ResultController@a…
+  GET|HEAD        academic-board/results/{result}/print academic-board.results.print › AcademicBoard\ResultController@print…
+  PUT             academic-board/results/{result}/reject academic-board.results.reject › AcademicBoard\ResultController@rej…
+  ANY             admin ............................................................ Illuminate\Routing › RedirectController
+  GET|HEAD        admin/admission-centres ............ admin.admission-centres.index › Admin\AdmissionCentreController@index
+  POST            admin/admission-centres ............ admin.admission-centres.store › Admin\AdmissionCentreController@store
+  GET|HEAD        admin/admission-centres/create ... admin.admission-centres.create › Admin\AdmissionCentreController@create
+  GET|HEAD        admin/admission-centres/{admission_centre} admin.admission-centres.show › Admin\AdmissionCentreController…
+  PUT|PATCH       admin/admission-centres/{admission_centre} admin.admission-centres.update › Admin\AdmissionCentreControll…
+  DELETE          admin/admission-centres/{admission_centre} admin.admission-centres.destroy › Admin\AdmissionCentreControl…
+  GET|HEAD        admin/admission-centres/{admission_centre}/edit admin.admission-centres.edit › Admin\AdmissionCentreContr…
+  POST            admin/admission-centres/{centre}/toggle admin.admission-centres.toggle › Admin\AdmissionCentreController@…
+  GET|HEAD        admin/admission/payment-flow ............. admin.admission.payment-flow › Admin\PaymentFlowController@edit
+  PUT             admin/admission/payment-flow .... admin.admission.payment-flow.update › Admin\PaymentFlowController@update
+  GET|HEAD        admin/analytics ........................................ admin.analytics › Admin\AnalyticsController@index
+  GET|HEAD        admin/complaints ................................ admin.complaints.index › Admin\ComplaintController@index
+  POST            admin/complaints ................................ admin.complaints.store › Admin\ComplaintController@store
+  GET|HEAD        admin/complaints/create ....................... admin.complaints.create › Admin\ComplaintController@create
+  GET|HEAD        admin/complaints/{complaint} ...................... admin.complaints.show › Admin\ComplaintController@show
+  PUT|PATCH       admin/complaints/{complaint} .................. admin.complaints.update › Admin\ComplaintController@update
+  DELETE          admin/complaints/{complaint} ................ admin.complaints.destroy › Admin\ComplaintController@destroy
+  GET|HEAD        admin/complaints/{complaint}/edit ................. admin.complaints.edit › Admin\ComplaintController@edit
+  GET|HEAD        admin/course-assignments ......... admin.course-assignments.index › Admin\CourseAssignmentController@index
+  POST            admin/course-assignments ......... admin.course-assignments.store › Admin\CourseAssignmentController@store
+  GET|HEAD        admin/course-assignments/create admin.course-assignments.create › Admin\CourseAssignmentController@create
+  GET|HEAD        admin/course-assignments/{course_assignment} admin.course-assignments.show › Admin\CourseAssignmentContro…
+  PUT|PATCH       admin/course-assignments/{course_assignment} admin.course-assignments.update › Admin\CourseAssignmentCont…
+  DELETE          admin/course-assignments/{course_assignment} admin.course-assignments.destroy › Admin\CourseAssignmentCon…
+  GET|HEAD        admin/course-assignments/{course_assignment}/edit admin.course-assignments.edit › Admin\CourseAssignmentC…
+  GET|HEAD        admin/course-registrations ... admin.course-registrations.index › Admin\CourseRegistrationController@index
+  GET|HEAD        admin/course-registrations/export admin.course-registrations.export › Admin\CourseRegistrationController@…
+  POST            admin/course-registrations/{registration}/resubmit admin.course-registrations.resubmit › Admin\CourseRegi…
+  POST            admin/course-registrations/{registration}/unsubmit admin.course-registrations.unsubmit › Admin\CourseRegi…
+  GET|HEAD        admin/courses ......................................... admin.courses.index › Admin\CourseController@index
+  POST            admin/courses ......................................... admin.courses.store › Admin\CourseController@store
+  GET|HEAD        admin/courses/create ................................ admin.courses.create › Admin\CourseController@create
+  GET|HEAD        admin/courses/upload ....................... admin.courses.upload.form › Admin\CourseController@uploadForm
+  POST            admin/courses/upload ................................ admin.courses.upload › Admin\CourseController@upload
+  GET|HEAD        admin/courses/{course} .................................. admin.courses.show › Admin\CourseController@show
+  PUT|PATCH       admin/courses/{course} .............................. admin.courses.update › Admin\CourseController@update
+  DELETE          admin/courses/{course} ............................ admin.courses.destroy › Admin\CourseController@destroy
+  GET|HEAD        admin/courses/{course}/edit ............................. admin.courses.edit › Admin\CourseController@edit
+  GET|HEAD        admin/dashboard ........................................ admin.dashboard › Admin\DashboardController@index
+  GET|HEAD        admin/dashboard-config/{user} ......... admin.dashboard-config.edit › Admin\DashboardConfigController@edit
+  PUT             admin/dashboard-config/{user} ..... admin.dashboard-config.update › Admin\DashboardConfigController@update
+  GET|HEAD        admin/departments ............................. admin.departments.index › Admin\DepartmentController@index
+  POST            admin/departments ............................. admin.departments.store › Admin\DepartmentController@store
+  GET|HEAD        admin/departments/create .................... admin.departments.create › Admin\DepartmentController@create
+  GET|HEAD        admin/departments/{department} .................. admin.departments.show › Admin\DepartmentController@show
+  PUT|PATCH       admin/departments/{department} .............. admin.departments.update › Admin\DepartmentController@update
+  DELETE          admin/departments/{department} ............ admin.departments.destroy › Admin\DepartmentController@destroy
+  GET|HEAD        admin/departments/{department}/edit ............. admin.departments.edit › Admin\DepartmentController@edit
+  GET|HEAD        admin/fees .................................................. admin.fees.index › Admin\FeeController@index
+  POST            admin/fees .................................................. admin.fees.store › Admin\FeeController@store
+  GET|HEAD        admin/fees/create ......................................... admin.fees.create › Admin\FeeController@create
+  GET|HEAD        admin/fees/{fee} .............................................. admin.fees.show › Admin\FeeController@show
+  PUT|PATCH       admin/fees/{fee} .......................................... admin.fees.update › Admin\FeeController@update
+  DELETE          admin/fees/{fee} ........................................ admin.fees.destroy › Admin\FeeController@destroy
+  GET|HEAD        admin/fees/{fee}/edit ......................................... admin.fees.edit › Admin\FeeController@edit
+  GET|HEAD        admin/grades ............................................ admin.grades.index › Admin\GradeController@index
+  POST            admin/grades ............................................ admin.grades.store › Admin\GradeController@store
+  POST            admin/grades/classification admin.grades.classification.store › Admin\GradingController@storeClassificati…
+  PUT             admin/grades/classification/{classification} admin.grades.classification.update › Admin\GradingController…
+  DELETE          admin/grades/classification/{classification} admin.grades.classification.destroy › Admin\GradingControlle…
+  GET|HEAD        admin/grades/create ................................... admin.grades.create › Admin\GradeController@create
+  POST            admin/grades/scale ......................... admin.grades.scale.store › Admin\GradingController@storeScale
+  PUT             admin/grades/scale/{scale} ............... admin.grades.scale.update › Admin\GradingController@updateScale
+  DELETE          admin/grades/scale/{scale} ............. admin.grades.scale.destroy › Admin\GradingController@destroyScale
+  GET|HEAD        admin/grades/{grade} ...................................... admin.grades.show › Admin\GradeController@show
+  PUT|PATCH       admin/grades/{grade} .................................. admin.grades.update › Admin\GradeController@update
+  DELETE          admin/grades/{grade} ................................ admin.grades.destroy › Admin\GradeController@destroy
+  GET|HEAD        admin/grades/{grade}/edit ................................. admin.grades.edit › Admin\GradeController@edit
+  GET|HEAD        admin/hospital-services ............ admin.hospital-services.index › Admin\HospitalServiceController@index
+  POST            admin/hospital-services ............ admin.hospital-services.store › Admin\HospitalServiceController@store
+  GET|HEAD        admin/hospital-services/create ... admin.hospital-services.create › Admin\HospitalServiceController@create
+  GET|HEAD        admin/hospital-services/{hospital_service} admin.hospital-services.show › Admin\HospitalServiceController…
+  PUT|PATCH       admin/hospital-services/{hospital_service} admin.hospital-services.update › Admin\HospitalServiceControll…
+  DELETE          admin/hospital-services/{hospital_service} admin.hospital-services.destroy › Admin\HospitalServiceControl…
+  GET|HEAD        admin/hospital-services/{hospital_service}/edit admin.hospital-services.edit › Admin\HospitalServiceContr…
+  POST            admin/hospital-services/{service}/toggle admin.hospital-services.toggle › Admin\HospitalServiceController…
+  GET|HEAD        admin/hostels ......................................... admin.hostels.index › Admin\HostelController@index
+  POST            admin/hostels ......................................... admin.hostels.store › Admin\HostelController@store
+  GET|HEAD        admin/hostels/allocations ................. admin.hostels.allocations › Admin\HostelController@allocations
+  POST            admin/hostels/allocations ....... admin.hostels.allocations.store › Admin\HostelController@storeAllocation
+  GET|HEAD        admin/hostels/allocations/create admin.hostels.allocations.create › Admin\HostelController@createAllocati…
+  POST            admin/hostels/allocations/{allocation}/checkout admin.hostels.allocations.checkout › Admin\HostelControll…
+  GET|HEAD        admin/hostels/beds/{room}/beds .......................... admin. › Admin\HostelController@getAvailableBeds
+  GET|HEAD        admin/hostels/create ................................ admin.hostels.create › Admin\HostelController@create
+  GET|HEAD        admin/hostels/rooms/{hostel}/rooms .............................. admin. › Admin\HostelController@getRooms
+  GET|HEAD        admin/hostels/{hostel} .................................. admin.hostels.show › Admin\HostelController@show
+  PUT|PATCH       admin/hostels/{hostel} .............................. admin.hostels.update › Admin\HostelController@update
+  DELETE          admin/hostels/{hostel} ............................ admin.hostels.destroy › Admin\HostelController@destroy
+  GET|HEAD        admin/hostels/{hostel}/edit ............................. admin.hostels.edit › Admin\HostelController@edit
+  POST            admin/hostels/{hostel}/rooms ................ admin.hostels.rooms.store › Admin\HostelController@storeRoom
+  GET|HEAD        admin/hostels/{hostel}/rooms/create ....... admin.hostels.rooms.create › Admin\HostelController@createRoom
+  GET|HEAD        admin/hostels/{hostel}/rooms/{room} ........... admin.hostels.rooms.show › Admin\HostelController@showRoom
+  GET|HEAD        admin/id-cards ................................ admin.id-cards.index › Admin\StudentIdCardController@index
+  POST            admin/id-cards/bulk ............................. admin.id-cards.bulk › Admin\StudentIdCardController@bulk
+  GET|HEAD        admin/id-cards/print .......................... admin.id-cards.print › Admin\StudentIdCardController@print
+  GET|HEAD        admin/id-cards/{student}/generate ....... admin.id-cards.generate › Admin\StudentIdCardController@generate
+  GET|HEAD        admin/library/books .................................. admin.library.books › Admin\LibraryController@books
+  POST            admin/library/books ........................ admin.library.books.store › Admin\LibraryController@storeBook
+  GET|HEAD        admin/library/books/create ............... admin.library.books.create › Admin\LibraryController@createBook
+  POST            admin/library/books/upload .............. admin.library.books.upload › Admin\LibraryController@uploadBooks
+  GET|HEAD        admin/library/loans .................................. admin.library.loans › Admin\LibraryController@loans
+  POST            admin/library/loans/issue .................. admin.library.loans.issue › Admin\LibraryController@issueBook
+  POST            admin/library/loans/{loan}/return ........ admin.library.loans.return › Admin\LibraryController@returnBook
+  GET|HEAD        admin/library/verify ................................................................ admin.library.verify
+  POST            admin/library/verify ........................................................... admin.library.verify.post
+  POST            admin/maintenance/backup/create admin.maintenance.backup.create › Admin\MaintenanceController@createBackup
+  GET|HEAD        admin/maintenance/backups .......... admin.maintenance.backups › Admin\MaintenanceController@backupManager
+  GET|HEAD        admin/maintenance/cache ............... admin.maintenance.cache › Admin\MaintenanceController@cacheManager
+  POST            admin/maintenance/cache/clear .... admin.maintenance.cache.clear › Admin\MaintenanceController@clearCaches
+  GET|HEAD        admin/maintenance/dashboard .......... admin.maintenance.dashboard › Admin\MaintenanceController@dashboard
+  GET|HEAD        admin/maintenance/database ....... admin.maintenance.database › Admin\MaintenanceController@databaseRepair
+  GET|HEAD        admin/maintenance/health .............. admin.maintenance.health › Admin\MaintenanceController@healthCheck
+  POST            admin/maintenance/health/repair admin.maintenance.health.repair › Admin\MaintenanceController@runHealthCh…
+  POST            admin/maintenance/health/run ... admin.maintenance.health.run › Admin\MaintenanceController@runHealthCheck
+  GET|HEAD        admin/maintenance/logs .................... admin.maintenance.logs › Admin\MaintenanceController@logViewer
+  GET|HEAD        admin/maintenance/migrations ....... admin.maintenance.migrations › Admin\MaintenanceController@migrations
+  POST            admin/maintenance/migrations/run admin.maintenance.migrations.run › Admin\MaintenanceController@runMigrat…
+  GET|HEAD        admin/maintenance/modules .......... admin.maintenance.modules › Admin\MaintenanceController@moduleScanner
+  POST            admin/maintenance/optimize ....... admin.maintenance.optimize › Admin\MaintenanceController@optimizeSystem
+  GET|HEAD        admin/maintenance/permissions admin.maintenance.permissions › Admin\MaintenanceController@permissionScann…
+  POST            admin/maintenance/repairs/run ..... admin.maintenance.repairs.run › Admin\MaintenanceController@runRepairs
+  GET|HEAD        admin/maintenance/report ............. admin.maintenance.report › Admin\MaintenanceController@systemReport
+  POST            admin/maintenance/seeders/run ..... admin.maintenance.seeders.run › Admin\MaintenanceController@runSeeders
+  GET|HEAD        admin/maintenance/storage ......... admin.maintenance.storage › Admin\MaintenanceController@storageScanner
+  GET|HEAD        admin/maintenance/updates .......... admin.maintenance.updates › Admin\MaintenanceController@updateManager
+  POST            admin/maintenance/version/register admin.maintenance.version.register › Admin\MaintenanceController@regis…
+  GET|HEAD        admin/maintenance/versions ....... admin.maintenance.versions › Admin\MaintenanceController@versionManager
+  GET|HEAD        admin/notifications ....................... admin.notifications.index › Admin\NotificationController@index
+  PUT             admin/notifications ..................... admin.notifications.update › Admin\NotificationController@update
+  GET|HEAD        admin/payment-types ........................ admin.payment-types.index › Admin\PaymentTypeController@index
+  POST            admin/payment-types ........................ admin.payment-types.store › Admin\PaymentTypeController@store
+  GET|HEAD        admin/payment-types/create ............... admin.payment-types.create › Admin\PaymentTypeController@create
+  POST            admin/payment-types/{paymentType}/toggle . admin.payment-types.toggle › Admin\PaymentTypeController@toggle
+  GET|HEAD        admin/payment-types/{payment_type} ........... admin.payment-types.show › Admin\PaymentTypeController@show
+  PUT|PATCH       admin/payment-types/{payment_type} ....... admin.payment-types.update › Admin\PaymentTypeController@update
+  DELETE          admin/payment-types/{payment_type} ..... admin.payment-types.destroy › Admin\PaymentTypeController@destroy
+  GET|HEAD        admin/payment-types/{payment_type}/edit ...... admin.payment-types.edit › Admin\PaymentTypeController@edit
+  GET|HEAD        admin/previous-results ............... admin.previous-results.index › Admin\PreviousResultController@index
+  POST            admin/previous-results/purge-student/{student} admin.previous-results.purge-student › Admin\PreviousResul…
+  GET|HEAD        admin/previous-results/template admin.previous-results.template › Admin\PreviousResultController@download…
+  GET|HEAD        admin/previous-results/upload ...... admin.previous-results.create › Admin\PreviousResultController@create
+  POST            admin/previous-results/upload ...... admin.previous-results.upload › Admin\PreviousResultController@upload
+  DELETE          admin/previous-results/{previousResult} admin.previous-results.destroy › Admin\PreviousResultController@d…
+  GET|HEAD        admin/programmes ................................ admin.programmes.index › Admin\ProgrammeController@index
+  POST            admin/programmes ................................ admin.programmes.store › Admin\ProgrammeController@store
+  GET|HEAD        admin/programmes/create ....................... admin.programmes.create › Admin\ProgrammeController@create
+  GET|HEAD        admin/programmes/{programme} ...................... admin.programmes.show › Admin\ProgrammeController@show
+  PUT|PATCH       admin/programmes/{programme} .................. admin.programmes.update › Admin\ProgrammeController@update
+  DELETE          admin/programmes/{programme} ................ admin.programmes.destroy › Admin\ProgrammeController@destroy
+  GET|HEAD        admin/programmes/{programme}/edit ................. admin.programmes.edit › Admin\ProgrammeController@edit
+  GET|HEAD        admin/reports ............................................... admin.reports › Admin\ReportController@index
+  GET|HEAD        admin/reports/applications .............. admin.reports.applications › Admin\ReportController@applications
+  GET|HEAD        admin/reports/payments .......................... admin.reports.payments › Admin\ReportController@payments
+  GET|HEAD        admin/reports/results ............................. admin.reports.results › Admin\ReportController@results
+  GET|HEAD        admin/reports/students .......................... admin.reports.students › Admin\ReportController@students
+  GET|HEAD        admin/results ......................................... admin.results.index › Admin\ResultController@index
+  POST            admin/results/bulk-approve ................ admin.results.bulkApprove › Admin\ResultController@bulkApprove
+  POST            admin/results/hide ...................................... admin.results.hide › Admin\ResultController@hide
+  POST            admin/results/lock ...................................... admin.results.lock › Admin\ResultController@lock
+  POST            admin/results/publish ............................. admin.results.publish › Admin\ResultController@publish
+  POST            admin/results/recompute ....................... admin.results.recompute › Admin\ResultController@recompute
+  POST            admin/results/release ............................. admin.results.release › Admin\ResultController@release
+  GET|HEAD        admin/results/template .................. admin.results.template › Admin\ResultController@downloadTemplate
+  GET|HEAD        admin/results/upload ................................ admin.results.upload › Admin\ResultController@upload
+  POST            admin/results/upload .................................. admin.results.store › Admin\ResultController@store
+  POST            admin/results/withdraw .......................... admin.results.withdraw › Admin\ResultController@withdraw
+  GET|HEAD        admin/results/{result} .................................. admin.results.show › Admin\ResultController@show
+  PUT             admin/results/{result}/approve .................... admin.results.approve › Admin\ResultController@approve
+  PUT             admin/results/{result}/compute .................... admin.results.compute › Admin\ResultController@compute
+  PUT             admin/results/{result}/reject ....................... admin.results.reject › Admin\ResultController@reject
+  GET|HEAD        admin/schools ......................................... admin.schools.index › Admin\SchoolController@index
+  POST            admin/schools ......................................... admin.schools.store › Admin\SchoolController@store
+  GET|HEAD        admin/schools/create ................................ admin.schools.create › Admin\SchoolController@create
+  GET|HEAD        admin/schools/{school} .................................. admin.schools.show › Admin\SchoolController@show
+  PUT|PATCH       admin/schools/{school} .............................. admin.schools.update › Admin\SchoolController@update
+  DELETE          admin/schools/{school} ............................ admin.schools.destroy › Admin\SchoolController@destroy
+  GET|HEAD        admin/schools/{school}/edit ............................. admin.schools.edit › Admin\SchoolController@edit
+  GET|HEAD        admin/sessions ...................................... admin.sessions.index › Admin\SessionController@index
+  POST            admin/sessions ...................................... admin.sessions.store › Admin\SessionController@store
+  GET|HEAD        admin/sessions/create ............................. admin.sessions.create › Admin\SessionController@create
+  GET|HEAD        admin/sessions/{session} .............................. admin.sessions.show › Admin\SessionController@show
+  PUT|PATCH       admin/sessions/{session} .......................... admin.sessions.update › Admin\SessionController@update
+  DELETE          admin/sessions/{session} ........................ admin.sessions.destroy › Admin\SessionController@destroy
+  GET|HEAD        admin/sessions/{session}/edit ......................... admin.sessions.edit › Admin\SessionController@edit
+  POST            admin/sessions/{session}/set-current ..... admin.sessions.set_current › Admin\SessionController@setCurrent
+  GET|HEAD        admin/settings ................................ admin.settings.index › Admin\SystemSettingController@index
+  PUT             admin/settings ...................... admin.settings.update › Admin\SystemSettingController@updateSettings
+  POST            admin/settings/branding ........... admin.settings.branding › Admin\SystemSettingController@updateBranding
+  DELETE          admin/settings/delete/house-icon admin.settings.delete.house-icon › Admin\SystemSettingController@deleteH…
+  DELETE          admin/settings/delete/icon ......... admin.settings.delete.icon › Admin\SystemSettingController@deleteIcon
+  DELETE          admin/settings/delete/logo ......... admin.settings.delete.logo › Admin\SystemSettingController@deleteLogo
+  GET|HEAD        admin/settings/download/house-icon admin.settings.download.house-icon › Admin\SystemSettingController@dow…
+  GET|HEAD        admin/settings/download/icon ... admin.settings.download.icon › Admin\SystemSettingController@downloadIcon
+  GET|HEAD        admin/settings/download/logo ... admin.settings.download.logo › Admin\SystemSettingController@downloadLogo
+  POST            admin/settings/gateway ............. admin.settings.gateway › Admin\SystemSettingController@updateGateways
+  POST            admin/settings/toggle ................ admin.settings.toggle › Admin\SystemSettingController@toggleSetting
+  GET|HEAD        admin/staff .............................................. admin.staff.index › Admin\StaffController@index
+  POST            admin/staff .............................................. admin.staff.store › Admin\StaffController@store
+  GET|HEAD        admin/staff/create ..................................... admin.staff.create › Admin\StaffController@create
+  GET|HEAD        admin/staff/{staff} ........................................ admin.staff.show › Admin\StaffController@show
+  PUT|PATCH       admin/staff/{staff} .................................... admin.staff.update › Admin\StaffController@update
+  DELETE          admin/staff/{staff} .................................. admin.staff.destroy › Admin\StaffController@destroy
+  GET|HEAD        admin/staff/{staff}/edit ................................... admin.staff.edit › Admin\StaffController@edit
+  POST            admin/staff/{user}/reset-password ....... admin.staff.reset_password › Admin\StaffController@resetPassword
+  GET|HEAD        admin/students ...................................... admin.students.index › Admin\StudentController@index
+  POST            admin/students ...................................... admin.students.store › Admin\StudentController@store
+  GET|HEAD        admin/students/create ............................. admin.students.create › Admin\StudentController@create
+  GET|HEAD        admin/students/import ........................ admin.students.import › Admin\StudentImportController@index
+  POST            admin/students/import ................. admin.students.import.store › Admin\StudentImportController@import
+  GET|HEAD        admin/students/import/template admin.students.import.template › Admin\StudentImportController@downloadTem…
+  GET|HEAD        admin/students/lgas/{stateId} ................................... admin. › Admin\StudentController@getLGAs
+  GET|HEAD        admin/students/measurements/export admin.students.measurements.export › Admin\StudentController@exportMea…
+  GET|HEAD        admin/students/{student} .............................. admin.students.show › Admin\StudentController@show
+  PUT|PATCH       admin/students/{student} .......................... admin.students.update › Admin\StudentController@update
+  DELETE          admin/students/{student} ........................ admin.students.destroy › Admin\StudentController@destroy
+  GET|HEAD        admin/students/{student}/edit ......................... admin.students.edit › Admin\StudentController@edit
+  GET|HEAD        admin/students/{student}/measurements admin.students.measurements › Admin\StudentController@showMeasureme…
+  PUT             admin/students/{student}/measurements admin.students.measurements.update › Admin\StudentController@update…
+  GET|HEAD        admin/students/{student}/measurements/edit admin.students.measurements.edit › Admin\StudentController@edi…
+  POST            admin/students/{student}/reset-password admin.students.reset_password › Admin\StudentController@resetPass…
+  GET|HEAD        admin/timetable .................................. admin.timetable.index › Admin\TimetableController@index
+  POST            admin/timetable .................................. admin.timetable.store › Admin\TimetableController@store
+  GET|HEAD        admin/timetable/create ......................... admin.timetable.create › Admin\TimetableController@create
+  GET|HEAD        admin/timetable/{timetable} ........................ admin.timetable.show › Admin\TimetableController@show
+  PUT|PATCH       admin/timetable/{timetable} .................... admin.timetable.update › Admin\TimetableController@update
+  DELETE          admin/timetable/{timetable} .................. admin.timetable.destroy › Admin\TimetableController@destroy
+  GET|HEAD        admin/timetable/{timetable}/edit ................... admin.timetable.edit › Admin\TimetableController@edit
+  GET|HEAD        admin/transcripts ............................. admin.transcripts.index › Admin\TranscriptController@index
+  GET|HEAD        admin/transcripts/{student} ..................... admin.transcripts.show › Admin\TranscriptController@show
+  GET|HEAD        admin/transcripts/{student}/print ............. admin.transcripts.print › Admin\TranscriptController@print
+  GET|HEAD        admin/users ............................................... admin.users.index › Admin\UserController@index
+  POST            admin/users ............................................... admin.users.store › Admin\UserController@store
+  GET|HEAD        admin/users/create ...................................... admin.users.create › Admin\UserController@create
+  GET|HEAD        admin/users/search ...................................... admin.users.search › Admin\UserController@search
+  GET|HEAD        admin/users/unlock ........................ admin.users.unlock › Admin\UserUnlockController@showUnlockForm
+  POST            admin/users/unlock .................... admin.users.unlock.process › Admin\UserUnlockController@unlockUser
+  GET|HEAD        admin/users/unlock/code .............. admin.users.unlock.code › Admin\UserUnlockController@showUnlockCode
+  POST            admin/users/unlock/generate .. admin.users.unlock.generate › Admin\UserUnlockController@generateUnlockCode
+  POST            admin/users/unlock/quick ............... admin.users.unlock.quick › Admin\UserUnlockController@quickUnlock
+  POST            admin/users/unlock/reset ......... admin.users.unlock.reset › Admin\UserUnlockController@resetUserPassword
+  GET|HEAD        admin/users/upload ...................................... admin.users.upload › Admin\UserController@upload
+  POST            admin/users/upload ....................... admin.users.upload.process › Admin\UserController@processUpload
+  GET|HEAD        admin/users/{user} .......................................... admin.users.show › Admin\UserController@show
+  PUT|PATCH       admin/users/{user} ...................................... admin.users.update › Admin\UserController@update
+  DELETE          admin/users/{user} .................................... admin.users.destroy › Admin\UserController@destroy
+  POST            admin/users/{user}/activate ......................... admin.users.activate › Admin\UserController@activate
+  POST            admin/users/{user}/deactivate ................... admin.users.deactivate › Admin\UserController@deactivate
+  GET|HEAD        admin/users/{user}/edit ..................................... admin.users.edit › Admin\UserController@edit
+  POST            admin/users/{user}/passport ................... admin.users.passport › Admin\UserController@uploadPassport
+  POST            admin/users/{user}/reset-password ........ admin.users.reset_password › Admin\UserController@resetPassword
+  PUT             admin/users/{user}/roles ...................... admin.users.roles.update › Admin\UserRoleController@update
+  GET|HEAD        api/departments/{schoolId} ............................................................................... 
+  GET|HEAD        api/payment/verify/{reference} ................. api.payment.verify › PaymentVerificationController@verify
+  GET|HEAD        api/programmes/{departmentId} ............................................................................ 
+  GET|HEAD        applicant/admission-letter applicant.admission-letter › Applicant\ApplicationController@printAdmissionLet…
+  GET|HEAD        applicant/application ............ applicant.application › Applicant\ApplicationController@viewApplication
+  PUT             applicant/application ... applicant.application.update › Applicant\ApplicationController@updateApplication
+  GET|HEAD        applicant/application/edit .. applicant.application.edit › Applicant\ApplicationController@editApplication
+  GET|HEAD        applicant/application/print applicant.application.print › Applicant\ApplicationController@printApplication
+  GET|HEAD        applicant/apply .................... applicant.apply › Applicant\ApplicationController@showApplicationForm
+  POST            applicant/apply ............... applicant.apply.submit › Applicant\ApplicationController@submitApplication
+  POST            applicant/apply/fee ......... applicant.apply.fee › Applicant\ApplicationController@initiateApplicationFee
+  GET|HEAD        applicant/apply/payment ....... applicant.apply.payment › Applicant\ApplicationController@showApplyPayment
+  POST            applicant/apply/payment applicant.apply.payment.process › Applicant\ApplicationController@processApplyPay…
+  GET|HEAD        applicant/apply/payment/verify applicant.apply.payment.verify › Applicant\ApplicationController@verifyApp…
+  POST            applicant/apply/payment/verify-external applicant.payment.verify-external › Applicant\ApplicationControll…
+  GET|HEAD        applicant/auto-login .................... applicant.auto-login.issue › Applicant\AutoLoginController@issue
+  GET|HEAD        applicant/dashboard ...................... applicant.dashboard › Applicant\ApplicationController@dashboard
+  GET|HEAD        applicant/departments/{schoolId} .......................... Applicant\ApplicationController@getDepartments
+  GET|HEAD        applicant/lgas/{stateId} ......................................... Applicant\ApplicationController@getLGAs
+  GET|HEAD        applicant/payment ................. applicant.payment › Applicant\PaymentGatewayController@showPaymentPage
+  GET|HEAD        applicant/payment/callback applicant.payment.callback › Applicant\PaymentGatewayController@paymentCallback
+  GET|HEAD        applicant/payment/cancel ..... applicant.payment.cancel › Applicant\PaymentGatewayController@cancelPayment
+  GET|HEAD        applicant/payment/gateway . applicant.payment.gateway › Applicant\PaymentGatewayController@showPaymentPage
+  POST            applicant/payment/initiate applicant.payment.initiate › Applicant\PaymentGatewayController@initiatePayment
+  POST            applicant/payment/sync applicant.payment.sync › Applicant\PaymentGatewayController@syncPaymentSideEffects
+  GET|HEAD        applicant/payment/test ........... applicant.payment.test › Applicant\PaymentGatewayController@testPayment
+  GET|HEAD        applicant/payment/test/applicant ...... applicant.test.show.applicant › Payment\TestPaymentController@show
+  POST            applicant/payment/test/applicant/process applicant.test.process.applicant › Payment\TestPaymentController…
+  POST            applicant/payment/test/process applicant.payment.test.process › Applicant\PaymentGatewayController@proces…
+  POST            applicant/payment/transfer applicant.payment.transfer › Applicant\PaymentGatewayController@transferToStud…
+  POST            applicant/payment/{purpose}/retry applicant.payment.retry › Applicant\PaymentGatewayController@retryPayme…
+  GET|HEAD        applicant/payments/history applicant.payments.history › Applicant\ApplicationController@transactionHistory
+  GET|HEAD        applicant/payments/{payment}/receipt applicant.payments.receipt › Applicant\PaymentReceiptController@show
+  GET|HEAD        applicant/programmes/{departmentId} ........................ Applicant\ApplicationController@getProgrammes
+  GET|HEAD        applicant/register ........................ applicant.register › Auth\RegisterController@showApplicantForm
+  POST            applicant/register ................................ applicant. › Auth\RegisterController@registerApplicant
+  GET|HEAD        applicant/status .......................... applicant.status › Applicant\ApplicationController@checkStatus
+  POST            applicant/status-check .............. applicant.status.check › Applicant\ApplicationController@checkStatus
+  GET|HEAD        applicant/validate-payment applicant.validate-payment › Applicant\PaymentValidationController@showValidat…
+  POST            applicant/validate-payment applicant.payment.validate › Applicant\PaymentValidationController@validatePay…
+  GET|HEAD        apply ................................. public.apply › Applicant\ApplicationController@showApplicationForm
+  GET|HEAD        apply/check-status ..................... public.apply.status › Applicant\ApplicationController@checkStatus
+  GET|HEAD        auditor/audit-logs ................................. auditor.audit-logs › Auditor\AuditLogController@index
+  GET|HEAD        auditor/dashboard .................................. auditor.dashboard › Auditor\DashboardController@index
+  GET|HEAD        auditor/dashboard-config/{user} ... auditor.dashboard-config.edit › Auditor\DashboardConfigController@edit
+  PUT             auditor/dashboard-config/{user} auditor.dashboard-config.update › Auditor\DashboardConfigController@update
+  GET|HEAD        auditor/deleted-records .......................... auditor.deleted › Auditor\DeletedRecordController@index
+  GET|HEAD        auditor/reports ......................................... auditor.reports › Auditor\ReportController@index
+  GET|HEAD        bursar/dashboard ..................................... bursar.dashboard › Bursar\DashboardController@index
+  GET|HEAD        bursar/dashboard-config/{user} ...... bursar.dashboard-config.edit › Bursar\DashboardConfigController@edit
+  PUT             bursar/dashboard-config/{user} .. bursar.dashboard-config.update › Bursar\DashboardConfigController@update
+  GET|HEAD        bursar/debtors ....................................... bursar.debtors › Bursar\DashboardController@debtors
+  GET|HEAD        bursar/paid-students ...................... bursar.paid-students › Bursar\DashboardController@paidStudents
+  GET|HEAD        bursar/payment/test ........................ bursar.payment.test.show › Payment\TestPaymentController@show
+  POST            bursar/payment/test/process .......... bursar.payment.test.process › Payment\TestPaymentController@process
+  GET|HEAD        bursar/payments ......................................... bursar.payments › Bursar\PaymentController@index
+  GET|HEAD        bursar/payments/sync ..................... bursar.payments.sync.index › Bursar\PaymentSyncController@index
+  POST            bursar/payments/sync/import ............ bursar.payments.sync.import › Bursar\PaymentSyncController@import
+  GET|HEAD        bursar/payments/sync/logs .................. bursar.payments.sync.logs › Bursar\PaymentSyncController@logs
+  POST            bursar/payments/sync/preview ......... bursar.payments.sync.preview › Bursar\PaymentSyncController@preview
+  GET|HEAD        bursar/payments/sync/preview bursar.payments.sync.preview.results › Bursar\PaymentSyncController@previewR…
+  GET|HEAD        bursar/payments/sync/template bursar.payments.sync.template › Bursar\PaymentSyncController@downloadTempla…
+  GET|HEAD        bursar/payments/sync/upload .... bursar.payments.sync.upload › Bursar\PaymentSyncController@showUploadForm
+  GET|HEAD        bursar/payments/upload .................. bursar.payments.upload › Bursar\PaymentController@showUploadForm
+  POST            bursar/payments/upload ............ bursar.payments.upload.store › Bursar\PaymentController@uploadPayments
+  GET|HEAD        bursar/payments/{payment}/receipt ............. bursar.payments.receipt › Bursar\PaymentController@receipt
+  GET|HEAD        bursar/payments/{payment}/verify ................ bursar.payments.verify › Bursar\PaymentController@verify
+  GET|HEAD        bursar/regimes ...................................... bursar.regimes.index › Bursar\RegimeController@index
+  POST            bursar/regimes ...................................... bursar.regimes.store › Bursar\RegimeController@store
+  GET|HEAD        bursar/regimes/create ............................. bursar.regimes.create › Bursar\RegimeController@create
+  GET|HEAD        bursar/regimes/{regime} ............................... bursar.regimes.show › Bursar\RegimeController@show
+  PUT             bursar/regimes/{regime} ........................... bursar.regimes.update › Bursar\RegimeController@update
+  DELETE          bursar/regimes/{regime} ......................... bursar.regimes.destroy › Bursar\RegimeController@destroy
+  GET|HEAD        bursar/regimes/{regime}/edit .......................... bursar.regimes.edit › Bursar\RegimeController@edit
+  GET|HEAD        bursar/reports ............................................ bursar.reports › Bursar\ReportController@index
+  GET|HEAD        business-committee/dashboard .. business-committee.dashboard › BusinessCommittee\DashboardController@index
+  GET|HEAD        business-committee/dashboard-config/{user} business-committee.dashboard-config.edit › BusinessCommittee\D…
+  PUT             business-committee/dashboard-config/{user} business-committee.dashboard-config.update › BusinessCommittee…
+  GET|HEAD        business-committee/results ......... business-committee.results › BusinessCommittee\ResultController@index
+  POST            business-committee/results/bulk-approve business-committee.results.bulkApprove › BusinessCommittee\Result…
+  POST            business-committee/results/bulk-reject business-committee.results.bulkReject › BusinessCommittee\ResultCo…
+  PUT             business-committee/results/{result}/approve business-committee.results.approve › BusinessCommittee\Result…
+  PUT             business-committee/results/{result}/reject business-committee.results.reject › BusinessCommittee\ResultCo…
+  GET|HEAD        dashboard ............................................................... dashboard › HomeController@index
+  GET|HEAD        dean/dashboard ........................................... dean.dashboard › Dean\DashboardController@index
+  GET|HEAD        dean/dashboard-config/{user} ............ dean.dashboard-config.edit › Dean\DashboardConfigController@edit
+  PUT             dean/dashboard-config/{user} ........ dean.dashboard-config.update › Dean\DashboardConfigController@update
+  GET|HEAD        dean/departments ...................................... dean.departments › Dean\DepartmentController@index
+  GET|HEAD        dean/results .................................................. dean.results › Dean\ResultController@index
+  POST            dean/results/bulk-approve ................... dean.results.bulkApprove › Dean\ResultController@bulkApprove
+  POST            dean/results/bulk-reject ...................... dean.results.bulkReject › Dean\ResultController@bulkReject
+  GET|HEAD        dean/results/signing-page .................. dean.results.signing-page › Dean\ResultController@signingPage
+  PUT             dean/results/{result}/approve ....................... dean.results.approve › Dean\ResultController@approve
+  PUT             dean/results/{result}/reject .......................... dean.results.reject › Dean\ResultController@reject
+  GET|HEAD        dean/students ............................................... dean.students › Dean\StudentController@index
+  POST            direct-login ............................................................................................. 
+  GET|HEAD        email/check .................................. verification.check › Auth\EmailVerificationController@check
+  POST            email/resend ............................... verification.resend › Auth\EmailVerificationController@resend
+  GET|HEAD        email/verify ............................... verification.notice › Auth\EmailVerificationController@notice
+  GET|HEAD        email/verify/{id}/{hash} ................... verification.verify › Auth\EmailVerificationController@verify
+  GET|HEAD        executive/dashboard ............................ executive.dashboard › Executive\DashboardController@index
+  GET|HEAD        executive/dashboard-config/{user} executive.dashboard-config.edit › Executive\DashboardConfigController@e…
+  PUT             executive/dashboard-config/{user} executive.dashboard-config.update › Executive\DashboardConfigController…
+  GET|HEAD        executive/reports/financial ..... executive.reports.financial › Executive\ReportController@financialReport
+  GET|HEAD        executive/reports/hospital ........ executive.reports.hospital › Executive\ReportController@hospitalReport
+  GET|HEAD        executive/reports/staff ................. executive.reports.staff › Executive\ReportController@staffReport
+  GET|HEAD        executive/reports/students ......... executive.reports.students › Executive\ReportController@studentReport
+  GET|HEAD        finance/budgets ................................... finance.budgets.index › Finance\BudgetController@index
+  POST            finance/budgets ................................... finance.budgets.store › Finance\BudgetController@store
+  GET|HEAD        finance/budgets/create .......................... finance.budgets.create › Finance\BudgetController@create
+  GET|HEAD        finance/budgets/{budget} ............................ finance.budgets.show › Finance\BudgetController@show
+  PUT             finance/budgets/{budget} ........................ finance.budgets.update › Finance\BudgetController@update
+  DELETE          finance/budgets/{budget} ...................... finance.budgets.destroy › Finance\BudgetController@destroy
+  GET|HEAD        finance/budgets/{budget}/edit ....................... finance.budgets.edit › Finance\BudgetController@edit
+  GET|HEAD        finance/dashboard .................................. finance.dashboard › Finance\DashboardController@index
+  GET|HEAD        finance/dashboard-config/{user} ... finance.dashboard-config.edit › Finance\DashboardConfigController@edit
+  PUT             finance/dashboard-config/{user} finance.dashboard-config.update › Finance\DashboardConfigController@update
+  GET|HEAD        finance/invoices ................................ finance.invoices.index › Finance\InvoiceController@index
+  POST            finance/invoices ................................ finance.invoices.store › Finance\InvoiceController@store
+  GET|HEAD        finance/invoices/create ....................... finance.invoices.create › Finance\InvoiceController@create
+  GET|HEAD        finance/invoices/{invoice} ........................ finance.invoices.show › Finance\InvoiceController@show
+  PUT             finance/invoices/{invoice} .................... finance.invoices.update › Finance\InvoiceController@update
+  DELETE          finance/invoices/{invoice} .................. finance.invoices.destroy › Finance\InvoiceController@destroy
+  GET|HEAD        finance/invoices/{invoice}/edit ................... finance.invoices.edit › Finance\InvoiceController@edit
+  GET|HEAD        finance/payroll .................................. finance.payroll.index › Finance\PayrollController@index
+  POST            finance/payroll .................................. finance.payroll.store › Finance\PayrollController@store
+  GET|HEAD        finance/payroll/create ......................... finance.payroll.create › Finance\PayrollController@create
+  GET|HEAD        finance/payroll/{payroll} .......................... finance.payroll.show › Finance\PayrollController@show
+  PUT             finance/payroll/{payroll} ...................... finance.payroll.update › Finance\PayrollController@update
+  DELETE          finance/payroll/{payroll} .................... finance.payroll.destroy › Finance\PayrollController@destroy
+  GET|HEAD        finance/payroll/{payroll}/edit ..................... finance.payroll.edit › Finance\PayrollController@edit
+  GET|HEAD        finance/receipts ................................ finance.receipts.index › Finance\ReceiptController@index
+  POST            finance/receipts ................................ finance.receipts.store › Finance\ReceiptController@store
+  GET|HEAD        finance/receipts/create ....................... finance.receipts.create › Finance\ReceiptController@create
+  GET|HEAD        finance/receipts/{receipt} ........................ finance.receipts.show › Finance\ReceiptController@show
+  PUT             finance/receipts/{receipt} .................... finance.receipts.update › Finance\ReceiptController@update
+  DELETE          finance/receipts/{receipt} .................. finance.receipts.destroy › Finance\ReceiptController@destroy
+  GET|HEAD        finance/receipts/{receipt}/edit ................... finance.receipts.edit › Finance\ReceiptController@edit
+  GET|HEAD        finance/reports .................................... finance.reports › Finance\DashboardController@reports
+  GET|HEAD        finance/reports/daily .................... finance.reports.daily › Finance\DashboardController@dailyReport
+  GET|HEAD        finance/reports/income-expenditure .... finance.reports.ie › Finance\DashboardController@incomeExpenditure
+  GET|HEAD        finance/reports/monthly .............. finance.reports.monthly › Finance\DashboardController@monthlyReport
+  GET|HEAD        finance/transactions .................... finance.transactions.index › Finance\TransactionController@index
+  POST            finance/transactions .................... finance.transactions.store › Finance\TransactionController@store
+  GET|HEAD        finance/transactions/create ........... finance.transactions.create › Finance\TransactionController@create
+  GET|HEAD        finance/transactions/{transaction} ........ finance.transactions.show › Finance\TransactionController@show
+  PUT             finance/transactions/{transaction} .... finance.transactions.update › Finance\TransactionController@update
+  DELETE          finance/transactions/{transaction} .. finance.transactions.destroy › Finance\TransactionController@destroy
+  GET|HEAD        finance/transactions/{transaction}/edit ... finance.transactions.edit › Finance\TransactionController@edit
+  GET|HEAD        finance/vendors ................................... finance.vendors.index › Finance\VendorController@index
+  POST            finance/vendors ................................... finance.vendors.store › Finance\VendorController@store
+  GET|HEAD        finance/vendors/create .......................... finance.vendors.create › Finance\VendorController@create
+  GET|HEAD        finance/vendors/{vendor} ............................ finance.vendors.show › Finance\VendorController@show
+  PUT             finance/vendors/{vendor} ........................ finance.vendors.update › Finance\VendorController@update
+  DELETE          finance/vendors/{vendor} ...................... finance.vendors.destroy › Finance\VendorController@destroy
+  GET|HEAD        finance/vendors/{vendor}/edit ....................... finance.vendors.edit › Finance\VendorController@edit
+  GET|HEAD        forgot-password ................... password.forgot › Auth\ForgotPasswordController@showForgotPasswordForm
+  POST            forgot-password ............................. password.email › Auth\ForgotPasswordController@sendResetLink
+  GET|HEAD        forgot-password/secret-question password.secret-question › Auth\ForgotPasswordController@showSecretQuesti…
+  POST            forgot-password/verify-email ........... password.verify-email › Auth\ForgotPasswordController@verifyEmail
+  POST            forgot-password/verify-secret .. password.verify-secret › Auth\ForgotPasswordController@verifySecretAnswer
+  GET|HEAD        hod/courses ..................................................... hod.courses › HOD\CourseController@index
+  GET|HEAD        hod/courses/assign ...................................... hod.courses.assign › HOD\CourseController@assign
+  POST            hod/courses/assign ....................... hod.courses.assign.store › HOD\CourseController@storeAssignment
+  PUT             hod/courses/{assignment}/reassign ................... hod.courses.reassign › HOD\CourseController@reassign
+  DELETE          hod/courses/{assignment}/remove ............... hod.courses.remove › HOD\CourseController@removeAssignment
+  GET|HEAD        hod/dashboard .............................................. hod.dashboard › HOD\DashboardController@index
+  GET|HEAD        hod/dashboard-config/{user} ............... hod.dashboard-config.edit › HOD\DashboardConfigController@edit
+  PUT             hod/dashboard-config/{user} ........... hod.dashboard-config.update › HOD\DashboardConfigController@update
+  GET|HEAD        hod/results ............................................... hod.results.index › HOD\ResultController@index
+  POST            hod/results/bulk-approve ...................... hod.results.bulkApprove › HOD\ResultController@bulkApprove
+  POST            hod/results/bulk-reject ......................... hod.results.bulkReject › HOD\ResultController@bulkReject
+  PUT             hod/results/{result}/approve .......................... hod.results.approve › HOD\ResultController@approve
+  PUT             hod/results/{result}/reject ............................. hod.results.reject › HOD\ResultController@reject
+  GET|HEAD        hod/timetable .............................................. hod.timetable › HOD\TimetableController@index
+  PUT             hod/timetable/{timetable}/approve ................ hod.timetable.approve › HOD\TimetableController@approve
+  PUT             hod/timetable/{timetable}/reject ................... hod.timetable.reject › HOD\TimetableController@reject
+  GET|HEAD        hospital-payment/check/{reference} ....... hospital-payment.check › HospitalPaymentController@checkPayment
+  GET|HEAD        hospital-payment/history ............. hospital-payment.history › HospitalPaymentController@historyByPhone
+  POST            hospital-payment/process ............. hospital-payment.process › HospitalPaymentController@processPayment
+  GET|HEAD        hospital-payment/receipt/{payment} ..... hospital-payment.receipt › HospitalPaymentController@printReceipt
+  GET|HEAD        hospital-payment/services .......... hospital-payment.services › HospitalPaymentController@getServiceTypes
+  POST            hospital-payment/validate .......... hospital-payment.validate › HospitalPaymentController@validatePayment
+  GET|HEAD        hospital/admin/attendance ........ hospital.admin.attendance › Hospital\HospitalAdminController@attendance
+  GET|HEAD        hospital/admin/dashboard ............... hospital.admin.dashboard › Hospital\HospitalAdminController@index
+  GET|HEAD        hospital/admin/dashboard-config/{user} hospital.admin.dashboard-config.edit › Hospital\Admin\DashboardCon…
+  PUT             hospital/admin/dashboard-config/{user} hospital.admin.dashboard-config.update › Hospital\Admin\DashboardC…
+  GET|HEAD        hospital/admin/inventory ........... hospital.admin.inventory › Hospital\HospitalAdminController@inventory
+  GET|HEAD        hospital/admin/revenue ................. hospital.admin.revenue › Hospital\HospitalAdminController@revenue
+  GET|HEAD        hospital/admin/staff ....................... hospital.admin.staff › Hospital\HospitalAdminController@staff
+  POST            hospital/admin/staff/{staff}/toggle hospital.admin.staff.toggle › Hospital\HospitalAdminController@toggle…
+  GET|HEAD        hospital/appointments ................. hospital.appointments.index › Hospital\AppointmentController@index
+  POST            hospital/appointments ................. hospital.appointments.store › Hospital\AppointmentController@store
+  GET|HEAD        hospital/appointments/create ........ hospital.appointments.create › Hospital\AppointmentController@create
+  GET|HEAD        hospital/appointments/queue ........... hospital.appointments.queue › Hospital\AppointmentController@queue
+  PUT             hospital/appointments/{appointment} . hospital.appointments.update › Hospital\AppointmentController@update
+  GET|HEAD        hospital/appointments/{appointment} ..... hospital.appointments.show › Hospital\AppointmentController@show
+  POST            hospital/appointments/{appointment}/assign-doctor hospital.appointments.assign-doctor › Hospital\Appointm…
+  POST            hospital/appointments/{appointment}/certify hospital.appointments.certify › Hospital\AppointmentControlle…
+  POST            hospital/appointments/{appointment}/check-in hospital.appointments.check-in › Hospital\AppointmentControl…
+  GET|HEAD        hospital/appointments/{appointment}/edit hospital.appointments.edit › Hospital\AppointmentController@edit
+  POST            hospital/appointments/{appointment}/sign-out hospital.appointments.sign-out › Hospital\SignOutController@…
+  POST            hospital/appointments/{appointment}/start hospital.appointments.start › Hospital\AppointmentController@st…
+  POST            hospital/appointments/{appointment}/vitals hospital.appointments.vitals › Hospital\AppointmentController@…
+  GET|HEAD        hospital/consultations .............. hospital.consultations.index › Hospital\ConsultationController@index
+  POST            hospital/consultations .............. hospital.consultations.store › Hospital\ConsultationController@store
+  GET|HEAD        hospital/consultations/create ..... hospital.consultations.create › Hospital\ConsultationController@create
+  GET|HEAD        hospital/consultations/{consultation} . hospital.consultations.show › Hospital\ConsultationController@show
+  POST            hospital/consultations/{consultation}/lab-requests hospital.consultations.lab-requests.store › Hospital\C…
+  POST            hospital/consultations/{consultation}/prescriptions hospital.consultations.prescriptions.store › Hospital…
+  GET|HEAD        hospital/dashboard ............................... hospital.dashboard › Hospital\DashboardController@index
+  GET|HEAD        hospital/dashboard-config/{user} hospital.dashboard-config.edit › Hospital\DashboardConfigController@edit
+  PUT             hospital/dashboard-config/{user} hospital.dashboard-config.update › Hospital\DashboardConfigController@up…
+  GET|HEAD        hospital/doctor/dashboard ....... hospital.doctor.dashboard › Hospital\DashboardController@doctorDashboard
+  GET|HEAD        hospital/doctor/dashboard-config/{user} hospital.doctor.dashboard-config.edit › Hospital\Doctor\Dashboard…
+  PUT             hospital/doctor/dashboard-config/{user} hospital.doctor.dashboard-config.update › Hospital\Doctor\Dashboa…
+  GET|HEAD        hospital/external-patients ... hospital.external-patients.index › Hospital\ExternalPatientController@index
+  POST            hospital/external-patients ... hospital.external-patients.store › Hospital\ExternalPatientController@store
+  GET|HEAD        hospital/external-patients/{patient} hospital.external-patients.show › Hospital\ExternalPatientController…
+  PUT             hospital/external-patients/{patient} hospital.external-patients.update › Hospital\ExternalPatientControll…
+  POST            hospital/external-patients/{patient}/appointment hospital.external-patients.appointment › Hospital\Extern…
+  POST            hospital/external-patients/{patient}/communication hospital.external-patients.communication › Hospital\Ex…
+  POST            hospital/external-patients/{patient}/visit hospital.external-patients.visit › Hospital\ExternalPatientCon…
+  GET|HEAD        hospital/lab .................................... hospital.lab.index › Hospital\LaboratoryController@index
+  GET|HEAD        hospital/lab/dashboard ................ hospital.lab.dashboard › Hospital\DashboardController@labDashboard
+  GET|HEAD        hospital/lab/dashboard-config/{user} hospital.lab.dashboard-config.edit › Hospital\Lab\DashboardConfigCon…
+  PUT             hospital/lab/dashboard-config/{user} hospital.lab.dashboard-config.update › Hospital\Lab\DashboardConfigC…
+  GET|HEAD        hospital/lab/requests ........................ hospital.lab.requests › Hospital\LaboratoryController@index
+  GET|HEAD        hospital/lab/requests/{request} ................... hospital.lab.show › Hospital\LaboratoryController@show
+  POST            hospital/lab/requests/{request}/collect hospital.lab.collect › Hospital\LaboratoryController@collectSample
+  POST            hospital/lab/requests/{request}/complete hospital.lab.complete › Hospital\LaboratoryController@startProce…
+  POST            hospital/lab/requests/{request}/process hospital.lab.process › Hospital\LaboratoryController@recordResults
+  GET|HEAD        hospital/matron/dashboard ........... hospital.matron.dashboard › Hospital\MatronDashboardController@index
+  GET|HEAD        hospital/matron/dashboard-config/{user} hospital.matron.dashboard-config.edit › Hospital\Matron\Dashboard…
+  PUT             hospital/matron/dashboard-config/{user} hospital.matron.dashboard-config.update › Hospital\Matron\Dashboa…
+  GET|HEAD        hospital/matron/rounds ................ hospital.matron.rounds › Hospital\MatronDashboardController@rounds
+  GET|HEAD        hospital/matron/staff ............... hospital.matron.staff › Hospital\MatronDashboardController@staffLoad
+  GET|HEAD        hospital/nurse/dashboard .......... hospital.nurse.dashboard › Hospital\DashboardController@nurseDashboard
+  GET|HEAD        hospital/nurse/dashboard-config/{user} hospital.nurse.dashboard-config.edit › Hospital\Nurse\DashboardCon…
+  PUT             hospital/nurse/dashboard-config/{user} hospital.nurse.dashboard-config.update › Hospital\Nurse\DashboardC…
+  POST            hospital/patient/lookup .............. hospital.patient.lookup › Hospital\ExternalPatientController@lookup
+  GET|HEAD        hospital/patients ............................. hospital.patients.index › Hospital\PatientController@index
+  POST            hospital/patients ............................. hospital.patients.store › Hospital\PatientController@store
+  POST            hospital/patients/clinical-notes/{note}/sign hospital.patients.soap.sign › Hospital\ConsultationControlle…
+  GET|HEAD        hospital/patients/create .................... hospital.patients.create › Hospital\PatientController@create
+  GET|HEAD        hospital/patients/search .................... hospital.patients.search › Hospital\PatientController@search
+  GET|HEAD        hospital/patients/{patient} ..................... hospital.patients.show › Hospital\PatientController@show
+  PUT             hospital/patients/{patient} ................. hospital.patients.update › Hospital\PatientController@update
+  GET|HEAD        hospital/patients/{patient}/clinical-notes hospital.patients.soap.index › Hospital\ConsultationController…
+  GET|HEAD        hospital/patients/{patient}/edit ................ hospital.patients.edit › Hospital\PatientController@edit
+  POST            hospital/patients/{patient}/notes ..... hospital.patients.notes.store › Hospital\StaffNoteController@store
+  DELETE          hospital/patients/{patient}/notes/{note} hospital.patients.notes.destroy › Hospital\StaffNoteController@d…
+  POST            hospital/patients/{patient}/notes/{note}/pin hospital.patients.notes.pin › Hospital\StaffNoteController@t…
+  POST            hospital/patients/{patient}/referrals/follow-up hospital.patients.referrals.follow-up › Hospital\Referral…
+  POST            hospital/patients/{patient}/referrals/lab hospital.patients.referrals.lab › Hospital\ReferralController@t…
+  POST            hospital/patients/{patient}/referrals/nurse hospital.patients.referrals.nurse › Hospital\ReferralControll…
+  POST            hospital/patients/{patient}/referrals/pharmacy hospital.patients.referrals.pharmacy › Hospital\ReferralCo…
+  POST            hospital/patients/{patient}/referrals/radiology hospital.patients.referrals.radiology › Hospital\Referral…
+  POST            hospital/patients/{patient}/soap-notes hospital.patients.soap.store › Hospital\ConsultationController@sto…
+  GET|HEAD        hospital/patients/{patient}/timeline .... hospital.patients.timeline › Hospital\PatientController@timeline
+  GET|HEAD        hospital/pharmacy/adjust .............. hospital.pharmacy.adjust › Hospital\InventoryController@showAdjust
+  POST            hospital/pharmacy/adjust ............ hospital.pharmacy.adjust.store › Hospital\InventoryController@adjust
+  GET|HEAD        hospital/pharmacy/categories ....... hospital.pharmacy.categories › Hospital\PharmacyController@categories
+  GET|HEAD        hospital/pharmacy/dashboard . hospital.pharmacy.dashboard › Hospital\DashboardController@pharmacyDashboard
+  GET|HEAD        hospital/pharmacy/dashboard-config/{user} hospital.pharmacy.dashboard-config.edit › Hospital\Pharmacy\Das…
+  PUT             hospital/pharmacy/dashboard-config/{user} hospital.pharmacy.dashboard-config.update › Hospital\Pharmacy\D…
+  GET|HEAD        hospital/pharmacy/drugs ...................... hospital.pharmacy.drugs › Hospital\PharmacyController@drugs
+  POST            hospital/pharmacy/drugs ............ hospital.pharmacy.drugs.store › Hospital\PharmacyController@storeDrug
+  GET|HEAD        hospital/pharmacy/drugs/create ... hospital.pharmacy.drugs.create › Hospital\PharmacyController@createDrug
+  PUT             hospital/pharmacy/drugs/{drug} ... hospital.pharmacy.drugs.update › Hospital\PharmacyController@updateDrug
+  DELETE          hospital/pharmacy/drugs/{drug} . hospital.pharmacy.drugs.destroy › Hospital\PharmacyController@destroyDrug
+  GET|HEAD        hospital/pharmacy/drugs/{drug}/edit .. hospital.pharmacy.drugs.edit › Hospital\PharmacyController@editDrug
+  GET|HEAD        hospital/pharmacy/expire .............. hospital.pharmacy.expire › Hospital\InventoryController@showExpire
+  POST            hospital/pharmacy/expire ............ hospital.pharmacy.expire.store › Hospital\InventoryController@expire
+  GET|HEAD        hospital/pharmacy/expiring ............. hospital.pharmacy.expiring › Hospital\PharmacyController@expiring
+  GET|HEAD        hospital/pharmacy/low-stock ........... hospital.pharmacy.low-stock › Hospital\PharmacyController@lowStock
+  GET|HEAD        hospital/pharmacy/prescriptions hospital.pharmacy.prescriptions › Hospital\PharmacyController@prescriptio…
+  GET|HEAD        hospital/pharmacy/prescriptions/{prescription} hospital.pharmacy.prescriptions.show › Hospital\PharmacyCo…
+  POST            hospital/pharmacy/prescriptions/{prescription}/dispense hospital.pharmacy.prescriptions.dispense › Hospit…
+  GET|HEAD        hospital/pharmacy/receive ........... hospital.pharmacy.receive › Hospital\InventoryController@showReceive
+  POST            hospital/pharmacy/receive ......... hospital.pharmacy.receive.store › Hospital\InventoryController@receive
+  GET|HEAD        hospital/pharmacy/suppliers .......... hospital.pharmacy.suppliers › Hospital\PharmacyController@suppliers
+  POST            hospital/pharmacy/suppliers hospital.pharmacy.suppliers.store › Hospital\PharmacyController@storeSupplier
+  GET|HEAD        hospital/reception/dashboard hospital.reception.dashboard › Hospital\DashboardController@receptionistDash…
+  GET|HEAD        hospital/reception/dashboard-config/{user} hospital.reception.dashboard-config.edit › Hospital\Reception\…
+  PUT             hospital/reception/dashboard-config/{user} hospital.reception.dashboard-config.update › Hospital\Receptio…
+  GET|HEAD        hospital/records ............................... hospital.records.index › Hospital\RecordsController@index
+  GET|HEAD        hospital/records/audit ...................... hospital.records.audit › Hospital\RecordsController@auditLog
+  GET|HEAD        hospital/records/requests ................ hospital.records.requests › Hospital\RecordsController@requests
+  POST            hospital/records/requests/{recordRequest}/fulfill hospital.records.requests.fulfill › Hospital\RecordsCon…
+  POST            hospital/records/requests/{recordRequest}/reject hospital.records.requests.reject › Hospital\RecordsContr…
+  GET|HEAD        hospital/records/search ...................... hospital.records.search › Hospital\RecordsController@search
+  GET|HEAD        hospital/records/{patient} ....................... hospital.records.show › Hospital\RecordsController@show
+  POST            hospital/records/{patient}/archive ......... hospital.records.archive › Hospital\RecordsController@archive
+  POST            hospital/records/{patient}/transfer ...... hospital.records.transfer › Hospital\RecordsController@transfer
+  POST            hospital/records/{patient}/unarchive ... hospital.records.unarchive › Hospital\RecordsController@unarchive
+  GET|HEAD        hospital/roster .............................. hospital.roster.index › Hospital\DutyRosterController@index
+  POST            hospital/roster .............................. hospital.roster.store › Hospital\DutyRosterController@store
+  DELETE          hospital/roster/{entry} .................. hospital.roster.destroy › Hospital\DutyRosterController@destroy
+  PUT             hospital/visits/{visit} ................. hospital.visits.update › Hospital\ExternalVisitController@update
+  POST            hospital/visits/{visit}/complete .... hospital.visits.complete › Hospital\ExternalVisitController@complete
+  GET|HEAD        hospital/visits/{visit}/edit ................ hospital.visits.edit › Hospital\ExternalVisitController@edit
+  POST            hospital/visits/{visit}/lab ........... hospital.visits.lab › Hospital\ExternalVisitController@addLabOrder
+  POST            hospital/visits/{visit}/prescription hospital.visits.prescription › Hospital\ExternalVisitController@addP…
+  POST            hospital/visits/{visit}/vitals ....... hospital.visits.vitals › Hospital\ExternalVisitController@addVitals
+  GET|HEAD        hospital/wards ...................................... hospital.wards.index › Hospital\WardController@index
+  POST            hospital/wards ...................................... hospital.wards.store › Hospital\WardController@store
+  POST            hospital/wards/beds/{bed}/discharge . hospital.wards.beds.discharge › Hospital\WardController@dischargeBed
+  GET|HEAD        hospital/wards/create ............................. hospital.wards.create › Hospital\WardController@create
+  GET|HEAD        hospital/wards/occupancy .............. hospital.wards.occupancy › Hospital\WardController@occupancyReport
+  PUT             hospital/wards/{ward} ............................. hospital.wards.update › Hospital\WardController@update
+  GET|HEAD        hospital/wards/{ward}/beds ............................ hospital.wards.beds › Hospital\WardController@beds
+  POST            hospital/wards/{ward}/beds ................ hospital.wards.beds.assign › Hospital\WardController@assignBed
+  GET|HEAD        hospital/wards/{ward}/edit ............................ hospital.wards.edit › Hospital\WardController@edit
+  GET|HEAD        lecturer/attendance/{course} ................... lecturer.attendance › Lecturer\AttendanceController@index
+  POST            lecturer/attendance/{course} .............................. lecturer. › Lecturer\AttendanceController@mark
+  GET|HEAD        lecturer/attendance/{course}/report .... lecturer.attendance.report › Lecturer\AttendanceController@report
+  GET|HEAD        lecturer/courses ................................. lecturer.courses › Lecturer\DashboardController@courses
+  GET|HEAD        lecturer/courses/{course}/results ............. lecturer.courses.results › Lecturer\ResultController@enter
+  POST            lecturer/courses/{course}/results ....... lecturer.courses.results.store › Lecturer\ResultController@store
+  POST            lecturer/courses/{course}/results/bulk ...... lecturer.courses.bulk › Lecturer\ResultController@bulkUpload
+  GET|HEAD        lecturer/courses/{course}/students .. lecturer.courses.students › Lecturer\ResultController@courseStudents
+  GET|HEAD        lecturer/courses/{course}/template lecturer.courses.template › Lecturer\ResultController@downloadTemplate
+  GET|HEAD        lecturer/dashboard ............................... lecturer.dashboard › Lecturer\DashboardController@index
+  GET|HEAD        lecturer/dashboard-config/{user} lecturer.dashboard-config.edit › Lecturer\DashboardConfigController@edit
+  PUT             lecturer/dashboard-config/{user} lecturer.dashboard-config.update › Lecturer\DashboardConfigController@up…
+  PUT             lecturer/result/{result} ....................... lecturer.result.update › Lecturer\ResultController@update
+  GET|HEAD        lecturer/result/{result}/edit ...................... lecturer.result.edit › Lecturer\ResultController@edit
+  GET|HEAD        lecturer/timetable ........................... lecturer.timetable › Lecturer\DashboardController@timetable
+  GET|HEAD        librarian/books .................................... librarian.books › Librarian\DashboardController@books
+  POST            librarian/books .......................... librarian.books.store › Librarian\DashboardController@storeBook
+  GET|HEAD        librarian/books/create ................. librarian.books.create › Librarian\DashboardController@createBook
+  GET|HEAD        librarian/dashboard ............................ librarian.dashboard › Librarian\DashboardController@index
+  GET|HEAD        librarian/dashboard-config/{user} librarian.dashboard-config.edit › Librarian\DashboardConfigController@e…
+  PUT             librarian/dashboard-config/{user} librarian.dashboard-config.update › Librarian\DashboardConfigController…
+  GET|HEAD        librarian/loans .................................... librarian.loans › Librarian\DashboardController@loans
+  POST            librarian/loans/issue .................... librarian.loans.issue › Librarian\DashboardController@issueBook
+  POST            librarian/loans/{loan}/return .......... librarian.loans.return › Librarian\DashboardController@returnBook
+  GET|HEAD        login .............................................................................................. login
+  POST            login ......................................................................... Auth\LoginController@login
+  POST            login-test ............................................................................................... 
+  POST            logout .............................................................. logout › Auth\LoginController@logout
+  GET|HEAD        logout ........................................................................................ logout.get
+  GET|HEAD        notifications ......................................... notifications.index › NotificationController@index
+  POST            notifications/mark-all-read ........... notifications.mark-all-read › NotificationController@markAllAsRead
+  GET|HEAD        notifications/unread-count ............... notifications.unread-count › NotificationController@unreadCount
+  DELETE          notifications/{notification} ...................... notifications.destroy › NotificationController@destroy
+  POST            notifications/{notification}/read ............ notifications.mark-read › NotificationController@markAsRead
+  GET|HEAD        online-payment/callback ................. online-payment.callback › OnlinePaymentController@xpressCallback
+  POST            online-payment/lookup ...................... online-payment.lookup › OnlinePaymentController@lookupStudent
+  POST            online-payment/process ................... online-payment.process › OnlinePaymentController@processPayment
+  GET|HEAD        online-payment/receipt/{payment} ........... online-payment.receipt › OnlinePaymentController@printReceipt
+  POST            online-payment/validate ................ online-payment.validate › OnlinePaymentController@validatePayment
+  POST            online-payment/verify ................ online-payment.verify › OnlinePaymentController@verifyXpressPayment
+  PUT             password ...................................... profile.password.update › ProfileController@updatePassword
+  POST            password/reset ............................. password.update › Auth\ForgotPasswordController@resetPassword
+  GET|HEAD        password/reset/{token} ...................... password.reset › Auth\ForgotPasswordController@showResetForm
+  GET|HEAD        patient-portal ..................... patient-portal.index › Hospital\ExternalPatientController@portalIndex
+  GET|HEAD        patient-portal/dashboard ... patient-portal.dashboard › Hospital\ExternalPatientController@dashboardPortal
+  POST            patient-portal/initiate-payment patient-portal.initiate-payment › Hospital\ExternalPatientController@init…
+  GET|HEAD        patient-portal/login ........... patient-portal.login › Hospital\ExternalPatientController@showPortalLogin
+  POST            patient-portal/login .......... patient-portal.login.post › Hospital\ExternalPatientController@loginPortal
+  POST            patient-portal/logout ............ patient-portal.logout › Hospital\ExternalPatientController@logoutPortal
+  POST            patient-portal/pay-order-items patient-portal.pay-order-items › Hospital\ExternalPatientController@payOrd…
+  GET|HEAD        patient-portal/payments ...... patient-portal.payments › Hospital\ExternalPatientController@paymentsPortal
+  POST            patient-portal/payments/{payment}/pay-test patient-portal.payment.pay-test › Hospital\ExternalPatientCont…
+  GET|HEAD        patient-portal/prescriptions patient-portal.prescriptions › Hospital\ExternalPatientController@prescripti…
+  GET|HEAD        patient-portal/prescriptions/{prescription} patient-portal.prescription › Hospital\ExternalPatientControl…
+  POST            patient-portal/prescriptions/{prescription}/pay patient-portal.prescription.pay › Hospital\ExternalPatien…
+  GET|HEAD        patient-portal/profile ......... patient-portal.profile › Hospital\ExternalPatientController@profilePortal
+  PUT             patient-portal/profile patient-portal.profile.update › Hospital\ExternalPatientController@updateProfilePo…
+  GET|HEAD        patient-portal/receipt/{payment} patient-portal.receipt › Hospital\ExternalPatientController@viewReceiptP…
+  POST            patient-portal/regenerate-code patient-portal.regenerate-code › Hospital\ExternalPatientController@regene…
+  GET|HEAD        patient-portal/register .. patient-portal.register › Hospital\ExternalPatientController@showPortalRegister
+  POST            patient-portal/register patient-portal.register.store › Hospital\ExternalPatientController@registerPortal
+  POST            patient-portal/request-service patient-portal.request-service › Hospital\ExternalPatientController@reques…
+  POST            patient-portal/validate-payment patient-portal.validate-payment-portal › Hospital\ExternalPatientControll…
+  GET|HEAD        patient/appointments ........................... patient. › Hospital\ExternalPortalController@appointments
+  GET|HEAD        patient/communications ....................... patient. › Hospital\ExternalPortalController@communications
+  GET|HEAD        patient/dashboard ........................ patient.dashboard › Hospital\ExternalPortalController@dashboard
+  GET|HEAD        patient/login ................................ patient.login › Hospital\ExternalPortalController@showLogin
+  POST            patient/login ......................................... patient. › Hospital\ExternalPortalController@login
+  POST            patient/logout ................................. patient.logout › Hospital\ExternalPortalController@logout
+  GET|HEAD        patient/logout ............................. patient.logout.get › Hospital\ExternalPortalController@logout
+  GET|HEAD        patient/medical-history ............... patient.history › Hospital\ExternalPortalController@medicalHistory
+  GET|HEAD        patient/payments ................................... patient. › Hospital\ExternalPortalController@payments
+  GET|HEAD        patient/profile ..................................... patient. › Hospital\ExternalPortalController@profile
+  POST            patient/regenerate-code ....... patient.regenerate-code › Hospital\ExternalPortalController@regenerateCode
+  GET|HEAD        payments/{payment}/receipt.pdf ....... payments.receipt.pdf › Payment\PaymentReceiptPdfController@download
+  POST            payments/{payment}/requery ................... payments.requery › Payment\PaymentRequeryController@requery
+  GET|HEAD        print-preview ............................................................................................ 
+  GET|HEAD        profile ............................................................ profile.show › ProfileController@show
+  PUT             profile ........................................................ profile.update › ProfileController@update
+  GET|HEAD        registrar/admission-letter/generate registrar.admission.generateLetters › Registrar\AdmissionController@g…
+  GET|HEAD        registrar/admission-letter/settings registrar.admission.letters › Registrar\AdmissionController@showLette…
+  POST            registrar/admission-letter/settings registrar.admission.saveLetterSettings › Registrar\AdmissionControlle…
+  PATCH           registrar/admission-letter/settings/field registrar.admission.saveLetterField › Registrar\AdmissionContro…
+  DELETE          registrar/admission-letter/signature registrar.admission.deleteSignature › Registrar\AdmissionController@…
+  GET|HEAD        registrar/admission-letter/template registrar.admission.uploadTemplate › Registrar\AdmissionController@sh…
+  POST            registrar/admission-letter/template registrar.admission.uploadTemplate.store › Registrar\AdmissionControl…
+  GET|HEAD        registrar/admission-letter/{applicant} registrar.admission.generateLetter › Registrar\AdmissionController…
+  GET|HEAD        registrar/admission-list ....................... registrar.admission › Registrar\AdmissionController@index
+  GET|HEAD        registrar/admission-list/by-department registrar.admission.byDepartment › Registrar\AdmissionController@l…
+  GET|HEAD        registrar/admission-list/print ........... registrar.admission.print › Registrar\AdmissionController@print
+  GET|HEAD        registrar/admission-list/settings .. registrar.admission.settings › Registrar\AdmissionController@settings
+  PUT             registrar/admission-list/settings registrar.admission.updateSettings › Registrar\AdmissionController@upda…
+  POST            registrar/admission-list/upload ........ registrar.admission.upload › Registrar\AdmissionController@upload
+  GET|HEAD        registrar/admission-list/upload registrar.admission.uploadByDepartment › Registrar\AdmissionController@sh…
+  POST            registrar/admission-list/upload-by-department registrar. › Registrar\AdmissionController@uploadAdmissionL…
+  GET|HEAD        registrar/admission-list/{applicant} ....... registrar.admission.show › Registrar\AdmissionController@show
+  PUT             registrar/admission-list/{applicant} ... registrar.admission.update › Registrar\AdmissionController@update
+  DELETE          registrar/admission-list/{applicant} . registrar.admission.destroy › Registrar\AdmissionController@destroy
+  GET|HEAD        registrar/admission-list/{applicant}/edit .. registrar.admission.edit › Registrar\AdmissionController@edit
+  PUT             registrar/admission-list/{applicant}/reassign-department registrar.admission.reassignDepartment › Registr…
+  POST            registrar/admission-list/{applicant}/reset-password registrar.admission.resetPassword › Registrar\Admissi…
+  PUT             registrar/admission-list/{applicant}/status registrar.admission.updateStatus › Registrar\AdmissionControl…
+  GET|HEAD        registrar/admission-track ................ registrar.admission.track › Registrar\AdmissionController@track
+  GET|HEAD        registrar/admitted-students registrar.applications.admitted › Registrar\ApplicationController@admittedStu…
+  GET|HEAD        registrar/applicants .......................... registrar.applicants › Registrar\ApplicantController@index
+  GET|HEAD        registrar/applicants/{applicant} .......... registrar.applicants.show › Registrar\ApplicantController@show
+  PUT             registrar/applicants/{applicant}/admit .. registrar.applicants.admit › Registrar\ApplicantController@admit
+  PUT             registrar/applicants/{applicant}/reassign-department registrar.applicants.reassignDepartment › Registrar\…
+  PUT             registrar/applicants/{applicant}/reject registrar.applicants.reject › Registrar\ApplicantController@reject
+  GET|HEAD        registrar/applications .............. registrar.applications.index › Registrar\ApplicationController@index
+  POST            registrar/applications/bulk ..... registrar.applications.bulk › Registrar\ApplicationController@bulkAction
+  GET|HEAD        registrar/applications/export ..... registrar.applications.export › Registrar\ApplicationController@export
+  GET|HEAD        registrar/applications/statistics registrar.applications.statistics › Registrar\ApplicationController@sta…
+  GET|HEAD        registrar/applications/{applicant} .... registrar.applications.show › Registrar\ApplicationController@show
+  PUT             registrar/applications/{applicant}/status registrar.applications.updateStatus › Registrar\ApplicationCont…
+  GET|HEAD        registrar/dashboard ............................ registrar.dashboard › Registrar\DashboardController@index
+  GET|HEAD        registrar/dashboard-config/{user} registrar.dashboard-config.edit › Registrar\DashboardConfigController@e…
+  PUT             registrar/dashboard-config/{user} registrar.dashboard-config.update › Registrar\DashboardConfigController…
+  GET|HEAD        registrar/payment/test .................. registrar.payment.test.show › Payment\TestPaymentController@show
+  POST            registrar/payment/test/process .... registrar.payment.test.process › Payment\TestPaymentController@process
+  GET|HEAD        reset-password ......................... password.reset-form › Auth\ForgotPasswordController@showResetForm
+  PUT             secret-question ........................... profile.update-secret › ProfileController@updateSecretQuestion
+  GET|HEAD        setup .................................................................................................... 
+  GET|HEAD        storage/{path} ............................................................................. storage.local
+  GET|HEAD        student/admission-letter ............... student.admission-letter › Student\AdmissionLetterController@show
+  GET|HEAD        student/attendance ............................... student.attendance › Student\AttendanceController@index
+  POST            student/attendance/mark ............ student.attendance.mark › Student\AttendanceController@markAttendance
+  GET|HEAD        student/auto-login/{user} ............... student.auto-login.consume › Student\AutoLoginController@consume
+  GET|HEAD        student/complaints ................................ student.complaints › Student\ComplaintController@index
+  POST            student/complaints .......................... student.complaints.store › Student\ComplaintController@store
+  GET|HEAD        student/courses ............................. student.courses › Student\CourseRegistrationController@index
+  GET|HEAD        student/courses/carryover-search student.courses.carryover-search › Student\CourseRegistrationController@…
+  GET|HEAD        student/courses/print ............. student.courses.print › Student\CourseRegistrationController@printForm
+  GET|HEAD        student/courses/register ........ student.courses.register › Student\CourseRegistrationController@register
+  POST            student/courses/register ............... student. › Student\CourseRegistrationController@storeRegistration
+  DELETE          student/courses/{studentCourse}/drop student.courses.drop › Student\CourseRegistrationController@dropCour…
+  GET|HEAD        student/dashboard .................................. student.dashboard › Student\DashboardController@index
+  GET|HEAD        student/dashboard-config/{user} ... student.dashboard-config.edit › Student\DashboardConfigController@edit
+  PUT             student/dashboard-config/{user} student.dashboard-config.update › Student\DashboardConfigController@update
+  GET|HEAD        student/exam-clearance .................... student.exam-clearance › Student\ExamClearanceController@index
+  GET|HEAD        student/exam-clearance/print ........ student.exam-clearance.print › Student\ExamClearanceController@print
+  GET|HEAD        student/hostel ..................................... student.hostel.my › Student\HostelController@myHostel
+  GET|HEAD        student/hostel/apply .................... student.hostel.apply › Student\HostelController@availableHostels
+  POST            student/hostel/apply ........................................... student. › Student\HostelController@apply
+  POST            student/hostel/request-change ..... student.hostel.request-change › Student\HostelController@requestChange
+  GET|HEAD        student/library ........................................ student.library › Student\LibraryController@index
+  POST            student/library/borrow/{book} .............. student.library.borrow › Student\LibraryController@borrowBook
+  POST            student/library/pay-fee ................ student.library.pay-fee › Student\LibraryController@payLibraryFee
+  GET|HEAD        student/library/search ......................... student.library.search › Student\LibraryController@search
+  GET|HEAD        student/measurements ................................................................ student.measurements
+  GET|HEAD        student/medical ........................... student.medical.index › Hospital\PatientPortalController@index
+  GET|HEAD        student/medical/admissions .... student.medical.admissions › Hospital\PatientPortalController@myAdmissions
+  POST            student/medical/appointment student.medical.appointment.store › Hospital\PatientPortalController@bookAppo…
+  GET|HEAD        student/medical/appointments student.medical.appointments › Hospital\PatientPortalController@myAppointmen…
+  GET|HEAD        student/medical/book ................................................................ student.medical.book
+  GET|HEAD        student/medical/history ...... student.medical.history › Hospital\PatientPortalController@myMedicalHistory
+  GET|HEAD        student/medical/lab-results .. student.medical.lab-results › Hospital\PatientPortalController@myLabResults
+  GET|HEAD        student/medical/prescriptions student.medical.prescriptions › Hospital\PatientPortalController@myPrescrip…
+  GET|HEAD        student/my-attendance .................. student.my-attendance › Student\AttendanceController@myAttendance
+  POST            student/password/change ........ student.password.change › Student\PasswordChangeController@changePassword
+  GET|HEAD        student/password/change-required student.password.change.required › Student\PasswordChangeController@show…
+  GET|HEAD        student/payment/test .............. student.payment.test.show.student › Payment\TestPaymentController@show
+  POST            student/payment/test/process student.payment.test.process.student › Payment\TestPaymentController@process
+  GET|HEAD        student/payments ...................................... student.payments › Student\PaymentController@index
+  GET|HEAD        student/payments/verify ................ student.payments.verify › Student\PaymentController@verifyPayment
+  POST            student/payments/{fee}/initiate .... student.payments.initiate › Student\PaymentController@initiatePayment
+  GET|HEAD        student/payments/{fee}/pay .......................... student.payments.pay › Student\PaymentController@pay
+  GET|HEAD        student/payments/{payment}/receipt ..... student.payments.receipt › Student\PaymentController@printReceipt
+  POST            student/payments/{payment}/retry ......... student.payments.retry › Student\PaymentController@retryPayment
+  GET|HEAD        student/profile ......................................... student.profile › Student\ProfileController@edit
+  PUT             student/profile ................................ student.profile.update › Student\ProfileController@update
+  POST            student/profile/passport ............. student.profile.passport › Student\ProfileController@uploadPassport
+  GET|HEAD        student/results ......................................... student.results › Student\ResultController@index
+  GET|HEAD        student/results/print ....................... student.results.print › Student\ResultController@printResult
+  GET|HEAD        student/results/transcript .............. student.results.transcript › Student\ResultController@transcript
+  GET|HEAD        student/results/transcript/print student.results.transcript.print › Student\ResultController@printTranscr…
+  GET|HEAD        student/results/{semester} .......................... student.results.show › Student\ResultController@show
+  GET|HEAD        student/security/setup ................. student.security.setup › Student\SecurityController@showSetupForm
+  POST            student/security/setup ................... student.security.setup.store › Student\SecurityController@setup
+  GET|HEAD        student/timetable .................................. student.timetable › Student\TimetableController@index
+  GET|HEAD        temp-print ............................................................................................... 
+  GET|HEAD        test-db .................................................................................................. 
+  GET|HEAD        test-login ............................................................................................... 
+  GET|HEAD        test-login-creds ......................................................................................... 
+  POST            unlock ..................................... public.unlock.process › Admin\UserUnlockController@unlockUser
+  GET|HEAD        unlock/{email}/{code} .......................... public.unlock › Admin\UserUnlockController@showUnlockCode
+  GET|HEAD        up ....................................................................................................... 
+  GET|HEAD        validate-payment ..... public.validate-payment › Applicant\PaymentValidationController@showValidatePayment
+  POST            validate-payment ......... public.payment.validate › Applicant\PaymentValidationController@validatePayment
+
+                                                                                                        Showing [768] routes
+

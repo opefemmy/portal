@@ -501,6 +501,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
         ->middleware('permission:admin.hospital-services.manage')
         ->name('hospital-services.toggle');
 
+    // Hospital Staff Management
+    Route::resource('hospital-staff', \App\Http\Controllers\Admin\HospitalStaffController::class)
+        ->parameters(['hospital-staff' => 'staff'])
+        ->middleware('permission:admin.hospital-staff.manage');
+
     // Course Management
     Route::get('/courses/upload', [CourseController::class, 'uploadForm'])
         ->middleware('permission:admin.courses.manage')

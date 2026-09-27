@@ -48,6 +48,57 @@
     </div>
 </div>
 
+<!-- Medical Information -->
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Critical Medical Information</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('student.profile.update') }}">
+            @csrf
+            @method('PUT')
+
+            @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            @endif
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="blood_group" class="form-label">Blood Type</label>
+                        <select class="form-select @error('blood_group') is-invalid @enderror" id="blood_group" name="blood_group">
+                            <option value="">Select Blood Type</option>
+                            @foreach(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as $bg)
+                                <option value="{{ $bg }}" {{ (isset($patient) && $patient->blood_group == $bg) ? 'selected' : '' }}>{{ $bg }}</option>
+                            @endforeach
+                            <option value="Not Set" {{ (isset($patient) && $patient->blood_group == 'Not Set') ? 'selected' : '' }}>Not Set</option>
+                        </select>
+                        @error('blood_group')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="allergies" class="form-label">Allergies</label>
+                        <input type="text" class="form-control @error('allergies') is-invalid @enderror"
+                               id="allergies" name="allergies" value="{{ old('allergies', $patient->allergies ?? '') }}" placeholder="e.g. Penicillin, Peanuts, or None">
+                        @error('allergies')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-save me-2"></i>Save Medical Info
+            </button>
+        </form>
+    </div>
+</div>
+
 <!-- Guidance Details -->
 <div class="card mb-4 border-info">
     <div class="card-header bg-info text-white">

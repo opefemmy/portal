@@ -35,11 +35,9 @@
             overflow: hidden;
         }
 
-        /* Watermark layer — tiled name + dept + level + matric across
-           the whole page. Used as an anti-fraud measure so a cleared
-           printout can't be photocopied and re-used by another
-           student. The same watermark styles are shared by every
-           print template that needs them. */
+        /* Watermark layer — institution logo tiled across the page.
+           Anti-fraud: an image watermark makes it harder to forge
+           than plain text. */
         .letter .watermark {
             position: absolute;
             inset: 0;
@@ -47,7 +45,7 @@
             z-index: 0;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: 1fr;
+            grid-auto-rows: repeat(4, 1fr);
             gap: 0;
         }
         .letter .watermark .watermark-cell {
@@ -55,19 +53,14 @@
             align-items: center;
             justify-content: center;
             transform: rotate(-30deg);
-            font-size: 14pt;
-            font-weight: 700;
-            color: #1a237e;
             opacity: 0.06;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            text-align: center;
-            padding: 0 4px;
-            line-height: 1.15;
         }
-        .letter .watermark .watermark-cell .wm-name { font-size: 16pt; }
-        .letter .watermark .watermark-cell .wm-line { font-size: 11pt; font-weight: 600; }
+        .letter .watermark .watermark-cell img {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+            filter: grayscale(100%);
+        }
         .letter > * { position: relative; z-index: 1; }
 
         .letter-header {
@@ -227,8 +220,8 @@
     $watermarkMatric = $student->matric_number ?? '';
     // 9 cells = 3x3 grid — enough to tile an A4 page without making
     // any single cell distracting when read normally.
-    $watermarkCells = array_fill(0, 9, true);
-@endphp
+    $watermarkCells = array_fill(0, 12, true);
+	@endphp
 
 <div class="letter-actions">
     <button type="button" class="btn btn-secondary" onclick="window.close()">Close</button>
@@ -245,12 +238,7 @@
         <div class="watermark" aria-hidden="true">
             @foreach($watermarkCells as $_)
                 <div class="watermark-cell">
-                    <div>
-                        <div class="wm-name">{{ $watermarkName }}</div>
-                        @if($watermarkDept)<div class="wm-line">{{ $watermarkDept }}</div>@endif
-                        @if($watermarkLevel)<div class="wm-line">{{ $watermarkLevel }}</div>@endif
-                        @if($watermarkMatric)<div class="wm-line">{{ $watermarkMatric }}</div>@endif
-                    </div>
+                    <img src="{{ $logoUrl }}" alt="">
                 </div>
             @endforeach
         </div>

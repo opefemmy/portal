@@ -5,6 +5,7 @@
 @section('content')
 <div class="page-header">
     <h4>Book Medical Appointment</h4>
+    <p class="text-muted">A doctor will be automatically assigned to your appointment based on current availability.</p>
 </div>
 
 <div class="card">
@@ -13,28 +14,6 @@
             @csrf
 
             <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="doctor_id" class="form-label">Select Doctor</label>
-                        <select class="form-select @error('doctor_id') is-invalid @enderror"
-                                id="doctor_id" name="doctor_id" required>
-                            <option value="">Select a Doctor</option>
-                            @forelse($doctors as $doctor)
-                                <option value="{{ $doctor->id }}">
-                                    Dr. {{ $doctor->first_name }} {{ $doctor->last_name }}
-                                    @if($doctor->is_available)
-                                        (Available)
-                                    @endif
-                                </option>
-                            @empty
-                                <option value="">No doctors available</option>
-                            @endforelse
-                        </select>
-                        @error('doctor_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="appointment_date" class="form-label">Appointment Date</label>
